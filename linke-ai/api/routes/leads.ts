@@ -96,15 +96,22 @@ router.patch('/:id', (req: Request, res: Response) => {
 
 /**
  * POST /api/leads/seed
- * 真实爬虫模拟:基于门店位置 + 半径,从大众点评 / 美团 / 高德 / 百度 / 抖音同城
- * 采集 3-5-8-10 km 范围内的真实用户联系方式(脱敏)
+ * 真实爬虫模拟:基于门店位置 + 半径,从百度地图 / 高德地图 / 腾讯位置 / 美团商家 / 大众点评 / 抖音同城
+ * 采集 3-5-8-10 km 范围内的精准用户名片(脱敏)
+ *
+ * body: { storeId, radiusKm, count?, realLng?, realLat? }
+ *  - realLng/realLat: 浏览器 GPS 真实定位(可选,优先级高于 store.lng/lat)
  */
 router.post('/seed', (req: Request, res: Response) => {
-  const { storeId, radiusKm, count = 24 } = req.body || {};
+  const { storeId, radiusKm, count = 24, realLng, realLat } = req.body || {};
   if (!storeId || !radiusKm) return res.status(400).json({ success: false, error: '缺少门店或半径' });
   const data = db.read();
   const store = data.stores.find((s) => s.id === storeId);
   if (!store) return res.status(404).json({ success: false, error: '门店不存在' });
+
+  // 爬虫起点坐标:真实定位 > 门店位置
+  const crawlLng = typeof realLng === 'number' ? realLng : store.lng;
+  const crawlLat = typeof realLat === 'number' ? realLat : store.lat;
 
   // 记录爬虫日志
   const crawlId = db.id('cr');
@@ -119,17 +126,19 @@ router.post('/seed', (req: Request, res: Response) => {
     startedAt,
   });
 
-  // 1. 真实爬虫采集:基于门店经纬度 + 半径
+  // 1. 真实爬虫采集:基于经纬度 + 半径
   const crawled = crawlNearbyLeads(
     storeId,
-    store.lng,
-    store.lat,
+    crawlLng,
+    crawlLat,
     store.name.includes('·') ? store.name.split('·')[1]?.trim() || '北京' : store.name,
     radiusKm,
     Number(count),
+    typeof realLng === 'number' ? realLng : undefined,
+    typeof realLat === 'number' ? realLat : undefined,
   );
 
-  // 2. 落库为线索
+  // 2. 落库为线索(note 中包含完整名片信息)
   const created: Lead[] = crawled.map((c) => ({
     id: db.id('l'),
     storeId,
@@ -138,7 +147,7 @@ router.post('/seed', (req: Request, res: Response) => {
     name: c.name,
     phone: c.phone,
     status: 'pending',
-    note: `🕷️ ${c.source} · ${c.fromPoi} (${c.fromDistrict}) · ${c.notes} · 高潜 ${c.hotScore} · 意向 ${c.intentScore}`,
+    note: `🕷️ ${c.source} · ${c.fromPoi} (${c.fromDistrict}) · ${c.title} @${c.company} · ${c.notes} · 高潜 ${c.hotScore} · 意向 ${c.intentScore}`,
     createdAt: new Date().toISOString(),
   }));
 
@@ -155,6 +164,9 @@ router.post('/seed', (req: Request, res: Response) => {
       radiusKm,
       count: created.length,
       source: crawled.map((c) => c.source).join('、'),
+      sources: Array.from(new Set(crawled.map((c) => c.source))),
+      realLng: typeof realLng === 'number' ? realLng : null,
+      realLat: typeof realLat === 'number' ? realLat : null,
     },
     createdAt: new Date().toISOString(),
   };
@@ -174,20 +186,30 @@ router.post('/seed', (req: Request, res: Response) => {
     status: 'done',
     startedAt,
     finishedAt: Date.now(),
+    sources: Array.from(new Set(crawled.map((c) => c.source))),
   });
 
   res.json({
     success: true,
     created: created.length,
     crawlId,
-    samples: created.slice(0, 3).map((l, i) => ({
+    realPosition: typeof realLng === 'number' ? { lng: realLng, lat: realLat } : null,
+    samples: created.slice(0, 5).map((l, i) => ({
       ...l,
       meta: {
         source: crawled[i].source,
+        sourceUrl: crawled[i].sourceUrl,
         fromPoi: crawled[i].fromPoi,
+        fromPoiAddress: crawled[i].fromPoiAddress,
         fromDistrict: crawled[i].fromDistrict,
+        fromCity: crawled[i].fromCity,
         fromProvince: crawled[i].fromProvince,
-        occupation: crawled[i].occupation,
+        title: crawled[i].title,
+        company: crawled[i].company,
+        industry: crawled[i].industry,
+        wechat: crawled[i].wechat,
+        email: crawled[i].email,
+        occupation: crawled[i].title,
         hotScore: crawled[i].hotScore,
         intentScore: crawled[i].intentScore,
         ltv: crawled[i].ltv,

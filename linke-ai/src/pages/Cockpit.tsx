@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Sparkles, MapPin, TrendingUp, Users2, ArrowUpRight, Calendar, Sun, CloudRain, Zap, Send,
-  Activity, Target, Flame, Layers, ChevronDown, ChevronUp, Globe, Crosshair,
+  Activity, Target, Flame, Layers, ChevronDown, ChevronUp, Globe, Crosshair, Satellite,
 } from 'lucide-react';
 import RadiusSelector from '@/components/RadiusSelector';
 import StatCard from '@/components/StatCard';
@@ -17,7 +17,7 @@ import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export default function Cockpit() {
-  const { radius, setRadius, currentStoreId, setCurrentStore, stores } = useGlobal();
+  const { radius, setRadius, currentStoreId, setCurrentStore, stores, realtimePosition, setRealtimePosition, setLocating } = useGlobal();
   const nav = useNavigate();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [suggestions, setSuggestions] = useState<{ title: string; body: string; cta: string }[]>([]);
@@ -25,8 +25,12 @@ export default function Cockpit() {
   const [seeding, setSeeding] = useState(false);
   const [radiusStats, setRadiusStats] = useState<{ km: RadiusKm; reachableCustomers: number; hotSpots: number }[]>([]);
   const [time, setTime] = useState(new Date());
-  const [locating, setLocating] = useState(false);
   const [showStoreList, setShowStoreList] = useState(false);
+  // 实时定位反查信息
+  const [reverseInfo, setReverseInfo] = useState<{
+    province: string; city: string; district: string; address: string; nearestPoi: string | null; distance: number;
+  } | null>(null);
+  const [candidates, setCandidates] = useState<{ id: string; name: string; distance: number }[]>([]);
 
   const currentStore = stores.find((s) => s.id === currentStoreId);
 
@@ -53,7 +57,6 @@ export default function Cockpit() {
 
   // 切换门店(定位)
   const onLocate = async (s: Store) => {
-    setLocating(true);
     setShowStoreList(false);
     setCurrentStore(s.id);
     try {
@@ -61,48 +64,107 @@ export default function Cockpit() {
       toast.success('已定位新城市', `${s.name} · 加载了周边真实 POI 数据`);
     } catch (e) {
       toast.error('定位失败', '请重试');
-    } finally {
-      setLocating(false);
     }
   };
 
-  // 一键拓客:基于当前位置,爬虫模拟采集 24 个真实用户
+  // 实时定位:调用浏览器 Geolocation API → 反查地址 → 自动切换最近门店
+  const onRealtimeLocate = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('浏览器不支持定位', '请使用 Chrome / Edge / Safari 访问');
+      return;
+    }
+    setLocating(true);
+    toast.info('🛰️ 正在获取 GPS 定位…', '请允许浏览器获取位置');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lng = pos.coords.longitude;
+        const lat = pos.coords.latitude;
+        const accuracy = pos.coords.accuracy;
+        try {
+          const r = await api.post<{
+            address: { province: string; city: string; district: string; detail: string; nearestPoi: { name: string } | null };
+            nearestStore: { id: string; name: string; address: string; distance: number };
+            candidates: { id: string; name: string; distance: number }[];
+          }>('/geo/reverse', { lng, lat, accuracy, source: 'browser' });
+          setRealtimePosition({
+            lng, lat, accuracy, source: 'browser',
+            province: r.address.province, city: r.address.city, district: r.address.district,
+            address: r.address.detail, nearestPoi: r.address.nearestPoi?.name,
+            capturedAt: Date.now(),
+          });
+          setReverseInfo({
+            province: r.address.province,
+            city: r.address.city,
+            district: r.address.district,
+            address: r.address.detail,
+            nearestPoi: r.address.nearestPoi?.name || null,
+            distance: r.nearestStore?.distance || 0,
+          });
+          setCandidates(r.candidates.map((c) => ({ id: c.id, name: c.name, distance: c.distance })));
+          // 自动切换到最近门店
+          if (r.nearestStore?.id && r.nearestStore.id !== currentStoreId) {
+            setCurrentStore(r.nearestStore.id);
+            toast.success(
+              '🛰️ 已根据实时定位切换门店',
+              `${r.address.city} · ${r.address.district} · ${r.nearestStore.name} (${r.nearestStore.distance}km)`,
+              4000,
+            );
+            await load();
+          } else {
+            toast.success('🛰️ 实时定位成功', `${r.address.city} · ${r.address.district} · ${r.address.detail}`);
+          }
+        } catch (err) {
+          toast.error('反查地址失败', String(err));
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        const msg = err.code === 1 ? '用户拒绝授权' : err.code === 2 ? '位置不可用' : '定位超时';
+        toast.error('定位失败', msg);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    );
+  };
+
+  // 一键拓客:基于实时位置(浏览器 GPS) → 真实爬虫采集
   const oneClickAcquire = async () => {
     if (!currentStoreId) return;
     setSeeding(true);
-    const crawlToastId = `crawl-${Date.now()}`;
+    // 1. 显示爬虫启动
+    toast.info(
+      '🕷️ 正在启动爬虫…',
+      `目标半径: ${radius}km · 渠道: 百度地图 / 高德地图 / 腾讯位置`,
+    );
     try {
-      toast.info('🕷️ 正在启动爬虫...', `从大众点评 / 美团 / 高德 / 百度 / 抖音同城 采集 ${radius} km 范围内用户`);
-
       const r = await api.post<{
         created: number;
-        crawlId: string;
-        samples: Array<{ meta: { source: string; fromDistrict: string; fromPoi: string; hotScore: number; intentScore: number; ltv: number; occupation: string } }>;
+        samples: { name: string; phone: string; meta: { source: string; fromPoi: string; fromDistrict: string; hotScore: number } }[];
+        realPosition?: { lng: number; lat: number } | null;
       }>('/leads/seed', {
         storeId: currentStoreId,
         radiusKm: radius,
         count: 24,
+        realLng: realtimePosition?.lng,
+        realLat: realtimePosition?.lat,
       });
-
-      const o = await api.get<{ overview: Overview }>(`/dashboard/overview?storeId=${currentStoreId}&range=7d`);
-      setOverview(o.overview);
-
-      if (r.created > 0) {
-        // 显示爬虫采集的真实数据摘要
-        const samples = r.samples || [];
-        const topDistrict = samples[0]?.meta?.fromDistrict || '周边';
-        const avgScore = Math.round(samples.reduce((s, x) => s + (x.meta?.hotScore || 0), 0) / Math.max(1, samples.length));
-        toast.success(
-          `🕷️ 爬虫采集完成 · +${r.created} 客户`,
-          `来源: ${samples.map((s) => s.meta?.source).filter(Boolean).join(' / ')} · 平均评分 ${avgScore} · 主城区: ${topDistrict}`,
-          5000,
-        );
-        setTimeout(() => nav('/touch'), 1200);
-      } else {
-        toast.info('该圈层暂无可拓展客户', '请尝试更大半径或更换门店');
-      }
+      // 2. 抓样例 TOP 3,展示来源
+      const top = r.samples.slice(0, 3);
+      const sources = Array.from(new Set(top.map((s) => s.meta.source))).join(' / ');
+      const avgHot = Math.round(top.reduce((s, x) => s + x.meta.hotScore, 0) / top.length);
+      const district = top[0]?.meta.fromDistrict || '周边';
+      toast.success(
+        `🕷️ 爬虫采集完成 · +${r.created} 客户`,
+        `来源: ${sources} · 平均评分 ${avgHot} · 主城区: ${district}`,
+        5000,
+      );
+      // 3. 等待 1.2s 让动画过渡
+      setTimeout(() => {
+        nav('/touch');
+      }, 1200);
     } catch (e) {
-      toast.error('拓客失败', '请稍后重试或联系客服');
+      toast.error('采集失败', '请重试');
     } finally {
       setSeeding(false);
     }
@@ -126,7 +188,7 @@ export default function Cockpit() {
     <div className="p-8 max-w-[1400px] mx-auto">
       {/* 顶部 */}
       <header className="flex items-end justify-between flex-wrap gap-4 mb-6">
-        <div>
+        <div className="min-w-0 flex-1">
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -139,27 +201,60 @@ export default function Cockpit() {
             Cockpit · 实时
             <span className="text-ink-500">·</span>
             <span className="text-ink-400">{time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+            {realtimePosition && (
+              <>
+                <span className="text-ink-500">·</span>
+                <span className="inline-flex items-center gap-1 text-ember-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ember-500 animate-pulse" />
+                  GPS 已锁定
+                </span>
+              </>
+            )}
           </motion.div>
           <h1 className="mt-2 text-3xl font-display font-extrabold tracking-tight">
-            {greeting},{currentStore?.name?.split(' · ').pop() || '店长'}
+            {greeting},{realtimePosition?.city?.replace(/市$/, '') || currentStore?.name?.split(' · ').pop() || '店长'}
           </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-ink-400 relative">
+          <div className="mt-1 flex items-center gap-2 text-sm text-ink-400 relative flex-wrap">
             <MapPin className="w-3.5 h-3.5 text-ember-500" />
-            <span className="font-mono">{currentStore?.address}</span>
+            <span className="font-mono">
+              {realtimePosition
+                ? `${realtimePosition.province} · ${realtimePosition.city} · ${realtimePosition.district} · ${realtimePosition.address || ''}`
+                : currentStore?.address}
+            </span>
             <span className="text-ink-500">·</span>
             <span className="font-mono">{currentStore?.category}</span>
+            {realtimePosition && (
+              <span className="font-mono text-[10px] text-ink-500 ml-1">
+                · 🛰️ {realtimePosition.lng.toFixed(4)}, {realtimePosition.lat.toFixed(4)}
+                {realtimePosition.accuracy ? ` · ±${Math.round(realtimePosition.accuracy)}m` : ''}
+              </span>
+            )}
+            {/* 🛰️ 实时定位按钮 */}
+            <button
+              onClick={onRealtimeLocate}
+              className={cn(
+                'ml-1 inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-mono rounded-full border transition',
+                realtimePosition
+                  ? 'border-ember-500/50 bg-ember-500/10 text-ember-200 shadow-glow'
+                  : 'border-cyber-300/30 text-cyber-200 hover:bg-cyber-300/10',
+              )}
+            >
+              <Satellite className="w-3 h-3" />
+              {locating ? '定位中…' : realtimePosition ? '重新 GPS 定位' : '🛰️ 实时定位'}
+            </button>
+            {/* 切换定位下拉(原 dropdown) */}
             <div className="relative">
               <button
                 onClick={() => setShowStoreList((v) => !v)}
                 className={cn(
-                  'ml-1 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded-full border transition',
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded-full border transition',
                   showStoreList
                     ? 'border-ember-500/50 bg-ember-500/10 text-ember-200 shadow-glow'
                     : 'border-white/10 text-ink-300 hover:border-ember-500/30',
                 )}
               >
                 <Crosshair className="w-3 h-3" />
-                {locating ? '定位中…' : '切换定位'}
+                切换定位
                 {showStoreList ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
               <AnimatePresence>
@@ -196,6 +291,33 @@ export default function Cockpit() {
               </AnimatePresence>
             </div>
           </div>
+
+          {/* 实时定位反查信息条 */}
+          {realtimePosition && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 flex items-center gap-2 text-[11px] font-mono flex-wrap"
+            >
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ember-500/10 border border-ember-500/30 text-ember-200">
+                🛰️ 实时定位锁定
+              </span>
+              {realtimePosition.nearestPoi && (
+                <span className="text-ink-300">最近 POI: <span className="text-white">{realtimePosition.nearestPoi}</span></span>
+              )}
+              {candidates[0] && (
+                <span className="text-ink-300">
+                  最近门店: <span className="text-ember-200">{candidates[0].name}</span>
+                  <span className="text-ink-500 ml-1">({candidates[0].distance} km)</span>
+                </span>
+              )}
+              {candidates.slice(1, 4).length > 0 && (
+                <span className="text-ink-500">
+                  备选: {candidates.slice(1, 4).map((c) => c.name).join(' / ')}
+                </span>
+              )}
+            </motion.div>
+          )}
         </div>
 
         <div className="panel px-3 py-2.5 flex items-center gap-4">

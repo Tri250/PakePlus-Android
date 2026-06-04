@@ -5,6 +5,19 @@ import { create } from 'zustand';
 import type { Store, User, RadiusKm } from '@/lib/types';
 import { api, setToken, getToken } from '@/lib/api';
 
+export interface RealtimePosition {
+  lng: number;
+  lat: number;
+  accuracy?: number;
+  source?: 'browser' | 'manual' | 'ip';
+  province?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  nearestPoi?: string;
+  capturedAt?: number;
+}
+
 interface GlobalState {
   user: User | null;
   token: string | null;
@@ -13,12 +26,17 @@ interface GlobalState {
   radius: RadiusKm;
   isAuthed: boolean;
   loading: boolean;
+  // 实时定位(浏览器 GPS)
+  realtimePosition: RealtimePosition | null;
+  locating: boolean;
   // actions
   bootstrap: () => Promise<void>;
   login: (phone: string, code: string) => Promise<void>;
   logout: () => void;
   setCurrentStore: (id: string) => void;
   setRadius: (km: RadiusKm) => void;
+  setRealtimePosition: (pos: RealtimePosition | null) => void;
+  setLocating: (v: boolean) => void;
 }
 
 export const useGlobal = create<GlobalState>((set, get) => ({
@@ -29,6 +47,8 @@ export const useGlobal = create<GlobalState>((set, get) => ({
   radius: 3,
   isAuthed: false,
   loading: true,
+  realtimePosition: null,
+  locating: false,
 
   bootstrap: async () => {
     set({ loading: true });
@@ -76,4 +96,6 @@ export const useGlobal = create<GlobalState>((set, get) => ({
   },
 
   setRadius: (km) => set({ radius: km }),
+  setRealtimePosition: (pos) => set({ realtimePosition: pos }),
+  setLocating: (v) => set({ locating: v }),
 }));
