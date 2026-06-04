@@ -8,24 +8,45 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from 'recharts';
-import { Sparkles, Copy, Send, RefreshCw, Check } from 'lucide-react';
+import { Sparkles, Copy, Send, RefreshCw, Check, Zap } from 'lucide-react';
 import RadiusSelector from '@/components/RadiusSelector';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
-import type { Copy as CopyT, Persona, Channel } from '@/lib/types';
+import type { Copy as CopyT, Persona, Channel, Offer, TimeSlot } from '@/lib/types';
+import { useNavigate } from 'react-router-dom';
 
 const CHANNELS: { value: Channel; label: string; tone: string }[] = [
   { value: 'wechat', label: '企微 / 朋友圈', tone: 'bg-cyber-300/15 text-cyber-200 border-cyber-300/30' },
   { value: 'sms', label: '短信', tone: 'bg-ember-500/15 text-ember-200 border-ember-500/30' },
   { value: 'douyin', label: '抖音同城', tone: 'bg-signal-violet/15 text-signal-violet border-signal-violet/30' },
+  { value: 'phone', label: 'AI 外呼', tone: 'bg-signal-rose/15 text-signal-rose border-signal-rose/30' },
   { value: 'card', label: '美团 / 卡券', tone: 'bg-signal-gold/15 text-signal-gold border-signal-gold/30' },
+];
+
+const OFFER_OPTIONS: { value: Offer; label: string }[] = [
+  { value: 'discount', label: '9.9 元起' },
+  { value: 'gift', label: '到店即送' },
+  { value: 'coupon', label: '30 元代金券' },
+  { value: 'trial', label: '0 元体验' },
+  { value: 'member', label: '会员 5 折' },
+];
+
+const TIME_OPTIONS: { value: TimeSlot; label: string }[] = [
+  { value: 'morning', label: '早' },
+  { value: 'noon', label: '午' },
+  { value: 'afternoon', label: '下午' },
+  { value: 'evening', label: '下班' },
+  { value: 'night', label: '夜' },
 ];
 
 export default function PersonaPage() {
   const { radius, setRadius, currentStoreId, stores } = useGlobal();
+  const nav = useNavigate();
   const [persona, setPersona] = useState<Persona | null>(null);
   const [copies, setCopies] = useState<CopyT[]>([]);
   const [channel, setChannel] = useState<Channel>('wechat');
+  const [offer, setOffer] = useState<Offer>('coupon');
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>('noon');
   const [loading, setLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
@@ -37,7 +58,7 @@ export default function PersonaPage() {
     try {
       const [p, c] = await Promise.all([
         api.post<{ persona: Persona }>('/ai/persona', { storeId: currentStoreId, radiusKm: radius }),
-        api.post<{ copies: CopyT[] }>('/ai/copywriting', { storeId: currentStoreId, radiusKm: radius, channel }),
+        api.post<{ copies: CopyT[] }>('/ai/copywriting', { storeId: currentStoreId, radiusKm: radius, channel, offer, timeSlot }),
       ]);
       setPersona(p.persona);
       setCopies(c.copies);
@@ -49,7 +70,7 @@ export default function PersonaPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [radius, channel, currentStoreId]);
+  }, [radius, channel, offer, timeSlot, currentStoreId]);
 
   const onCopy = async (text: string, idx: number) => {
     try {
@@ -164,23 +185,52 @@ export default function PersonaPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-white">触达话术</div>
-                <div className="text-[10px] font-mono text-ink-400">3 套候选 · 任选一套投放</div>
+                <div className="text-[10px] font-mono text-ink-400">3 套候选 · 选时段 + 优惠,AI 自动重写</div>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {CHANNELS.map((c) => (
-                  <button
-                    key={c.value}
-                    onClick={() => setChannel(c.value)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition ${
-                      channel === c.value
-                        ? c.tone
-                        : 'border-white/10 text-ink-400 hover:border-white/20'
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1">
+                  {TIME_OPTIONS.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setTimeSlot(t.value)}
+                      className={`px-2.5 py-1 text-[10px] font-mono rounded-full border transition ${
+                        timeSlot === t.value
+                          ? 'border-ember-500/50 bg-ember-500/10 text-ember-200'
+                          : 'border-white/10 text-ink-400'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  value={offer}
+                  onChange={(e) => setOffer(e.target.value as Offer)}
+                  className="bg-ink-800/60 border border-white/5 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:border-ember-500/60"
+                >
+                  {OFFER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value} className="bg-ink-900">
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 mb-4">
+              {CHANNELS.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setChannel(c.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition ${
+                    channel === c.value
+                      ? c.tone
+                      : 'border-white/10 text-ink-400 hover:border-white/20'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -196,7 +246,9 @@ export default function PersonaPage() {
                     <div className="w-6 h-6 rounded-md bg-gradient-to-br from-ember-500 to-ember-700 text-ink-950 text-[10px] font-mono font-bold flex items-center justify-center">
                       {String(i + 1).padStart(2, '0')}
                     </div>
-                    <div className="text-xs text-ink-400 font-mono">CANDIDATE</div>
+                    <div className="text-xs text-ink-400 font-mono">
+                      打开 ~{c.estimatedOpen}% · 转化 ~{c.estimatedConvert}%
+                    </div>
                   </div>
                   <div className="text-sm font-display font-bold text-white leading-snug">
                     {c.title}
@@ -221,9 +273,12 @@ export default function PersonaPage() {
                         </>
                       )}
                     </button>
-                    <button className="flex-1 btn-primary !py-1.5 !text-xs">
-                      <Send className="w-3.5 h-3.5" />
-                      一键投放
+                    <button
+                      onClick={() => nav('/touch')}
+                      className="flex-1 btn-primary !py-1.5 !text-xs"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      一键群发
                     </button>
                   </div>
                 </motion.div>

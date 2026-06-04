@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { db, type Lead, type LeadStatus, type LeadEvent } from '../db/store.js';
+import { generateLeadsFromPois } from '../services/geo.js';
 
 const router = Router();
 
@@ -95,32 +96,49 @@ router.patch('/:id', (req: Request, res: Response) => {
 
 /**
  * POST /api/leads/seed
- * 根据当前选中的半径快速造一批演示线索
+ * 根据当前选中的半径,从真实 POI 批量造线索(可指定 count)
  */
 router.post('/seed', (req: Request, res: Response) => {
-  const { storeId, radiusKm, count = 6 } = req.body || {};
+  const { storeId, radiusKm, count = 20 } = req.body || {};
   if (!storeId || !radiusKm) return res.status(400).json({ success: false, error: '缺少门店或半径' });
   const data = db.read();
   const store = data.stores.find((s) => s.id === storeId);
   if (!store) return res.status(404).json({ success: false, error: '门店不存在' });
-  const names = ['王', '李', '张', '陈', '刘', '赵', '孙', '周', '吴', '郑', '黄', '马'];
-  const statuses: LeadStatus[] = ['pending', 'added', 'visited', 'won', 'lost'];
-  const created: Lead[] = [];
-  for (let i = 0; i < Number(count); i++) {
-    const surname = names[Math.floor(Math.random() * names.length)];
-    const lead: Lead = {
-      id: db.id('l'),
-      storeId,
-      fromRadius: radiusKm,
-      name: `${surname}${i % 2 === 0 ? '女士' : '先生'}`,
-      phone: `139${String(Math.floor(Math.random() * 1e8)).padStart(8, '0')}`,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      createdAt: new Date().toISOString(),
-    };
-    created.push(lead);
-  }
+
+  // 从真实 POI 生成候选
+  const candidates = generateLeadsFromPois(store.lng, store.lat, radiusKm, storeId, Number(count));
+  const statuses: LeadStatus[] = ['pending', 'pending', 'pending', 'added', 'visited', 'won', 'lost'];
+  const created: Lead[] = candidates.map((c, i) => ({
+    id: db.id('l'),
+    storeId,
+    campaignId: undefined,
+    fromRadius: radiusKm,
+    name: c.name,
+    phone: c.phone,
+    status: statuses[i % statuses.length],
+    note: `来自 ${c.sourcePoi} (${({ office: '写字楼', mall: '商场', school: '学校', residence: '住宅', subway: '地铁', park: '公园' } as Record<string, string>)[c.sourcePoiCategory] || c.sourcePoiCategory}) · 高潜 ${c.hotScore}`,
+    createdAt: new Date().toISOString(),
+  }));
   db.write((d) => created.forEach((l) => d.leads.unshift(l)));
-  res.json({ success: true, created: created.length });
+  res.json({ success: true, created: created.length, samples: created.slice(0, 3) });
+});
+
+/**
+ * POST /api/leads/batch-touch
+ * 一键群发(对一组 lead 触发触达)
+ */
+router.post('/batch-touch', async (req: Request, res: Response) => {
+  const { storeId, leadIds, channel, title, body, cta } = req.body || {};
+  if (!storeId || !Array.isArray(leadIds) || !channel || !title || !body) {
+    return res.status(400).json({ success: false, error: '缺少必要字段' });
+  }
+  // 委托给 touch 服务
+  const { batchSend } = await import('../services/touch.js');
+  const data = db.read();
+  const leads: Lead[] = data.leads.filter((l) => leadIds.includes(l.id) && l.storeId === storeId);
+  if (leads.length === 0) return res.status(404).json({ success: false, error: '未找到可触达的客户' });
+  const results = await batchSend({ channel, leads, title, body, cta, storeId });
+  res.json({ success: true, results });
 });
 
 export default router;

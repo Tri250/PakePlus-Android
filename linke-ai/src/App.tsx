@@ -5,6 +5,7 @@ import Login from '@/pages/Login';
 import Cockpit from '@/pages/Cockpit';
 import MapWorkspace from '@/pages/MapWorkspace';
 import Persona from '@/pages/Persona';
+import TouchCenter from '@/pages/TouchCenter';
 import Campaign from '@/pages/Campaign';
 import Leads from '@/pages/Leads';
 import Dashboard from '@/pages/Dashboard';
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/cockpit" element={<Cockpit />} />
           <Route path="/map" element={<MapWorkspace />} />
           <Route path="/persona" element={<Persona />} />
+          <Route path="/touch" element={<TouchCenter />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/dashboard" element={<Dashboard />} />

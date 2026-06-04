@@ -126,6 +126,146 @@
   ],
   "leads": [
     {
+      "id": "l_xfbylfa",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "林女士",
+      "phone": "13900001124",
+      "status": "won",
+      "note": "来自 望京 SOHO T3 (写字楼) · 高潜 75",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_maad2xk",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "郑先生",
+      "phone": "13900001093",
+      "status": "visited",
+      "note": "来自 望京 SOHO T2 (写字楼) · 高潜 75",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_78rgcma",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "孙女士",
+      "phone": "13900001062",
+      "status": "added",
+      "note": "来自 望京站 (14/15 号线) (地铁) · 高潜 76",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_enoxg7r",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "陈先生",
+      "phone": "13900001031",
+      "status": "added",
+      "note": "来自 大西洋新城 (住宅) · 高潜 77",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_ph36qav",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "李先生",
+      "phone": "13900001007",
+      "status": "added",
+      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_bvl6a93",
+      "storeId": "s_demo",
+      "fromRadius": 5,
+      "name": "王女士",
+      "phone": "13900001000",
+      "status": "added",
+      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
+      "createdAt": "2026-06-04T08:04:10.020Z"
+    },
+    {
+      "id": "l_85qt3jh",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "李女士",
+      "phone": "13900001186",
+      "status": "pending",
+      "note": "来自 望京 SOHO T1 (写字楼) · 高潜 74",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_b5zwsv4",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "高先生",
+      "phone": "13900001155",
+      "status": "lost",
+      "note": "来自 望京东站 (地铁) · 高潜 75",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_wpdezd4",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "林女士",
+      "phone": "13900001124",
+      "status": "won",
+      "note": "来自 望京 SOHO T3 (写字楼) · 高潜 75",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_btf00z7",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "郑先生",
+      "phone": "13900001093",
+      "status": "visited",
+      "note": "来自 望京 SOHO T2 (写字楼) · 高潜 75",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_c3o4vqd",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "孙女士",
+      "phone": "13900001062",
+      "status": "added",
+      "note": "来自 望京站 (14/15 号线) (地铁) · 高潜 76",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_wr1pfhn",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "陈先生",
+      "phone": "13900001031",
+      "status": "added",
+      "note": "来自 大西洋新城 (住宅) · 高潜 77",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_i76y345",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "李先生",
+      "phone": "13900001007",
+      "status": "added",
+      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
+      "id": "l_ifbmehf",
+      "storeId": "s_demo",
+      "fromRadius": 3,
+      "name": "王女士",
+      "phone": "13900001000",
+      "status": "added",
+      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
+      "createdAt": "2026-06-04T07:56:40.677Z"
+    },
+    {
       "id": "l_001",
       "storeId": "s_demo",
       "campaignId": "c_3km",
@@ -211,5 +351,96 @@
       "createdAt": "2026-06-04T07:39:08.834Z"
     }
   ],
-  "events": []
+  "events": [
+    {
+      "id": "e_2lsf4vb",
+      "leadId": "l_wr1pfhn",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780559849244_kcc3ff",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T07:57:29.244Z"
+    },
+    {
+      "id": "e_o55qnl8",
+      "leadId": "l_ifbmehf",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780559849244_ha0ufd",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T07:57:29.244Z"
+    },
+    {
+      "id": "e_3ps0z6n",
+      "leadId": "l_i76y345",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780559849248_52j7tv",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T07:57:29.248Z"
+    },
+    {
+      "id": "e_7nlu3u7",
+      "leadId": "l_enoxg7r",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780560250429_k03fej",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T08:04:10.429Z"
+    },
+    {
+      "id": "e_2u6jn2r",
+      "leadId": "l_bvl6a93",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780560250432_03afe1",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T08:04:10.433Z"
+    },
+    {
+      "id": "e_5qpu13n",
+      "leadId": "l_ph36qav",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3 公里内午间福利",
+        "body": "在 3 km 内的你,今天午间好。",
+        "cta": "点击查看门店",
+        "messageId": "wechat_1780560250434_z4ch9c",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T08:04:10.434Z"
+    }
+  ]
 }

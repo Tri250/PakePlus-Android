@@ -31,6 +31,7 @@ const CHANNEL_LABEL: Record<Channel, string> = {
   wechat: '企微',
   douyin: '抖音',
   card: '卡券',
+  phone: '外呼',
 };
 
 const STATUS_TONE: Record<Campaign['status'], string> = {

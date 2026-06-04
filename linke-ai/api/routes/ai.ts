@@ -9,14 +9,13 @@ const router = Router();
  * body: { storeId, radiusKm, categories? }
  */
 router.post('/persona', (req: Request, res: Response) => {
-  const { storeId, radiusKm, categories } = req.body || {};
+  const { storeId, radiusKm, category } = req.body || {};
   const data = db.read();
   const store = data.stores.find((s) => s.id === storeId);
   if (!store) return res.status(404).json({ success: false, error: '门店不存在' });
   const persona = generatePersona({
     radiusKm: radiusKm as 3 | 5 | 8 | 10,
-    category: store.category,
-    categories,
+    category: category || store.category,
   });
   res.json({ success: true, persona, store: { id: store.id, name: store.name, category: store.category } });
 });
@@ -26,11 +25,12 @@ router.post('/persona', (req: Request, res: Response) => {
  * body: { channel, radiusKm, storeId }
  */
 router.post('/copywriting', (req: Request, res: Response) => {
-  const { channel = 'wechat', radiusKm = 3, storeId } = req.body || {};
+  const { channel = 'wechat', radiusKm = 3, storeId, offer, timeSlot, category } = req.body || {};
   const data = db.read();
   const store = data.stores.find((s) => s.id === storeId);
-  const persona = generatePersona({ radiusKm, category: store?.category || '通用' });
-  const copies = generateCopy({ channel, personaKeywords: persona.keywords });
+  const cat = category || store?.category;
+  const persona = generatePersona({ radiusKm, category: cat });
+  const copies = generateCopy({ channel, radiusKm, category: cat, offer, timeSlot, personaKeywords: persona.keywords });
   res.json({ success: true, copies, persona });
 });
 

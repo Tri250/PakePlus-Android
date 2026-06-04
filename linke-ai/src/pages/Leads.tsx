@@ -12,10 +12,17 @@ import {
   XCircle,
   Award,
   Send,
+  Send as SendIcon,
+  Smartphone,
+  MessageSquare,
+  Megaphone,
+  Ticket,
+  Headphones,
+  ChevronRight,
 } from 'lucide-react';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
-import type { Lead, LeadStatus, RadiusKm } from '@/lib/types';
+import type { Lead, LeadEvent, LeadStatus, RadiusKm, Channel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const STATUS_TABS: { value: LeadStatus | 'all'; label: string; icon: typeof CheckCircle2; tone: string }[] = [
@@ -49,6 +56,7 @@ export default function LeadsPage() {
   const [radiusFilter, setRadiusFilter] = useState<RadiusKm | 'all'>(radius);
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<Lead | null>(null);
+  const [leadEvents, setLeadEvents] = useState<LeadEvent[]>([]);
   const [seeding, setSeeding] = useState(false);
 
   const load = () => {
@@ -56,6 +64,14 @@ export default function LeadsPage() {
     api.get<{ items: Lead[] }>(`/leads?storeId=${currentStoreId}`).then((r) => setLeads(r.items));
   };
   useEffect(() => { load(); }, [currentStoreId]);
+
+  useEffect(() => {
+    if (!selected) {
+      setLeadEvents([]);
+      return;
+    }
+    api.get<{ events: LeadEvent[] }>(`/touch/logs?leadId=${selected.id}`).then((r) => setLeadEvents(r.events));
+  }, [selected]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = { all: leads.length };
@@ -85,6 +101,21 @@ export default function LeadsPage() {
     await api.patch(`/leads/${id}`, { status });
     load();
     if (selected?.id === id) setSelected((s) => (s ? { ...s, status } : s));
+  };
+
+  const CHANNEL_ICON: Record<Channel, typeof Smartphone> = {
+    sms: Smartphone,
+    wechat: MessageSquare,
+    douyin: Megaphone,
+    card: Ticket,
+    phone: Headphones,
+  };
+  const CHANNEL_LABEL: Record<Channel, string> = {
+    sms: '短信',
+    wechat: '企微',
+    douyin: '抖音',
+    card: '卡券',
+    phone: 'AI 外呼',
   };
 
   return (
@@ -270,6 +301,66 @@ export default function LeadsPage() {
                     朋友圈广告并附 9.9 元体验券,若 24 小时内未加微,触发短信二次触达。
                   </p>
                 </div>
+
+                {/* 触达时间线 */}
+                {leadEvents.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-ink-400 mb-2">
+                      触达时间线 · {leadEvents.length} 条
+                    </div>
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {leadEvents.map((ev) => {
+                        const channel = (ev.payload?.channel as Channel | undefined) || 'sms';
+                        const Icon = CHANNEL_ICON[channel] || SendIcon;
+                        const isSuccess = ev.type === 'touch';
+                        return (
+                          <div key={ev.id} className="flex gap-2.5">
+                            <div className="flex flex-col items-center pt-0.5">
+                              <div
+                                className={cn(
+                                  'w-7 h-7 rounded-lg grid place-items-center border',
+                                  isSuccess
+                                    ? 'bg-cyber-300/10 border-cyber-300/30 text-cyber-200'
+                                    : 'bg-ember-500/10 border-ember-500/30 text-ember-300',
+                                )}
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="w-px flex-1 bg-white/5 mt-1" />
+                            </div>
+                            <div className="flex-1 pb-2">
+                              <div className="text-xs text-white flex items-center gap-1.5">
+                                <span>{CHANNEL_LABEL[channel]} · {(ev.payload?.status as string) === 'success' ? '已发送' : '失败'}</span>
+                              </div>
+                              <div className="text-[10px] font-mono text-ink-400">
+                                {new Date(ev.createdAt).toLocaleString('zh-CN')}
+                              </div>
+                              {ev.payload?.body && (
+                                <div className="mt-1 text-[10px] text-ink-300 bg-ink-800/50 rounded p-2 leading-relaxed line-clamp-3">
+                                  {String(ev.payload.body)}
+                                </div>
+                              )}
+                              {ev.payload?.error && (
+                                <div className="mt-1 text-[10px] text-ember-300 font-mono">
+                                  失败: {String(ev.payload.error)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => (window.location.href = '/touch')}
+                  className="mt-4 w-full btn-ghost !text-xs !py-2"
+                >
+                  <SendIcon className="w-3.5 h-3.5" />
+                  前往触达中心群发
+                  <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+                </button>
               </>
             ) : (
               <div className="text-center text-ink-400 py-12 text-sm">

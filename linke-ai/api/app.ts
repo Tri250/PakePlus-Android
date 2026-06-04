@@ -17,6 +17,7 @@ import aiRoutes from './routes/ai.js';
 import campaignRoutes from './routes/campaigns.js';
 import leadRoutes from './routes/leads.js';
 import dashboardRoutes from './routes/dashboard.js';
+import touchRoutes from './routes/touch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +40,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/touch', touchRoutes);
 
 /**
  * health

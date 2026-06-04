@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Send,
 } from 'lucide-react';
 import { useGlobal } from '@/store/useGlobal';
 import { useEffect } from 'react';
@@ -19,6 +20,7 @@ const NAV = [
   { to: '/cockpit', label: '获客驾驶舱', icon: Radar },
   { to: '/map', label: '地图工作台', icon: MapIcon },
   { to: '/persona', label: 'AI 客户画像', icon: Sparkles },
+  { to: '/touch', label: '触达中心', icon: Send, hot: true },
   { to: '/campaign', label: '智能营销中心', icon: Workflow },
   { to: '/leads', label: '线索池', icon: Users2 },
   { to: '/dashboard', label: '数据看板', icon: LineChart },
@@ -57,14 +59,19 @@ export default function Layout() {
         </div>
 
         <nav className="px-3 flex-1 space-y-0.5">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {NAV.map(({ to, label, icon: Icon, hot }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => cn('nav-item', isActive && 'nav-item-active')}
+              className={({ isActive }) => cn('nav-item relative', isActive && 'nav-item-active')}
             >
               <Icon className="w-4 h-4" />
-              <span>{label}</span>
+              <span className="flex-1">{label}</span>
+              {hot && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-ember-500 text-ink-950 font-bold">
+                  NEW
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

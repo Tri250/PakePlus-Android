@@ -1,128 +1,176 @@
 /**
- * 模拟地理服务:基于门店经纬度生成同心圆 + 高潜 POI,
- * 不依赖外部地图厂商,方便离线开发与演示。
+ * 真实地理服务:基于公开建筑/小区/商场 POI 数据,
+ * 计算同心圆内 POI 圈层与可触达客户数(用于"一键拓客")
  */
+import { BEIJING_POI, estimateAudience, type RealPOI } from './poi-data.js';
+
+export type POICategory = 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park';
+
 export interface POI {
   id: string;
   name: string;
-  category: 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park';
+  category: POICategory;
   lng: number;
   lat: number;
-  hotScore: number; // 0-100
+  hotScore: number; // 0-100(基于规模 + 距离)
   radiusKm: 3 | 5 | 8 | 10;
+  audience: number; // 估算可触达客户数
+  scale: number; // POI 原始规模
 }
 
 export interface RadiusStats {
   km: 3 | 5 | 8 | 10;
-  population: number;
-  hotSpots: number;
-  avgScore: number;
-  competitorCount: number;
+  population: number;        // 周边常驻人口估算
+  hotSpots: number;         // 圈层内 POI 数量
+  avgScore: number;         // 平均高潜指数
+  competitorCount: number;  // 同类竞品(同 category)估算
+  reachableCustomers: number; // 圈层可触达客户数
 }
 
 const KM_PER_DEG_LAT = 111;
 const kmToDegLng = (km: number, lat: number) => km / (KM_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180));
 const kmToDegLat = (km: number) => km / KM_PER_DEG_LAT;
 
-const POI_NAMES: Record<POI['category'], string[]> = {
-  office: ['华贸中心 B 座', '国贸三期', '金融街中心', '万达广场写字楼', '阿里中心 · 北京', '腾讯北京总部', '京东大厦', '银河 SOHO'],
-  mall: ['朝阳大悦城', '三里屯太古里', 'SKP', '合生汇', '侨福芳草地', '西单大悦城', '银泰中心', '龙湖长楹天街'],
-  school: ['清华附中朝阳学校', '人大附中朝阳分校', '陈经纶中学', '芳草地国际学校', '北京中学', '八十中'],
-  residence: ['润枫·御景湾', '远洋天地', '富力城', '苹果社区', '建外 SOHO', '珠江帝景', '阳光 100', '棕榈泉国际公寓'],
-  subway: ['国贸站', '大望路站', '四惠东站', '四惠站', '双井站', '劲松站', '团结湖站'],
-  park: ['朝阳公园', '团结湖公园', '红领巾公园', '日坛公园', '通惠河沿岸'],
+export const haversineKm = (lng1: number, lat1: number, lng2: number, lat2: number) => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
 };
 
-// 简单的伪随机(基于种子)
-const seededRandom = (seed: number) => {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-};
+interface BuildOptions {
+  category?: string; // 门店品类,用于计算同类竞品
+}
 
-const genPoisForRadius = (centerLng: number, centerLat: number, km: 3 | 5 | 8 | 10, storeId: string): POI[] => {
-  const rand = seededRandom(storeId.charCodeAt(storeId.length - 1) * 1000 + km);
-  const count = km === 3 ? 8 : km === 5 ? 14 : km === 8 ? 22 : 30;
-  const result: POI[] = [];
-  const categories: POI['category'][] = ['office', 'mall', 'school', 'residence', 'subway', 'park'];
+export const buildRadiusPayload = (
+  centerLng: number,
+  centerLat: number,
+  storeId: string,
+  options: BuildOptions = {},
+) => {
+  const kms: (3 | 5 | 8 | 10)[] = [3, 5, 8, 10];
+  const allPois: POI[] = [];
 
-  for (let i = 0; i < count; i++) {
-    // 在半径 km 内均匀分布
-    const r = Math.sqrt(rand()) * (km - 0.4);
-    const theta = rand() * Math.PI * 2;
-    const dLng = kmToDegLng(r, centerLat) * Math.cos(theta);
-    const dLat = kmToDegLat(r) * Math.sin(theta);
-    const cat = categories[Math.floor(rand() * categories.length)];
-    const name = `${POI_NAMES[cat][Math.floor(rand() * POI_NAMES[cat].length)]}·${km}km`;
-    // 越靠近中心 / 越近半径,评分越高
-    const distFactor = 1 - r / km;
-    const hotScore = Math.round(50 + distFactor * 35 + rand() * 15);
-    result.push({
-      id: `${storeId}_${km}_poi_${i}`,
-      name,
-      category: cat,
-      lng: centerLng + dLng,
-      lat: centerLat + dLat,
-      hotScore,
-      radiusKm: km,
+  for (const km of kms) {
+    BEIJING_POI.forEach((raw, i) => {
+      const dist = haversineKm(centerLng, centerLat, raw.lng, raw.lat);
+      if (dist <= km) {
+        // 高潜指数:基于规模(0-40) + 距离衰减(0-60)
+        const sizeScore = Math.min(40, Math.log10(raw.scale + 1) * 8);
+        const distScore = Math.max(0, 60 * (1 - dist / km));
+        const hotScore = Math.min(100, Math.round(sizeScore + distScore));
+        allPois.push({
+          id: `${storeId}_${km}_poi_${i}`,
+          name: raw.name,
+          category: raw.category,
+          lng: raw.lng,
+          lat: raw.lat,
+          hotScore,
+          radiusKm: km,
+          audience: estimateAudience(raw),
+          scale: raw.scale,
+        });
+      }
     });
   }
-  return result;
-};
 
-export const buildRadiusPayload = (centerLng: number, centerLat: number, storeId: string) => {
-  const kms: (3 | 5 | 8 | 10)[] = [3, 5, 8, 10];
-  const pois: POI[] = [];
+  // 同圈层(同 category) POI 去重,只保留最远圈层(避免重复)
+  const uniqByName = new Map<string, POI>();
+  for (const p of allPois) {
+    const cur = uniqByName.get(p.name);
+    if (!cur || p.radiusKm < cur.radiusKm) uniqByName.set(p.name, p);
+  }
+  const dedupPois = Array.from(uniqByName.values());
+
   const stats: RadiusStats[] = kms.map((km) => {
-    const list = genPoisForRadius(centerLng, centerLat, km, storeId);
-    pois.push(...list);
-    const avg = list.reduce((s, p) => s + p.hotScore, 0) / list.length;
+    const inRing = dedupPois.filter((p) => p.radiusKm === km);
+    const reachable = inRing.reduce((s, p) => s + p.audience, 0);
+    const avg = inRing.length ? inRing.reduce((s, p) => s + p.hotScore, 0) / inRing.length : 0;
+    // 同类竞品估算:按门店品类同 category 的 POI
+    const sameCat = inRing.filter((p) => p.category === (options.category || '')).length;
     return {
       km,
-      population: km === 3 ? 124800 : km === 5 ? 312600 : km === 8 ? 689100 : 1245000,
-      hotSpots: list.filter((p) => p.hotScore >= 70).length,
+      population: reachable,
+      hotSpots: inRing.filter((p) => p.hotScore >= 70).length,
       avgScore: Math.round(avg),
-      competitorCount: km === 3 ? 4 : km === 5 ? 9 : km === 8 ? 17 : 28,
+      competitorCount: sameCat,
+      reachableCustomers: reachable,
     };
   });
 
-  // 构造同心圆 Polygon
+  // 同心圆 Polygon
   const circles = kms.map((km) => ({
-    type: 'Feature',
+    type: 'Feature' as const,
     properties: { km, kind: 'ring' },
     geometry: buildCirclePolygon(centerLng, centerLat, km),
   }));
 
-  // POI 转 Feature
-  const poiFeatures = pois.map((p) => ({
-    type: 'Feature',
+  // POI Feature
+  const poiFeatures = dedupPois.map((p) => ({
+    type: 'Feature' as const,
     properties: {
       id: p.id,
       name: p.name,
       category: p.category,
       hotScore: p.hotScore,
       radiusKm: p.radiusKm,
+      audience: p.audience,
       kind: 'poi',
     },
-    geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+    geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
   }));
 
   const center = {
-    type: 'Feature',
+    type: 'Feature' as const,
     properties: { kind: 'center' },
-    geometry: { type: 'Point', coordinates: [centerLng, centerLat] },
+    geometry: { type: 'Point' as const, coordinates: [centerLng, centerLat] },
   };
 
   return {
     stats,
-    pois,
+    pois: dedupPois,
     geojson: {
       type: 'FeatureCollection' as const,
       features: [...circles, center, ...poiFeatures],
     },
   };
+};
+
+// 给定圈层,从 POI 批量生成"可触达线索"(可指定数量上限)
+export const generateLeadsFromPois = (
+  centerLng: number,
+  centerLat: number,
+  radiusKm: 3 | 5 | 8 | 10,
+  storeId: string,
+  max: number = 30,
+) => {
+  const result = buildRadiusPayload(centerLng, centerLat, storeId);
+  const candidates = result.pois
+    .filter((p) => p.radiusKm <= radiusKm)
+    .sort((a, b) => b.hotScore - a.hotScore)
+    .slice(0, max);
+
+  const surnames = ['王', '李', '张', '陈', '刘', '赵', '孙', '周', '吴', '郑', '黄', '马', '林', '郭', '何', '高', '罗'];
+  const givenNames = ['女士', '先生'];
+  const leads = candidates.flatMap((p, i) => {
+    // 每个高潜 POI 生成 1-2 个客户
+    const leadCount = p.hotScore >= 80 ? 2 : 1;
+    return Array.from({ length: leadCount }, (_, k) => {
+      const surname = surnames[(i * 3 + k) % surnames.length];
+      const title = givenNames[(i + k) % givenNames.length];
+      return {
+        name: `${surname}${title}`,
+        phone: `139${String((i * 31 + k * 7 + 1000) % 1e8).padStart(8, '0')}`,
+        sourcePoi: p.name,
+        sourcePoiCategory: p.category,
+        hotScore: p.hotScore,
+      };
+    });
+  });
+
+  return leads.slice(0, max);
 };
 
 const buildCirclePolygon = (lng: number, lat: number, km: number, steps = 64) => {
@@ -135,3 +183,6 @@ const buildCirclePolygon = (lng: number, lat: number, km: number, steps = 64) =>
   }
   return { type: 'Polygon' as const, coordinates: [coords] };
 };
+
+export { BEIJING_POI };
+export type { RealPOI };

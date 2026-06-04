@@ -1,11 +1,13 @@
 /**
- * 前端共享类型 - 与 BFF /api/* 响应保持一致
+ * 前端共享类型
  */
 export type Role = 'owner' | 'manager' | 'bd';
 export type LeadStatus = 'pending' | 'added' | 'visited' | 'won' | 'lost';
 export type CampaignStatus = 'draft' | 'running' | 'paused' | 'done';
 export type RadiusKm = 3 | 5 | 8 | 10;
-export type Channel = 'sms' | 'wechat' | 'douyin' | 'card';
+export type Channel = 'sms' | 'wechat' | 'douyin' | 'card' | 'phone';
+export type Offer = 'discount' | 'gift' | 'coupon' | 'trial' | 'member' | 'vip';
+export type TimeSlot = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
 
 export interface User {
   id: string;
@@ -71,6 +73,7 @@ export interface RadiusStats {
   hotSpots: number;
   avgScore: number;
   competitorCount: number;
+  reachableCustomers: number;
 }
 
 export interface POI {
@@ -81,6 +84,8 @@ export interface POI {
   lat: number;
   hotScore: number;
   radiusKm: RadiusKm;
+  audience: number;
+  scale: number;
 }
 
 export interface Persona {
@@ -94,6 +99,10 @@ export interface Copy {
   title: string;
   body: string;
   cta: string;
+  channel: Channel;
+  offer: string;
+  estimatedOpen: number;
+  estimatedConvert: number;
 }
 
 export interface Overview {
@@ -104,4 +113,25 @@ export interface Overview {
   roi: number;
   trend: { date: string; reach: number; added: number; visited: number }[];
   radiusCompare: { km: RadiusKm; cost: number; conv: number; count: number }[];
+}
+
+export interface ChannelMeta {
+  cost: number;
+  openRate: number;
+  label: string;
+  unit: string;
+  rateLimit: number;
+}
+
+export interface SendResult {
+  channel: Channel;
+  leadId: string;
+  phone: string;
+  name: string;
+  status: 'success' | 'failed' | 'partial';
+  messageId?: string;
+  error?: string;
+  deliveredAt: string;
+  estimatedCost: number;
+  estimatedOpen: number;
 }

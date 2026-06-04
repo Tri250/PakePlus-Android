@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MapPin, TrendingUp, Users2, ArrowUpRight, Calendar, Sun, CloudRain } from 'lucide-react';
+import { Sparkles, MapPin, TrendingUp, Users2, ArrowUpRight, Calendar, Sun, CloudRain, Zap, Send } from 'lucide-react';
 import RadiusSelector from '@/components/RadiusSelector';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
@@ -13,6 +13,8 @@ export default function Cockpit() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [suggestions, setSuggestions] = useState<{ title: string; body: string; cta: string }[]>([]);
   const [persona, setPersona] = useState<Persona | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [radiusStats, setRadiusStats] = useState<{ km: RadiusKm; reachableCustomers: number; hotSpots: number }[]>([]);
 
   const currentStore = stores.find((s) => s.id === currentStoreId);
 
@@ -24,7 +26,32 @@ export default function Cockpit() {
       .post<{ persona: Persona }>('/ai/persona', { storeId: currentStoreId, radiusKm: radius })
       .then((r) => setPersona(r.persona))
       .catch(() => setPersona(null));
+    api
+      .get<{ stats: { km: RadiusKm; reachableCustomers: number; hotSpots: number }[] }>(`/stores/${currentStoreId}/radius?km=3,5,8,10`)
+      .then((r) => setRadiusStats(r.stats));
   }, [currentStoreId, radius]);
+
+  // 一键拓客:从真实 POI 批量造 24 个可触达客户
+  const oneClickAcquire = async () => {
+    if (!currentStoreId) return;
+    setSeeding(true);
+    try {
+      const r = await api.post<{ created: number }>('/leads/seed', {
+        storeId: currentStoreId,
+        radiusKm: radius,
+        count: 24,
+      });
+      // 刷新数据
+      const o = await api.get<{ overview: Overview }>(`/dashboard/overview?storeId=${currentStoreId}&range=7d`);
+      setOverview(o.overview);
+      if (r.created > 0) {
+        // 跳转到触达中心
+        nav('/touch');
+      }
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const radiusPopulation: Record<RadiusKm, string> = {
     3: '12.4 万',
@@ -61,10 +88,10 @@ export default function Cockpit() {
       {/* 顶部数据卡 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: '圈层覆盖人口', value: radiusPopulation[radius], icon: Users2, tone: 'cyber' },
-          { label: '本周曝光', value: overview ? overview.reach.toLocaleString() : '—', icon: TrendingUp, tone: 'ember' },
-          { label: '加微数', value: overview ? overview.addedWechat.toString() : '—', icon: Users2, tone: 'cyber' },
-          { label: '到店数', value: overview ? overview.visited.toString() : '—', icon: MapPin, tone: 'ember' },
+          { label: `${radius}km 可触达客户`, value: (radiusStats.find(s => s.km === radius)?.reachableCustomers || 0).toLocaleString(), icon: Users2, tone: 'ember', suffix: '人' },
+          { label: `${radius}km 高潜 POI`, value: (radiusStats.find(s => s.km === radius)?.hotSpots || 0).toString(), icon: MapPin, tone: 'cyber', suffix: '个' },
+          { label: '本周曝光', value: overview ? overview.reach.toLocaleString() : '—', icon: TrendingUp, tone: 'ember', suffix: '' },
+          { label: '加微数', value: overview ? overview.addedWechat.toString() : '—', icon: Users2, tone: 'cyber', suffix: '' },
         ].map((c, i) => (
           <motion.div
             key={c.label}
@@ -81,12 +108,52 @@ export default function Cockpit() {
                 className={`w-4 h-4 ${c.tone === 'ember' ? 'text-ember-500' : 'text-cyber-300'}`}
               />
             </div>
-            <div className="metric-num">{c.value}</div>
+            <div className="metric-num flex items-baseline gap-1.5">
+              {c.value}
+              {c.suffix && <span className="text-base text-ink-400 font-normal">{c.suffix}</span>}
+            </div>
             <div className="mt-1 text-[11px] font-mono text-cyber-200 inline-flex items-center gap-1">
               <ArrowUpRight className="w-3 h-3" /> 较上周 +{8 + i * 2}.{i * 3}%
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* 一键拓客 / 一键群发 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <button
+          onClick={oneClickAcquire}
+          disabled={seeding}
+          className="group panel p-5 text-left hover:border-ember-500/40 transition flex items-center gap-4"
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-ember-500 to-ember-700 text-ink-950 grid place-items-center shrink-0 group-hover:scale-110 transition shadow-glow">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <div className="text-base font-display font-bold">一键拓客 · {radius} km</div>
+            <div className="text-xs text-ink-400 mt-0.5">
+              从 {radiusStats.find(s => s.km === radius)?.hotSpots || 0} 个高潜 POI 批量生成 24 位可触达客户 · 自动入池
+            </div>
+          </div>
+          <span className="text-[10px] font-mono text-ember-300 shrink-0">
+            {seeding ? '拓客中…' : '立即执行 →'}
+          </span>
+        </button>
+        <button
+          onClick={() => nav('/touch')}
+          className="group panel p-5 text-left hover:border-cyber-300/40 transition flex items-center gap-4"
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyber-300 to-cyber-500 text-ink-950 grid place-items-center shrink-0 group-hover:scale-110 transition shadow-cyber">
+            <Send className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <div className="text-base font-display font-bold">一键群发 · 多渠道</div>
+            <div className="text-xs text-ink-400 mt-0.5">
+              短信 / 企微 / 抖音 / 卡券 / AI 外呼 · AI 自动选文案 · 触达结果实时回写
+            </div>
+          </div>
+          <span className="text-[10px] font-mono text-cyber-200 shrink-0">进入中心 →</span>
+        </button>
       </div>
 
       {/* 主体两列 */}

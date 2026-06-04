@@ -24,13 +24,13 @@ router.get('/:id', (req: Request, res: Response) => {
 
 /**
  * GET /api/stores/:id/radius?km=3,5,8,10
- * 返回半径统计 + 圈层 GeoJSON
+ * 返回半径统计 + 圈层 GeoJSON(基于真实北京 POI 数据)
  */
 router.get('/:id/radius', (req: Request, res: Response) => {
   const data = db.read();
   const store = data.stores.find((s) => s.id === req.params.id);
   if (!store) return res.status(404).json({ success: false, error: '门店不存在' });
-  const payload = buildRadiusPayload(store.lng, store.lat, store.id);
+  const payload = buildRadiusPayload(store.lng, store.lat, store.id, { category: store.category });
   res.json({ success: true, ...payload });
 });
 
