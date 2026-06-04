@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Radar, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useGlobal } from '@/store/useGlobal';
+import { toast } from '@/components/Toast';
 
 export default function Login() {
   const nav = useNavigate();
@@ -10,17 +11,16 @@ export default function Login() {
   const [phone, setPhone] = useState('13800000000');
   const [code, setCode] = useState('0000');
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(null);
     setBusy(true);
     try {
       await login(phone.trim(), code.trim());
+      toast.success('登录成功', '欢迎回到邻客 AI · 3-5-8-10 km 获客驾驶舱');
       nav('/cockpit');
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : '登录失败');
+      toast.error('登录失败', e instanceof Error ? e.message : '请检查手机号 / 验证码');
     } finally {
       setBusy(false);
     }
@@ -137,20 +137,33 @@ export default function Login() {
             </div>
           </div>
 
-          {err && (
-            <div className="mt-4 text-xs text-ember-300 font-mono flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-ember-500" />
-              {err}
+          {busy && (
+            <div className="mt-4 text-xs text-cyber-200 font-mono flex items-center gap-2">
+              <motion.span
+                className="w-1.5 h-1.5 rounded-full bg-cyber-300"
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+              />
+              正在登录中…
             </div>
           )}
 
           <button
             type="submit"
             disabled={busy}
-            className="mt-6 w-full btn-primary disabled:opacity-50"
+            className="mt-6 w-full btn-primary disabled:opacity-50 relative overflow-hidden"
           >
-            {busy ? '登录中…' : '进入工作台'}
-            <ArrowRight className="w-4 h-4" />
+            {busy && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+              />
+            )}
+            <span className="relative inline-flex items-center gap-1.5">
+              {busy ? '登录中…' : '进入工作台'}
+              <ArrowRight className="w-4 h-4" />
+            </span>
           </button>
 
           <div className="mt-6 flex items-center gap-2 text-[11px] font-mono text-ink-400">

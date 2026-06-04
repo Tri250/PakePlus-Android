@@ -15,6 +15,7 @@ import {
 import { useGlobal } from '@/store/useGlobal';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import ToastHost from '@/components/Toast';
 
 const NAV = [
   { to: '/cockpit', label: '获客驾驶舱', icon: Radar },
@@ -153,6 +154,8 @@ export default function Layout() {
         >
           <Outlet />
         </motion.div>
+
+        <ToastHost />
       </main>
     </div>
   );
