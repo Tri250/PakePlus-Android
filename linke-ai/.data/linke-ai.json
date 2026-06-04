@@ -1,0 +1,215 @@
+{
+  "users": [
+    {
+      "id": "u_demo",
+      "phone": "13800000000",
+      "name": "林店长",
+      "createdAt": "2026-04-05T07:39:08.834Z"
+    },
+    {
+      "id": "u_bd1",
+      "phone": "13800000001",
+      "name": "小赵 BD",
+      "createdAt": "2026-04-25T07:39:08.834Z"
+    },
+    {
+      "id": "u_bd2",
+      "phone": "13800000002",
+      "name": "小王 BD",
+      "createdAt": "2026-05-05T07:39:08.834Z"
+    }
+  ],
+  "stores": [
+    {
+      "id": "s_demo",
+      "name": "邻客 AI · 朝阳体验店",
+      "lng": 116.480885,
+      "lat": 39.98941,
+      "address": "北京市朝阳区光华路 9 号",
+      "category": "精品咖啡 · 烘焙",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-15T07:39:08.834Z"
+    },
+    {
+      "id": "s_demo2",
+      "name": "邻客 AI · 海淀分店",
+      "lng": 116.310316,
+      "lat": 39.992718,
+      "address": "北京市海淀区中关村大街 27 号",
+      "category": "轻食简餐",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-15T07:39:08.834Z"
+    }
+  ],
+  "members": [
+    {
+      "storeId": "s_demo",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_demo",
+      "userId": "u_bd1",
+      "role": "bd"
+    },
+    {
+      "storeId": "s_demo",
+      "userId": "u_bd2",
+      "role": "bd"
+    },
+    {
+      "storeId": "s_demo2",
+      "userId": "u_demo",
+      "role": "owner"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "c_3km",
+      "storeId": "s_demo",
+      "name": "3 公里写字楼早午餐拓客",
+      "radiusKm": 3,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "channel",
+          "channel": "wechat"
+        },
+        {
+          "id": "n2",
+          "type": "wait",
+          "min": 1440
+        },
+        {
+          "id": "n3",
+          "type": "channel",
+          "channel": "sms"
+        }
+      ],
+      "status": "running",
+      "createdAt": "2026-05-20T07:39:08.834Z"
+    },
+    {
+      "id": "c_5km",
+      "storeId": "s_demo",
+      "name": "5 公里住宅区周末秒杀",
+      "radiusKm": 5,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "channel",
+          "channel": "douyin"
+        },
+        {
+          "id": "n2",
+          "type": "card"
+        }
+      ],
+      "status": "running",
+      "createdAt": "2026-05-25T07:39:08.834Z"
+    },
+    {
+      "id": "c_8km",
+      "storeId": "s_demo",
+      "name": "8 公里企业下午茶合作",
+      "radiusKm": 8,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "channel",
+          "channel": "wechat"
+        }
+      ],
+      "status": "paused",
+      "createdAt": "2026-05-28T07:39:08.834Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "l_001",
+      "storeId": "s_demo",
+      "campaignId": "c_3km",
+      "fromRadius": 3,
+      "name": "王女士",
+      "phone": "13900000001",
+      "status": "added",
+      "ownerId": "u_bd1",
+      "createdAt": "2026-05-30T07:39:08.834Z"
+    },
+    {
+      "id": "l_002",
+      "storeId": "s_demo",
+      "campaignId": "c_3km",
+      "fromRadius": 3,
+      "name": "李先生",
+      "phone": "13900000002",
+      "status": "visited",
+      "ownerId": "u_bd1",
+      "createdAt": "2026-05-31T07:39:08.834Z"
+    },
+    {
+      "id": "l_003",
+      "storeId": "s_demo",
+      "campaignId": "c_5km",
+      "fromRadius": 5,
+      "name": "张小姐",
+      "phone": "13900000003",
+      "status": "pending",
+      "createdAt": "2026-06-01T07:39:08.834Z"
+    },
+    {
+      "id": "l_004",
+      "storeId": "s_demo",
+      "campaignId": "c_3km",
+      "fromRadius": 3,
+      "name": "陈先生",
+      "phone": "13900000004",
+      "status": "won",
+      "ownerId": "u_bd2",
+      "createdAt": "2026-06-02T07:39:08.834Z"
+    },
+    {
+      "id": "l_005",
+      "storeId": "s_demo",
+      "campaignId": "c_5km",
+      "fromRadius": 5,
+      "name": "刘女士",
+      "phone": "13900000005",
+      "status": "added",
+      "ownerId": "u_bd2",
+      "createdAt": "2026-06-02T07:39:08.834Z"
+    },
+    {
+      "id": "l_006",
+      "storeId": "s_demo",
+      "campaignId": "c_3km",
+      "fromRadius": 3,
+      "name": "赵先生",
+      "phone": "13900000006",
+      "status": "pending",
+      "createdAt": "2026-06-03T07:39:08.834Z"
+    },
+    {
+      "id": "l_007",
+      "storeId": "s_demo",
+      "campaignId": "c_8km",
+      "fromRadius": 8,
+      "name": "孙女士",
+      "phone": "13900000007",
+      "status": "lost",
+      "createdAt": "2026-06-03T07:39:08.834Z"
+    },
+    {
+      "id": "l_008",
+      "storeId": "s_demo",
+      "campaignId": "c_5km",
+      "fromRadius": 5,
+      "name": "周先生",
+      "phone": "13900000008",
+      "status": "visited",
+      "ownerId": "u_bd1",
+      "createdAt": "2026-06-04T07:39:08.834Z"
+    }
+  ],
+  "events": []
+}

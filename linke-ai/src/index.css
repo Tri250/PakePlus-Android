@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 800px at 10% -10%, rgba(255,106,44,0.10), transparent 60%),
+    radial-gradient(1000px 700px at 110% 10%, rgba(60,224,198,0.10), transparent 55%),
+    #06060A;
+  color: #ECECF1;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::selection { background: rgba(255,106,44,0.45); color: #fff; }
+
+@layer components {
+  .glass {
+    @apply bg-ink-900/60 backdrop-blur-xl border border-white/5;
+  }
+  .panel {
+    @apply rounded-2xl bg-ink-900/70 border border-white/5 shadow-panel;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ember-500 px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-glow transition-all hover:bg-ember-400 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-ink-300 transition-all hover:border-cyber-300/40 hover:text-cyber-200;
+  }
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-ink-300;
+  }
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-400 transition-all hover:bg-white/[0.04] hover:text-white;
+  }
+  .nav-item-active {
+    @apply bg-gradient-to-r from-ember-500/20 to-transparent text-white shadow-[inset_2px_0_0_0_#FF6A2C];
+  }
+  .metric-num {
+    @apply font-mono text-3xl font-bold tracking-tight text-white;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+/* Recharts tweaks */
+.recharts-cartesian-grid line { stroke: rgba(255,255,255,0.05); }
+.recharts-text { fill: #7A7A85; font-size: 11px; font-family: "JetBrains Mono", monospace; }
