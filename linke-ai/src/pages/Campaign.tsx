@@ -124,6 +124,75 @@ export default function CampaignPage() {
     toast.success(c.status === 'running' ? '已暂停活动' : '已启动活动', `「${c.name}」`);
   };
 
+  // 真实执行活动:遍历画布节点,逐个执行(channel=真实触达 / card=发券 / wait=等待)
+  const executeCampaign = async (c: Campaign) => {
+    setBusy(true);
+    setExecutingId(c.id);
+    setExecSteps([]);
+    try {
+      toast.info('▶ 启动画布执行', `正在遍历「${c.name}」的 ${c.flow.length} 个节点…`);
+      const r = await api.post<{
+        steps: { type: string; channel?: string; min?: number; reached: number; success: number; failed: number; cost: number; summary?: string }[];
+        totalReached: number;
+        totalSuccess: number;
+        totalCost: number;
+      }>(`/campaigns/${c.id}/execute`, {});
+      setExecSteps(r.steps);
+      toast.success(
+        `✅ 活动已执行 · 触达 ${r.totalReached} 人`,
+        `成功 ${r.totalSuccess} · 总成本 ¥${r.totalCost} · 共 ${r.steps.length} 步`,
+        5000,
+      );
+      await load();
+    } catch (e) {
+      toast.error('执行失败', '请稍后重试');
+    } finally {
+      setBusy(false);
+      setExecutingId(null);
+    }
+  };
+
+  // 一键造线索 + 自动建活动
+  const oneClickCampaign = async () => {
+    if (!currentStoreId) return;
+    setBusy(true);
+    try {
+      // 1. 先爬虫造 24 个线索
+      const r = await api.post<{ created: number }>('/leads/seed', {
+        storeId: currentStoreId,
+        radiusKm: radius,
+        count: 24,
+      });
+      // 2. 创建默认活动
+      await api.post('/campaigns', {
+        name: `${store?.name?.split(' · ').pop() || '本店'} ${radius}km 智能触达`,
+        storeId: currentStoreId,
+        radiusKm: radius,
+        flow: [
+          { id: 'n1', type: 'copy' },
+          { id: 'n2', type: 'channel', channel: 'wechat' },
+          { id: 'n3', type: 'wait', min: 60 },
+          { id: 'n4', type: 'channel', channel: 'sms' },
+          { id: 'n5', type: 'card' },
+        ],
+      });
+      await load();
+      toast.success(
+        `🎯 智能活动已建好`,
+        `爬虫采集 ${r.created} 客户 · AI 文案 + 企微 + 等待 + 短信 + 卡券全流程`,
+        5000,
+      );
+    } catch {
+      toast.error('建活动失败', '请稍后重试');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 正在执行的步骤
+  const [executingId, setExecutingId] = useState<string | null>(null);
+  const [execSteps, setExecSteps] = useState<{ type: string; channel?: string; min?: number; reached: number; success: number; failed: number; cost: number; summary?: string }[]>([]);
+
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
       <motion.header
@@ -144,7 +213,13 @@ export default function CampaignPage() {
           <h1 className="mt-2 text-3xl font-display font-extrabold">触达编排 · 画布式工作流</h1>
           <p className="mt-1 text-sm text-ink-400">拖拽节点 · 设置渠道与等待 · 一键保存为活动</p>
         </div>
-        <RadiusSelector value={radius} onChange={setRadius} size="sm" showLabel={false} />
+        <div className="flex items-center gap-2">
+          <RadiusSelector value={radius} onChange={setRadius} size="sm" showLabel={false} />
+          <button onClick={oneClickCampaign} disabled={busy} className="btn-primary !py-2 !text-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+            一键智能活动
+          </button>
+        </div>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -308,6 +383,58 @@ export default function CampaignPage() {
               </div>
             </div>
           </motion.div>
+
+          {/* 画布执行日志 */}
+          <AnimatePresence>
+            {execSteps.length > 0 && (
+              <motion.div
+                key="exec"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="panel p-5 relative overflow-hidden"
+              >
+                <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-cyber-300/15 blur-3xl" />
+                <SectionHeader
+                  index="02"
+                  icon={Play}
+                  title="画布执行日志"
+                  caption={`共 ${execSteps.length} 步`}
+                />
+                <div className="space-y-2">
+                  {execSteps.map((s, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      className="flex items-start gap-3 rounded-xl border border-white/5 bg-ink-800/30 p-3"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyber-300 to-cyber-500 text-ink-950 text-[10px] font-bold grid place-items-center shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold text-white">
+                            {s.type === 'channel' ? `渠道触达 · ${s.channel?.toUpperCase()}` :
+                             s.type === 'wait' ? `等待 · ${s.min ?? 0} 分钟` :
+                             s.type === 'card' ? '发放卡券' :
+                             s.type === 'copy' ? 'AI 文案' : s.type}
+                          </span>
+                          {s.type === 'channel' && (
+                            <span className="text-[10px] font-mono text-cyber-200">
+                              成功 {s.success} / {s.reached} · 成本 ¥{s.cost}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-ink-300 mt-0.5">{s.summary}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 右侧:活动列表 */}
@@ -367,18 +494,32 @@ export default function CampaignPage() {
                       <span className="text-[10px] font-mono text-ink-400">
                         创建 {new Date(c.createdAt).toLocaleDateString('zh-CN')}
                       </span>
-                      <button
-                        onClick={() => toggleStatus(c)}
-                        className={cn(
-                          'inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full border transition',
-                          c.status === 'running'
-                            ? 'border-ember-500/30 text-ember-200 hover:bg-ember-500/10'
-                            : 'border-cyber-300/30 text-cyber-200 hover:bg-cyber-300/10',
-                        )}
-                      >
-                        {c.status === 'running' ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                        {c.status === 'running' ? '暂停' : '启动'}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => executeCampaign(c)}
+                          disabled={busy && executingId === c.id}
+                          className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full border border-cyber-300/30 text-cyber-200 hover:bg-cyber-300/10 transition"
+                        >
+                          {busy && executingId === c.id ? (
+                            <span className="w-3 h-3 border-2 border-cyber-300 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                          执行
+                        </button>
+                        <button
+                          onClick={() => toggleStatus(c)}
+                          className={cn(
+                            'inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full border transition',
+                            c.status === 'running'
+                              ? 'border-ember-500/30 text-ember-200 hover:bg-ember-500/10'
+                              : 'border-cyber-300/30 text-cyber-200 hover:bg-cyber-300/10',
+                          )}
+                        >
+                          {c.status === 'running' ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          {c.status === 'running' ? '暂停' : '启动'}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}

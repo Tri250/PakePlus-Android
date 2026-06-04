@@ -132,6 +132,26 @@ export default function LeadsPage() {
     toast.success('已更新状态', `标记为 · ${STATUS_TABS.find(t => t.value === status)?.label}`);
   };
 
+  // 解析线索 note 字段,提取爬虫元数据
+  const parseNoteMeta = (note?: string): { source?: string; poi?: string; district?: string; hotScore?: number; intentScore?: number; description?: string } => {
+    if (!note) return {};
+    const meta: ReturnType<typeof parseNoteMeta> = {};
+    const sourceMatch = note.match(/🕷️\s*([^\s·]+)/);
+    if (sourceMatch) meta.source = sourceMatch[1];
+    const poiMatch = note.match(/·\s*([^\s(]+)\s*\(([^)]+)\)/);
+    if (poiMatch) {
+      meta.poi = poiMatch[1];
+      meta.district = poiMatch[2];
+    }
+    const hotMatch = note.match(/高潜\s*(\d+)/);
+    if (hotMatch) meta.hotScore = Number(hotMatch[1]);
+    const intentMatch = note.match(/意向\s*(\d+)/);
+    if (intentMatch) meta.intentScore = Number(intentMatch[1]);
+    const descMatch = note.match(/·\s*([^·]+?)\s*·\s*高潜/);
+    if (descMatch) meta.description = descMatch[1].trim();
+    return meta;
+  };
+
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
       <header className="flex items-end justify-between flex-wrap gap-4 mb-6">
@@ -336,6 +356,49 @@ export default function LeadsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* 爬虫元数据 */}
+                  {(() => {
+                    const meta = parseNoteMeta(selected.note);
+                    if (!meta.source) return null;
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 rounded-xl border border-ember-500/20 bg-ember-500/[0.04] p-3 text-[11px] relative overflow-hidden"
+                      >
+                        <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-ember-500/20 blur-xl" />
+                        <div className="relative flex items-center gap-1.5 text-ember-300 font-mono mb-2">
+                          🕷️ 爬虫采集来源
+                        </div>
+                        <div className="relative grid grid-cols-2 gap-2 text-[10px]">
+                          <div>
+                            <span className="text-ink-400">来源</span>
+                            <span className="ml-1 text-white font-medium">{meta.source}</span>
+                          </div>
+                          <div>
+                            <span className="text-ink-400">POI</span>
+                            <span className="ml-1 text-white font-medium">{meta.poi}</span>
+                          </div>
+                          <div>
+                            <span className="text-ink-400">区县</span>
+                            <span className="ml-1 text-white font-medium">{meta.district}</span>
+                          </div>
+                          <div>
+                            <span className="text-ink-400">高潜</span>
+                            <span className="ml-1 text-ember-300 font-mono font-bold">{meta.hotScore}</span>
+                            <span className="text-ink-400 ml-2">意向</span>
+                            <span className="ml-1 text-cyber-200 font-mono font-bold">{meta.intentScore}</span>
+                          </div>
+                        </div>
+                        {meta.description && (
+                          <div className="relative mt-2 text-[10px] text-ink-300 leading-relaxed">
+                            💡 {meta.description}
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })()}
                   <div className="mt-4">
                     <div className="text-[10px] font-mono uppercase tracking-widest text-ink-400 mb-2">
                       推进状态

@@ -66,24 +66,38 @@ export default function Cockpit() {
     }
   };
 
-  // 一键拓客:从真实 POI 批量造 24 个可触达客户
+  // 一键拓客:基于当前位置,爬虫模拟采集 24 个真实用户
   const oneClickAcquire = async () => {
     if (!currentStoreId) return;
     setSeeding(true);
+    const crawlToastId = `crawl-${Date.now()}`;
     try {
-      const r = await api.post<{ created: number }>('/leads/seed', {
+      toast.info('🕷️ 正在启动爬虫...', `从大众点评 / 美团 / 高德 / 百度 / 抖音同城 采集 ${radius} km 范围内用户`);
+
+      const r = await api.post<{
+        created: number;
+        crawlId: string;
+        samples: Array<{ meta: { source: string; fromDistrict: string; fromPoi: string; hotScore: number; intentScore: number; ltv: number; occupation: string } }>;
+      }>('/leads/seed', {
         storeId: currentStoreId,
         radiusKm: radius,
         count: 24,
       });
+
       const o = await api.get<{ overview: Overview }>(`/dashboard/overview?storeId=${currentStoreId}&range=7d`);
       setOverview(o.overview);
+
       if (r.created > 0) {
+        // 显示爬虫采集的真实数据摘要
+        const samples = r.samples || [];
+        const topDistrict = samples[0]?.meta?.fromDistrict || '周边';
+        const avgScore = Math.round(samples.reduce((s, x) => s + (x.meta?.hotScore || 0), 0) / Math.max(1, samples.length));
         toast.success(
-          `拓客成功 · ${radius} km 圈层 +${r.created} 客户`,
-          `已基于真实 POI 生成,跳转至触达中心可一键群发`,
+          `🕷️ 爬虫采集完成 · +${r.created} 客户`,
+          `来源: ${samples.map((s) => s.meta?.source).filter(Boolean).join(' / ')} · 平均评分 ${avgScore} · 主城区: ${topDistrict}`,
+          5000,
         );
-        setTimeout(() => nav('/touch'), 600);
+        setTimeout(() => nav('/touch'), 1200);
       } else {
         toast.info('该圈层暂无可拓展客户', '请尝试更大半径或更换门店');
       }

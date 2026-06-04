@@ -325,6 +325,39 @@
   ],
   "campaigns": [
     {
+      "id": "c_tzf4uuf",
+      "storeId": "s_bj_cy",
+      "name": "3公里午间活动",
+      "radiusKm": 3,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "copy"
+        },
+        {
+          "id": "n2",
+          "type": "channel",
+          "channel": "wechat"
+        },
+        {
+          "id": "n3",
+          "type": "wait",
+          "min": 60
+        },
+        {
+          "id": "n4",
+          "type": "channel",
+          "channel": "sms"
+        },
+        {
+          "id": "n5",
+          "type": "card"
+        }
+      ],
+      "status": "done",
+      "createdAt": "2026-06-04T09:46:54.760Z"
+    },
+    {
       "id": "c_bj_3km",
       "storeId": "s_bj_cy",
       "name": "3 公里写字楼早午餐拓客",
@@ -420,6 +453,726 @@
   ],
   "leads": [
     {
+      "id": "l_yo4xq31",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "杨超",
+      "phone": "156****2952",
+      "status": "added",
+      "note": "🕷️ 小红书种草 · 望京 SOHO T1 (朝阳区) · 来自望京 SOHO T1写字楼周边 0.7km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_1xx01nr",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "李丽",
+      "phone": "136****2924",
+      "status": "added",
+      "note": "🕷️ 抖音同城 · 望京 SOHO T2 (朝阳区) · 来自望京 SOHO T2写字楼周边 0.3km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_ku8n63c",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "杨娟",
+      "phone": "156****2812",
+      "status": "added",
+      "note": "🕷️ 美团商家 · 光华路 9 号 (朝阳区) · 来自光华路 9 号街道周边 0.2km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 28 · 意向 86",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_nc84arz",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "郭志远",
+      "phone": "152****2896",
+      "status": "added",
+      "note": "🕷️ 百度地图 · 大西洋新城 (朝阳区) · 来自大西洋新城住宅周边 0.9km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 32 · 意向 86",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_oghrf0x",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "朱文",
+      "phone": "199****2868",
+      "status": "added",
+      "note": "🕷️ 高德地图 · 望京 SOHO T3 (朝阳区) · 来自望京 SOHO T3写字楼周边 0.6km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 33 · 意向 86",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_mbxgv0x",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "吴海涛",
+      "phone": "139****2840",
+      "status": "added",
+      "note": "🕷️ 大众点评 · 北京 · 宝能中心 (朝阳区) · 来自北京 · 宝能中心写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 33 · 意向 87",
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "l_xasa9zb",
+      "storeId": "s_hz",
+      "fromRadius": 3,
+      "name": "赵伟",
+      "phone": "177****2259",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 浙江财富金融中心 (上城区) · 来自浙江财富金融中心写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 31 · 意向 84",
+      "createdAt": "2026-06-04T09:39:53.358Z"
+    },
+    {
+      "id": "l_cceih7y",
+      "storeId": "s_hz",
+      "fromRadius": 3,
+      "name": "张颖",
+      "phone": "188****2231",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 杭州国际会议中心 (上城区) · 来自杭州国际会议中心写字楼周边 -0.5km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 31 · 意向 85",
+      "createdAt": "2026-06-04T09:39:53.358Z"
+    },
+    {
+      "id": "l_dcy65zi",
+      "storeId": "s_hz",
+      "fromRadius": 3,
+      "name": "徐娟",
+      "phone": "138****2287",
+      "status": "pending",
+      "note": "🕷️ 抖音同城 · 来福士广场 (上城区) · 来自来福士广场商场周边 0.8km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 77 · 意向 84",
+      "createdAt": "2026-06-04T09:39:53.358Z"
+    },
+    {
+      "id": "l_djitkzi",
+      "storeId": "s_hz",
+      "fromRadius": 3,
+      "name": "高刚",
+      "phone": "186****2315",
+      "status": "pending",
+      "note": "🕷️ 小红书种草 · 西湖 (西湖区) · 来自西湖公园周边 0.2km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 89 · 意向 86",
+      "createdAt": "2026-06-04T09:39:53.358Z"
+    },
+    {
+      "id": "l_axbms2x",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "赵伟",
+      "phone": "177****2259",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 成都银泰中心 (锦江区) · 来自成都银泰中心写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 32 · 意向 84",
+      "createdAt": "2026-06-04T09:39:53.142Z"
+    },
+    {
+      "id": "l_ilwtnj4",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "张颖",
+      "phone": "188****2231",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 天府国际金融中心 (锦江区) · 来自天府国际金融中心写字楼周边 -0.5km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 35 · 意向 85",
+      "createdAt": "2026-06-04T09:39:53.142Z"
+    },
+    {
+      "id": "l_yuzv1la",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "高刚",
+      "phone": "186****2315",
+      "status": "pending",
+      "note": "🕷️ 小红书种草 · 软件园 (高新区) · 来自软件园产业园周边 6.5km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 49 · 意向 67",
+      "createdAt": "2026-06-04T09:39:53.142Z"
+    },
+    {
+      "id": "l_farum6r",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "徐娟",
+      "phone": "138****2287",
+      "status": "pending",
+      "note": "🕷️ 抖音同城 · 环球中心 (高新区) · 来自环球中心商场周边 2.2km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 80",
+      "createdAt": "2026-06-04T09:39:53.142Z"
+    },
+    {
+      "id": "l_kco36dc",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "高艳",
+      "phone": "186****2455",
+      "status": "pending",
+      "note": "🕷️ 抖音同城 · 市民中心 (福田区) · 来自市民中心写字楼周边 0.5km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 30 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.918Z"
+    },
+    {
+      "id": "l_qes03ha",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "赵丽",
+      "phone": "177****2399",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 平安金融中心 (福田区) · 来自平安金融中心写字楼周边 -0.5km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 44 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.918Z"
+    },
+    {
+      "id": "l_8alt271",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "徐强",
+      "phone": "138****2427",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 福田站 (福田区) · 来自福田站地铁周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 65 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.918Z"
+    },
+    {
+      "id": "l_3bbcgwl",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "张凯",
+      "phone": "188****2371",
+      "status": "pending",
+      "note": "🕷️ 大众点评 · 福田 CBD (福田区) · 来自福田 CBD商圈周边 -0.9km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 86",
+      "createdAt": "2026-06-04T09:39:52.918Z"
+    },
+    {
+      "id": "l_ctrowlw",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "高艳",
+      "phone": "186****2455",
+      "status": "pending",
+      "note": "🕷️ 抖音同城 · 金茂大厦 (浦东新区) · 来自金茂大厦写字楼周边 0.4km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 35 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.720Z"
+    },
+    {
+      "id": "l_myq1t1m",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "徐强",
+      "phone": "138****2427",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 环球金融中心 (浦东新区) · 来自环球金融中心写字楼周边 -0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 40 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.720Z"
+    },
+    {
+      "id": "l_ehjycaa",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "赵丽",
+      "phone": "177****2399",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 上海中心大厦 (浦东新区) · 来自上海中心大厦写字楼周边 -0.5km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 47 · 意向 85",
+      "createdAt": "2026-06-04T09:39:52.720Z"
+    },
+    {
+      "id": "l_1iu45an",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "张凯",
+      "phone": "188****2371",
+      "status": "pending",
+      "note": "🕷️ 大众点评 · 陆家嘴金融区 (浦东新区) · 来自陆家嘴金融区商圈周边 -0.9km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 86",
+      "createdAt": "2026-06-04T09:39:52.719Z"
+    },
+    {
+      "id": "l_tczhaq5",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "周浩然",
+      "phone": "188****1573",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 央视新址 (朝阳区) · 来自央视新址写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.532Z"
+    },
+    {
+      "id": "l_8bks3rw",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "陈怡",
+      "phone": "186****1545",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 国贸三期 A (朝阳区) · 来自国贸三期 A写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.532Z"
+    },
+    {
+      "id": "l_ptz838o",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "王峰",
+      "phone": "138****1517",
+      "status": "pending",
+      "note": "🕷️ 大众点评 · 中国尊 (中信大厦) (朝阳区) · 来自中国尊 (中信大厦)写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 24 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.532Z"
+    },
+    {
+      "id": "l_ja3wd2f",
+      "storeId": "s_cd",
+      "fromRadius": 10,
+      "name": "何华",
+      "phone": "177****1489",
+      "status": "pending",
+      "note": "🕷️ 美团商家 · 国贸 CBD (朝阳区) · 来自国贸 CBD商圈周边 -0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 80",
+      "createdAt": "2026-06-04T09:38:07.532Z"
+    },
+    {
+      "id": "l_c4c8hvv",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "吴小龙",
+      "phone": "139****1720",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 央视新址 (朝阳区) · 来自央视新址写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.308Z"
+    },
+    {
+      "id": "l_mxnbddn",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "杨洁",
+      "phone": "156****1692",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 国贸三期 A (朝阳区) · 来自国贸三期 A写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.308Z"
+    },
+    {
+      "id": "l_lwfo0ov",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "李超",
+      "phone": "136****1664",
+      "status": "pending",
+      "note": "🕷️ 大众点评 · 中国尊 (中信大厦) (朝阳区) · 来自中国尊 (中信大厦)写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 24 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.308Z"
+    },
+    {
+      "id": "l_9usjtqy",
+      "storeId": "s_sz_sz",
+      "fromRadius": 8,
+      "name": "郭萍",
+      "phone": "152****1636",
+      "status": "pending",
+      "note": "🕷️ 美团商家 · 国贸 CBD (朝阳区) · 来自国贸 CBD商圈周边 -0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 80",
+      "createdAt": "2026-06-04T09:38:07.307Z"
+    },
+    {
+      "id": "l_h8qs8nh",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "吴小龙",
+      "phone": "139****1720",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 央视新址 (朝阳区) · 来自央视新址写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.088Z"
+    },
+    {
+      "id": "l_cpnhavk",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "杨洁",
+      "phone": "156****1692",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 国贸三期 A (朝阳区) · 来自国贸三期 A写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.088Z"
+    },
+    {
+      "id": "l_9zs9t2p",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "李超",
+      "phone": "136****1664",
+      "status": "pending",
+      "note": "🕷️ 大众点评 · 中国尊 (中信大厦) (朝阳区) · 来自中国尊 (中信大厦)写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 24 · 意向 79",
+      "createdAt": "2026-06-04T09:38:07.088Z"
+    },
+    {
+      "id": "l_oar5wux",
+      "storeId": "s_sh_pd",
+      "fromRadius": 5,
+      "name": "郭萍",
+      "phone": "152****1636",
+      "status": "pending",
+      "note": "🕷️ 美团商家 · 国贸 CBD (朝阳区) · 来自国贸 CBD商圈周边 -0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 80",
+      "createdAt": "2026-06-04T09:38:07.088Z"
+    },
+    {
+      "id": "l_hkgpuhw",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "刘露",
+      "phone": "199****1538",
+      "status": "pending",
+      "note": "🕷️ 微信朋友圈 · 建外 SOHO (朝阳区) · 来自建外 SOHO写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 72",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_3o8pome",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "罗刚",
+      "phone": "139****1510",
+      "status": "pending",
+      "note": "🕷️ 小红书种草 · 央视新址 (朝阳区) · 来自央视新址写字楼周边 0.7km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_movexy0",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "林婷",
+      "phone": "156****1482",
+      "status": "pending",
+      "note": "🕷️ 抖音同城 · 国贸三期 A (朝阳区) · 来自国贸三期 A写字楼周边 0.3km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_brqtuzu",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "孙伟",
+      "phone": "136****1454",
+      "status": "pending",
+      "note": "🕷️ 百度地图 · 中国尊 (中信大厦) (朝阳区) · 来自中国尊 (中信大厦)写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 24 · 意向 89",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_k2xcxci",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "黄凯",
+      "phone": "152****1566",
+      "status": "pending",
+      "note": "🕷️ 腾讯位置 · 三里屯太古里 (朝阳区) · 来自三里屯太古里商场周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 56 · 意向 72",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_k9abcsn",
+      "storeId": "s_bj_cy",
+      "fromRadius": 5,
+      "name": "黄霞",
+      "phone": "152****1426",
+      "status": "pending",
+      "note": "🕷️ 高德地图 · 国贸 CBD (朝阳区) · 来自国贸 CBD商圈周边 -0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 88",
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "l_o7qv6it",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "王伟",
+      "phone": "138****1937",
+      "status": "added",
+      "note": "🕷️ 大众点评 · 团结湖公园 (朝阳区) · 来自团结湖公园公园周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 75",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_32s9a0d",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "胡小龙",
+      "phone": "188****1881",
+      "status": "added",
+      "note": "🕷️ 腾讯位置 · 望京新城 (朝阳区) · 来自望京新城住宅周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 72",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_5cl0uez",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "周玲",
+      "phone": "188****1853",
+      "status": "added",
+      "note": "🕷️ 微信朋友圈 · 金茂府 (朝阳区) · 来自金茂府住宅周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 72",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_i0i0e6d",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "陈超",
+      "phone": "186****1825",
+      "status": "added",
+      "note": "🕷️ 小红书种草 · 大西洋新城 (朝阳区) · 来自大西洋新城住宅周边 0.7km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_2v5q3hz",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "王玲",
+      "phone": "138****1797",
+      "status": "added",
+      "note": "🕷️ 抖音同城 · 富力城 B 区 (朝阳区) · 来自富力城 B 区住宅周边 0.3km,较有购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 69",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_uvcu3bx",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "何志远",
+      "phone": "177****1769",
+      "status": "added",
+      "note": "🕷️ 百度地图 · 富力城 A 区 (朝阳区) · 来自富力城 A 区住宅周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 89",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_a0uzcvc",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "陈莹",
+      "phone": "186****1685",
+      "status": "added",
+      "note": "🕷️ 美团商家 · 北京 · 宝能中心 (朝阳区) · 来自北京 · 宝能中心写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 86",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_eoeertn",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "王明",
+      "phone": "138****1657",
+      "status": "added",
+      "note": "🕷️ 腾讯位置 · 绿地中心 (望京) (朝阳区) · 来自绿地中心 (望京)写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 83",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_ay0ut2r",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "何红",
+      "phone": "177****1629",
+      "status": "added",
+      "note": "🕷️ 微信朋友圈 · 望京 SOHO T3 (朝阳区) · 来自望京 SOHO T3写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 83",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_uzsutvx",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "胡俊杰",
+      "phone": "188****1601",
+      "status": "added",
+      "note": "🕷️ 小红书种草 · 望京 SOHO T2 (朝阳区) · 来自望京 SOHO T2写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 83",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_tp6hb6f",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "周敏",
+      "phone": "188****1573",
+      "status": "added",
+      "note": "🕷️ 抖音同城 · 望京 SOHO T1 (朝阳区) · 来自望京 SOHO T1写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 20 · 意向 80",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_5jsaztv",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "何静",
+      "phone": "177****1909",
+      "status": "added",
+      "note": "🕷️ 美团商家 · 朝阳公园 (朝阳区) · 来自朝阳公园公园周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 23 · 意向 72",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_pwblo2g",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "周梓豪",
+      "phone": "188****1433",
+      "status": "added",
+      "note": "🕷️ 腾讯位置 · 建外 SOHO (朝阳区) · 来自建外 SOHO写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 31 · 意向 77",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_ba6c5t7",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "王建国",
+      "phone": "138****1377",
+      "status": "added",
+      "note": "🕷️ 小红书种草 · 国贸三期 A (朝阳区) · 来自国贸三期 A写字楼周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 32 · 意向 74",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_qmjlnaa",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "陈艳",
+      "phone": "186****1405",
+      "status": "added",
+      "note": "🕷️ 微信朋友圈 · 央视新址 (朝阳区) · 来自央视新址写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 35 · 意向 74",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_uudmxox",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "陈建斌",
+      "phone": "186****1545",
+      "status": "added",
+      "note": "🕷️ 百度地图 · 蓝色港湾 (朝阳区) · 来自蓝色港湾商场周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 38 · 意向 80",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_yicezco",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "何涛",
+      "phone": "177****1489",
+      "status": "added",
+      "note": "🕷️ 大众点评 · 三里屯 SOHO (朝阳区) · 来自三里屯 SOHO写字楼周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 38 · 意向 77",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_hyg4x2c",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "何丽",
+      "phone": "177****1349",
+      "status": "added",
+      "note": "🕷️ 抖音同城 · 中国尊 (中信大厦) (朝阳区) · 来自中国尊 (中信大厦)写字楼周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 39 · 意向 74",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_in27bnw",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "陈燕",
+      "phone": "186****1965",
+      "status": "added",
+      "note": "🕷️ 高德地图 · 国贸站 (朝阳区) · 来自国贸站地铁周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 50 · 意向 75",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_2uhpf44",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "周海涛",
+      "phone": "188****1713",
+      "status": "added",
+      "note": "🕷️ 大众点评 · 富力广场 (朝阳区) · 来自富力广场商场周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 63 · 意向 86",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_ibz8lub",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "胡萍",
+      "phone": "188****1461",
+      "status": "added",
+      "note": "🕷️ 美团商家 · 三里屯太古里 (朝阳区) · 来自三里屯太古里商场周边 0.3km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 71 · 意向 77",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_kr0f6jc",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "胡丽",
+      "phone": "188****1741",
+      "status": "added",
+      "note": "🕷️ 高德地图 · 合生汇 (朝阳区) · 来自合生汇商场周边 0.7km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 75 · 意向 86",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_fg0062d",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "王洁",
+      "phone": "138****1517",
+      "status": "added",
+      "note": "🕷️ 高德地图 · 朝阳大悦城 (朝阳区) · 来自朝阳大悦城商场周边 0.1km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 81 · 意向 80",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_q63h6yl",
+      "storeId": "s_bj_cy",
+      "fromRadius": 3,
+      "name": "胡勇",
+      "phone": "188****1321",
+      "status": "added",
+      "note": "🕷️ 百度地图 · 国贸 CBD (朝阳区) · 来自国贸 CBD商圈周边 0.2km,强烈购买意向。近期常出没,可推送午间 / 下班优惠券。 · 高潜 100 · 意向 72",
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "l_9f079qn",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "黄女士",
+      "phone": "13900001100",
+      "status": "pending",
+      "note": "来自 天津站 (地铁) · 高潜 89",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_m0vqv40",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "郑先生",
+      "phone": "13900001093",
+      "status": "lost",
+      "note": "来自 天津站 (地铁) · 高潜 89",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_fv17qpr",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "周先生",
+      "phone": "13900001069",
+      "status": "won",
+      "note": "来自 津湾广场 (商场) · 高潜 90",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_ib223ge",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "孙女士",
+      "phone": "13900001062",
+      "status": "visited",
+      "note": "来自 津湾广场 (商场) · 高潜 90",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_s66if1g",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "刘女士",
+      "phone": "13900001038",
+      "status": "added",
+      "note": "来自 天津环球金融中心 (写字楼) · 高潜 90",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_vlnf2g8",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "陈先生",
+      "phone": "13900001031",
+      "status": "pending",
+      "note": "来自 天津环球金融中心 (写字楼) · 高潜 90",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_w8gts6y",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "李先生",
+      "phone": "13900001007",
+      "status": "pending",
+      "note": "来自 和平路 CBD (cbd) · 高潜 97",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
+      "id": "l_oeb3j1t",
+      "storeId": "s_tj",
+      "fromRadius": 5,
+      "name": "王女士",
+      "phone": "13900001000",
+      "status": "pending",
+      "note": "来自 和平路 CBD (cbd) · 高潜 97",
+      "createdAt": "2026-06-04T09:25:28.157Z"
+    },
+    {
       "id": "l_bj_001",
       "storeId": "s_bj_cy",
       "campaignId": "c_bj_3km",
@@ -480,7 +1233,7 @@
       "fromRadius": 3,
       "name": "赵先生",
       "phone": "13900000006",
-      "status": "pending",
+      "status": "added",
       "createdAt": "2026-06-03T09:24:03.048Z"
     },
     {
@@ -555,5 +1308,1175 @@
       "createdAt": "2026-06-02T09:24:03.048Z"
     }
   ],
-  "events": []
+  "events": [
+    {
+      "id": "e_57p0vqr",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_x3aijx7",
+        "storeId": "s_bj_cy",
+        "city": "邻客 AI · 北京朝阳体验店",
+        "radiusKm": 3,
+        "count": 24,
+        "source": "百度地图、高德地图、高德地图、美团商家、大众点评、高德地图、抖音同城、大众点评、百度地图、微信朋友圈、小红书种草、腾讯位置、美团商家、抖音同城、小红书种草、微信朋友圈、腾讯位置、美团商家、百度地图、抖音同城、小红书种草、微信朋友圈、腾讯位置、大众点评"
+      },
+      "createdAt": "2026-06-04T09:37:22.981Z"
+    },
+    {
+      "id": "e_g2xi1zu",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_3wp2z3v",
+        "storeId": "s_bj_cy",
+        "city": "邻客 AI · 北京朝阳体验店",
+        "radiusKm": 5,
+        "count": 6,
+        "source": "高德地图、腾讯位置、百度地图、抖音同城、小红书种草、微信朋友圈"
+      },
+      "createdAt": "2026-06-04T09:37:37.689Z"
+    },
+    {
+      "id": "e_8j5xevu",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_kz8l9wt",
+        "storeId": "s_sh_pd",
+        "city": "邻客 AI · 上海浦东店",
+        "radiusKm": 5,
+        "count": 4,
+        "source": "美团商家、大众点评、高德地图、百度地图"
+      },
+      "createdAt": "2026-06-04T09:38:07.088Z"
+    },
+    {
+      "id": "e_ypgkrwa",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_essdtu2",
+        "storeId": "s_sz_sz",
+        "city": "邻客 AI · 深圳福田店",
+        "radiusKm": 8,
+        "count": 4,
+        "source": "美团商家、大众点评、高德地图、百度地图"
+      },
+      "createdAt": "2026-06-04T09:38:07.308Z"
+    },
+    {
+      "id": "e_al5jgvv",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_oae0q9e",
+        "storeId": "s_cd",
+        "city": "邻客 AI · 成都锦江店",
+        "radiusKm": 10,
+        "count": 4,
+        "source": "美团商家、大众点评、高德地图、百度地图"
+      },
+      "createdAt": "2026-06-04T09:38:07.532Z"
+    },
+    {
+      "id": "e_ju7bv2z",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_pt4nyi3",
+        "storeId": "s_sh_pd",
+        "city": "邻客 AI · 上海浦东店",
+        "radiusKm": 5,
+        "count": 4,
+        "source": "大众点评、高德地图、百度地图、抖音同城"
+      },
+      "createdAt": "2026-06-04T09:39:52.720Z"
+    },
+    {
+      "id": "e_qi5ou5y",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_sgot1eu",
+        "storeId": "s_sz_sz",
+        "city": "邻客 AI · 深圳福田店",
+        "radiusKm": 8,
+        "count": 4,
+        "source": "大众点评、百度地图、高德地图、抖音同城"
+      },
+      "createdAt": "2026-06-04T09:39:52.918Z"
+    },
+    {
+      "id": "e_5rkxsxk",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_hg3g62j",
+        "storeId": "s_cd",
+        "city": "邻客 AI · 成都锦江店",
+        "radiusKm": 10,
+        "count": 4,
+        "source": "抖音同城、小红书种草、高德地图、百度地图"
+      },
+      "createdAt": "2026-06-04T09:39:53.142Z"
+    },
+    {
+      "id": "e_2g667rs",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_i8rel2t",
+        "storeId": "s_hz",
+        "city": "邻客 AI · 杭州西湖店",
+        "radiusKm": 3,
+        "count": 4,
+        "source": "小红书种草、抖音同城、高德地图、百度地图"
+      },
+      "createdAt": "2026-06-04T09:39:53.358Z"
+    },
+    {
+      "id": "e_dk3eds0",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "crawl",
+        "crawlId": "cr_tq73yny",
+        "storeId": "s_bj_cy",
+        "city": "邻客 AI · 北京朝阳体验店",
+        "radiusKm": 3,
+        "count": 6,
+        "source": "大众点评、高德地图、百度地图、美团商家、抖音同城、小红书种草"
+      },
+      "createdAt": "2026-06-04T09:40:55.255Z"
+    },
+    {
+      "id": "e_8e1utq5",
+      "leadId": "l_mbxgv0x",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "测试",
+        "body": "测试",
+        "cta": "测试",
+        "messageId": "sms_1780566055737_otdoii",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:40:55.737Z"
+    },
+    {
+      "id": "e_mq8pp5i",
+      "leadId": "l_oghrf0x",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "测试",
+        "body": "测试",
+        "cta": "测试",
+        "messageId": "sms_1780566055743_yd6amn",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:40:55.743Z"
+    },
+    {
+      "id": "e_3ziu7d5",
+      "leadId": "l_nc84arz",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "测试",
+        "body": "测试",
+        "cta": "测试",
+        "messageId": "sms_1780566055747_oq4m6n",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:40:55.747Z"
+    },
+    {
+      "id": "e_8tlx0ee",
+      "leadId": "l_5jsaztv",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566414999_37hm33",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:54.999Z"
+    },
+    {
+      "id": "e_lvtz10p",
+      "leadId": "l_hyg4x2c",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415000_oaqlrd",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.000Z"
+    },
+    {
+      "id": "e_2ll976h",
+      "leadId": "l_bj_006",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415002_2rtdnd",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.002Z"
+    },
+    {
+      "id": "e_z06a3cs",
+      "leadId": "l_o7qv6it",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415005_q23gc0",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.005Z"
+    },
+    {
+      "id": "e_ew2yqqm",
+      "leadId": "l_32s9a0d",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415006_ig21en",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.006Z"
+    },
+    {
+      "id": "e_vcw661h",
+      "leadId": "l_a0uzcvc",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415007_zh0y1g",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.007Z"
+    },
+    {
+      "id": "e_hrf1wbx",
+      "leadId": "l_pwblo2g",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415008_cntuy9",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.008Z"
+    },
+    {
+      "id": "e_omyz1h3",
+      "leadId": "l_q63h6yl",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415012_htny8y",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.012Z"
+    },
+    {
+      "id": "e_cb0euu3",
+      "leadId": "l_yicezco",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415015_hzgn4u",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.015Z"
+    },
+    {
+      "id": "e_bvmf6j1",
+      "leadId": "l_1xx01nr",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415016_e4e4qg",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.016Z"
+    },
+    {
+      "id": "e_2vjsusl",
+      "leadId": "l_ba6c5t7",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415019_pfs056",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.019Z"
+    },
+    {
+      "id": "e_b2gzniz",
+      "leadId": "l_qmjlnaa",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415022_pqxnyc",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.022Z"
+    },
+    {
+      "id": "e_ba4iisj",
+      "leadId": "l_mbxgv0x",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415024_tdc84m",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.024Z"
+    },
+    {
+      "id": "e_pys7yeu",
+      "leadId": "l_in27bnw",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415026_lxmmbi",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.026Z"
+    },
+    {
+      "id": "e_4k9tmji",
+      "leadId": "l_oghrf0x",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415028_9e9ea1",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.028Z"
+    },
+    {
+      "id": "e_51qp916",
+      "leadId": "l_2uhpf44",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415029_28z0bs",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.029Z"
+    },
+    {
+      "id": "e_9ca4f8h",
+      "leadId": "l_fg0062d",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415032_yqnhle",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.032Z"
+    },
+    {
+      "id": "e_i0wnpzh",
+      "leadId": "l_ku8n63c",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415034_zo5y2t",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.034Z"
+    },
+    {
+      "id": "e_am3bpgx",
+      "leadId": "l_5cl0uez",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415035_1kyeeq",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.035Z"
+    },
+    {
+      "id": "e_39nqyvx",
+      "leadId": "l_eoeertn",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415038_q1nuue",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.038Z"
+    },
+    {
+      "id": "e_wqxtku1",
+      "leadId": "l_ay0ut2r",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415040_dhql6e",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.040Z"
+    },
+    {
+      "id": "e_pwaczqr",
+      "leadId": "l_uzsutvx",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415043_qcifv8",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.043Z"
+    },
+    {
+      "id": "e_lubr3ma",
+      "leadId": "l_ibz8lub",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415046_mnndqz",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.046Z"
+    },
+    {
+      "id": "e_f5sem9y",
+      "leadId": "l_uudmxox",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415048_gsgq5i",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.048Z"
+    },
+    {
+      "id": "e_56fdq27",
+      "leadId": "l_nc84arz",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415051_xlvjmt",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.051Z"
+    },
+    {
+      "id": "e_wbitm4f",
+      "leadId": "l_2v5q3hz",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415052_h99sn3",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.052Z"
+    },
+    {
+      "id": "e_srdjrrl",
+      "leadId": "l_tp6hb6f",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415055_hl3vq2",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.055Z"
+    },
+    {
+      "id": "e_j7q5nbw",
+      "leadId": "l_kr0f6jc",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415056_qknn81",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.056Z"
+    },
+    {
+      "id": "e_i5258tm",
+      "leadId": "l_bj_001",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415058_rn15ov",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.058Z"
+    },
+    {
+      "id": "e_trta1b0",
+      "leadId": "l_yo4xq31",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415060_bu8d2c",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.060Z"
+    },
+    {
+      "id": "e_cetx1wg",
+      "leadId": "l_i0i0e6d",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415062_346o3l",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.062Z"
+    },
+    {
+      "id": "e_vfapitn",
+      "leadId": "l_uvcu3bx",
+      "type": "touch",
+      "payload": {
+        "channel": "wechat",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "wechat_1780566415064_9urcd1",
+        "cost": 0.08,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.064Z"
+    },
+    {
+      "id": "e_02pn1ao",
+      "leadId": "l_qmjlnaa",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415074_mzlwe3",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.074Z"
+    },
+    {
+      "id": "e_qqo4j3z",
+      "leadId": "l_uudmxox",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415075_2no7z5",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.075Z"
+    },
+    {
+      "id": "e_2gfc97h",
+      "leadId": "l_bj_001",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415077_sscfpb",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.077Z"
+    },
+    {
+      "id": "e_o83gwh9",
+      "leadId": "l_uzsutvx",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415080_6ydjkv",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.080Z"
+    },
+    {
+      "id": "e_u5q1ydn",
+      "leadId": "l_kr0f6jc",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415081_fmpzjk",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.081Z"
+    },
+    {
+      "id": "e_0xd8p06",
+      "leadId": "l_1xx01nr",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415084_dtssls",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.084Z"
+    },
+    {
+      "id": "e_ytfev18",
+      "leadId": "l_yo4xq31",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415086_53kz58",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.086Z"
+    },
+    {
+      "id": "e_12bclo1",
+      "leadId": "l_mbxgv0x",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415088_zs5ghg",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.088Z"
+    },
+    {
+      "id": "e_8hgfqpi",
+      "leadId": "l_tp6hb6f",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415089_743nrn",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.089Z"
+    },
+    {
+      "id": "e_kbw8hnt",
+      "leadId": "l_hyg4x2c",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415091_ye28o6",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.091Z"
+    },
+    {
+      "id": "e_9kqigb3",
+      "leadId": "l_ibz8lub",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415093_zgaru1",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.093Z"
+    },
+    {
+      "id": "e_vwdrdvx",
+      "leadId": "l_o7qv6it",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415094_71s8ic",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.094Z"
+    },
+    {
+      "id": "e_5ejdp9r",
+      "leadId": "l_2v5q3hz",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415096_3qj96r",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.096Z"
+    },
+    {
+      "id": "e_7ta7zsm",
+      "leadId": "l_eoeertn",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415100_yi1w0q",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.100Z"
+    },
+    {
+      "id": "e_wtc5kc7",
+      "leadId": "l_in27bnw",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415102_zoxeim",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.102Z"
+    },
+    {
+      "id": "e_0ldkoxu",
+      "leadId": "l_q63h6yl",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415104_jggq9o",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.104Z"
+    },
+    {
+      "id": "e_yizvzz7",
+      "leadId": "l_5jsaztv",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415105_770frv",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.105Z"
+    },
+    {
+      "id": "e_xv7wckw",
+      "leadId": "l_i0i0e6d",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415107_40l5x8",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.107Z"
+    },
+    {
+      "id": "e_fc9fqv4",
+      "leadId": "l_uvcu3bx",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415109_q792w9",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.109Z"
+    },
+    {
+      "id": "e_i6fvqbm",
+      "leadId": "l_2uhpf44",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415111_3womei",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.111Z"
+    },
+    {
+      "id": "e_kbesjt9",
+      "leadId": "l_ku8n63c",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415113_bby749",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.113Z"
+    },
+    {
+      "id": "e_ju0v2vg",
+      "leadId": "l_oghrf0x",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415117_qf8e6v",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.117Z"
+    },
+    {
+      "id": "e_co7khxr",
+      "leadId": "l_fg0062d",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415120_yw2won",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.120Z"
+    },
+    {
+      "id": "e_02zxx41",
+      "leadId": "l_bj_006",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415122_09i7jr",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.122Z"
+    },
+    {
+      "id": "e_hq5ve2f",
+      "leadId": "l_nc84arz",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415123_j30713",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.124Z"
+    },
+    {
+      "id": "e_8uhgc3m",
+      "leadId": "l_a0uzcvc",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415126_dv33bf",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.126Z"
+    },
+    {
+      "id": "e_uxfayaf",
+      "leadId": "l_pwblo2g",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415129_4lvlbf",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.129Z"
+    },
+    {
+      "id": "e_msibii4",
+      "leadId": "l_ba6c5t7",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415131_qmozsv",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.131Z"
+    },
+    {
+      "id": "e_0qk545f",
+      "leadId": "l_32s9a0d",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415133_8abd75",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.133Z"
+    },
+    {
+      "id": "e_og0qevj",
+      "leadId": "l_5cl0uez",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415137_dv2hsy",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.137Z"
+    },
+    {
+      "id": "e_rsyvf2m",
+      "leadId": "l_yicezco",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415141_r4zesx",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.141Z"
+    },
+    {
+      "id": "e_tyabdks",
+      "leadId": "l_ay0ut2r",
+      "type": "touch",
+      "payload": {
+        "channel": "sms",
+        "title": "3公里午间活动",
+        "body": "[3公里午间活动] 来自邻客 AI 的福利通知",
+        "cta": "点击查看",
+        "messageId": "sms_1780566415143_cv4j6b",
+        "cost": 0.045,
+        "status": "success"
+      },
+      "createdAt": "2026-06-04T09:46:55.143Z"
+    },
+    {
+      "id": "e_j1b1tzk",
+      "leadId": "system",
+      "type": "touch",
+      "payload": {
+        "kind": "campaign_execute",
+        "campaignId": "c_tzf4uuf",
+        "steps": 5,
+        "totalReached": 84,
+        "totalSuccess": 84,
+        "totalCost": 4.4
+      },
+      "createdAt": "2026-06-04T09:46:55.145Z"
+    }
+  ]
 }

@@ -117,6 +117,8 @@ export interface Overview {
   roi: number;
   trend: { date: string; reach: number; added: number; visited: number }[];
   radiusCompare: { km: RadiusKm; cost: number; conv: number; count: number }[];
+  recentEvents?: { id: string; leadId: string; type: string; payload?: Record<string, unknown>; createdAt: string }[];
+  channelStats?: { channel: string; success: number; failed: number; totalCost: number; count: number }[];
 }
 
 export interface ChannelMeta {

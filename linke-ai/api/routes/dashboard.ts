@@ -46,6 +46,30 @@ router.get('/overview', (req: Request, res: Response) => {
     };
   });
 
+  // 真实事件流:取门店所有 leads 的 events,按时间倒序
+  const leadIds = new Set(leads.map((l) => l.id));
+  const recentEvents = data.events
+    .filter((e) => leadIds.has(e.leadId) || e.leadId === 'system')
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, 20);
+
+  // 渠道效果统计:从真实触达事件聚合
+  const channelMap: Record<string, { success: number; failed: number; totalCost: number; count: number }> = {};
+  for (const ev of data.events) {
+    if (!leadIds.has(ev.leadId)) continue;
+    const ch = (ev.payload?.channel as string | undefined) || 'unknown';
+    const status = (ev.payload?.status as string | undefined) || 'success';
+    const cost = typeof ev.payload?.cost === 'number' ? (ev.payload.cost as number) : 0;
+    if (!channelMap[ch]) channelMap[ch] = { success: 0, failed: 0, totalCost: 0, count: 0 };
+    channelMap[ch].count += 1;
+    channelMap[ch].totalCost += cost;
+    if (status === 'success') channelMap[ch].success += 1;
+    else channelMap[ch].failed += 1;
+  }
+  const channelStats = Object.entries(channelMap)
+    .map(([channel, v]) => ({ channel, ...v }))
+    .sort((a, b) => b.success - a.success);
+
   res.json({
     success: true,
     overview: {
@@ -56,6 +80,8 @@ router.get('/overview', (req: Request, res: Response) => {
       roi: +(wonCount * 168 / Math.max(1, reachBase) * 100).toFixed(2),
       trend,
       radiusCompare,
+      recentEvents,
+      channelStats,
     },
   });
 });

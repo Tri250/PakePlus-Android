@@ -357,6 +357,115 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+      {/* 爬虫活动流 + 渠道效果 */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="panel p-5 relative overflow-hidden"
+        >
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-ember-500/15 blur-3xl" />
+          <SectionHeader
+            index="05"
+            icon={Activity}
+            title="🕷️ 爬虫实时活动"
+            caption="基于触达事件流"
+          />
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {overview?.recentEvents?.length ? (
+              overview.recentEvents.map((ev, i) => {
+                const ch = ev.payload?.channel as string | undefined;
+                const chLabel: Record<string, string> = { sms: '短信', wechat: '企微', douyin: '抖音', card: '卡券', phone: '外呼' };
+                return (
+                  <motion.div
+                    key={ev.id}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-center gap-2 rounded-lg border border-white/5 bg-ink-800/30 px-3 py-2 text-[11px]"
+                  >
+                    <span className="font-mono text-[9px] text-ink-500 w-12">
+                      {new Date(ev.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={cn(
+                      'pill text-[9px] border shrink-0',
+                      ev.type === 'touch'
+                        ? 'border-cyber-300/30 text-cyber-200 bg-cyber-300/5'
+                        : 'border-ember-500/30 text-ember-300 bg-ember-500/5',
+                    )}>
+                      {ch ? chLabel[ch] || ch : ev.type === 'touch' ? '触达' : '记录'}
+                    </span>
+                    <span className="text-ink-300 truncate flex-1">
+                      {ev.payload?.title ? String(ev.payload.title) : (ev.payload?.kind === 'crawl' ? '🕷️ 爬虫采集' : `线索 ${ev.leadId}`)}
+                    </span>
+                    {typeof ev.payload?.cost === 'number' && (
+                      <span className="font-mono text-ember-200 shrink-0">¥{ev.payload.cost.toFixed(3)}</span>
+                    )}
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-xs text-ink-400 text-center py-6">暂无活动,先去 Cockpit 一键拓客</div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="panel p-5 relative overflow-hidden"
+        >
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-cyber-300/20 blur-3xl" />
+          <SectionHeader
+            index="06"
+            icon={Award}
+            title="渠道效果排行"
+            caption="按成功触达数 / 成本"
+          />
+          <div className="space-y-2">
+            {overview?.channelStats?.length ? (
+              overview.channelStats.map((cs, i) => {
+                const max = Math.max(...overview.channelStats!.map((c) => c.success));
+                return (
+                  <motion.div
+                    key={cs.channel}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyber-300 to-cyber-500 text-ink-950 text-[10px] font-bold grid place-items-center shrink-0">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-white">
+                          {({ sms: '短信', wechat: '企微', douyin: '抖音', card: '卡券', phone: 'AI 外呼' } as Record<string, string>)[cs.channel] || cs.channel}
+                        </span>
+                        <span className="text-[10px] font-mono text-ink-300">
+                          {cs.success} 成功 · ¥{cs.totalCost.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(cs.success / max) * 100}%` }}
+                          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                          className="h-full bg-gradient-to-r from-cyber-500 to-cyber-200"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-xs text-ink-400 text-center py-6">尚无渠道数据,先去触达中心群发</div>
+            )}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
