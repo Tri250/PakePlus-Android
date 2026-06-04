@@ -4,69 +4,329 @@
       "id": "u_demo",
       "phone": "13800000000",
       "name": "林店长",
-      "createdAt": "2026-04-05T07:39:08.834Z"
+      "createdAt": "2026-04-05T09:24:03.048Z"
     },
     {
       "id": "u_bd1",
       "phone": "13800000001",
       "name": "小赵 BD",
-      "createdAt": "2026-04-25T07:39:08.834Z"
+      "createdAt": "2026-04-25T09:24:03.048Z"
     },
     {
       "id": "u_bd2",
       "phone": "13800000002",
       "name": "小王 BD",
-      "createdAt": "2026-05-05T07:39:08.834Z"
+      "createdAt": "2026-05-05T09:24:03.048Z"
     }
   ],
   "stores": [
     {
-      "id": "s_demo",
-      "name": "邻客 AI · 朝阳体验店",
+      "id": "s_bj_cy",
+      "name": "邻客 AI · 北京朝阳体验店",
       "lng": 116.480885,
       "lat": 39.98941,
       "address": "北京市朝阳区光华路 9 号",
       "category": "精品咖啡 · 烘焙",
       "ownerUserId": "u_demo",
-      "createdAt": "2026-04-15T07:39:08.834Z"
+      "createdAt": "2026-04-15T09:24:03.048Z"
     },
     {
-      "id": "s_demo2",
-      "name": "邻客 AI · 海淀分店",
+      "id": "s_bj_hd",
+      "name": "邻客 AI · 北京海淀分店",
       "lng": 116.310316,
       "lat": 39.992718,
       "address": "北京市海淀区中关村大街 27 号",
       "category": "轻食简餐",
       "ownerUserId": "u_demo",
-      "createdAt": "2026-05-15T07:39:08.834Z"
+      "createdAt": "2026-05-15T09:24:03.048Z"
+    },
+    {
+      "id": "s_tj",
+      "name": "邻客 AI · 天津和平店",
+      "lng": 117.203,
+      "lat": 39.131,
+      "address": "天津市和平区南京路 128 号",
+      "category": "精品咖啡",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-20T09:24:03.048Z"
+    },
+    {
+      "id": "s_sjz",
+      "name": "邻客 AI · 石家庄桥西店",
+      "lng": 114.49,
+      "lat": 38.045,
+      "address": "石家庄市桥西区中山路 100 号",
+      "category": "烘焙 · 甜品",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-30T09:24:03.048Z"
+    },
+    {
+      "id": "s_sh_pd",
+      "name": "邻客 AI · 上海浦东店",
+      "lng": 121.5063,
+      "lat": 31.2304,
+      "address": "上海市浦东新区陆家嘴环路 999 号",
+      "category": "精品咖啡 · 轻食",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-17T09:24:03.048Z"
+    },
+    {
+      "id": "s_sh_xh",
+      "name": "邻客 AI · 上海徐汇店",
+      "lng": 121.445,
+      "lat": 31.168,
+      "address": "上海市徐汇区漕溪北路 88 号",
+      "category": "简餐 · 沙拉",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-27T09:24:03.048Z"
+    },
+    {
+      "id": "s_hz",
+      "name": "邻客 AI · 杭州西湖店",
+      "lng": 120.156,
+      "lat": 30.275,
+      "address": "杭州市西湖区延安路 500 号",
+      "category": "精品咖啡 · 茶",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-23T09:24:03.048Z"
+    },
+    {
+      "id": "s_nj",
+      "name": "邻客 AI · 南京新街口店",
+      "lng": 118.79,
+      "lat": 32.062,
+      "address": "南京市玄武区中山路 188 号",
+      "category": "烘焙 · 咖啡",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-25T09:24:03.048Z"
+    },
+    {
+      "id": "s_sz",
+      "name": "邻客 AI · 苏州园区店",
+      "lng": 120.635,
+      "lat": 31.31,
+      "address": "苏州市工业园区金鸡湖大道 999 号",
+      "category": "轻食 · 健康餐",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-03T09:24:03.048Z"
+    },
+    {
+      "id": "s_gz",
+      "name": "邻客 AI · 广州天河店",
+      "lng": 113.3265,
+      "lat": 23.1238,
+      "address": "广州市天河区珠江新城兴盛路 8 号",
+      "category": "精品咖啡 · 简餐",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-19T09:24:03.048Z"
+    },
+    {
+      "id": "s_sz_sz",
+      "name": "邻客 AI · 深圳福田店",
+      "lng": 114.0583,
+      "lat": 22.5431,
+      "address": "深圳市福田区福华三路 88 号",
+      "category": "咖啡 · 轻食",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-21T09:24:03.048Z"
+    },
+    {
+      "id": "s_fz",
+      "name": "邻客 AI · 福州鼓楼店",
+      "lng": 119.31,
+      "lat": 26.065,
+      "address": "福州市鼓楼区东街口 168 号",
+      "category": "茶饮 · 甜品",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-05T09:24:03.048Z"
+    },
+    {
+      "id": "s_nn",
+      "name": "邻客 AI · 南宁青秀店",
+      "lng": 108.355,
+      "lat": 22.82,
+      "address": "南宁市青秀区民族大道 168 号",
+      "category": "咖啡 · 烘焙",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-07T09:24:03.048Z"
+    },
+    {
+      "id": "s_wh",
+      "name": "邻客 AI · 武汉江汉店",
+      "lng": 114.283,
+      "lat": 30.586,
+      "address": "武汉市江汉区解放大道 688 号",
+      "category": "精品咖啡 · 简餐",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-22T09:24:03.048Z"
+    },
+    {
+      "id": "s_cs",
+      "name": "邻客 AI · 长沙芙蓉店",
+      "lng": 112.94,
+      "lat": 28.23,
+      "address": "长沙市芙蓉区五一广场 188 号",
+      "category": "咖啡 · 甜品",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-29T09:24:03.048Z"
+    },
+    {
+      "id": "s_zz",
+      "name": "邻客 AI · 郑州金水店",
+      "lng": 113.65,
+      "lat": 34.755,
+      "address": "郑州市金水区花园路 100 号",
+      "category": "轻食 · 沙拉",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-01T09:24:03.048Z"
+    },
+    {
+      "id": "s_cd",
+      "name": "邻客 AI · 成都锦江店",
+      "lng": 104.068,
+      "lat": 30.578,
+      "address": "成都市锦江区春熙路 168 号",
+      "category": "精品咖啡 · 烘焙",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-18T09:24:03.048Z"
+    },
+    {
+      "id": "s_km",
+      "name": "邻客 AI · 昆明五华店",
+      "lng": 102.72,
+      "lat": 25.045,
+      "address": "昆明市五华区正义路 99 号",
+      "category": "茶饮 · 咖啡",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-09T09:24:03.048Z"
+    },
+    {
+      "id": "s_gy",
+      "name": "邻客 AI · 贵阳云岩店",
+      "lng": 106.71,
+      "lat": 26.585,
+      "address": "贵阳市云岩区中华北路 88 号",
+      "category": "咖啡 · 甜品",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-11T09:24:03.048Z"
+    },
+    {
+      "id": "s_xa",
+      "name": "邻客 AI · 西安雁塔店",
+      "lng": 108.95,
+      "lat": 34.21,
+      "address": "西安市雁塔区小寨路 100 号",
+      "category": "精品咖啡 · 轻食",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-28T09:24:03.048Z"
+    },
+    {
+      "id": "s_sy",
+      "name": "邻客 AI · 沈阳和平店",
+      "lng": 123.435,
+      "lat": 41.805,
+      "address": "沈阳市和平区太原街 68 号",
+      "category": "咖啡 · 烘焙",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-02T09:24:03.048Z"
+    },
+    {
+      "id": "s_dl",
+      "name": "邻客 AI · 大连中山店",
+      "lng": 121.62,
+      "lat": 38.92,
+      "address": "大连市中山区人民路 58 号",
+      "category": "轻食 · 简餐",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-06T09:24:03.048Z"
+    },
+    {
+      "id": "s_hrb",
+      "name": "邻客 AI · 哈尔滨南岗店",
+      "lng": 126.64,
+      "lat": 45.8,
+      "address": "哈尔滨市南岗区果戈里大街 168 号",
+      "category": "咖啡 · 甜品",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-13T09:24:03.048Z"
+    },
+    {
+      "id": "s_cq",
+      "name": "邻客 AI · 重庆渝中店",
+      "lng": 106.588,
+      "lat": 29.563,
+      "address": "重庆市渝中区解放碑步行街 88 号",
+      "category": "精品咖啡 · 轻食",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-04-24T09:24:03.048Z"
+    },
+    {
+      "id": "s_xm",
+      "name": "邻客 AI · 厦门思明店",
+      "lng": 118.088,
+      "lat": 24.475,
+      "address": "厦门市思明区中山路 198 号",
+      "category": "茶饮 · 咖啡",
+      "ownerUserId": "u_demo",
+      "createdAt": "2026-05-04T09:24:03.048Z"
     }
   ],
   "members": [
     {
-      "storeId": "s_demo",
+      "storeId": "s_bj_cy",
       "userId": "u_demo",
       "role": "owner"
     },
     {
-      "storeId": "s_demo",
+      "storeId": "s_bj_cy",
       "userId": "u_bd1",
       "role": "bd"
     },
     {
-      "storeId": "s_demo",
+      "storeId": "s_bj_cy",
       "userId": "u_bd2",
       "role": "bd"
     },
     {
-      "storeId": "s_demo2",
+      "storeId": "s_bj_hd",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_bj_hd",
+      "userId": "u_bd1",
+      "role": "bd"
+    },
+    {
+      "storeId": "s_sh_pd",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_gz",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_cd",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_hz",
+      "userId": "u_demo",
+      "role": "owner"
+    },
+    {
+      "storeId": "s_sz_sz",
       "userId": "u_demo",
       "role": "owner"
     }
   ],
   "campaigns": [
     {
-      "id": "c_3km",
-      "storeId": "s_demo",
+      "id": "c_bj_3km",
+      "storeId": "s_bj_cy",
       "name": "3 公里写字楼早午餐拓客",
       "radiusKm": 3,
       "flow": [
@@ -87,11 +347,11 @@
         }
       ],
       "status": "running",
-      "createdAt": "2026-05-20T07:39:08.834Z"
+      "createdAt": "2026-05-20T09:24:03.048Z"
     },
     {
-      "id": "c_5km",
-      "storeId": "s_demo",
+      "id": "c_bj_5km",
+      "storeId": "s_bj_cy",
       "name": "5 公里住宅区周末秒杀",
       "radiusKm": 5,
       "flow": [
@@ -106,11 +366,11 @@
         }
       ],
       "status": "running",
-      "createdAt": "2026-05-25T07:39:08.834Z"
+      "createdAt": "2026-05-25T09:24:03.048Z"
     },
     {
-      "id": "c_8km",
-      "storeId": "s_demo",
+      "id": "c_bj_8km",
+      "storeId": "s_bj_cy",
       "name": "8 公里企业下午茶合作",
       "radiusKm": 8,
       "flow": [
@@ -121,326 +381,179 @@
         }
       ],
       "status": "paused",
-      "createdAt": "2026-05-28T07:39:08.834Z"
+      "createdAt": "2026-05-28T09:24:03.048Z"
+    },
+    {
+      "id": "c_sh_5km",
+      "storeId": "s_sh_pd",
+      "name": "上海陆家嘴 5km 白领下午茶",
+      "radiusKm": 5,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "channel",
+          "channel": "wechat"
+        }
+      ],
+      "status": "running",
+      "createdAt": "2026-05-30T09:24:03.048Z"
+    },
+    {
+      "id": "c_gz_3km",
+      "storeId": "s_gz",
+      "name": "广州珠江新城 3km 午间特惠",
+      "radiusKm": 3,
+      "flow": [
+        {
+          "id": "n1",
+          "type": "channel",
+          "channel": "sms"
+        },
+        {
+          "id": "n2",
+          "type": "card"
+        }
+      ],
+      "status": "running",
+      "createdAt": "2026-06-01T09:24:03.048Z"
     }
   ],
   "leads": [
     {
-      "id": "l_xfbylfa",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "林女士",
-      "phone": "13900001124",
-      "status": "won",
-      "note": "来自 望京 SOHO T3 (写字楼) · 高潜 75",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_maad2xk",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "郑先生",
-      "phone": "13900001093",
-      "status": "visited",
-      "note": "来自 望京 SOHO T2 (写字楼) · 高潜 75",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_78rgcma",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "孙女士",
-      "phone": "13900001062",
-      "status": "added",
-      "note": "来自 望京站 (14/15 号线) (地铁) · 高潜 76",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_enoxg7r",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "陈先生",
-      "phone": "13900001031",
-      "status": "added",
-      "note": "来自 大西洋新城 (住宅) · 高潜 77",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_ph36qav",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "李先生",
-      "phone": "13900001007",
-      "status": "added",
-      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_bvl6a93",
-      "storeId": "s_demo",
-      "fromRadius": 5,
-      "name": "王女士",
-      "phone": "13900001000",
-      "status": "added",
-      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
-      "createdAt": "2026-06-04T08:04:10.020Z"
-    },
-    {
-      "id": "l_85qt3jh",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "李女士",
-      "phone": "13900001186",
-      "status": "pending",
-      "note": "来自 望京 SOHO T1 (写字楼) · 高潜 74",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_b5zwsv4",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "高先生",
-      "phone": "13900001155",
-      "status": "lost",
-      "note": "来自 望京东站 (地铁) · 高潜 75",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_wpdezd4",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "林女士",
-      "phone": "13900001124",
-      "status": "won",
-      "note": "来自 望京 SOHO T3 (写字楼) · 高潜 75",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_btf00z7",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "郑先生",
-      "phone": "13900001093",
-      "status": "visited",
-      "note": "来自 望京 SOHO T2 (写字楼) · 高潜 75",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_c3o4vqd",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "孙女士",
-      "phone": "13900001062",
-      "status": "added",
-      "note": "来自 望京站 (14/15 号线) (地铁) · 高潜 76",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_wr1pfhn",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "陈先生",
-      "phone": "13900001031",
-      "status": "added",
-      "note": "来自 大西洋新城 (住宅) · 高潜 77",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_i76y345",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "李先生",
-      "phone": "13900001007",
-      "status": "added",
-      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_ifbmehf",
-      "storeId": "s_demo",
-      "fromRadius": 3,
-      "name": "王女士",
-      "phone": "13900001000",
-      "status": "added",
-      "note": "来自 北京 · 宝能中心 (写字楼) · 高潜 81",
-      "createdAt": "2026-06-04T07:56:40.677Z"
-    },
-    {
-      "id": "l_001",
-      "storeId": "s_demo",
-      "campaignId": "c_3km",
+      "id": "l_bj_001",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_3km",
       "fromRadius": 3,
       "name": "王女士",
       "phone": "13900000001",
       "status": "added",
       "ownerId": "u_bd1",
-      "createdAt": "2026-05-30T07:39:08.834Z"
+      "createdAt": "2026-05-30T09:24:03.048Z"
     },
     {
-      "id": "l_002",
-      "storeId": "s_demo",
-      "campaignId": "c_3km",
+      "id": "l_bj_002",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_3km",
       "fromRadius": 3,
       "name": "李先生",
       "phone": "13900000002",
       "status": "visited",
       "ownerId": "u_bd1",
-      "createdAt": "2026-05-31T07:39:08.834Z"
+      "createdAt": "2026-05-31T09:24:03.048Z"
     },
     {
-      "id": "l_003",
-      "storeId": "s_demo",
-      "campaignId": "c_5km",
+      "id": "l_bj_003",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_5km",
       "fromRadius": 5,
       "name": "张小姐",
       "phone": "13900000003",
       "status": "pending",
-      "createdAt": "2026-06-01T07:39:08.834Z"
+      "createdAt": "2026-06-01T09:24:03.048Z"
     },
     {
-      "id": "l_004",
-      "storeId": "s_demo",
-      "campaignId": "c_3km",
+      "id": "l_bj_004",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_3km",
       "fromRadius": 3,
       "name": "陈先生",
       "phone": "13900000004",
       "status": "won",
       "ownerId": "u_bd2",
-      "createdAt": "2026-06-02T07:39:08.834Z"
+      "createdAt": "2026-06-02T09:24:03.048Z"
     },
     {
-      "id": "l_005",
-      "storeId": "s_demo",
-      "campaignId": "c_5km",
+      "id": "l_bj_005",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_5km",
       "fromRadius": 5,
       "name": "刘女士",
       "phone": "13900000005",
       "status": "added",
       "ownerId": "u_bd2",
-      "createdAt": "2026-06-02T07:39:08.834Z"
+      "createdAt": "2026-06-02T09:24:03.048Z"
     },
     {
-      "id": "l_006",
-      "storeId": "s_demo",
-      "campaignId": "c_3km",
+      "id": "l_bj_006",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_3km",
       "fromRadius": 3,
       "name": "赵先生",
       "phone": "13900000006",
       "status": "pending",
-      "createdAt": "2026-06-03T07:39:08.834Z"
+      "createdAt": "2026-06-03T09:24:03.048Z"
     },
     {
-      "id": "l_007",
-      "storeId": "s_demo",
-      "campaignId": "c_8km",
+      "id": "l_bj_007",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_8km",
       "fromRadius": 8,
       "name": "孙女士",
       "phone": "13900000007",
       "status": "lost",
-      "createdAt": "2026-06-03T07:39:08.834Z"
+      "createdAt": "2026-06-03T09:24:03.048Z"
     },
     {
-      "id": "l_008",
-      "storeId": "s_demo",
-      "campaignId": "c_5km",
+      "id": "l_bj_008",
+      "storeId": "s_bj_cy",
+      "campaignId": "c_bj_5km",
       "fromRadius": 5,
       "name": "周先生",
       "phone": "13900000008",
       "status": "visited",
       "ownerId": "u_bd1",
-      "createdAt": "2026-06-04T07:39:08.834Z"
+      "createdAt": "2026-06-04T09:24:03.048Z"
+    },
+    {
+      "id": "l_sh_001",
+      "storeId": "s_sh_pd",
+      "campaignId": "c_sh_5km",
+      "fromRadius": 5,
+      "name": "吴女士",
+      "phone": "13900000009",
+      "status": "added",
+      "createdAt": "2026-05-31T09:24:03.048Z"
+    },
+    {
+      "id": "l_sh_002",
+      "storeId": "s_sh_pd",
+      "campaignId": "c_sh_5km",
+      "fromRadius": 5,
+      "name": "郑先生",
+      "phone": "13900000010",
+      "status": "pending",
+      "createdAt": "2026-06-01T09:24:03.048Z"
+    },
+    {
+      "id": "l_sh_003",
+      "storeId": "s_sh_pd",
+      "campaignId": "c_sh_5km",
+      "fromRadius": 5,
+      "name": "黄女士",
+      "phone": "13900000011",
+      "status": "visited",
+      "createdAt": "2026-06-02T09:24:03.048Z"
+    },
+    {
+      "id": "l_gz_001",
+      "storeId": "s_gz",
+      "campaignId": "c_gz_3km",
+      "fromRadius": 3,
+      "name": "马先生",
+      "phone": "13900000012",
+      "status": "added",
+      "createdAt": "2026-06-01T09:24:03.048Z"
+    },
+    {
+      "id": "l_gz_002",
+      "storeId": "s_gz",
+      "campaignId": "c_gz_3km",
+      "fromRadius": 3,
+      "name": "林女士",
+      "phone": "13900000013",
+      "status": "pending",
+      "createdAt": "2026-06-02T09:24:03.048Z"
     }
   ],
-  "events": [
-    {
-      "id": "e_2lsf4vb",
-      "leadId": "l_wr1pfhn",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780559849244_kcc3ff",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T07:57:29.244Z"
-    },
-    {
-      "id": "e_o55qnl8",
-      "leadId": "l_ifbmehf",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780559849244_ha0ufd",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T07:57:29.244Z"
-    },
-    {
-      "id": "e_3ps0z6n",
-      "leadId": "l_i76y345",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。我们想请你 11:30 - 14:00 到店 体验一份「30 元代金券 × 2」,名额有限,先到先得。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780559849248_52j7tv",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T07:57:29.248Z"
-    },
-    {
-      "id": "e_7nlu3u7",
-      "leadId": "l_enoxg7r",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780560250429_k03fej",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T08:04:10.429Z"
-    },
-    {
-      "id": "e_2u6jn2r",
-      "leadId": "l_bvl6a93",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780560250432_03afe1",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T08:04:10.433Z"
-    },
-    {
-      "id": "e_5qpu13n",
-      "leadId": "l_ph36qav",
-      "type": "touch",
-      "payload": {
-        "channel": "wechat",
-        "title": "3 公里内午间福利",
-        "body": "在 3 km 内的你,今天午间好。",
-        "cta": "点击查看门店",
-        "messageId": "wechat_1780560250434_z4ch9c",
-        "cost": 0.08,
-        "status": "success"
-      },
-      "createdAt": "2026-06-04T08:04:10.434Z"
-    }
-  ]
+  "events": []
 }

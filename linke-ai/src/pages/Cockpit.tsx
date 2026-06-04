@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MapPin, TrendingUp, Users2, ArrowUpRight, Calendar, Sun, CloudRain, Zap, Send, Activity, Target, Flame, Layers } from 'lucide-react';
+import {
+  Sparkles, MapPin, TrendingUp, Users2, ArrowUpRight, Calendar, Sun, CloudRain, Zap, Send,
+  Activity, Target, Flame, Layers, ChevronDown, ChevronUp, Globe, Crosshair,
+} from 'lucide-react';
 import RadiusSelector from '@/components/RadiusSelector';
 import StatCard from '@/components/StatCard';
 import SectionHeader from '@/components/SectionHeader';
@@ -8,11 +11,13 @@ import ProgressRing from '@/components/ProgressRing';
 import { toast } from '@/components/Toast';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
-import type { Overview, Persona, RadiusKm } from '@/lib/types';
+import type { Overview, Persona, RadiusKm, Store } from '@/lib/types';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function Cockpit() {
-  const { radius, setRadius, currentStoreId, stores } = useGlobal();
+  const { radius, setRadius, currentStoreId, setCurrentStore, stores } = useGlobal();
   const nav = useNavigate();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [suggestions, setSuggestions] = useState<{ title: string; body: string; cta: string }[]>([]);
@@ -20,6 +25,8 @@ export default function Cockpit() {
   const [seeding, setSeeding] = useState(false);
   const [radiusStats, setRadiusStats] = useState<{ km: RadiusKm; reachableCustomers: number; hotSpots: number }[]>([]);
   const [time, setTime] = useState(new Date());
+  const [locating, setLocating] = useState(false);
+  const [showStoreList, setShowStoreList] = useState(false);
 
   const currentStore = stores.find((s) => s.id === currentStoreId);
 
@@ -28,18 +35,36 @@ export default function Cockpit() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
+  const load = async () => {
     if (!currentStoreId) return;
-    api.get<{ overview: Overview }>(`/dashboard/overview?storeId=${currentStoreId}&range=7d`).then((r) => setOverview(r.overview));
-    api.get<{ suggestions: { title: string; body: string; cta: string }[] }>(`/ai/suggestion?radiusKm=${radius}`).then((r) => setSuggestions(r.suggestions));
-    api
-      .post<{ persona: Persona }>('/ai/persona', { storeId: currentStoreId, radiusKm: radius })
-      .then((r) => setPersona(r.persona))
-      .catch(() => setPersona(null));
-    api
-      .get<{ stats: { km: RadiusKm; reachableCustomers: number; hotSpots: number }[] }>(`/stores/${currentStoreId}/radius?km=3,5,8,10`)
-      .then((r) => setRadiusStats(r.stats));
-  }, [currentStoreId, radius]);
+    const [o, sg, p, rs] = await Promise.all([
+      api.get<{ overview: Overview }>(`/dashboard/overview?storeId=${currentStoreId}&range=7d`),
+      api.get<{ suggestions: { title: string; body: string; cta: string }[] }>(`/ai/suggestion?radiusKm=${radius}`),
+      api.post<{ persona: Persona }>('/ai/persona', { storeId: currentStoreId, radiusKm: radius }).catch(() => ({ persona: null as unknown as Persona })),
+      api.get<{ stats: { km: RadiusKm; reachableCustomers: number; hotSpots: number }[] }>(`/stores/${currentStoreId}/radius?km=3,5,8,10`),
+    ]);
+    setOverview(o.overview);
+    setSuggestions(sg.suggestions);
+    setPersona(p.persona);
+    setRadiusStats(rs.stats);
+  };
+
+  useEffect(() => { load(); }, [currentStoreId, radius]);
+
+  // 切换门店(定位)
+  const onLocate = async (s: Store) => {
+    setLocating(true);
+    setShowStoreList(false);
+    setCurrentStore(s.id);
+    try {
+      await load();
+      toast.success('已定位新城市', `${s.name} · 加载了周边真实 POI 数据`);
+    } catch (e) {
+      toast.error('定位失败', '请重试');
+    } finally {
+      setLocating(false);
+    }
+  };
 
   // 一键拓客:从真实 POI 批量造 24 个可触达客户
   const oneClickAcquire = async () => {
@@ -104,11 +129,58 @@ export default function Cockpit() {
           <h1 className="mt-2 text-3xl font-display font-extrabold tracking-tight">
             {greeting},{currentStore?.name?.split(' · ').pop() || '店长'}
           </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-ink-400">
+          <div className="mt-1 flex items-center gap-2 text-sm text-ink-400 relative">
             <MapPin className="w-3.5 h-3.5 text-ember-500" />
             <span className="font-mono">{currentStore?.address}</span>
             <span className="text-ink-500">·</span>
             <span className="font-mono">{currentStore?.category}</span>
+            <div className="relative">
+              <button
+                onClick={() => setShowStoreList((v) => !v)}
+                className={cn(
+                  'ml-1 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded-full border transition',
+                  showStoreList
+                    ? 'border-ember-500/50 bg-ember-500/10 text-ember-200 shadow-glow'
+                    : 'border-white/10 text-ink-300 hover:border-ember-500/30',
+                )}
+              >
+                <Crosshair className="w-3 h-3" />
+                {locating ? '定位中…' : '切换定位'}
+                {showStoreList ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              <AnimatePresence>
+                {showStoreList && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute left-0 top-full mt-2 w-80 max-h-96 overflow-y-auto panel p-2 z-30 shadow-glow"
+                  >
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-ink-400 px-2 py-1.5 flex items-center gap-1.5">
+                      <Globe className="w-3 h-3" /> 全国 {stores.length} 家门店
+                    </div>
+                    {stores.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => onLocate(s)}
+                        className={cn(
+                          'w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition',
+                          s.id === currentStoreId
+                            ? 'bg-ember-500/10 text-ember-200'
+                            : 'text-ink-200 hover:bg-white/5',
+                        )}
+                      >
+                        <MapPin className="w-3 h-3 text-ember-500 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{s.name}</div>
+                          <div className="text-[10px] text-ink-500 font-mono">{s.address}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -229,7 +301,7 @@ export default function Cockpit() {
               index="01"
               icon={Sparkles}
               title="AI 今日建议"
-              caption="基于天气 / 节假日 / 历史数据"
+              caption={`基于 ${currentStore?.name} 周边数据`}
               actions={
                 <div className="flex items-center gap-2 text-[10px] font-mono text-ink-400">
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/5">
@@ -297,8 +369,9 @@ export default function Cockpit() {
             />
             <div className="grid grid-cols-4 gap-3">
               {([3, 5, 8, 10] as RadiusKm[]).map((km, idx) => {
+                const stat = radiusStats.find((s) => s.km === km);
                 const reach = km === 3 ? 4800 : km === 5 ? 9600 : km === 8 ? 18400 : 32400;
-                const added = Math.round(reach * 0.08);
+                const added = stat?.reachableCustomers ? Math.round(stat.reachableCustomers * 0.08) : Math.round(reach * 0.08);
                 const visited = Math.round(added * 0.32);
                 const won = Math.round(visited * 0.18);
                 const conv = (won / reach) * 100;
@@ -308,9 +381,10 @@ export default function Cockpit() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 + idx * 0.05 }}
-                    className={`relative rounded-xl border p-3 transition ${
-                      km === radius ? 'border-ember-500/50 bg-ember-500/[0.06] shadow-glow' : 'border-white/5 bg-ink-800/30'
-                    }`}
+                    className={cn(
+                      'relative rounded-xl border p-3 transition',
+                      km === radius ? 'border-ember-500/50 bg-ember-500/[0.06] shadow-glow' : 'border-white/5 bg-ink-800/30',
+                    )}
                   >
                     {km === radius && (
                       <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-b-md bg-ember-500 text-ink-950 text-[8px] font-bold tracking-wider">
@@ -430,7 +504,7 @@ export default function Cockpit() {
             <ul className="space-y-2.5 text-xs">
               {[
                 { time: '11:30', t: '推送"午间手冲 9.9 元"朋友圈广告', tag: '营销', tone: 'ember' },
-                { time: '14:00', t: 'BD 小赵 跟进 3 公里王女士', tag: '跟进', tone: 'cyber' },
+                { time: '14:00', t: `BD 小赵 跟进 ${radius} 公里王女士`, tag: '跟进', tone: 'cyber' },
                 { time: '17:30', t: '生成 5km 圈层卡券并上架美团', tag: '内容', tone: 'ember' },
                 { time: '21:00', t: '复盘今日 8km 加微成本', tag: '数据', tone: 'cyber' },
               ].map((s, i) => (
@@ -444,11 +518,12 @@ export default function Cockpit() {
                   <span className="font-mono text-[10px] text-ink-400 pt-0.5 w-10 shrink-0">{s.time}</span>
                   <span className="flex-1 text-ink-200 group-hover:text-white transition">{s.t}</span>
                   <span
-                    className={`pill text-[9px] ${
+                    className={cn(
+                      'pill text-[9px]',
                       s.tone === 'ember'
                         ? 'bg-ember-500/10 text-ember-200 border border-ember-500/20'
-                        : 'bg-cyber-300/10 text-cyber-200 border border-cyber-300/20'
-                    }`}
+                        : 'bg-cyber-300/10 text-cyber-200 border border-cyber-300/20',
+                    )}
                   >
                     {s.tag}
                   </span>
@@ -468,7 +543,7 @@ export default function Cockpit() {
               index="05"
               icon={Activity}
               title="实时活动"
-              caption="LIVE FEED"
+              caption={`${currentStore?.name} 实时触达流`}
             />
             <div className="space-y-2 text-xs">
               {[
@@ -485,10 +560,10 @@ export default function Cockpit() {
                   className="flex items-center gap-2"
                 >
                   <span className="font-mono text-[9px] text-ink-500 w-7">{row.t}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
+                  <span className={cn('w-1.5 h-1.5 rounded-full',
                     row.c === 'ember' ? 'bg-ember-500' :
-                    row.c === 'cyber' ? 'bg-cyber-300' : 'bg-signal-gold'
-                  }`} />
+                    row.c === 'cyber' ? 'bg-cyber-300' : 'bg-signal-gold',
+                  )} />
                   <span className="text-ink-300 flex-1 truncate">{row.e}</span>
                 </motion.div>
               ))}

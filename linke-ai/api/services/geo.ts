@@ -4,18 +4,22 @@
  */
 import { NATIONAL_POI, estimateAudience, type RealPOI } from './poi-data.js';
 
-export type POICategory = 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park';
+export type POICategory = 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park' | 'community' | 'street' | 'cbd' | 'industrial';
 
 export interface POI {
   id: string;
   name: string;
+  city: string;
+  province: string;
+  district?: string;
+  address?: string;
   category: POICategory;
   lng: number;
   lat: number;
-  hotScore: number; // 0-100(基于规模 + 距离)
+  hotScore: number;
   radiusKm: 3 | 5 | 8 | 10;
-  audience: number; // 估算可触达客户数
-  scale: number; // POI 原始规模
+  audience: number;
+  scale: number;
 }
 
 export interface RadiusStats {
@@ -62,8 +66,12 @@ export const buildRadiusPayload = (
         const distScore = Math.max(0, 60 * (1 - dist / km));
         const hotScore = Math.min(100, Math.round(sizeScore + distScore));
         allPois.push({
-          id: `${storeId}_${km}_poi_${i}`,
+          id: raw.id || `${storeId}_${km}_poi_${i}`,
           name: raw.name,
+          city: raw.city,
+          province: raw.province,
+          district: raw.district,
+          address: raw.address,
           category: raw.category,
           lng: raw.lng,
           lat: raw.lat,

@@ -79,7 +79,11 @@ export interface RadiusStats {
 export interface POI {
   id: string;
   name: string;
-  category: 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park';
+  city: string;
+  province: string;
+  district?: string;
+  address?: string;
+  category: 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park' | 'community' | 'street' | 'cbd' | 'industrial';
   lng: number;
   lat: number;
   hotScore: number;

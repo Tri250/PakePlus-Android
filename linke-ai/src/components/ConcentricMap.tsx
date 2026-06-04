@@ -28,6 +28,10 @@ const CATEGORY_LABEL: Record<POI['category'], string> = {
   residence: '住宅',
   subway: '地铁',
   park: '公园',
+  community: '社区',
+  street: '街道',
+  cbd: '商圈',
+  industrial: '产业园',
 };
 
 const CATEGORY_COLOR: Record<POI['category'], string> = {
@@ -37,6 +41,10 @@ const CATEGORY_COLOR: Record<POI['category'], string> = {
   residence: '#A78BFA',
   subway: '#22D3EE',
   park: '#4ADE80',
+  community: '#F472B6',
+  street: '#FB923C',
+  cbd: '#FF6A2C',
+  industrial: '#60A5FA',
 };
 
 // 简易墨卡托投影:把经纬度转成 viewBox 坐标
