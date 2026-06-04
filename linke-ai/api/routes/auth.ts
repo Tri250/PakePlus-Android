@@ -32,7 +32,14 @@ router.get('/me', (req: Request, res: Response) => {
   const auth = req.header('authorization') || '';
   const m = auth.match(/^Bearer\s+(.+)$/);
   if (!m) return res.status(401).json({ success: false, error: '未登录' });
-  const userId = m[1].split('_')[1];
+  // token 格式:tk_<userId>_<timestamp>,userId 可能包含下划线,需从尾部解析
+  const raw = m[1];
+  const parts = raw.split('_');
+  // 最后一段是时间戳,前面拼起来是 userId(去掉 "tk" 前缀)
+  if (parts.length < 3 || parts[0] !== 'tk') {
+    return res.status(401).json({ success: false, error: '无效的令牌' });
+  }
+  const userId = parts.slice(1, -1).join('_');
   const data = db.read();
   const user = data.users.find((u) => u.id === userId);
   if (!user) return res.status(404).json({ success: false, error: '用户不存在' });
