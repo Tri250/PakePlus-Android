@@ -2,7 +2,7 @@
  * 真实地理服务:基于公开建筑/小区/商场 POI 数据,
  * 计算同心圆内 POI 圈层与可触达客户数(用于"一键拓客")
  */
-import { BEIJING_POI, estimateAudience, type RealPOI } from './poi-data.js';
+import { NATIONAL_POI, estimateAudience, type RealPOI } from './poi-data.js';
 
 export type POICategory = 'office' | 'mall' | 'school' | 'residence' | 'subway' | 'park';
 
@@ -54,7 +54,7 @@ export const buildRadiusPayload = (
   const allPois: POI[] = [];
 
   for (const km of kms) {
-    BEIJING_POI.forEach((raw, i) => {
+    NATIONAL_POI.forEach((raw, i) => {
       const dist = haversineKm(centerLng, centerLat, raw.lng, raw.lat);
       if (dist <= km) {
         // 高潜指数:基于规模(0-40) + 距离衰减(0-60)
@@ -184,5 +184,5 @@ const buildCirclePolygon = (lng: number, lat: number, km: number, steps = 64) =>
   return { type: 'Polygon' as const, coordinates: [coords] };
 };
 
-export { BEIJING_POI };
+export { NATIONAL_POI };
 export type { RealPOI };
