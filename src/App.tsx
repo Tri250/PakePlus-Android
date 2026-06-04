@@ -1,0 +1,25 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import LBSRadar from "./pages/LBSRadar";
+import Customers from "./pages/Customers";
+import Marketing from "./pages/Marketing";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+
+export default function App() {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/lbs" element={<LBSRadar />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/marketing" element={<Marketing />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Layout>
+    </Router>
+  );
+}
