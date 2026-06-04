@@ -243,7 +243,7 @@ export default function LeadsPage() {
               <EmptyState
                 icon={<Users2 className="w-7 h-7 text-ink-400" />}
                 title="没有匹配的线索"
-                caption="试试切换 Tab / 调整半径 / 输入关键词,或点击右上角"造一批演示线索""
+                caption="试试切换 Tab / 调整半径 / 输入关键词,或点击右上角「造一批演示线索」"
                 action={
                   <button onClick={onSeed} className="btn-primary !py-2 !text-xs">
                     <Plus className="w-3.5 h-3.5" />

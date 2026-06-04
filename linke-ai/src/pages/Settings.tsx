@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, Plus, Shield, Store as StoreIcon, Trash2, MapPin, Sparkles, Phone, Wallet, UserPlus2, Building2, User } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Shield, Store as StoreIcon, Trash2, MapPin, Sparkles, Phone, Wallet, UserPlus2, Building2, User as UserIcon } from 'lucide-react';
 import SectionHeader from '@/components/SectionHeader';
 import { toast } from '@/components/Toast';
 import { useGlobal } from '@/store/useGlobal';
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                         {m.user?.name}
                         {m.userId === user?.id && (
                           <span className="ml-2 text-[10px] font-mono text-cyber-200 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyber-300/10 border border-cyber-300/20">
-                            <User className="w-2.5 h-2.5" /> 你
+                            <UserIcon className="w-2.5 h-2.5" /> 你
                           </span>
                         )}
                       </div>
