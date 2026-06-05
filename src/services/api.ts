@@ -3,6 +3,7 @@
  * 支持：请求拦截、响应拦截、错误处理、重试机制、缓存
  */
 import { toastError } from '../components/Toast';
+import { safeLocalStorageGet } from './env';
 
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
@@ -72,7 +73,7 @@ export function addResponseInterceptor(interceptor: (response: Response) => Resp
 
 // 默认请求拦截器：添加 Authorization
 addRequestInterceptor((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = safeLocalStorageGet('auth_token');
   if (token) {
     config.headers = {
       ...config.headers,

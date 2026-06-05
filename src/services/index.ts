@@ -2,6 +2,9 @@
  * 服务层统一导出
  */
 
+// 环境变量辅助
+export { getEnv, getEnvNumber, getEnvBoolean } from './env';
+
 // 网络层
 export { api, API_ENDPOINTS, addRequestInterceptor, addResponseInterceptor } from './api';
 export type { ApiResponse, ApiError, RequestConfig } from './api';
@@ -106,3 +109,24 @@ export type { MapProvider, MapConfig, GeocodingResult, POIResult } from './mapSe
 // 数据采集
 export { dataCollector, DataCollector, PRESET_SCANS } from './dataCollector';
 export type { ScanRadius, POICategory, ScanConfig, ScanResult, ScanReport } from './dataCollector';
+
+// 图片服务
+export { imageService, POSTER_TEMPLATES } from './imageService';
+export type { ImageCategory, PosterTemplate, ImageUploadResult, PosterConfig, GeneratedPoster } from './imageService';
+
+// 数据同步
+export { dataSyncService, DEFAULT_SYNC_CONFIGS } from './dataSync';
+export type { SyncTarget, SyncConfig, SyncPayload, SyncResult, BrandCRMConfig } from './dataSync';
+
+// 接口测试
+export {
+  runAllTests,
+  quickHealthCheck,
+  testMapServices,
+  testDataCollector,
+  testDataSync,
+  testImageService,
+  testStorage,
+  testAIService,
+} from './test';
+export type { TestResult, TestReport } from './test';

@@ -3,6 +3,8 @@
  * 支持：离线存储、数据同步、版本管理、冲突解决
  */
 
+import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './env';
+
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -38,7 +40,7 @@ export function storageSet<T>(key: string, value: T): void {
         updatedAt: new Date().toISOString(),
       },
     });
-    localStorage.setItem(STORAGE_PREFIX + key, data);
+    safeLocalStorageSet(STORAGE_PREFIX + key, data);
   } catch (err) {
     console.error('[Storage] Set error:', err);
   }
@@ -46,7 +48,7 @@ export function storageSet<T>(key: string, value: T): void {
 
 export function storageGet<T>(key: string): T | null {
   try {
-    const data = localStorage.getItem(STORAGE_PREFIX + key);
+    const data = safeLocalStorageGet(STORAGE_PREFIX + key);
     if (!data) return null;
     const parsed = JSON.parse(data);
     return parsed.value;
@@ -57,13 +59,18 @@ export function storageGet<T>(key: string): T | null {
 }
 
 export function storageRemove(key: string): void {
-  localStorage.removeItem(STORAGE_PREFIX + key);
+  safeLocalStorageRemove(STORAGE_PREFIX + key);
 }
 
 export function storageClear(): void {
-  Object.keys(localStorage)
-    .filter((k) => k.startsWith(STORAGE_PREFIX))
-    .forEach((k) => localStorage.removeItem(k));
+  if (typeof localStorage === 'undefined') return;
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(STORAGE_PREFIX))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // 忽略错误
+  }
 }
 
 /* -------------------------------------------------------------------------- */

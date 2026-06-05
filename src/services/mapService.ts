@@ -10,6 +10,8 @@
  * 6. Leaflet.js - 完全免费开源地图库
  */
 
+import { getEnv } from './env';
+
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -93,7 +95,7 @@ export const MAP_PROVIDERS: Record<MapProvider, MapConfig> = {
   // 2. Mapbox - 免费 50K 请求/月
   mapbox: {
     provider: 'mapbox',
-    apiKey: import.meta.env.VITE_MAPBOX_KEY || '',
+    apiKey: getEnv('VITE_MAPBOX_KEY'),
     baseUrl: 'https://api.mapbox.com',
     rateLimit: {
       requestsPerSecond: 10,
@@ -113,7 +115,7 @@ export const MAP_PROVIDERS: Record<MapProvider, MapConfig> = {
   // 3. HERE - 免费 250K 事务/月
   here: {
     provider: 'here',
-    apiKey: import.meta.env.VITE_HERE_KEY || '',
+    apiKey: getEnv('VITE_HERE_KEY'),
     baseUrl: 'https://browse.search.hereapi.com/v1',
     rateLimit: {
       requestsPerSecond: 10,
@@ -133,7 +135,7 @@ export const MAP_PROVIDERS: Record<MapProvider, MapConfig> = {
   // 4. LocationIQ - 免费 5K 请求/天
   locationiq: {
     provider: 'locationiq',
-    apiKey: import.meta.env.VITE_LOCATIONIQ_KEY || '',
+    apiKey: getEnv('VITE_LOCATIONIQ_KEY'),
     baseUrl: 'https://us1.locationiq.com/v1',
     rateLimit: {
       requestsPerSecond: 2,
@@ -153,7 +155,7 @@ export const MAP_PROVIDERS: Record<MapProvider, MapConfig> = {
   // 5. MapTiler - 免费 100K 请求/月
   maptiler: {
     provider: 'maptiler',
-    apiKey: import.meta.env.VITE_MAPTILER_KEY || '',
+    apiKey: getEnv('VITE_MAPTILER_KEY'),
     baseUrl: 'https://api.maptiler.com',
     rateLimit: {
       requestsPerSecond: 10,

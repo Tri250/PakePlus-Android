@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './env';
 
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
@@ -176,13 +177,13 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // 存储到 localStorage
-        localStorage.setItem('auth_token', 'mock_token_' + Date.now());
+        safeLocalStorageSet('auth_token', 'mock_token_' + Date.now());
 
         return true;
       },
 
       logout: () => {
-        localStorage.removeItem('auth_token');
+        safeLocalStorageRemove('auth_token');
         set({
           user: null,
           isAuthenticated: false,
@@ -191,7 +192,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('auth_token');
+        const token = safeLocalStorageGet('auth_token');
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
@@ -262,16 +263,17 @@ export const useAuthStore = create<AuthState>()(
           resourceId,
           details,
           ip: '127.0.0.1',
-          userAgent: navigator.userAgent,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Node.js',
           timestamp: new Date().toISOString(),
         };
 
         // 存储到本地（实际应发送到服务器）
-        const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+        const logsStr = safeLocalStorageGet('audit_logs') || '[]';
+        const logs = JSON.parse(logsStr);
         logs.push(log);
         // 保留最近 1000 条
         if (logs.length > 1000) logs.shift();
-        localStorage.setItem('audit_logs', JSON.stringify(logs));
+        safeLocalStorageSet('audit_logs', JSON.stringify(logs));
       },
     }),
     {
@@ -324,10 +326,11 @@ export function getRoleColor(role: Role): string {
 }
 
 export function getAuditLogs(limit = 100): AuditLog[] {
-  const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+  const logsStr = safeLocalStorageGet('audit_logs') || '[]';
+  const logs = JSON.parse(logsStr);
   return logs.slice(-limit).reverse();
 }
 
 export function clearAuditLogs(): void {
-  localStorage.removeItem('audit_logs');
+  safeLocalStorageRemove('audit_logs');
 }
