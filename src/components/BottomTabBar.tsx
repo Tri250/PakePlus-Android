@@ -1,6 +1,7 @@
 import { Radar, Users, MapPin, BarChart3, Store } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import type { TabKey } from '../store/appStore';
+import { hapticClick } from '../hooks/useAndroidBack';
 
 const tabs: { key: TabKey; label: string; icon: typeof Radar }[] = [
   { key: 'home', label: '获客', icon: Radar },
@@ -23,8 +24,13 @@ export default function BottomTabBar() {
           return (
             <button
               key={key}
-              onClick={() => setActive(key)}
-              className="relative flex-1 flex flex-col items-center justify-center gap-0.5 h-full rounded-2xl transition-colors"
+              onClick={() => {
+                if (!isActive) {
+                  hapticClick();
+                  setActive(key);
+                }
+              }}
+              className="relative flex-1 flex flex-col items-center justify-center gap-0.5 h-full rounded-2xl transition-colors ripple"
               style={{
                 color: isActive ? '#fff' : 'var(--text-muted)',
               }}

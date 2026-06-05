@@ -2,6 +2,8 @@ import { Bell, MapPin, ChevronRight, Sun, Moon, Mic, Camera, Award, Phone, Setti
 import { useAppStore } from '../store/appStore';
 import { customers, activities, competitorEvents, type CompetitorEvent } from '../data/mockData';
 import Avatar from '../components/Avatar';
+import PullToRefresh from '../components/PullToRefresh';
+import { hapticClick, hapticSuccess, hapticWarning } from '../hooks/useAndroidBack';
 import { useMemo, useState } from 'react';
 
 const greetingByHour = (h: number) => {
@@ -64,9 +66,20 @@ export default function HomePage() {
     []
   );
 
+  const onRefresh = async () => {
+    await new Promise((r) => setTimeout(r, 800));
+    hapticSuccess();
+    showToast('已为您更新最新数据', '✓');
+  };
+
+  const handleSOS = () => {
+    hapticWarning();
+    setShowSOS(true);
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="scroll-area">
+      <PullToRefresh onRefresh={onRefresh}>
         {/* 顶部 Header */}
         <div className="px-5 pt-1 pb-3 flex items-center justify-between animate-fadeIn">
           <button
@@ -421,37 +434,43 @@ export default function HomePage() {
             </span>
           </div>
         </div>
-      </div>
+      </PullToRefresh>
 
       {/* FAB 浮动操作按钮组 */}
       <div className="fab-rail">
         <div className="flex flex-col items-end gap-2 animate-fadeScale">
           <button
-            className="w-12 h-12 rounded-full flex items-center justify-center"
+            className="w-12 h-12 rounded-full flex items-center justify-center ripple touch-target"
             style={{
               background: '#fff',
               boxShadow: '0 4px 14px rgba(0,0,0,0.10)',
             }}
-            onClick={() => showToast('语音搜索已启动，请说出客户名称', '🎙️')}
+            onClick={() => {
+              hapticClick();
+              showToast('语音搜索已启动，请说出客户名称', '🎙️');
+            }}
             aria-label="语音搜索"
           >
             <Mic className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
           </button>
           <button
-            className="w-12 h-12 rounded-full flex items-center justify-center"
+            className="w-12 h-12 rounded-full flex items-center justify-center ripple touch-target"
             style={{
               background: '#fff',
               boxShadow: '0 4px 14px rgba(0,0,0,0.10)',
             }}
-            onClick={() => setShowAddCustomer(true)}
+            onClick={() => {
+              hapticClick();
+              setShowAddCustomer(true);
+            }}
             aria-label="拍照添加客户"
           >
             <Camera className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
           </button>
         </div>
         <button
-          className="fab animate-pop"
-          onClick={() => setShowSOS(true)}
+          className="fab animate-pop ripple"
+          onClick={handleSOS}
           aria-label="一键救援"
         >
           <Phone className="w-6 h-6" />

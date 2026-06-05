@@ -2,85 +2,239 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================
+ * Android 兼容性 - 设计令牌 (Design Tokens)
+ * =========================================== */
 :root {
+  /* 基础色板 */
   --primary: #3b82f6;
   --primary-dark: #2563eb;
+  --primary-light: #60a5fa;
   --secondary: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
   --background: #ffffff;
   --surface: #f8fafc;
   --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
   --text-primary: #0f172a;
-  --text-secondary: #64748b;
+  --text-secondary: #475569;
   --text-muted: #94a3b8;
   --border: #e2e8f0;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);
+  --border-strong: #cbd5e1;
+
+  /* 阴影 - Material Design 3 风 */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 24px 48px rgba(15, 23, 42, 0.12), 0 8px 16px rgba(15, 23, 42, 0.06);
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius: 12px;
   --radius-card: 16px;
+  --radius-lg: 20px;
   --radius-pill: 999px;
+
+  /* 动效曲线 - Material Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* 时长 */
+  --dur-fast: 150ms;
+  --dur-normal: 250ms;
+  --dur-slow: 400ms;
+
+  /* 触控目标 */
+  --touch-min: 44px;
+  --touch-comfortable: 48px;
 }
 
+/* ===========================================
+ * 全局基础 - Android 优先
+ * =========================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 html, body, #root {
   height: 100%;
+  width: 100%;
+  /* 防止 Android WebView 文本选择与缩放 */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior-y: contain;
+  /* Android 字体优化 */
+  text-rendering: optimizeLegibility;
+}
+
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    'HarmonyOS Sans',          /* 华为 */
+    'Mi Sans',                  /* 小米 */
+    'Source Han Sans CN',       /* 思源黑体 */
+    'Noto Sans CJK SC',         /* Google */
+    'PingFang SC',              /* iOS 兜底 */
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   background: #e5e7eb;
   color: var(--text-primary);
+  font-size: 14px;
   line-height: 1.5;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+  /* 防止 Android 橡皮筋效果 */
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* 动态视口高度 - 适配 Android 浏览器地址栏 */
 }
 
-/* ===== 移动设备外框 (桌面端预览) ===== */
+/* ===========================================
+ * 应用容器 - 响应式 Android 适配
+ * =========================================== */
 .app-frame {
   position: relative;
   width: 100%;
-  max-width: 414px;
-  height: 100vh;
-  max-height: 896px;
-  margin: 0 auto;
+  height: 100%;
+  height: 100dvh;
   background: var(--background);
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.10);
   display: flex;
   flex-direction: column;
+  /* 字体平滑 - Android */
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 1; /* 数字等宽对齐 */
+  /* 适配安全区 (刘海/导航栏) */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
-@media (min-width: 480px) {
+/* 桌面端预览 - 模拟手机壳 */
+@media (min-width: 480px) and (pointer: fine) {
   body {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
     background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+    position: static;
+    height: 100vh;
   }
   .app-frame {
-    border-radius: 36px;
-    border: 8px solid #0f172a;
+    max-width: 414px;
+    max-height: 896px;
+    border-radius: 44px;
+    border: 10px solid #0f172a;
+    box-shadow:
+      0 0 0 2px #1e293b,
+      0 30px 80px rgba(0, 0, 0, 0.20),
+      0 0 0 14px #1e293b inset;
+    padding: 0;
+    height: 100%;
+  }
+  .app-frame::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 26px;
+    background: #0f172a;
+    border-radius: 14px;
+    z-index: 999;
+  }
+  .app-frame::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(40px);
+    width: 8px;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 50%;
+    z-index: 1000;
   }
 }
 
-/* ===== 户外模式 ===== */
+/* 小屏 Android 设备 (5 寸以下) */
+@media (max-width: 360px) {
+  :root {
+    --primary: #3b82f6;
+  }
+  .app-frame {
+    font-size: 13px;
+  }
+}
+
+/* 大屏 Android 设备 (折叠屏/平板) - 居中显示 */
+@media (min-width: 600px) and (max-width: 900px) {
+  body:not(.desktop-preview) .app-frame {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+/* 横屏 - 调整布局 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app-frame {
+    max-width: 100%;
+  }
+  .page-title {
+    font-size: 22px !important;
+  }
+  .status-bar {
+    padding: 8px 16px 4px !important;
+  }
+}
+
+/* ===========================================
+ * 户外模式
+ * =========================================== */
 .app-frame.outdoor {
   --background: #000000;
   --surface: #0a0a0a;
   --surface-2: #171717;
+  --surface-3: #262626;
   --text-primary: #ffffff;
-  --text-secondary: #d4d4d4;
+  --text-secondary: #e5e5e5;
   --text-muted: #a3a3a3;
   --border: #404040;
+  --border-strong: #525252;
   --primary: #fbbf24;
   --primary-dark: #f59e0b;
+  --primary-light: #fcd34d;
   --secondary: #34d399;
 }
 .app-frame.outdoor .card,
@@ -88,7 +242,10 @@ body {
 .app-frame.outdoor .metric-card {
   background: var(--surface) !important;
   color: var(--text-primary) !important;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
 }
 .app-frame.outdoor .text-secondary,
 .app-frame.outdoor [class*="text-gray-500"],
@@ -96,42 +253,52 @@ body {
   color: var(--text-secondary) !important;
 }
 
-/* ===== 动画 ===== */
+/* ===========================================
+ * 动画 - 流畅 + 可降级
+ * =========================================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translate3d(24px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translate3d(-24px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes fadeScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 @keyframes pulseRing {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  100% { transform: scale(2.4); opacity: 0; }
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(2.6); opacity: 0; }
 }
 @keyframes radarScan {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -4px, 0); }
 }
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
-}
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes fadeScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
 }
 @keyframes pop {
   0% { transform: scale(0); opacity: 0; }
@@ -139,29 +306,67 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-6px, 0, 0); }
+  75% { transform: translate3d(6px, 0, 0); }
+}
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  10%, 30% { transform: scale(0.9); }
+  20%, 40% { transform: scale(1.1); }
 }
 
-.animate-fadeIn { animation: fadeIn 0.3s ease-out both; }
-.animate-slideUp { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-pulse { animation: pulse 2s infinite; }
-.animate-pulseRing { animation: pulseRing 2s ease-out infinite; }
+.animate-fadeIn { animation: fadeIn var(--dur-normal) var(--ease-decelerate) both; }
+.animate-slideUp { animation: slideUp 0.4s var(--ease-ios) both; }
+.animate-slideInRight { animation: slideInRight 0.3s var(--ease-ios) both; }
+.animate-slideInLeft { animation: slideInLeft 0.3s var(--ease-ios) both; }
+.animate-scaleIn { animation: scaleIn 0.3s var(--ease-emphasized) both; }
+.animate-fadeScale { animation: fadeScale 0.3s var(--ease-emphasized) both; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-pulseRing { animation: pulseRing 2s var(--ease-decelerate) infinite; }
 .animate-radarScan { animation: radarScan 4s linear infinite; }
 .animate-bounce { animation: bounce 1.4s ease-in-out infinite; }
-.animate-shimmer { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-.animate-slideInRight { animation: slideInRight 0.3s ease-out both; }
-.animate-fadeScale { animation: fadeScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.animate-pop { animation: pop 0.4s var(--ease-spring) both; }
 .animate-shake { animation: shake 0.5s; }
+.animate-spin { animation: spin 0.8s linear infinite; }
 
-/* ===== 组件基础类 ===== */
+/* GPU 加速 */
+.will-animate { will-change: transform, opacity; }
+.gpu { transform: translateZ(0); backface-visibility: hidden; }
+
+/* 减少动效 (Android 系统设置) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===========================================
+ * 组件基础类
+ * =========================================== */
 .card {
   background: #ffffff;
   border-radius: var(--radius-card);
   box-shadow: var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 200ms var(--ease-standard),
+              box-shadow 200ms var(--ease-standard);
+  position: relative;
+  overflow: hidden;
 }
 .card:active { transform: scale(0.98); }
 
@@ -171,55 +376,108 @@ body {
   padding: 14px 12px;
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(0,0,0,0.04);
+  transition: transform 200ms var(--ease-standard);
 }
+.metric-card:active { transform: scale(0.97); }
 
 .chip {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
+  white-space: nowrap;
 }
 
-/* 滚动容器 */
+/* ===========================================
+ * 滚动容器 - Android 平滑滚动
+ * =========================================== */
 .scroll-area {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   scrollbar-width: none;
+  overscroll-behavior: contain;
 }
 .scroll-area::-webkit-scrollbar { display: none; }
+.scroll-area::-webkit-scrollbar-thumb { display: none; }
 
-/* 状态栏 */
+/* 横向滚动 */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+.scroll-x > * { scroll-snap-align: start; }
+
+/* 下拉刷新容器 */
+.pull-to-refresh {
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ptr-indicator {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  transition: top 200ms var(--ease-ios), opacity 200ms;
+}
+
+/* ===========================================
+ * 状态栏 - 适配 Android 状态栏
+ * =========================================== */
 .status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px 8px;
-  font-size: 15px;
+  padding: 12px 20px 6px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   user-select: none;
   flex-shrink: 0;
+  -webkit-user-select: none;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  min-height: 32px;
+  /* 安全区由 app-frame padding-top 处理 */
 }
 .status-bar.outdoor { color: #fff; }
 
-/* 底部 Tab Bar */
+/* ===========================================
+ * 底部 Tab Bar
+ * =========================================== */
 .tab-bar {
   position: relative;
   flex-shrink: 0;
-  padding: 8px 16px 24px;
-  background: rgba(255,255,255,0.92);
+  padding: 6px 12px 8px;
+  background: rgba(255,255,255,0.96);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 1px solid rgba(0,0,0,0.04);
+  border-top: 1px solid rgba(0,0,0,0.05);
+  /* Android 导航栏安全区 */
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
 }
 .tab-bar.outdoor {
-  background: rgba(10,10,10,0.92);
-  border-top-color: rgba(255,255,255,0.08);
+  background: rgba(10,10,10,0.96);
+  border-top-color: rgba(255,255,255,0.10);
 }
 
 .tab-pill {
@@ -229,23 +487,37 @@ body {
   justify-content: space-between;
   background: var(--surface-2);
   border-radius: 22px;
-  padding: 6px;
+  padding: 5px;
   height: 60px;
 }
 
-/* 顶部页面标题 */
+.tab-bar button {
+  min-height: 48px; /* Material Design 触摸目标 */
+  min-width: 48px;
+}
+
+/* ===========================================
+ * 页面标题
+ * =========================================== */
 .page-header {
-  padding: 8px 20px 12px;
+  padding: 4px 20px 12px;
   flex-shrink: 0;
 }
 .page-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
-/* FAB */
+@media (min-width: 414px) {
+  .page-title { font-size: 28px; }
+}
+
+/* ===========================================
+ * FAB
+ * =========================================== */
 .fab {
   position: absolute;
   right: 16px;
@@ -259,12 +531,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
+  box-shadow:
+    0 4px 12px rgba(59, 130, 246, 0.40),
+    0 8px 20px rgba(0, 0, 0, 0.12);
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 200ms var(--ease-spring), box-shadow 200ms;
   border: none;
+  -webkit-tap-highlight-color: transparent;
+  /* 安全区 */
+  margin-bottom: env(safe-area-inset-bottom);
 }
-.fab:active { transform: scale(0.92); }
+.fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.30);
+}
 
 .fab-rail {
   position: absolute;
@@ -273,11 +553,36 @@ body {
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-end;
+  margin-bottom: env(safe-area-inset-bottom);
 }
 
-/* 骨架屏 */
+/* ===========================================
+ * 涟漪点击效果 (Material)
+ * =========================================== */
+.ripple {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, currentColor 0%, transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms;
+}
+.ripple:active::after {
+  opacity: 0.15;
+  transition: opacity 0ms;
+}
+
+/* ===========================================
+ * 骨架屏
+ * =========================================== */
 .skeleton {
   background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
   background-size: 200% 100%;
@@ -285,7 +590,9 @@ body {
   border-radius: 8px;
 }
 
-/* 按钮 */
+/* ===========================================
+ * 按钮
+ * =========================================== */
 .btn-primary {
   background: var(--primary);
   color: #fff;
@@ -299,9 +606,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: transform 200ms var(--ease-spring), background 200ms;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.30);
 }
-.btn-primary:active { transform: scale(0.97); }
+.btn-primary:active { transform: scale(0.96); background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.5; }
 
 .btn-ghost {
   background: rgba(255,255,255,0.6);
@@ -312,51 +623,65 @@ body {
   font-weight: 500;
   font-size: 13px;
   cursor: pointer;
+  min-height: 40px;
+  transition: background 200ms;
 }
+.btn-ghost:active { background: var(--surface-2); }
 
-/* 进度条 */
+/* ===========================================
+ * 进度条
+ * =========================================== */
 .progress {
   width: 100%;
   height: 6px;
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 .progress-bar {
   height: 100%;
   background: var(--primary);
-  border-radius: 999px;
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-pill);
+  transition: width 600ms var(--ease-emphasized);
 }
 
-/* Toast */
+/* ===========================================
+ * Toast
+ * =========================================== */
 .toast {
   position: fixed;
   top: 60px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.94);
   color: #fff;
-  padding: 10px 20px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 14px;
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.20);
-  animation: slideUp 0.3s ease-out;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s var(--ease-ios);
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 80%;
+  max-width: 86%;
+  letter-spacing: 0.01em;
+  /* 防止多 toast 堆叠重叠 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-/* Modal Sheet */
+/* ===========================================
+ * 弹层
+ * =========================================== */
 .sheet-mask {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.45);
   z-index: 100;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.2s var(--ease-standard);
+  touch-action: none;
 }
 .sheet {
   position: absolute;
@@ -366,24 +691,31 @@ body {
   background: #fff;
   border-radius: 24px 24px 0 0;
   z-index: 101;
-  padding: 20px;
-  max-height: 80%;
+  padding: 12px 20px 24px;
+  max-height: 86%;
   overflow-y: auto;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-overflow-scrolling: touch;
+  animation: slideUp 0.35s var(--ease-ios);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  /* Android 上提升滚动性能 */
+  transform: translateZ(0);
+  will-change: transform;
 }
 .sheet-handle {
   width: 40px;
   height: 4px;
   background: #d4d4d4;
-  border-radius: 999px;
-  margin: 0 auto 16px;
+  border-radius: var(--radius-pill);
+  margin: 0 auto 14px;
 }
 
-/* 离线状态条 */
+/* ===========================================
+ * 离线状态条
+ * =========================================== */
 .offline-bar {
   background: linear-gradient(90deg, #f59e0b 0%, #fb923c 100%);
   color: #fff;
-  padding: 8px 16px;
+  padding: 7px 16px;
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -392,9 +724,12 @@ body {
   justify-content: center;
   gap: 6px;
   flex-shrink: 0;
+  animation: slideUp 0.3s var(--ease-ios);
 }
 
-/* 雷达点 */
+/* ===========================================
+ * 雷达点
+ * =========================================== */
 .radar-dot {
   position: absolute;
   width: 36px;
@@ -408,16 +743,18 @@ body {
   font-size: 13px;
   transform: translate(-50%, -50%);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: transform 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.20);
+  transition: transform 250ms var(--ease-spring);
+  border: 2px solid rgba(255,255,255,0.6);
 }
-.radar-dot:active { transform: translate(-50%, -50%) scale(1.1); }
+.radar-dot:active { transform: translate(-50%, -50%) scale(1.12); }
 .radar-dot.center {
   width: 44px;
   height: 44px;
   background: var(--primary);
   color: #fff;
   z-index: 2;
+  border: 3px solid rgba(255,255,255,0.8);
 }
 .radar-dot.center::before,
 .radar-dot.center::after {
@@ -426,6 +763,137 @@ body {
   inset: 0;
   border-radius: 50%;
   border: 2px solid var(--primary);
-  animation: pulseRing 2s ease-out infinite;
+  animation: pulseRing 2s var(--ease-decelerate) infinite;
+  pointer-events: none;
 }
 .radar-dot.center::after { animation-delay: 1s; }
+
+/* ===========================================
+ * Android 专属
+ * =========================================== */
+
+/* 文本可选 */
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+/* 隐藏数字输入框箭头 */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 文本输入框优化 - Android */
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+  font-size: 16px; /* 避免 Android 自动放大 */
+}
+
+/* 滚动指示器 */
+.scroll-indicator {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0.6;
+  transform-origin: left;
+}
+
+/* Material 风格分割线 */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* Material 3 风格 Chip */
+.chip-md {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 6px;
+  transition: background 200ms;
+}
+
+/* Snackbar (Android 原生风格) */
+.snackbar {
+  position: absolute;
+  bottom: 80px;
+  left: 16px;
+  right: 16px;
+  background: #322f35;
+  color: #fff;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 150;
+  animation: slideUp 0.3s var(--ease-ios);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.snackbar-action {
+  color: #bb86fc;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+/* 隐藏焦点环 (Android WebView) */
+button:focus, a:focus, input:focus, textarea:focus {
+  outline: none;
+}
+
+/* 链接点击高亮 - 禁用 */
+a {
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 图片/视频 响应式 */
+img, video {
+  max-width: 100%;
+  height: auto;
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* 防止 Android 文字自动加粗 */
+strong, b {
+  font-weight: 700;
+}
+
+/* 等宽数字 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* 触控目标强化 (可达性) */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

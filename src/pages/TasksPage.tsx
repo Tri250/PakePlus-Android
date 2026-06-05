@@ -1,6 +1,8 @@
 import { CheckCircle2, Clock, MapPin, MoreHorizontal, Play, Camera, Route, Trophy } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { tasks, achievements } from '../data/mockData';
+import PullToRefresh from '../components/PullToRefresh';
+import { hapticClick, hapticSuccess } from '../hooks/useAndroidBack';
 import { useMemo } from 'react';
 
 export default function TasksPage() {
@@ -17,9 +19,15 @@ export default function TasksPage() {
 
   const todoTask = tasks.find((t) => t.status === 'doing') || tasks.find((t) => t.status === 'todo');
 
+  const onRefresh = async () => {
+    await new Promise((r) => setTimeout(r, 700));
+    hapticSuccess();
+    showToast('任务列表已更新', '✓');
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="scroll-area">
+      <PullToRefresh onRefresh={onRefresh}>
         {/* 页面标题 */}
         <div className="px-5 pt-1 pb-3 flex items-center justify-between animate-fadeIn">
           <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
@@ -208,7 +216,7 @@ export default function TasksPage() {
             </div>
           )}
         </div>
-      </div>
+      </PullToRefresh>
     </div>
   );
 }

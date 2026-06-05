@@ -1,4 +1,5 @@
 import { useAppStore } from './store/appStore';
+import { useAndroidBack } from './hooks/useAndroidBack';
 import StatusBar from './components/StatusBar';
 import BottomTabBar from './components/BottomTabBar';
 import OfflineBar from './components/OfflineBar';
@@ -26,10 +27,17 @@ export default function App() {
   const selectedTaskId = useAppStore((s) => s.selectedTaskId);
   const showRadar = useAppStore((s) => s.showRadar);
 
+  // Android 物理返回键 + WebView 返回手势
+  useAndroidBack();
+
   useEffect(() => {
+    // Android WebView / 浏览器 body 锁定
     document.body.style.overflow = 'hidden';
+    // 禁止双指缩放
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
     return () => {
       document.body.style.overflow = '';
+      document.removeEventListener('gesturestart', (e) => e.preventDefault());
     };
   }, []);
 
@@ -39,13 +47,6 @@ export default function App() {
       <OfflineBar />
 
       <div className="flex-1 relative overflow-hidden">
-        {/* 5 Tab 页面映射:
-            home (获客) → HomePage 首页
-            customers (客户) → CustomersPage 客户资产
-            tasks (地推) → TasksPage 任务
-            store (门店) → StorePage 门店管理
-            data (数据) → DataPage 数据中台
-        */}
         <div className="absolute inset-0">
           {activeTab === 'home' && <HomePage />}
           {activeTab === 'customers' && <CustomersPage />}
