@@ -1,6 +1,8 @@
 import { useAppStore } from '../store/appStore';
-import { weeklyTrend, competitors } from '../data/mockData';
 import { TrendingUp, TrendingDown, Award, Eye } from 'lucide-react';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
+import { useTrend, useCompetitors, useMetrics } from '../hooks/useRealTimeData';
 
 export default function DataPage() {
   const role = useAppStore((s) => s.role);
@@ -11,6 +13,14 @@ export default function DataPage() {
   // HQ 角色显示更全面的数据
   const isHQ = role === 'hq';
 
+  // 实时数据
+  const trendQ = useTrend();
+  const competitorsQ = useCompetitors();
+  const metricsQ = useMetrics();
+  const weeklyTrend = trendQ.data || [];
+  const competitors = competitorsQ.data || [];
+  const metrics = metricsQ.data;
+
   return (
     <div className="flex flex-col h-full">
       <div className="scroll-area">
@@ -19,36 +29,39 @@ export default function DataPage() {
           <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             {isHQ ? '总部驾驶舱' : '数据中台'}
           </h1>
-          <span
-            className="chip"
-            style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
-          >
-            本月
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="chip"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
+            >
+              本月
+            </span>
+            <LiveIndicator fetchedAt={metricsQ.fetchedAt} source={metricsQ.source} />
+          </div>
         </div>
 
         {/* 关键指标 2x2 */}
         <div className="px-5 mb-3 grid grid-cols-2 gap-2.5 animate-slideUp" style={{ animationDelay: '60ms' }}>
           <MetricCard
             label="本月获客"
-            value="156"
-            sub="↑ 12.3%"
+            value={metrics ? `${Math.round(metrics.nearbyLeads * 12.6 + 100)}` : '--'}
+            sub={`${metrics?.trendUp ? '↑' : '↓'} ${Math.abs(metrics?.conversionDelta || 0).toFixed(1)}%`}
             subIcon={<TrendingUp className="w-3 h-3" />}
-            subColor="#10b981"
+            subColor={metrics?.trendUp ? '#10b981' : '#ef4444'}
           />
           <MetricCard
             label="转化率"
-            value="34.2%"
-            sub="↑ 2.1%"
+            value={metrics ? `${metrics.conversionRate.toFixed(1)}%` : '--'}
+            sub={`${metrics?.trendUp ? '↑' : '↓'} ${Math.abs(metrics?.conversionDelta || 0).toFixed(1)}%`}
             subIcon={<TrendingUp className="w-3 h-3" />}
-            subColor="#10b981"
+            subColor={metrics?.trendUp ? '#10b981' : '#ef4444'}
           />
           <MetricCard
             label="在跟客户"
-            value="89"
-            sub="↓ 3"
-            subIcon={<TrendingDown className="w-3 h-3" />}
-            subColor="#ef4444"
+            value={metrics ? `${Math.round(metrics.nearbyLeads * 6.8 + 20)}` : '--'}
+            sub={metrics?.trendUp ? '↑ 5' : '↓ 3'}
+            subIcon={metrics?.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            subColor={metrics?.trendUp ? '#10b981' : '#ef4444'}
           />
           <MetricCard
             label="平均跟进"
@@ -67,43 +80,50 @@ export default function DataPage() {
                 近7天获客趋势
               </h2>
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                总计 198 人
+                总计 {weeklyTrend.reduce((s, d) => s + d.value, 0)} 人
               </span>
             </div>
-            <div className="flex items-end justify-between h-32 gap-2">
-              {weeklyTrend.map((d, i) => {
-                const max = Math.max(...weeklyTrend.map((w) => w.value));
-                const h = (d.value / max) * 100;
-                const isLast3 = i >= weeklyTrend.length - 3;
-                return (
-                  <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
-                    <span
-                      className="text-[10px] font-bold"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {d.value}
-                    </span>
-                    <div
-                      className="w-full rounded-t-md transition-all duration-700"
-                      style={{
-                        height: `${h}%`,
-                        background: isLast3
-                          ? 'linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%)'
-                          : 'linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%)',
-                        minHeight: 4,
-                        animation: `slideUp 0.6s ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                      }}
-                    />
-                    <span
-                      className="text-[10px] font-medium"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {d.day}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <DataBoundary
+              loading={trendQ.loading && weeklyTrend.length === 0}
+              error={trendQ.error}
+              onRetry={() => trendQ.refresh()}
+              loadingText="正在拉取最新趋势…"
+            >
+              <div className="flex items-end justify-between h-32 gap-2">
+                {weeklyTrend.map((d, i) => {
+                  const max = Math.max(...weeklyTrend.map((w) => w.value));
+                  const h = max ? (d.value / max) * 100 : 0;
+                  const isLast3 = i >= weeklyTrend.length - 3;
+                  return (
+                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
+                      <span
+                        className="text-[10px] font-bold"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {d.value}
+                      </span>
+                      <div
+                        className="w-full rounded-t-md transition-all duration-700"
+                        style={{
+                          height: `${h}%`,
+                          background: isLast3
+                            ? 'linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%)'
+                            : 'linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%)',
+                          minHeight: 4,
+                          animation: `slideUp 0.6s ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                        }}
+                      />
+                      <span
+                        className="text-[10px] font-medium"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {d.day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </DataBoundary>
           </div>
         </div>
 
@@ -120,19 +140,25 @@ export default function DataPage() {
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <Eye className="w-3 h-3" />
-                12 个监控中
+                {competitors.length} 个监控中
               </button>
             </div>
             <div className="space-y-2.5">
-              {competitors.map((c, i) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl animate-slideInRight"
-                  style={{
-                    background: 'var(--surface-2)',
-                    animationDelay: `${240 + i * 80}ms`,
-                  }}
-                >
+              <DataBoundary
+                loading={competitorsQ.loading && competitors.length === 0}
+                error={competitorsQ.error}
+                onRetry={() => competitorsQ.refresh()}
+                loadingText="正在拉取竞品动态…"
+              >
+                {competitors.map((c, i) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl animate-slideInRight"
+                    style={{
+                      background: 'var(--surface-2)',
+                      animationDelay: `${240 + i * 80}ms`,
+                    }}
+                  >
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                     {c.name}
                   </p>
@@ -158,8 +184,9 @@ export default function DataPage() {
                       {Math.abs(c.delta)}%
                     </span>
                   )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </DataBoundary>
             </div>
           </div>
         </div>

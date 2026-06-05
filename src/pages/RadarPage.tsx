@@ -1,10 +1,13 @@
 import { useAppStore } from '../store/appStore';
-import { customers, leads, leadStatusMap } from '../data/mockData';
+import { leadStatusMap, type Lead, type Customer } from '../data/mockData';
 import {
   Sliders, Home, Phone, Navigation, Filter, Mic, ChevronLeft,
   UserPlus, MessageSquare, Star, MapPin,
 } from 'lucide-react';
 import { useState } from 'react';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
+import { useCustomers, useLeads } from '../hooks/useRealTimeData';
 
 export default function RadarPage() {
   const setSelectedCustomer = useAppStore((s) => s.setSelectedCustomer);
@@ -13,6 +16,12 @@ export default function RadarPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [mode, setMode] = useState<'leads' | 'customers'>('leads');
   const [selectedDot, setSelectedDot] = useState<string | null>(null);
+
+  // 实时数据
+  const customersQ = useCustomers();
+  const leadsQ = useLeads();
+  const customers = customersQ.data || [];
+  const leads = leadsQ.data || [];
 
   // 客户线索
   const sortedLeads = [...leads].sort((a, b) => b.intent - a.intent);
@@ -52,14 +61,20 @@ export default function RadarPage() {
             <h1 className="text-[20px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               客户线索
             </h1>
-            <button
-              onClick={() => setFilterOpen(!filterOpen)}
-              className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-medium"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              筛选
-            </button>
+            <div className="flex items-center gap-2">
+              <LiveIndicator
+                fetchedAt={mode === 'leads' ? leadsQ.fetchedAt : customersQ.fetchedAt}
+                source={mode === 'leads' ? leadsQ.source : customersQ.source}
+              />
+              <button
+                onClick={() => setFilterOpen(!filterOpen)}
+                className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-medium"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                筛选
+              </button>
+            </div>
           </div>
           {/* 模式切换 */}
           <div className="flex gap-1 mt-3 p-1 rounded-full" style={{ background: 'var(--surface-2)' }}>
@@ -197,33 +212,40 @@ export default function RadarPage() {
           <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
             高意向 {topThree.length} 位{mode === 'leads' ? '线索' : '客户'}
           </h2>
-          <div className="space-y-2.5">
-            {topThree.map((item, i) => {
-              if (mode === 'leads') {
-                const l = item as typeof leads[0];
-                return (
-                  <LeadCard
-                    key={l.id}
-                    lead={l}
-                    delay={i * 80}
-                    onCall={() => showToast(`正在跟进 ${l.name}`, '📞')}
-                    onConvert={() => showToast(`${l.name} 已转为正式客户`, '✓')}
-                  />
-                );
-              } else {
-                const c = item as unknown as typeof customers[0];
-                return (
-                  <CustomerRow
-                    key={c.id}
-                    customer={c}
-                    delay={i * 80}
-                    onClick={() => setSelectedCustomer(c.id)}
-                    onCall={() => showToast(`正在拨打 ${c.phone}`, '📞')}
-                  />
-                );
-              }
-            })}
-          </div>
+          <DataBoundary
+            loading={(mode === 'leads' ? leadsQ.loading : customersQ.loading) && (mode === 'leads' ? leads.length === 0 : customers.length === 0)}
+            error={mode === 'leads' ? leadsQ.error : customersQ.error}
+            onRetry={() => (mode === 'leads' ? leadsQ.refresh() : customersQ.refresh())}
+            loadingText="正在拉取最新线索…"
+          >
+            <div className="space-y-2.5">
+              {topThree.map((item, i) => {
+                if (mode === 'leads') {
+                  const l = item as Lead;
+                  return (
+                    <LeadCard
+                      key={l.id}
+                      lead={l}
+                      delay={i * 80}
+                      onCall={() => showToast(`正在跟进 ${l.name}`, '📞')}
+                      onConvert={() => showToast(`${l.name} 已转为正式客户`, '✓')}
+                    />
+                  );
+                } else {
+                  const c = item as unknown as Customer;
+                  return (
+                    <CustomerRow
+                      key={c.id}
+                      customer={c}
+                      delay={i * 80}
+                      onClick={() => setSelectedCustomer(c.id)}
+                      onCall={() => showToast(`正在拨打 ${c.phone}`, '📞')}
+                    />
+                  );
+                }
+              })}
+            </div>
+          </DataBoundary>
         </div>
       </div>
     </div>
@@ -236,7 +258,7 @@ function LeadCard({
   onCall,
   onConvert,
 }: {
-  lead: typeof leads[0];
+  lead: Lead;
   delay: number;
   onCall: () => void;
   onConvert: () => void;
@@ -312,7 +334,7 @@ function CustomerRow({
   onClick,
   onCall,
 }: {
-  customer: typeof customers[0];
+  customer: Customer;
   delay: number;
   onClick: () => void;
   onCall: () => void;

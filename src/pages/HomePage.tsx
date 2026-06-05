@@ -1,10 +1,13 @@
 import { Bell, MapPin, ChevronRight, Sun, Moon, Mic, Camera, Award, Phone, Settings as SettingsIcon, Users, Flame, Sparkles } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { customers, activities, competitorEvents, type CompetitorEvent } from '../data/mockData';
+import { type CompetitorEvent } from '../data/mockData';
 import Avatar from '../components/Avatar';
 import PullToRefresh from '../components/PullToRefresh';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
 import { hapticClick, hapticSuccess, hapticWarning } from '../hooks/useAndroidBack';
-import { useMemo, useState } from 'react';
+import { useCustomers, useMetrics, useFeed, useCompetitorEvents } from '../hooks/useRealTimeData';
+import { useMemo } from 'react';
 
 const greetingByHour = (h: number) => {
   if (h < 6) return '夜深了';
@@ -61,15 +64,31 @@ export default function HomePage() {
   const hour = new Date().getHours();
   const greeting = greetingByHour(hour);
 
+  // 实时数据
+  const customersQ = useCustomers();
+  const metricsQ = useMetrics();
+  const feedQ = useFeed();
+  const competitorQ = useCompetitorEvents();
+
+  const customersData = customersQ.data || [];
+  const metrics = metricsQ.data;
+  const feed = feedQ.data || [];
+  const competitorEventsData = competitorQ.data || [];
+
   const nearbyHighIntent = useMemo(
-    () => customers.filter((c) => c.intentScore >= 75).slice(0, 2),
-    []
+    () => customersData.filter((c) => c.intentScore >= 75).slice(0, 2),
+    [customersData]
   );
 
   const onRefresh = async () => {
-    await new Promise((r) => setTimeout(r, 800));
+    await Promise.all([
+      customersQ.refresh(),
+      metricsQ.refresh(),
+      feedQ.refresh(),
+      competitorQ.refresh(),
+    ]);
     hapticSuccess();
-    showToast('已为您更新最新数据', '✓');
+    showToast('已为您更新最新实时数据', '✓');
   };
 
   const handleSOS = () => {
@@ -142,12 +161,33 @@ export default function HomePage() {
 
         {/* 指标卡 - 3列 */}
         <div className="px-5 grid grid-cols-3 gap-2.5 mb-3 animate-slideUp" style={{ animationDelay: '60ms' }}>
-          <MetricCard label="今日任务" value="5/8" sub="已完成" subColor="#10b981" />
-          <MetricCard label="附近商机" value="12" sub="500m内" subColor="#3b82f6" />
-          <MetricCard label="转化率" value="34.2%" sub="↑ 2.1%" subColor="#10b981" />
+          <MetricCard
+            label="今日任务"
+            value={metrics ? `${metrics.todayDone}/${metrics.todayTotal}` : '--/--'}
+            sub="已完成"
+            subColor="#10b981"
+            fetchedAt={metricsQ.fetchedAt}
+            source={metricsQ.source}
+          />
+          <MetricCard
+            label="附近商机"
+            value={metrics ? `${metrics.nearbyLeads}` : '--'}
+            sub="500m内"
+            subColor="#3b82f6"
+            fetchedAt={metricsQ.fetchedAt}
+            source={metricsQ.source}
+          />
+          <MetricCard
+            label="转化率"
+            value={metrics ? `${metrics.conversionRate.toFixed(1)}%` : '--'}
+            sub={`${metrics?.trendUp ? '↑' : '↓'} ${Math.abs(metrics?.conversionDelta || 0).toFixed(1)}%`}
+            subColor={metrics?.trendUp ? '#10b981' : '#ef4444'}
+            fetchedAt={metricsQ.fetchedAt}
+            source={metricsQ.source}
+          />
         </div>
 
-        {/* 雷达预览卡 */}
+        {/* 线索预览卡 */}
         <div className="px-5 mb-3 animate-slideUp" style={{ animationDelay: '120ms' }}>
           <div
             className="card overflow-hidden cursor-pointer"
@@ -212,10 +252,10 @@ export default function HomePage() {
             <div className="p-4 flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  3位高意向线索在附近
+                  {nearbyHighIntent.length}位高意向线索在附近
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                  最近280m · 客户线索地图
+                  最近{nearbyHighIntent[0]?.distance || 280}m · 实时扫描中
                 </p>
               </div>
               <button
@@ -240,7 +280,7 @@ export default function HomePage() {
               className="flex items-center justify-between px-3 pt-3"
               style={{ borderBottom: '1px solid var(--border)' }}
             >
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
                 <FeedTabButton
                   active={feedTab === 'customer'}
                   onClick={() => setFeedTab('customer')}
@@ -253,6 +293,12 @@ export default function HomePage() {
                   icon={<Flame className="w-3.5 h-3.5" />}
                   label="竞品动态"
                 />
+                <div className="ml-1">
+                  <LiveIndicator
+                    fetchedAt={feedTab === 'customer' ? feedQ.fetchedAt : competitorQ.fetchedAt}
+                    source={feedTab === 'customer' ? feedQ.source : competitorQ.source}
+                  />
+                </div>
               </div>
               <button
                 onClick={() => showToast('查看完整动态', '📰')}
@@ -266,8 +312,19 @@ export default function HomePage() {
             {/* Content */}
             <div className="p-3 space-y-1.5 max-h-72 overflow-y-auto scroll-area">
               {feedTab === 'customer' ? (
-                <>
-                  {nearbyHighIntent.map((c, i) => (
+                <DataBoundary
+                  loading={feedQ.loading && feed.length === 0}
+                  error={feedQ.error}
+                  onRetry={() => feedQ.refresh()}
+                  loadingText="正在拉取客户动态…"
+                >
+                  {nearbyHighIntent.length === 0 && feed.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>暂无客户动态</p>
+                    </div>
+                  ) : (
+                    <>
+                      {nearbyHighIntent.map((c, i) => (
                     <div
                       key={c.id}
                       className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-gray-50"
@@ -298,39 +355,52 @@ export default function HomePage() {
                       </button>
                     </div>
                   ))}
-                  {activities.slice(0, 2).map((a, i) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-2.5 p-2 rounded-xl"
-                      style={{ animation: `slideInRight 0.3s ${(i + 2) * 60}ms both` }}
-                    >
+                  {feed.slice(0, 2).map((a, i) => {
+                    const iconMap: Record<string, { icon: string; bg: string }> = {
+                      reward: { icon: '🏆', bg: 'rgba(245,158,11,0.10)' },
+                      signal: { icon: '📡', bg: 'rgba(59,130,246,0.10)' },
+                      task_done: { icon: '✓', bg: 'rgba(16,185,129,0.10)' },
+                      visit: { icon: '📞', bg: 'rgba(139,92,246,0.10)' },
+                      competitor: { icon: '🔥', bg: 'rgba(239,68,68,0.10)' },
+                    };
+                    const ic = iconMap[a.type] || iconMap.visit;
+                    return (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{
-                          background:
-                            a.type === 'reward'
-                              ? 'rgba(245,158,11,0.10)'
-                              : a.type === 'signal'
-                              ? 'rgba(59,130,246,0.10)'
-                              : 'rgba(16,185,129,0.10)',
-                        }}
+                        key={a.id}
+                        className="flex items-center gap-2.5 p-2 rounded-xl"
+                        style={{ animation: `slideInRight 0.3s ${(i + 2) * 60}ms both` }}
                       >
-                        <span className="text-sm">
-                          {a.type === 'reward' ? '🏆' : a.type === 'signal' ? '📡' : a.type === 'task_done' ? '✓' : '📞'}
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ background: ic.bg }}
+                        >
+                          <span className="text-sm">{ic.icon}</span>
+                        </div>
+                        <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>
+                          {a.text}
+                        </p>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                          {a.time}
                         </span>
                       </div>
-                      <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>
-                        {a.text}
-                      </p>
-                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                        {a.time}
-                      </span>
-                    </div>
-                  ))}
-                </>
+                    );
+                  })}
+                    </>
+                  )}
+                </DataBoundary>
               ) : (
-                <>
-                  {competitorEvents.map((e, i) => (
+                <DataBoundary
+                  loading={competitorQ.loading && competitorEventsData.length === 0}
+                  error={competitorQ.error}
+                  onRetry={() => competitorQ.refresh()}
+                  loadingText="正在拉取竞品动态…"
+                >
+                  {competitorEventsData.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>暂无竞品动态</p>
+                    </div>
+                  ) : (
+                    competitorEventsData.map((e, i) => (
                     <div
                       key={e.id}
                       className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50"
@@ -369,8 +439,9 @@ export default function HomePage() {
                         {e.time}
                       </span>
                     </div>
-                  ))}
-                </>
+                    ))
+                  )}
+                </DataBoundary>
               )}
             </div>
             {/* 底部快捷入口 */}
@@ -480,12 +551,29 @@ export default function HomePage() {
   );
 }
 
-function MetricCard({ label, value, sub, subColor }: { label: string; value: string; sub: string; subColor: string }) {
+function MetricCard({
+  label,
+  value,
+  sub,
+  subColor,
+  fetchedAt,
+  source,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  subColor: string;
+  fetchedAt?: number;
+  source?: 'api' | 'crawler' | 'cache' | 'mock' | null;
+}) {
   return (
     <div className="metric-card">
-      <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
-        {label}
-      </p>
+      <div className="flex items-center justify-between gap-1">
+        <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
+          {label}
+        </p>
+        {fetchedAt ? <LiveIndicator fetchedAt={fetchedAt} source={source} /> : null}
+      </div>
       <p className="text-[22px] font-bold mt-1 tracking-tight" style={{ color: 'var(--text-primary)' }}>
         {value}
       </p>

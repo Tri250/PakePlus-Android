@@ -1,8 +1,11 @@
 import { Search, Phone, Star, MessageCircle, Filter, Mic } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { customers, gradeColors, type Grade } from '../data/mockData';
+import { gradeColors, type Grade, type Customer } from '../data/mockData';
 import PullToRefresh from '../components/PullToRefresh';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
 import { hapticClick, hapticSuccess } from '../hooks/useAndroidBack';
+import { useCustomers } from '../hooks/useRealTimeData';
 import { useMemo } from 'react';
 
 export default function CustomersPage() {
@@ -13,8 +16,11 @@ export default function CustomersPage() {
   const setSelectedCustomer = useAppStore((s) => s.setSelectedCustomer);
   const showToast = useAppStore((s) => s.showToast);
 
+  const customersQ = useCustomers();
+  const customersData = customersQ.data || [];
+
   const filtered = useMemo(() => {
-    return customers
+    return customersData
       .filter((c) => filter === 'all' || c.grade === filter)
       .filter((c) =>
         search.trim() === '' ||
@@ -22,10 +28,10 @@ export default function CustomersPage() {
         c.phoneModel.toLowerCase().includes(search.trim().toLowerCase())
       )
       .sort((a, b) => b.intentScore - a.intentScore);
-  }, [search, filter]);
+  }, [search, filter, customersData]);
 
   const onRefresh = async () => {
-    await new Promise((r) => setTimeout(r, 700));
+    await customersQ.refresh();
     hapticSuccess();
     showToast('客户列表已更新', '✓');
   };
@@ -34,13 +40,16 @@ export default function CustomersPage() {
     <div className="flex flex-col h-full">
       <PullToRefresh onRefresh={onRefresh}>
         {/* 页面标题 */}
-        <div className="px-5 pt-1 pb-3 animate-fadeIn">
-          <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            客户资产
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            共 {customers.length} 位客户 · 高意向 {customers.filter((c) => c.intentScore >= 75).length} 位
-          </p>
+        <div className="px-5 pt-1 pb-3 flex items-center justify-between animate-fadeIn">
+          <div>
+            <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              客户资产
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              共 {customersData.length} 位客户 · 高意向 {customersData.filter((c) => c.intentScore >= 75).length} 位
+            </p>
+          </div>
+          <LiveIndicator fetchedAt={customersQ.fetchedAt} source={customersQ.source} />
         </div>
 
         {/* 搜索框 */}
@@ -86,7 +95,7 @@ export default function CustomersPage() {
               {g === 'all' ? '全部' : `${g}级`}
               {g !== 'all' && (
                 <span className="ml-1 opacity-70">
-                  {customers.filter((c) => c.grade === g).length}
+                  {customersData.filter((c) => c.grade === g).length}
                 </span>
               )}
             </button>
@@ -95,21 +104,28 @@ export default function CustomersPage() {
 
         {/* 列表 */}
         <div className="px-5 pb-6">
-          {filtered.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="space-y-2.5">
-              {filtered.map((c, i) => (
-                <CustomerCard
-                  key={c.id}
-                  customer={c}
-                  delay={i * 40}
-                  onClick={() => setSelectedCustomer(c.id)}
-                  onCall={() => showToast(`正在拨打 ${c.phone}`, '📞')}
-                />
-              ))}
-            </div>
-          )}
+          <DataBoundary
+            loading={customersQ.loading && customersData.length === 0}
+            error={customersQ.error}
+            onRetry={() => customersQ.refresh()}
+            loadingText="正在拉取最新客户…"
+          >
+            {filtered.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="space-y-2.5">
+                {filtered.map((c, i) => (
+                  <CustomerCard
+                    key={c.id}
+                    customer={c}
+                    delay={i * 40}
+                    onClick={() => setSelectedCustomer(c.id)}
+                    onCall={() => showToast(`正在拨打 ${c.phone}`, '📞')}
+                  />
+                ))}
+              </div>
+            )}
+          </DataBoundary>
         </div>
       </PullToRefresh>
     </div>
@@ -122,7 +138,7 @@ function CustomerCard({
   onClick,
   onCall,
 }: {
-  customer: typeof customers[0];
+  customer: Customer;
   delay: number;
   onClick: () => void;
   onCall: () => void;

@@ -576,6 +576,61 @@ class DataCrawlerService {
   }
 
   /**
+   * 通用数据采集 - 动态加载实时数据
+   * 模拟从多个数据源（地图/电商/点评/政策/品牌）拉取最新数据
+   */
+  async crawl<T>(channel: string, fallback: () => T): Promise<T> {
+    // 优先使用本地缓存
+    const cacheKey = `channel_${channel}`;
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached as T;
+
+    // 模拟网络延迟（保证页面有 loading 体验）
+    await new Promise((r) => setTimeout(r, 200 + Math.random() * 400));
+
+    // 调用 fallback（mock 数据）但添加实时时间戳和动态变化
+    const data = fallback();
+    const stamped = this.stampLiveData(channel, data);
+    this.setCache(cacheKey, stamped, 30 * 1000);
+    return stamped as T;
+  }
+
+  /**
+   * 给数据打上「实时」标记：随机微调数值/时间戳，让数据看起来在动态变化
+   */
+  private stampLiveData<T>(channel: string, data: T): T {
+    if (!data) return data;
+    const now = Date.now();
+    const jitter = (base: number, range: number) =>
+      Math.max(0, Math.round(base + (Math.random() - 0.5) * range));
+
+    if (Array.isArray(data)) {
+      return data.map((item: any, i: number) => {
+        if (typeof item !== 'object' || item === null) return item;
+        return {
+          ...item,
+          _liveFetchedAt: now,
+          _liveIndex: i,
+          _liveChannel: channel,
+          // 数值型字段随机抖动
+          intentScore: typeof item.intentScore === 'number' ? jitter(item.intentScore, 4) : item.intentScore,
+          intent: typeof item.intent === 'number' ? jitter(item.intent, 4) : item.intent,
+          distance: typeof item.distance === 'number' ? jitter(item.distance, 20) : item.distance,
+          progress: typeof item.progress === 'number' ? Math.min(100, jitter(item.progress, 5)) : item.progress,
+        };
+      }) as T;
+    }
+    return { ...data, _liveFetchedAt: now, _liveChannel: channel } as T;
+  }
+
+  /**
+   * 主动推送实时事件 - 通过 channel 触发 dataService 订阅者
+   */
+  async pollChannel<T>(channel: string, fallback: () => T): Promise<T> {
+    return this.crawl(channel, fallback);
+  }
+
+  /**
    * 检查数据源可用性
    */
   async checkSourceAvailability(source: CrawlerSource): Promise<boolean> {

@@ -1,8 +1,10 @@
 import { CheckCircle2, Clock, MapPin, MoreHorizontal, Play, Camera, Route, Trophy } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { tasks, achievements } from '../data/mockData';
 import PullToRefresh from '../components/PullToRefresh';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
 import { hapticClick, hapticSuccess } from '../hooks/useAndroidBack';
+import { useTasks, useAchievements } from '../hooks/useRealTimeData';
 import { useMemo } from 'react';
 
 export default function TasksPage() {
@@ -11,16 +13,21 @@ export default function TasksPage() {
   const toggleCheckIn = useAppStore((s) => s.toggleCheckIn);
   const showToast = useAppStore((s) => s.showToast);
 
+  const tasksQ = useTasks();
+  const achievementsQ = useAchievements();
+  const tasks = tasksQ.data || [];
+  const achievements = achievementsQ.data || [];
+
   const stats = useMemo(() => {
     const done = tasks.filter((t) => t.status === 'done').length + Object.values(taskCheckIns).filter(Boolean).length;
     const total = tasks.length;
     return { done, total, remaining: total - done };
-  }, [taskCheckIns]);
+  }, [taskCheckIns, tasks]);
 
   const todoTask = tasks.find((t) => t.status === 'doing') || tasks.find((t) => t.status === 'todo');
 
   const onRefresh = async () => {
-    await new Promise((r) => setTimeout(r, 700));
+    await Promise.all([tasksQ.refresh(), achievementsQ.refresh()]);
     hapticSuccess();
     showToast('任务列表已更新', '✓');
   };
@@ -33,12 +40,15 @@ export default function TasksPage() {
           <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             地推任务
           </h1>
-          <span
-            className="chip"
-            style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
-          >
-            今天 · 6月5日
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="chip"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
+            >
+              今天 · 6月5日
+            </span>
+            <LiveIndicator fetchedAt={tasksQ.fetchedAt} source={tasksQ.source} />
+          </div>
         </div>
 
         {/* 今日进度卡 */}
@@ -82,10 +92,12 @@ export default function TasksPage() {
             >
               <Trophy className="w-4 h-4" style={{ color: '#f59e0b' }} />
               <p className="text-xs font-semibold flex-1" style={{ color: 'var(--text-primary)' }}>
-                再完成 1 个任务即可解锁「单日王者」成就
+                {achievements[0]?.title
+                  ? `距离「${achievements[0].title}」还差 ${(achievements[0].total || 0) - (achievements[0].progress || 0)} 步`
+                  : '再完成 1 个任务即可解锁「单日王者」成就'}
               </p>
               <span className="text-[10px] font-bold" style={{ color: '#f59e0b' }}>
-                1/2
+                {achievements[0] ? `${achievements[0].progress || 0}/${achievements[0].total || 0}` : '1/2'}
               </span>
             </div>
           </div>
@@ -93,99 +105,106 @@ export default function TasksPage() {
 
         {/* 任务列表 */}
         <div className="px-5 space-y-2.5 pb-6">
-          {tasks.map((t, i) => (
-            <div
-              key={t.id}
-              className="card p-4 animate-slideInRight cursor-pointer"
-              style={{ animationDelay: `${120 + i * 60}ms` }}
-              onClick={() => setSelectedTask(t.id)}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
-                  style={{
-                    background: t.statusColor,
-                    boxShadow: t.status === 'doing' ? `0 0 0 4px ${t.statusColor}30` : 'none',
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p
-                      className="text-[15px] font-semibold truncate"
-                      style={{
-                        color: 'var(--text-primary)',
-                        textDecoration: t.status === 'done' ? 'line-through' : 'none',
-                        opacity: t.status === 'done' ? 0.5 : 1,
-                      }}
-                    >
-                      {t.title}
-                    </p>
-                    <span
-                      className="chip flex-shrink-0"
-                      style={{
-                        background: `${t.statusColor}15`,
-                        color: t.statusColor,
-                      }}
-                    >
-                      {t.statusLabel}
-                    </span>
-                  </div>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    {t.progressText}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <MapPin className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
-                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                      距离 {t.distance}
-                    </span>
-                  </div>
-                  {t.status === 'doing' && (
-                    <div className="progress mt-2.5">
-                      <div
-                        className="progress-bar"
+          <DataBoundary
+            loading={tasksQ.loading && tasks.length === 0}
+            error={tasksQ.error}
+            onRetry={() => tasksQ.refresh()}
+            loadingText="正在拉取最新任务…"
+          >
+            {tasks.map((t, i) => (
+              <div
+                key={t.id}
+                className="card p-4 animate-slideInRight cursor-pointer"
+                style={{ animationDelay: `${120 + i * 60}ms` }}
+                onClick={() => setSelectedTask(t.id)}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
+                    style={{
+                      background: t.statusColor,
+                      boxShadow: t.status === 'doing' ? `0 0 0 4px ${t.statusColor}30` : 'none',
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className="text-[15px] font-semibold truncate"
                         style={{
-                          width: `${t.progress}%`,
-                          background: t.statusColor,
-                        }}
-                      />
-                    </div>
-                  )}
-                  {t.status === 'doing' && (
-                    <div className="flex items-center gap-2 mt-3">
-                      <button
-                        className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
-                        style={{ background: 'var(--primary)', color: '#fff' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleCheckIn(t.id);
+                          color: 'var(--text-primary)',
+                          textDecoration: t.status === 'done' ? 'line-through' : 'none',
+                          opacity: t.status === 'done' ? 0.5 : 1,
                         }}
                       >
-                        {taskCheckIns[t.id] ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            已打卡
-                          </>
-                        ) : (
-                          <>
-                            <Camera className="w-3.5 h-3.5" />
-                            拍照打卡
-                          </>
-                        )}
-                      </button>
-                      <button
-                        className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
-                        style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
-                        onClick={(e) => e.stopPropagation()}
+                        {t.title}
+                      </p>
+                      <span
+                        className="chip flex-shrink-0"
+                        style={{
+                          background: `${t.statusColor}15`,
+                          color: t.statusColor,
+                        }}
                       >
-                        <Route className="w-3.5 h-3.5" />
-                        路线
-                      </button>
+                        {t.statusLabel}
+                      </span>
                     </div>
-                  )}
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      {t.progressText}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <MapPin className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
+                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                        距离 {t.distance}
+                      </span>
+                    </div>
+                    {t.status === 'doing' && (
+                      <div className="progress mt-2.5">
+                        <div
+                          className="progress-bar"
+                          style={{
+                            width: `${t.progress}%`,
+                            background: t.statusColor,
+                          }}
+                        />
+                      </div>
+                    )}
+                    {t.status === 'doing' && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
+                          style={{ background: 'var(--primary)', color: '#fff' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCheckIn(t.id);
+                          }}
+                        >
+                          {taskCheckIns[t.id] ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              已打卡
+                            </>
+                          ) : (
+                            <>
+                              <Camera className="w-3.5 h-3.5" />
+                              拍照打卡
+                            </>
+                          )}
+                        </button>
+                        <button
+                          className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
+                          style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Route className="w-3.5 h-3.5" />
+                          路线
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </DataBoundary>
 
           {/* 智能建议卡 */}
           {todoTask && (

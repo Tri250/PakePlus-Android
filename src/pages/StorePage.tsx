@@ -1,10 +1,14 @@
 import { useAppStore } from '../store/appStore';
-import { teamMembers, alerts, type Alert as AlertData } from '../data/mockData';
+import { type Alert as AlertData } from '../data/mockData';
 import {
   ChevronRight, AlertTriangle, AlertCircle, Info, Users, MapPin,
   TrendingUp, BarChart3, CheckSquare, Clock, Package, BookOpen,
   Award, Grid3X3,
 } from 'lucide-react';
+import LiveIndicator from '../components/LiveIndicator';
+import DataBoundary from '../components/DataBoundary';
+import { useAlerts, useTeamMembers } from '../hooks/useRealTimeData';
+import { useMemo } from 'react';
 
 export default function StorePage() {
   const setShowAllFeatures = useAppStore((s) => s.setShowAllFeatures);
@@ -13,21 +17,32 @@ export default function StorePage() {
   const setActiveFeature = useAppStore((s) => s.setActiveFeature);
   const showToast = useAppStore((s) => s.showToast);
 
-  const totalDone = teamMembers.reduce((s, m) => s + m.todayDone, 0);
-  const totalTarget = teamMembers.reduce((s, m) => s + m.todayTotal, 0);
-  const onlineCount = teamMembers.filter((m) => m.status === 'online').length;
+  const teamQ = useTeamMembers();
+  const alertsQ = useAlerts();
+  const teamMembers = teamQ.data || [];
+  const alerts = alertsQ.data || [];
+
+  const stats = useMemo(() => {
+    const totalDone = teamMembers.reduce((s, m) => s + m.todayDone, 0);
+    const totalTarget = teamMembers.reduce((s, m) => s + m.todayTotal, 0);
+    const onlineCount = teamMembers.filter((m) => m.status === 'online').length;
+    return { totalDone, totalTarget, onlineCount };
+  }, [teamMembers]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="scroll-area">
         {/* 页面标题 */}
-        <div className="px-5 pt-1 pb-3 animate-fadeIn">
-          <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            门店管理
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            深圳市南山区科技园旗舰店 · 5 位成员
-          </p>
+        <div className="px-5 pt-1 pb-3 flex items-center justify-between animate-fadeIn">
+          <div>
+            <h1 className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              门店管理
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              深圳市南山区科技园旗舰店 · {teamMembers.length} 位成员
+            </p>
+          </div>
+          <LiveIndicator fetchedAt={teamQ.fetchedAt} source={teamQ.source} />
         </div>
 
         {/* 门店今日数据 */}
@@ -43,20 +58,20 @@ export default function StorePage() {
               <div>
                 <p className="text-xs opacity-90">门店今日业绩</p>
                 <p className="text-3xl font-bold mt-0.5">
-                  {totalDone}
+                  {stats.totalDone}
                   <span className="text-base font-normal opacity-70 mx-0.5">/</span>
-                  <span className="text-base font-normal opacity-70">{totalTarget}</span>
+                  <span className="text-base font-normal opacity-70">{stats.totalTarget}</span>
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-xs opacity-90">完成率</p>
                 <p className="text-2xl font-bold mt-0.5">
-                  {Math.round((totalDone / totalTarget) * 100)}%
+                  {stats.totalTarget ? Math.round((stats.totalDone / stats.totalTarget) * 100) : 0}%
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <Stat label="在线" value={`${onlineCount}/${teamMembers.length}`} />
+              <Stat label="在线" value={`${stats.onlineCount}/${teamMembers.length}`} />
               <Stat label="本周积分" value={teamMembers.reduce((s, m) => s + m.weeklyPoints, 0).toString()} />
               <Stat label="客诉" value="0" />
             </div>
@@ -87,9 +102,16 @@ export default function StorePage() {
               </button>
             </div>
             <div className="space-y-2">
-              {alerts.map((a, i) => (
-                <AlertCard key={a.id} alert={a} delay={i * 60} />
-              ))}
+              <DataBoundary
+                loading={alertsQ.loading && alerts.length === 0}
+                error={alertsQ.error}
+                onRetry={() => alertsQ.refresh()}
+                loadingText="正在拉取最新预警…"
+              >
+                {alerts.map((a, i) => (
+                  <AlertCard key={a.id} alert={a} delay={i * 60} />
+                ))}
+              </DataBoundary>
             </div>
           </div>
         )}
