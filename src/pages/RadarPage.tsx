@@ -2,12 +2,13 @@ import { useAppStore } from '../store/appStore';
 import { leadStatusMap, type Lead, type Customer } from '../data/mockData';
 import {
   Sliders, Home, Phone, Navigation, Mic, ChevronLeft,
-  UserPlus, MessageSquare, Star, MapPin, Database, RefreshCw,
+  UserPlus, MessageSquare, Star, MapPin, Database, RefreshCw, HardDrive,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import LiveIndicator from '../components/LiveIndicator';
 import DataBoundary from '../components/DataBoundary';
 import POISourcePanel from '../components/POISourcePanel';
+import MapTaskPanel from '../components/MapTaskPanel';
 import { useCustomers, useLeads } from '../hooks/useRealTimeData';
 import { usePOI } from '../hooks/usePOI';
 import type { CustomerLead, POICategory } from '../services/poiCollector';
@@ -41,6 +42,7 @@ export default function RadarPage() {
   const showToast = useAppStore((s) => s.showToast);
   const [filterOpen, setFilterOpen] = useState(false);
   const [showSourcePanel, setShowSourcePanel] = useState(false);
+  const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [mode, setMode] = useState<'leads' | 'customers' | 'poi'>('leads');
   const [selectedDot, setSelectedDot] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<POICategory | 'all'>('all');
@@ -95,6 +97,10 @@ export default function RadarPage() {
     return <POISourcePanel onClose={() => setShowSourcePanel(false)} />;
   }
 
+  if (showTaskPanel) {
+    return <MapTaskPanel onClose={() => setShowTaskPanel(false)} />;
+  }
+
   return (
     <div className="absolute inset-0 z-40 bg-white flex flex-col animate-slideInRight">
       <div className="scroll-area">
@@ -135,6 +141,14 @@ export default function RadarPage() {
                 aria-label="数据源"
               >
                 <Database className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+              </button>
+              <button
+                onClick={() => setShowTaskPanel(true)}
+                className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--surface-2)' }}
+                aria-label="任务管理"
+              >
+                <HardDrive className="w-4 h-4" style={{ color: '#f59e0b' }} />
               </button>
             </div>
           </div>
