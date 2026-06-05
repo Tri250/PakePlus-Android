@@ -98,3 +98,11 @@ export {
   getActionLabel,
 } from './nfcTapApi';
 export type { NFCTapEvent, NFCTapResponse, NFCAction } from './nfcTapApi';
+
+// 地图服务
+export { mapService, MAP_PROVIDERS } from './mapService';
+export type { MapProvider, MapConfig, GeocodingResult, POIResult } from './mapService';
+
+// 数据采集
+export { dataCollector, DataCollector, PRESET_SCANS } from './dataCollector';
+export type { ScanRadius, POICategory, ScanConfig, ScanResult, ScanReport } from './dataCollector';
