@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard, Radar, Brain, Users, Megaphone, BarChart3,
-  Settings, Menu, X, Bell, User, ChevronDown, ChevronRight
+  Settings, Menu, X, Bell, User, ChevronDown, ChevronRight,
+  Zap, Database
 } from 'lucide-react';
 
 const navigation = [
@@ -28,16 +29,18 @@ const navigation = [
   },
   { 
     name: '地推作战系统', 
-    icon: Megaphone,
+    icon: Zap,
     children: [
       { name: '营销作战', href: '/marketing', icon: Megaphone },
+      { name: 'AI 作战 V2.0', href: '/ground-combat', icon: Zap, badge: '2026' },
     ]
   },
   { 
     name: '品牌数据中台', 
-    icon: BarChart3,
+    icon: Database,
     children: [
       { name: '数据分析', href: '/analytics', icon: BarChart3 },
+      { name: '数据中台 V2.0', href: '/brand-data', icon: Database, badge: '新' },
     ]
   },
   { 

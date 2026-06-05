@@ -7,6 +7,8 @@ import Customers from "./pages/Customers";
 import Marketing from "./pages/Marketing";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import GroundCombat from "./pages/GroundCombat";
+import BrandDataPlatform from "./pages/BrandDataPlatform";
 
 export default function App() {
   return (
@@ -19,6 +21,8 @@ export default function App() {
           <Route path="/geo-optimization" element={<GEOSearchOptimization />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/marketing" element={<Marketing />} />
+          <Route path="/ground-combat" element={<GroundCombat />} />
+          <Route path="/brand-data" element={<BrandDataPlatform />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
