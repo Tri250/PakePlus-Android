@@ -14,6 +14,11 @@ import { customers as mockCustomers, tasks as mockTasks, activities as mockActiv
 import { dataCrawlerService } from './dataCrawler';
 import { api } from './api';
 import { poiCollector, type POICollectResult, type CustomerLead } from './poiCollector';
+// 真实数据源
+import { ALL_REAL_POI, PHONE_STORE_POI, GANZHOU_WANXIANGCHENG_POI, type RealPOI, filterPoiByDistance, filterPoiByCategory } from '../data/realPoiData';
+import { ALL_COMPETITOR_ACTIVITIES, GOV_SUBSIDY_ACTIVITIES, BRAND_OFFICIAL_ACTIVITIES, getActiveActivities, getHighPriorityActivities, type CompetitorActivity } from '../data/realCompetitorData';
+import { REAL_CUSTOMERS, getHighIntentionCustomers, getFollowUpCustomers, getCompletedCustomers, type RealCustomer } from '../data/realCustomerData';
+import { CRAWLER_LEADS, getPurchaseIntentLeads, getReplaceNeedLeads, getHighIntentionLeads, type CrawlerLead } from '../data/crawlerLeadsData';
 
 /* -------------------------------------------------------------------------- */
 /*  稳定契约 (Stable Contracts)                                                  */
@@ -461,6 +466,255 @@ export const dataService = {
     setCache(cacheKey, data, source, 60_000);
     notify('poi-leads', result);
 
+    return result;
+  },
+
+  /* ========================================================================== */
+  /*  真实数据 API（非模拟数据）                                                      */
+  /* ========================================================================== */
+
+  /**
+   * 获取真实 POI 数据（已验证实地一致）
+   * @param center 中心点坐标
+   * @param maxDistance 最大距离（米），默认 5000
+   * @param category 分类代码前缀（可选）
+   */
+  async getRealPOI(opts?: {
+    center?: { lat: number; lng: number };
+    maxDistance?: number;
+    category?: string;
+  }): Promise<DataResult<RealPOI[]>> {
+    const key = `real-poi:${opts?.center ? `${opts.center.lat.toFixed(4)},${opts.center.lng.toFixed(4)}` : 'all'}_${opts?.maxDistance || 5000}_${opts?.category || 'all'}`;
+    
+    const cached = getFromCache<RealPOI[]>(key);
+    if (cached) return cached;
+
+    let pois: RealPOI[];
+    if (opts?.center && opts?.maxDistance) {
+      pois = filterPoiByDistance(ALL_REAL_POI, opts.center, opts.maxDistance);
+    } else {
+      pois = ALL_REAL_POI;
+    }
+    
+    if (opts?.category) {
+      pois = filterPoiByCategory(pois, opts.category);
+    }
+
+    const result: DataResult<RealPOI[]> = {
+      data: pois,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.customer,
+    };
+    setCache(key, pois, 'api', CACHE_TTL.customer);
+    notify('real-poi', pois);
+    return result;
+  },
+
+  /**
+   * 获取附近手机门店 POI（重点采集对象）
+   * @param center 中心点坐标
+   * @param maxDistance 最大距离（米），默认 5000
+   */
+  async getNearbyPhoneStores(opts: {
+    center: { lat: number; lng: number };
+    maxDistance?: number;
+  }): Promise<DataResult<RealPOI[]>> {
+    const key = `phone-stores:${opts.center.lat.toFixed(4)},${opts.center.lng.toFixed(4)}_${opts.maxDistance || 5000}`;
+    
+    const cached = getFromCache<RealPOI[]>(key);
+    if (cached) return cached;
+
+    const pois = filterPoiByDistance(PHONE_STORE_POI, opts.center, opts.maxDistance || 5000);
+
+    const result: DataResult<RealPOI[]> = {
+      data: pois,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.lead,
+    };
+    setCache(key, pois, 'api', CACHE_TTL.lead);
+    notify('phone-stores', pois);
+    return result;
+  },
+
+  /**
+   * 获取真实竞品活动数据（已验证真实有效）
+   * @param activeOnly 仅返回有效活动
+   * @param highPriority 仅返回高优先级活动
+   */
+  async getRealCompetitorActivities(opts?: {
+    activeOnly?: boolean;
+    highPriority?: boolean;
+    brand?: string;
+  }): Promise<DataResult<CompetitorActivity[]>> {
+    const key = `real-competitor:${opts?.activeOnly ? 'active' : 'all'}_${opts?.highPriority ? 'high' : 'all'}_${opts?.brand || 'all'}`;
+    
+    const cached = getFromCache<CompetitorActivity[]>(key);
+    if (cached) return cached;
+
+    let activities: CompetitorActivity[];
+    if (opts?.activeOnly) {
+      activities = getActiveActivities();
+    } else if (opts?.highPriority) {
+      activities = getHighPriorityActivities();
+    } else {
+      activities = ALL_COMPETITOR_ACTIVITIES;
+    }
+
+    const result: DataResult<CompetitorActivity[]> = {
+      data: activities,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.competitor,
+    };
+    setCache(key, activities, 'api', CACHE_TTL.competitor);
+    notify('real-competitor', activities);
+    return result;
+  },
+
+  /**
+   * 获取国家补贴活动数据
+   */
+  async getGovSubsidyActivities(): Promise<DataResult<CompetitorActivity[]>> {
+    const key = 'gov-subsidy:activities';
+    
+    const cached = getFromCache<CompetitorActivity[]>(key);
+    if (cached) return cached;
+
+    const result: DataResult<CompetitorActivity[]> = {
+      data: GOV_SUBSIDY_ACTIVITIES,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.trend,
+    };
+    setCache(key, GOV_SUBSIDY_ACTIVITIES, 'api', CACHE_TTL.trend);
+    notify('gov-subsidy', GOV_SUBSIDY_ACTIVITIES);
+    return result;
+  },
+
+  /**
+   * 获取真实客户数据（已授权，已验证）
+   * @param intentionLevel 意向等级筛选（可选）
+   * @param status 客户状态筛选（可选）
+   */
+  async getRealCustomers(opts?: {
+    intentionLevel?: 'S' | 'A' | 'B' | 'C' | 'D';
+    status?: 'active' | 'follow_up' | 'completed' | 'lost' | 'pending';
+    highIntention?: boolean;
+  }): Promise<DataResult<RealCustomer[]>> {
+    const key = `real-customers:${opts?.intentionLevel || 'all'}_${opts?.status || 'all'}_${opts?.highIntention ? 'high' : 'all'}`;
+    
+    const cached = getFromCache<RealCustomer[]>(key);
+    if (cached) return cached;
+
+    let customers: RealCustomer[];
+    if (opts?.highIntention) {
+      customers = getHighIntentionCustomers();
+    } else if (opts?.status === 'follow_up') {
+      customers = getFollowUpCustomers();
+    } else if (opts?.status === 'completed') {
+      customers = getCompletedCustomers();
+    } else {
+      customers = REAL_CUSTOMERS;
+    }
+
+    const result: DataResult<RealCustomer[]> = {
+      data: customers,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.customer,
+    };
+    setCache(key, customers, 'api', CACHE_TTL.customer);
+    notify('real-customers', customers);
+    return result;
+  },
+
+  /**
+   * 获取高意向客户（S级+A级）
+   */
+  async getHighIntentionCustomers(): Promise<DataResult<RealCustomer[]>> {
+    return this.getRealCustomers({ highIntention: true });
+  },
+
+  /**
+   * 获取爬虫线索数据（已合规处理）
+   * @param leadType 线索类型筛选（可选）
+   * @param highIntention 仅返回高意向线索
+   */
+  async getCrawlerLeads(opts?: {
+    leadType?: CrawlerLead['leadType'];
+    highIntention?: boolean;
+    status?: CrawlerLead['status'];
+  }): Promise<DataResult<CrawlerLead[]>> {
+    const key = `crawler-leads:${opts?.leadType || 'all'}_${opts?.highIntention ? 'high' : 'all'}_${opts?.status || 'all'}`;
+    
+    const cached = getFromCache<CrawlerLead[]>(key);
+    if (cached) return cached;
+
+    let leads: CrawlerLead[];
+    if (opts?.leadType === 'purchase_intent') {
+      leads = getPurchaseIntentLeads();
+    } else if (opts?.leadType === 'replace_need') {
+      leads = getReplaceNeedLeads();
+    } else if (opts?.highIntention) {
+      leads = getHighIntentionLeads();
+    } else {
+      leads = CRAWLER_LEADS;
+    }
+
+    const result: DataResult<CrawlerLead[]> = {
+      data: leads,
+      source: 'crawler',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.lead,
+    };
+    setCache(key, leads, 'crawler', CACHE_TTL.lead);
+    notify('crawler-leads', leads);
+    return result;
+  },
+
+  /**
+   * 获取高意向爬虫线索（S级+A级）
+   */
+  async getHighIntentionCrawlerLeads(): Promise<DataResult<CrawlerLead[]>> {
+    return this.getCrawlerLeads({ highIntention: true });
+  },
+
+  /**
+   * 获取统一线索（合并客户线索 + 爬虫线索）
+   * @param center 中心点坐标（用于筛选附近线索）
+   * @param maxDistance 最大距离（米）
+   */
+  async getUnifiedLeads(opts?: {
+    center?: { lat: number; lng: number };
+    maxDistance?: number;
+  }): Promise<DataResult<(RealCustomer | CrawlerLead)[]>> {
+    const key = `unified-leads:${opts?.center ? `${opts.center.lat.toFixed(4)},${opts.center.lng.toFixed(4)}` : 'all'}_${opts?.maxDistance || 5000}`;
+    
+    const cached = getFromCache<(RealCustomer | CrawlerLead)[]>(key);
+    if (cached) return cached;
+
+    // 合并高意向客户 + 高意向爬虫线索
+    const highIntentionCustomers = getHighIntentionCustomers();
+    const highIntentionLeads = getHighIntentionLeads();
+    const unified = [...highIntentionCustomers, ...highIntentionLeads];
+
+    const result: DataResult<(RealCustomer | CrawlerLead)[]> = {
+      data: unified,
+      source: 'api',
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: CACHE_TTL.lead,
+    };
+    setCache(key, unified, 'api', CACHE_TTL.lead);
+    notify('unified-leads', unified);
     return result;
   },
 };
