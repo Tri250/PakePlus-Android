@@ -17,7 +17,7 @@ import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export default function Cockpit() {
-  const { radius, setRadius, currentStoreId, setCurrentStore, stores, realtimePosition, setRealtimePosition, setLocating } = useGlobal();
+  const { radius, setRadius, currentStoreId, setCurrentStore, stores, realtimePosition, setRealtimePosition } = useGlobal();
   const nav = useNavigate();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [suggestions, setSuggestions] = useState<{ title: string; body: string; cta: string }[]>([]);
@@ -26,6 +26,8 @@ export default function Cockpit() {
   const [radiusStats, setRadiusStats] = useState<{ km: RadiusKm; reachableCustomers: number; hotSpots: number }[]>([]);
   const [time, setTime] = useState(new Date());
   const [showStoreList, setShowStoreList] = useState(false);
+  // 实时定位状态从 store 里取
+  const [locating, setLocatingLocal] = useState(false);
   // 实时定位反查信息
   const [reverseInfo, setReverseInfo] = useState<{
     province: string; city: string; district: string; address: string; nearestPoi: string | null; distance: number;
@@ -73,7 +75,7 @@ export default function Cockpit() {
       toast.error('浏览器不支持定位', '请使用 Chrome / Edge / Safari 访问');
       return;
     }
-    setLocating(true);
+    setLocatingLocal(true);
     toast.info('🛰️ 正在获取 GPS 定位…', '请允许浏览器获取位置');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -107,7 +109,6 @@ export default function Cockpit() {
             toast.success(
               '🛰️ 已根据实时定位切换门店',
               `${r.address.city} · ${r.address.district} · ${r.nearestStore.name} (${r.nearestStore.distance}km)`,
-              4000,
             );
             await load();
           } else {
@@ -116,11 +117,11 @@ export default function Cockpit() {
         } catch (err) {
           toast.error('反查地址失败', String(err));
         } finally {
-          setLocating(false);
+          setLocatingLocal(false);
         }
       },
       (err) => {
-        setLocating(false);
+        setLocatingLocal(false);
         const msg = err.code === 1 ? '用户拒绝授权' : err.code === 2 ? '位置不可用' : '定位超时';
         toast.error('定位失败', msg);
       },
@@ -157,7 +158,6 @@ export default function Cockpit() {
       toast.success(
         `🕷️ 爬虫采集完成 · +${r.created} 客户`,
         `来源: ${sources} · 平均评分 ${avgHot} · 主城区: ${district}`,
-        5000,
       );
       // 3. 等待 1.2s 让动画过渡
       setTimeout(() => {

@@ -22,7 +22,7 @@ import SectionHeader from '@/components/SectionHeader';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
 import { toast } from '@/components/Toast';
-import type { RadiusKm, Store } from '@/lib/types';
+import type { RadiusKm, Store, Campaign, FlowNode, Channel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const NODE_TEMPLATES: { type: FlowNode['type']; label: string; icon: typeof MessageSquare; tone: string }[] = [
@@ -141,7 +141,6 @@ export default function CampaignPage() {
       toast.success(
         `✅ 活动已执行 · 触达 ${r.totalReached} 人`,
         `成功 ${r.totalSuccess} · 总成本 ¥${r.totalCost} · 共 ${r.steps.length} 步`,
-        5000,
       );
       await load();
     } catch (e) {
@@ -180,7 +179,6 @@ export default function CampaignPage() {
       toast.success(
         `🎯 智能活动已建好`,
         `爬虫采集 ${r.created} 客户 · AI 文案 + 企微 + 等待 + 短信 + 卡券全流程`,
-        5000,
       );
     } catch {
       toast.error('建活动失败', '请稍后重试');
