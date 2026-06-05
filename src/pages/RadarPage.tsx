@@ -1,6 +1,9 @@
-import { Sliders, Home, Phone, Navigation, Filter, Mic, ChevronLeft, X } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { customers, gradeColors } from '../data/mockData';
+import { customers, leads, leadStatusMap } from '../data/mockData';
+import {
+  Sliders, Home, Phone, Navigation, Filter, Mic, ChevronLeft,
+  UserPlus, MessageSquare, Star, MapPin,
+} from 'lucide-react';
 import { useState } from 'react';
 
 export default function RadarPage() {
@@ -8,36 +11,73 @@ export default function RadarPage() {
   const setShowRadar = useAppStore((s) => s.setShowRadar);
   const showToast = useAppStore((s) => s.showToast);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [mode, setMode] = useState<'leads' | 'customers'>('leads');
   const [selectedDot, setSelectedDot] = useState<string | null>(null);
 
-  // 排序后的客户 (按距离)
-  const sortedCustomers = [...customers].sort((a, b) => a.distance - b.distance);
-  const topThree = sortedCustomers.slice(0, 3);
+  // 客户线索
+  const sortedLeads = [...leads].sort((a, b) => b.intent - a.intent);
+  const topThree = sortedLeads.slice(0, 3);
+  const customersSorted = [...customers].sort((a, b) => a.distance - b.distance);
+
+  const dataPoints = mode === 'leads' ? leads.map((l, i) => ({
+    id: l.id,
+    label: l.name[0],
+    color: leadStatusMap[l.status].color,
+    intent: l.intent,
+    pos: { x: 20 + i * 15, y: 30 + (i % 2) * 25 },
+    sub: `${l.intent}分`,
+  })) : customers.map((c, i) => ({
+    id: c.id,
+    label: c.avatar,
+    color: c.avatarColor,
+    intent: c.intentScore,
+    pos: c.position,
+    sub: `${c.distance}m`,
+  }));
 
   return (
     <div className="absolute inset-0 z-40 bg-white flex flex-col animate-slideInRight">
       <div className="scroll-area">
         {/* 页面标题 + 返回 */}
-        <div className="px-5 pt-1 pb-3 flex items-center justify-between animate-fadeIn">
-          <button
-            onClick={() => setShowRadar(false)}
-            className="w-9 h-9 rounded-full flex items-center justify-center -ml-2"
-            style={{ background: 'var(--surface-2)' }}
-            aria-label="返回"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-[20px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            获客雷达
-          </h1>
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-medium"
-            style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            筛选
-          </button>
+        <div className="px-5 pt-1 pb-3 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowRadar(false)}
+              className="w-9 h-9 rounded-full flex items-center justify-center -ml-2"
+              style={{ background: 'var(--surface-2)' }}
+              aria-label="返回"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-[20px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              客户线索
+            </h1>
+            <button
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-medium"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              筛选
+            </button>
+          </div>
+          {/* 模式切换 */}
+          <div className="flex gap-1 mt-3 p-1 rounded-full" style={{ background: 'var(--surface-2)' }}>
+            {(['leads', 'customers'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 h-7 rounded-full text-xs font-semibold transition-colors"
+                style={{
+                  background: mode === m ? '#fff' : 'transparent',
+                  color: mode === m ? 'var(--primary)' : 'var(--text-secondary)',
+                  boxShadow: mode === m ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                {m === 'leads' ? '🎯 线索' : '👥 客户'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {filterOpen && <FilterPanel onClose={() => setFilterOpen(false)} />}
@@ -115,23 +155,23 @@ export default function RadarPage() {
             >
               <Navigation className="w-5 h-5" fill="#fff" />
             </div>
-            {/* 客户点 */}
-            {customers.map((c, i) => (
+            {/* 客户/线索点 */}
+            {dataPoints.map((p, i) => (
               <button
-                key={c.id}
+                key={p.id}
                 className="radar-dot animate-pop"
                 style={{
-                  left: `${c.position.x}%`,
-                  top: `${c.position.y}%`,
-                  background: c.avatarColor,
+                  left: `${p.pos.x}%`,
+                  top: `${p.pos.y}%`,
+                  background: p.color,
                   animationDelay: `${200 + i * 80}ms`,
-                  width: selectedDot === c.id ? 44 : 36,
-                  height: selectedDot === c.id ? 44 : 36,
-                  fontSize: selectedDot === c.id ? 15 : 13,
+                  width: selectedDot === p.id ? 44 : 36,
+                  height: selectedDot === p.id ? 44 : 36,
+                  fontSize: selectedDot === p.id ? 15 : 13,
                 }}
-                onClick={() => setSelectedDot(selectedDot === c.id ? null : c.id)}
+                onClick={() => setSelectedDot(selectedDot === p.id ? null : p.id)}
               >
-                {c.avatar}
+                {p.label}
               </button>
             ))}
             {/* 提示条 */}
@@ -146,92 +186,183 @@ export default function RadarPage() {
             >
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                实时扫描中 · {customers.length} 位客户
+                实时扫描中 · {dataPoints.length} 个{mode === 'leads' ? '线索' : '客户'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* 附近高意向客户 */}
+        {/* 列表 */}
         <div className="px-5 pb-6 animate-slideUp" style={{ animationDelay: '120ms' }}>
           <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-            附近 {topThree.length} 位高意向客户
+            高意向 {topThree.length} 位{mode === 'leads' ? '线索' : '客户'}
           </h2>
           <div className="space-y-2.5">
-            {topThree.map((c, i) => (
-              <div
-                key={c.id}
-                className="card p-3.5 animate-slideInRight"
-                style={{ animationDelay: `${180 + i * 80}ms` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
-                    style={{ background: c.avatarColor, fontSize: 17 }}
-                  >
-                    {c.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        {c.name}
-                      </span>
-                      <span
-                        className="chip"
-                        style={{
-                          background: gradeColors[c.grade].bg,
-                          color: gradeColors[c.grade].text,
-                        }}
-                      >
-                        {c.grade}级
-                      </span>
-                    </div>
-                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
-                      {c.phoneModel}用户 · {c.statusText}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {c.distance}
-                      <span className="text-xs font-normal ml-0.5" style={{ color: 'var(--text-muted)' }}>
-                        m
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <button
-                    className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
-                    style={{ background: 'rgba(59,130,246,0.10)', color: '#3b82f6' }}
-                    onClick={() => {
-                      showToast(`正在导航到 ${c.name} 位置...`, '🧭');
-                    }}
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    导航
-                  </button>
-                  <button
-                    className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
-                    style={{ background: 'rgba(16,185,129,0.10)', color: '#10b981' }}
-                    onClick={() => {
-                      showToast(`正在拨打 ${c.phone}`, '📞');
-                    }}
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    拨号
-                  </button>
-                  <button
-                    className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
-                    style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+            {topThree.map((item, i) => {
+              if (mode === 'leads') {
+                const l = item as typeof leads[0];
+                return (
+                  <LeadCard
+                    key={l.id}
+                    lead={l}
+                    delay={i * 80}
+                    onCall={() => showToast(`正在跟进 ${l.name}`, '📞')}
+                    onConvert={() => showToast(`${l.name} 已转为正式客户`, '✓')}
+                  />
+                );
+              } else {
+                const c = item as unknown as typeof customers[0];
+                return (
+                  <CustomerRow
+                    key={c.id}
+                    customer={c}
+                    delay={i * 80}
                     onClick={() => setSelectedCustomer(c.id)}
-                  >
-                    <Home className="w-3.5 h-3.5" />
-                    详情
-                  </button>
-                </div>
-              </div>
-            ))}
+                    onCall={() => showToast(`正在拨打 ${c.phone}`, '📞')}
+                  />
+                );
+              }
+            })}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeadCard({
+  lead,
+  delay,
+  onCall,
+  onConvert,
+}: {
+  lead: typeof leads[0];
+  delay: number;
+  onCall: () => void;
+  onConvert: () => void;
+}) {
+  const s = leadStatusMap[lead.status];
+  return (
+    <div
+      className="card p-3.5 animate-slideInRight"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+          style={{ background: s.color, fontSize: 17 }}
+        >
+          {lead.name[0]}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {lead.name}
+            </span>
+            <span
+              className="chip"
+              style={{ background: s.bg, color: s.color }}
+            >
+              {s.label}
+            </span>
+          </div>
+          <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
+            {lead.source} · 意向度 {lead.intent}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+            {lead.capturedAt}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-3">
+        <button
+          className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
+          style={{ background: 'rgba(16,185,129,0.10)', color: '#10b981' }}
+          onClick={onConvert}
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          转为客户
+        </button>
+        <button
+          className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
+          style={{ background: 'rgba(59,130,246,0.10)', color: '#3b82f6' }}
+          onClick={onCall}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          跟进沟通
+        </button>
+        <button
+          className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold"
+          style={{ background: 'rgba(245,158,11,0.10)', color: '#f59e0b' }}
+          onClick={onCall}
+        >
+          <Star className="w-3.5 h-3.5" />
+          标记
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CustomerRow({
+  customer: c,
+  delay,
+  onClick,
+  onCall,
+}: {
+  customer: typeof customers[0];
+  delay: number;
+  onClick: () => void;
+  onCall: () => void;
+}) {
+  return (
+    <div
+      className="card p-3.5 animate-slideInRight"
+      style={{ animationDelay: `${delay}ms` }}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+          style={{ background: c.avatarColor, fontSize: 17 }}
+        >
+          {c.avatar}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {c.name}
+            </span>
+            <span
+              className="chip"
+              style={{ background: 'rgba(245,158,11,0.10)', color: '#b45309' }}
+            >
+              {c.grade}级
+            </span>
+          </div>
+          <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
+            {c.phoneModel} · {c.statusText}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
+            {c.distance}
+            <span className="text-xs font-normal ml-0.5" style={{ color: 'var(--text-muted)' }}>
+              m
+            </span>
+          </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCall();
+            }}
+            className="mt-1 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(16,185,129,0.10)' }}
+          >
+            <Phone className="w-3.5 h-3.5" style={{ color: '#10b981' }} />
+          </button>
         </div>
       </div>
     </div>

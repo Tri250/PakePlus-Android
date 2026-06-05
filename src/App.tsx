@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import RadarPage from './pages/RadarPage';
 import CustomersPage from './pages/CustomersPage';
 import TasksPage from './pages/TasksPage';
+import StorePage from './pages/StorePage';
 import DataPage from './pages/DataPage';
 import CustomerDetail from './pages/CustomerDetail';
 import TaskDetail from './pages/TaskDetail';
@@ -15,6 +16,7 @@ import RoleSwitcher from './pages/RoleSwitcher';
 import AddCustomerSheet from './pages/AddCustomerSheet';
 import SOSPanel from './pages/SOSPanel';
 import SettingsSheet from './pages/SettingsSheet';
+import AllFeaturesSheet from './pages/AllFeaturesSheet';
 import { useEffect } from 'react';
 
 export default function App() {
@@ -37,17 +39,18 @@ export default function App() {
       <OfflineBar />
 
       <div className="flex-1 relative overflow-hidden">
-        {/* Tab 页面映射:
-            home (获客) → HomePage 首页仪表盘
-            customers (客户) → CustomersPage 客户资产列表
-            tasks (地推) → TasksPage 任务列表
+        {/* 5 Tab 页面映射:
+            home (获客) → HomePage 首页
+            customers (客户) → CustomersPage 客户资产
+            tasks (地推) → TasksPage 任务
+            store (门店) → StorePage 门店管理
             data (数据) → DataPage 数据中台
-            RadarPage 获客雷达作为可从 HomePage 打开的全屏视图（通过 showRadar 控制）
         */}
         <div className="absolute inset-0">
           {activeTab === 'home' && <HomePage />}
           {activeTab === 'customers' && <CustomersPage />}
           {activeTab === 'tasks' && <TasksPage />}
+          {activeTab === 'store' && <StorePage />}
           {activeTab === 'data' && <DataPage />}
         </div>
       </div>
@@ -63,6 +66,7 @@ export default function App() {
       <AddCustomerSheet />
       <SOSPanel />
       <SettingsSheet />
+      <AllFeaturesSheet />
       <Toasts />
     </div>
   );

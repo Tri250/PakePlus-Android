@@ -1,4 +1,4 @@
-import { Radar, Users, MapPin, BarChart3 } from 'lucide-react';
+import { Radar, Users, MapPin, BarChart3, Store } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import type { TabKey } from '../store/appStore';
 
@@ -6,6 +6,7 @@ const tabs: { key: TabKey; label: string; icon: typeof Radar }[] = [
   { key: 'home', label: '获客', icon: Radar },
   { key: 'customers', label: '客户', icon: Users },
   { key: 'tasks', label: '地推', icon: MapPin },
+  { key: 'store', label: '门店', icon: Store },
   { key: 'data', label: '数据', icon: BarChart3 },
 ];
 

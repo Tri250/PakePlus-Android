@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Role } from '../data/mockData';
 
-export type TabKey = 'home' | 'customers' | 'tasks' | 'data';
+export type TabKey = 'home' | 'customers' | 'tasks' | 'store' | 'data';
 
 interface ToastMsg {
   id: number;
@@ -76,6 +76,18 @@ interface AppState {
   // 设置 sheet
   showSettings: boolean;
   setShowSettings: (v: boolean) => void;
+
+  // 全部功能 抽屉
+  showAllFeatures: boolean;
+  setShowAllFeatures: (v: boolean) => void;
+
+  // 客户动态/竞品动态 子tab
+  homeFeedTab: 'customer' | 'competitor';
+  setHomeFeedTab: (t: 'customer' | 'competitor') => void;
+
+  // 子功能页
+  activeFeature: string | null;
+  setActiveFeature: (id: string | null) => void;
 }
 
 let toastId = 0;
@@ -162,4 +174,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   showSettings: false,
   setShowSettings: (v) => set({ showSettings: v }),
+
+  showAllFeatures: false,
+  setShowAllFeatures: (v) => set({ showAllFeatures: v }),
+
+  homeFeedTab: 'customer',
+  setHomeFeedTab: (t) => set({ homeFeedTab: t }),
+
+  activeFeature: null,
+  setActiveFeature: (id) => set({ activeFeature: id }),
 }));

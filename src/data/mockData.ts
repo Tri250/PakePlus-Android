@@ -376,3 +376,114 @@ export const gradeColors: Record<Grade, { bg: string; text: string }> = {
   C: { bg: '#f3e8ff', text: '#7e22ce' },
   D: { bg: '#f1f5f9', text: '#475569' },
 };
+
+// ===== 门店团队 =====
+export interface TeamMember {
+  id: string;
+  name: string;
+  avatar: string;
+  color: string;
+  role: string;
+  todayDone: number;
+  todayTotal: number;
+  weeklyPoints: number;
+  status: 'online' | 'offline' | 'busy';
+}
+
+export const teamMembers: TeamMember[] = [
+  { id: 'm1', name: '王磊', avatar: '王', color: '#3b82f6', role: '地推专员', todayDone: 5, todayTotal: 8, weeklyPoints: 92, status: 'online' },
+  { id: 'm2', name: '陈志强', avatar: '陈', color: '#10b981', role: '地推专员', todayDone: 7, todayTotal: 8, weeklyPoints: 105, status: 'online' },
+  { id: 'm3', name: '王美玲', avatar: '王', color: '#f59e0b', role: '地推专员', todayDone: 6, todayTotal: 8, weeklyPoints: 88, status: 'busy' },
+  { id: 'm4', name: '李大伟', avatar: '李', color: '#8b5cf6', role: '地推专员', todayDone: 4, todayTotal: 8, weeklyPoints: 75, status: 'offline' },
+  { id: 'm5', name: '赵敏', avatar: '赵', color: '#ef4444', role: '店长', todayDone: 8, todayTotal: 10, weeklyPoints: 120, status: 'online' },
+];
+
+// ===== 异常预警 =====
+export interface Alert {
+  id: string;
+  type: 'urgent' | 'warning' | 'info';
+  title: string;
+  desc: string;
+  time: string;
+  action: string;
+}
+
+export const alerts: Alert[] = [
+  { id: 'a1', type: 'urgent', title: '客户刘晓东流失风险', desc: '已被竞品接触 3 次，建议今日回访', time: '10分钟前', action: '立即跟进' },
+  { id: 'a2', type: 'warning', title: '李大伟今日打卡异常', desc: 'GPS 漂移超 500m，请确认实际位置', time: '1小时前', action: '查看详情' },
+  { id: 'a3', type: 'info', title: '物料库存预警', desc: '宣传册剩余 23 份，请及时补货', time: '今天 09:00', action: '申请补货' },
+];
+
+// ===== 客户线索 (待跟进) =====
+export interface Lead {
+  id: string;
+  name: string;
+  source: string; // 来源
+  intent: number;
+  capturedAt: string;
+  status: 'new' | 'contacting' | 'qualified' | 'lost';
+}
+
+export const leads: Lead[] = [
+  { id: 'l1', name: '吴雪琴', source: '华强北扫街', intent: 88, capturedAt: '今天 10:32', status: 'new' },
+  { id: 'l2', name: '郑浩宇', source: '门店到访', intent: 92, capturedAt: '今天 09:15', status: 'contacting' },
+  { id: 'l3', name: '黄丽华', source: '企微添加', intent: 76, capturedAt: '昨天 16:40', status: 'qualified' },
+  { id: 'l4', name: '马文涛', source: '活动扫码', intent: 65, capturedAt: '昨天 11:22', status: 'new' },
+  { id: 'l5', name: '钱雅琪', source: '老客介绍', intent: 95, capturedAt: '2天前', status: 'qualified' },
+  { id: 'l6', name: '孙建国', source: '华强北扫街', intent: 58, capturedAt: '3天前', status: 'lost' },
+];
+
+// ===== 附近竞品动态 =====
+export interface CompetitorEvent {
+  id: string;
+  competitor: string;
+  type: 'promotion' | 'opening' | 'event' | 'price';
+  title: string;
+  distance: string;
+  time: string;
+  impact: 'high' | 'mid' | 'low';
+}
+
+export const competitorEvents: CompetitorEvent[] = [
+  { id: 'ce1', competitor: '华为体验店', type: 'promotion', title: 'Mate 60 系列限时优惠 500 元', distance: '320m', time: '今天 11:00', impact: 'high' },
+  { id: 'ce2', competitor: '小米之家', type: 'opening', title: '南山新店开业，全场 8 折', distance: '680m', time: '昨天', impact: 'high' },
+  { id: 'ce3', competitor: 'OPPO 专卖店', type: 'event', title: 'Find X7 摄影沙龙活动', distance: '450m', time: '今天 14:00', impact: 'mid' },
+  { id: 'ce4', competitor: 'vivo 旗舰店', type: 'price', title: 'X100 系列降价 300 元', distance: '510m', time: '2小时前', impact: 'mid' },
+];
+
+// ===== 全部功能入口 =====
+export const allFeatures: { id: string; category: string; name: string; desc: string; icon: string; color: string; badge?: string }[] = [
+  // 智能获客中枢
+  { id: 'lbs', category: '获客中枢', name: 'LBS 雷达扫描', desc: '实时定位周边 POI 客户', icon: '📡', color: '#3b82f6', badge: '热' },
+  { id: 'geo', category: '获客中枢', name: 'GEO 搜索优化', desc: '智能搜索 + 评分 + 密度分析', icon: '🔍', color: '#3b82f6' },
+  { id: 'competitor', category: '获客中枢', name: '竞品热力监控', desc: '实时监控竞品门店客流', icon: '🔥', color: '#3b82f6' },
+  { id: 'replacement', category: '获客中枢', name: '换机周期预测', desc: 'AI 预测客户换机时间', icon: '📱', color: '#3b82f6' },
+  // 客户资产库
+  { id: 'segment', category: '客户资产', name: '品牌潜客分层', desc: 'S/A/B/C/D 智能分层模型', icon: '📊', color: '#10b981' },
+  { id: 'tradein', category: '客户资产', name: '以旧换新意向', desc: '评估客户换机意向评分', icon: '💰', color: '#10b981' },
+  { id: 'timeline', category: '客户资产', name: '服务事件时间轴', desc: '客户互动历史全记录', icon: '📅', color: '#10b981' },
+  { id: 'wecom', category: '客户资产', name: '企微侧边栏', desc: 'CRM 对接企业微信', icon: '💬', color: '#10b981' },
+  // 地推作战
+  { id: 'route', category: '地推作战', name: 'AI 路线规划', desc: '基于 POI 密度最优路径', icon: '🗺️', color: '#f59e0b' },
+  { id: 'task', category: '地推作战', name: '扫街任务派发', desc: '任务追踪 · 进度管理', icon: '📋', color: '#f59e0b' },
+  { id: 'script', category: '地推作战', name: '话术智能推荐', desc: 'AI 生成个性化销售话术', icon: '💡', color: '#f59e0b' },
+  { id: 'material', category: '地推作战', name: '品牌物料生成', desc: '海报 · 视频 · 手册', icon: '🎨', color: '#f59e0b' },
+  // 门店管理
+  { id: 'inspection', category: '门店管理', name: '巡店检查', desc: '标准化检查清单', icon: '✅', color: '#8b5cf6' },
+  { id: 'schedule', category: '门店管理', name: '排班管理', desc: '智能排班 · 考勤打卡', icon: '🕐', color: '#8b5cf6' },
+  { id: 'inventory', category: '门店管理', name: '物料库存', desc: '物料申请 · 库存预警', icon: '📦', color: '#8b5cf6' },
+  { id: 'training', category: '门店管理', name: '培训资料', desc: '话术库 · 产品知识', icon: '📚', color: '#8b5cf6' },
+  // 品牌数据中台
+  { id: 'dashboard', category: '数据中台', name: '总部驾驶舱', desc: '全国门店运营数据', icon: '🎛️', color: '#ec4899' },
+  { id: 'heatmap', category: '数据中台', name: '竞品热力地图', desc: '区域竞争态势可视化', icon: '🗺️', color: '#ec4899' },
+  { id: 'board', category: '数据中台', name: '换机周期看板', desc: '销售预测分析', icon: '📊', color: '#ec4899' },
+  { id: 'api', category: '数据中台', name: '数据 API 回传', desc: '与品牌 CRM 对接', icon: '🔗', color: '#ec4899' },
+];
+
+// 客户线索状态
+export const leadStatusMap = {
+  new: { label: '待跟进', color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
+  contacting: { label: '沟通中', color: '#f59e0b', bg: 'rgba(245,158,11,0.10)' },
+  qualified: { label: '已意向', color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
+  lost: { label: '已流失', color: '#94a3b8', bg: 'rgba(148,163,184,0.10)' },
+};
