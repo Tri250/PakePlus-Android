@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Radar, Search, Flame, Calendar, 
-  Users, Star, Megaphone, Route, ClipboardList, MessageSquare, FileText,
-  BarChart3, Building2, Database,
-  Settings, Shield, Menu, X, Bell, User, ChevronDown, ChevronRight
+  LayoutDashboard, Radar, Brain, Users, Megaphone, BarChart3,
+  Settings, Menu, X, Bell, User, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const navigation = [
@@ -18,9 +16,7 @@ const navigation = [
     icon: Radar,
     children: [
       { name: 'LBS雷达扫描', href: '/lbs', icon: Radar },
-      { name: 'GEO搜索优化', href: '/geo-search', icon: Search },
-      { name: '竞品热力监控', href: '/competitor-heatmap', icon: Flame },
-      { name: '换机周期预测', href: '/replacement-cycle', icon: Calendar },
+      { name: 'GEO优化引擎', href: '/geo-optimization', icon: Brain, badge: '2026' },
     ]
   },
   { 
@@ -28,7 +24,6 @@ const navigation = [
     icon: Users,
     children: [
       { name: '客户管理', href: '/customers', icon: Users },
-      { name: '品牌潜客分层', href: '/brand-segment', icon: Star },
     ]
   },
   { 
@@ -36,10 +31,6 @@ const navigation = [
     icon: Megaphone,
     children: [
       { name: '营销作战', href: '/marketing', icon: Megaphone },
-      { name: 'AI路线规划', href: '/route-planning', icon: Route },
-      { name: '扫街任务', href: '/street-task', icon: ClipboardList },
-      { name: '话术推荐', href: '/script-recommendation', icon: MessageSquare },
-      { name: '物料生成', href: '/material-generator', icon: FileText },
     ]
   },
   { 
@@ -47,24 +38,19 @@ const navigation = [
     icon: BarChart3,
     children: [
       { name: '数据分析', href: '/analytics', icon: BarChart3 },
-      { name: '总部驾驶舱', href: '/headquarters', icon: Building2 },
-      { name: 'API回传', href: '/api-feedback', icon: Database },
     ]
   },
   { 
     name: '系统设置', 
-    icon: Settings,
-    children: [
-      { name: '系统配置', href: '/settings', icon: Settings },
-      { name: '合规审计', href: '/compliance-audit', icon: Shield },
-    ]
+    href: '/settings',
+    icon: Settings 
   },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['智能获客中枢', '客户资产库']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['智能获客中枢']);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus((prev) =>
@@ -119,14 +105,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <Link
                           key={child.href}
                           to={child.href}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                             isActive(child.href)
                               ? 'bg-blue-50 text-blue-600 font-medium'
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <child.icon className="w-4 h-4" />
-                          {child.name}
+                          <div className="flex items-center gap-3">
+                            <child.icon className="w-4 h-4" />
+                            {child.name}
+                          </div>
+                          {(child as any).badge && (
+                            <span className="px-1.5 py-0.5 bg-gradient-to-r from-violet-500 to-pink-500 text-white text-[10px] font-bold rounded">
+                              {(child as any).badge}
+                            </span>
+                          )}
                         </Link>
                       ))}
                     </div>

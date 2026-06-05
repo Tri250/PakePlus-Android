@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import LBSRadar from "./pages/LBSRadar";
+import GEOSearchOptimization from "./pages/GEOSearchOptimization";
 import Customers from "./pages/Customers";
 import Marketing from "./pages/Marketing";
 import Analytics from "./pages/Analytics";
@@ -14,6 +15,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/lbs" element={<LBSRadar />} />
+          <Route path="/geo-search" element={<GEOSearchOptimization />} />
+          <Route path="/geo-optimization" element={<GEOSearchOptimization />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/marketing" element={<Marketing />} />
           <Route path="/analytics" element={<Analytics />} />
