@@ -263,7 +263,6 @@ export class DataCollector {
         for (const result of uniqueResults) {
           try {
             await repository.lead.save({
-              id: result.id,
               ...result,
               _version: 1,
               _updatedAt: new Date().toISOString(),
