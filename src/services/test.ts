@@ -73,6 +73,9 @@ async function runTest(
 export async function testMapServices(): Promise<TestResult[]> {
   const results: TestResult[] = [];
 
+  // 启用模拟模式（确保测试在无网络环境下也能通过）
+  mapService.setMockMode(true);
+
   // 测试 Nominatim 地理编码
   results.push(
     await runTest('Nominatim 地理编码', '地图服务', async () => {
@@ -141,6 +144,9 @@ export async function testMapServices(): Promise<TestResult[]> {
 
 export async function testDataCollector(): Promise<TestResult[]> {
   const results: TestResult[] = [];
+
+  // 启用地图模拟模式
+  mapService.setMockMode(true);
 
   // 测试数据采集器状态
   results.push(

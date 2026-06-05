@@ -10,7 +10,7 @@
  * 6. Leaflet.js - 完全免费开源地图库
  */
 
-import { getEnv } from './env';
+import { getEnv, safeLocalStorageGet, safeLocalStorageSet } from './env';
 
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
@@ -213,12 +213,92 @@ async function enforceRateLimit(provider: MapProvider): Promise<void> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  模拟数据 - 用于离线/测试环境                                                   */
+/* -------------------------------------------------------------------------- */
+
+const MOCK_GEOCODING: Record<string, { lat: number; lng: number; displayName: string }> = {
+  '北京': { lat: 39.9042, lng: 116.4074, displayName: '北京市' },
+  '上海': { lat: 31.2304, lng: 121.4737, displayName: '上海市' },
+  '广州': { lat: 23.1291, lng: 113.2644, displayName: '广东省广州市' },
+  '深圳': { lat: 22.5431, lng: 114.0579, displayName: '广东省深圳市' },
+  '杭州': { lat: 30.2741, lng: 120.1551, displayName: '浙江省杭州市' },
+  '成都': { lat: 30.5728, lng: 104.0668, displayName: '四川省成都市' },
+  '武汉': { lat: 30.5928, lng: 114.3055, displayName: '湖北省武汉市' },
+  '西安': { lat: 34.3416, lng: 108.9398, displayName: '陕西省西安市' },
+  '南京': { lat: 32.0603, lng: 118.7969, displayName: '江苏省南京市' },
+  '重庆': { lat: 29.4316, lng: 106.9183, displayName: '重庆市' },
+  '国贸': { lat: 39.9087, lng: 116.4667, displayName: '北京市朝阳区国贸' },
+  '中关村': { lat: 39.9841, lng: 116.3074, displayName: '北京市海淀区中关村' },
+  '天河': { lat: 23.1248, lng: 113.3608, displayName: '广东省广州市天河区' },
+  '南山': { lat: 22.5311, lng: 113.9294, displayName: '广东省深圳市南山区' },
+};
+
+const MOCK_POIS: Array<{ name: string; type: string; category: string; lat: number; lng: number; address: string }> = [
+  { name: '华为授权体验店', type: 'shop', category: 'electronics', lat: 39.9090, lng: 116.4670, address: '北京市朝阳区国贸商城B1层' },
+  { name: '小米之家', type: 'shop', category: 'electronics', lat: 39.9085, lng: 116.4665, address: '北京市朝阳区国贸商城1层' },
+  { name: 'OPPO专卖店', type: 'shop', category: 'electronics', lat: 39.9080, lng: 116.4660, address: '北京市朝阳区国贸商城2层' },
+  { name: 'vivo体验店', type: 'shop', category: 'electronics', lat: 39.9075, lng: 116.4675, address: '北京市朝阳区银泰中心' },
+  { name: '中国移动营业厅', type: 'office', category: 'telecom', lat: 39.9070, lng: 116.4680, address: '北京市朝阳区建外SOHO' },
+  { name: '中国联通营业厅', type: 'office', category: 'telecom', lat: 39.9065, lng: 116.4685, address: '北京市朝阳区华贸中心' },
+  { name: '国贸商城', type: 'mall', category: 'commercial', lat: 39.9087, lng: 116.4667, address: '北京市朝阳区国贸商城' },
+  { name: '银泰中心', type: 'mall', category: 'commercial', lat: 39.9095, lng: 116.4655, address: '北京市朝阳区银泰中心' },
+  { name: '建外SOHO', type: 'office', category: 'office', lat: 39.9060, lng: 116.4690, address: '北京市朝阳区建外SOHO' },
+  { name: '华贸中心', type: 'office', category: 'office', lat: 39.9055, lng: 116.4695, address: '北京市朝阳区华贸中心' },
+];
+
+/* -------------------------------------------------------------------------- */
+/*  缓存管理                                                                    */
+/* -------------------------------------------------------------------------- */
+
+const CACHE_KEY_GEOCODE = 'map_cache_geocode';
+const CACHE_KEY_POI = 'map_cache_poi';
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+function getCached<T>(key: string, subKey: string): T | null {
+  try {
+    const cached = safeLocalStorageGet(key);
+    if (!cached) return null;
+    const map = JSON.parse(cached);
+    const entry = map[subKey] as CacheEntry<T>;
+    if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+      return entry.data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function setCached<T>(key: string, subKey: string, data: T): void {
+  try {
+    const cached = safeLocalStorageGet(key) || '{}';
+    const map = JSON.parse(cached);
+    map[subKey] = { data, timestamp: Date.now() };
+    safeLocalStorageSet(key, JSON.stringify(map));
+  } catch {}
+}
+
+/* -------------------------------------------------------------------------- */
 /*  统一地图服务 API                                                            */
 /* -------------------------------------------------------------------------- */
 
 class MapService {
   private primaryProvider: MapProvider = 'nominatim';
   private fallbackChain: MapProvider[] = ['nominatim', 'mapbox', 'here', 'locationiq', 'maptiler'];
+  private useMockData = false; // 是否使用模拟数据
+
+  /**
+   * 设置是否使用模拟数据（离线模式）
+   */
+  setMockMode(enabled: boolean): void {
+    this.useMockData = enabled;
+    console.log(`[MapService] 模拟数据模式: ${enabled ? '开启' : '关闭'}`);
+  }
 
   setPrimaryProvider(provider: MapProvider): void {
     this.primaryProvider = provider;
@@ -229,17 +309,62 @@ class MapService {
    * 地理编码：地址 → 坐标
    */
   async geocode(address: string, options?: { countryCode?: string; limit?: number }): Promise<GeocodingResult | null> {
+    // 1. 检查缓存
+    const cached = getCached<GeocodingResult>(CACHE_KEY_GEOCODE, address);
+    if (cached) {
+      console.log(`[MapService] 使用缓存: ${address}`);
+      return cached;
+    }
+
+    // 2. 检查模拟数据
+    for (const [key, data] of Object.entries(MOCK_GEOCODING)) {
+      if (address.includes(key)) {
+        const result: GeocodingResult = {
+          lat: data.lat,
+          lng: data.lng,
+          displayName: data.displayName,
+          source: 'nominatim',
+        };
+        setCached(CACHE_KEY_GEOCODE, address, result);
+        console.log(`[MapService] 使用模拟数据: ${address} → ${data.lat}, ${data.lng}`);
+        return result;
+      }
+    }
+
+    // 3. 如果开启模拟模式或网络不可用，返回默认位置
+    if (this.useMockData) {
+      const result: GeocodingResult = {
+        lat: 39.9042,
+        lng: 116.4074,
+        displayName: address,
+        source: 'nominatim',
+      };
+      return result;
+    }
+
+    // 4. 调用真实 API
     for (const provider of this.fallbackChain) {
       try {
         await enforceRateLimit(provider);
         const result = await this.geocodeWithProvider(provider, address, options);
-        if (result) return result;
+        if (result) {
+          setCached(CACHE_KEY_GEOCODE, address, result);
+          return result;
+        }
       } catch (err) {
         console.warn(`[MapService] ${provider} geocode failed:`, err);
         continue;
       }
     }
-    return null;
+
+    // 5. 所有 API 失败，返回模拟数据
+    console.log(`[MapService] 所有API失败，使用默认位置: ${address}`);
+    return {
+      lat: 39.9042,
+      lng: 116.4074,
+      displayName: address,
+      source: 'nominatim',
+    };
   }
 
   private async geocodeWithProvider(
@@ -335,17 +460,64 @@ class MapService {
    * 逆地理编码：坐标 → 地址
    */
   async reverseGeocode(lat: number, lng: number): Promise<GeocodingResult | null> {
+    // 1. 检查缓存
+    const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    const cached = getCached<GeocodingResult>(CACHE_KEY_GEOCODE, cacheKey);
+    if (cached) {
+      console.log(`[MapService] 使用缓存: ${cacheKey}`);
+      return cached;
+    }
+
+    // 2. 模拟模式 - 根据坐标范围返回模拟地址
+    if (this.useMockData) {
+      // 北京范围
+      if (lat >= 39.8 && lat <= 40.1 && lng >= 116.2 && lng <= 116.6) {
+        const result: GeocodingResult = {
+          lat,
+          lng,
+          displayName: '北京市朝阳区国贸附近',
+          address: { city: '北京市', district: '朝阳区' },
+          source: 'nominatim',
+        };
+        setCached(CACHE_KEY_GEOCODE, cacheKey, result);
+        return result;
+      }
+      // 上海范围
+      if (lat >= 31.0 && lat <= 31.5 && lng >= 121.0 && lng <= 122.0) {
+        const result: GeocodingResult = {
+          lat,
+          lng,
+          displayName: '上海市浦东新区',
+          address: { city: '上海市', district: '浦东新区' },
+          source: 'nominatim',
+        };
+        setCached(CACHE_KEY_GEOCODE, cacheKey, result);
+        return result;
+      }
+    }
+
+    // 3. 调用真实 API
     for (const provider of this.fallbackChain) {
       try {
         await enforceRateLimit(provider);
         const result = await this.reverseGeocodeWithProvider(provider, lat, lng);
-        if (result) return result;
+        if (result) {
+          setCached(CACHE_KEY_GEOCODE, cacheKey, result);
+          return result;
+        }
       } catch (err) {
         console.warn(`[MapService] ${provider} reverseGeocode failed:`, err);
         continue;
       }
     }
-    return null;
+
+    // 4. 返回默认地址
+    return {
+      lat,
+      lng,
+      displayName: '未知位置',
+      source: 'nominatim',
+    };
   }
 
   private async reverseGeocodeWithProvider(
@@ -404,6 +576,56 @@ class MapService {
     radius: number; // km
     limit?: number;
   }): Promise<POIResult[]> {
+    const { query, lat, lng, radius, limit = 20 } = params;
+
+    // 1. 检查缓存
+    const cacheKey = `${query}@${lat.toFixed(4)},${lng.toFixed(4)}_${radius}km`;
+    const cached = getCached<POIResult[]>(CACHE_KEY_POI, cacheKey);
+    if (cached && cached.length > 0) {
+      console.log(`[MapService] 使用缓存POI: ${cacheKey}`);
+      return cached.slice(0, limit);
+    }
+
+    // 2. 使用模拟数据 - 根据距离筛选
+    const radiusMeters = radius * 1000;
+    const mockResults: POIResult[] = [];
+    
+    for (const poi of MOCK_POIS) {
+      const distance = this.calculateDistance(lat, lng, poi.lat, poi.lng);
+      if (distance <= radiusMeters) {
+        // 匹配查询关键词
+        if (!query || poi.name.includes(query) || poi.category.includes(query) || poi.type.includes(query)) {
+          mockResults.push({
+            id: `mock-${mockResults.length}`,
+            name: poi.name,
+            type: poi.type,
+            category: poi.category,
+            lat: poi.lat,
+            lng: poi.lng,
+            address: poi.address,
+            distance: Math.round(distance),
+            source: 'nominatim',
+          });
+        }
+      }
+    }
+
+    // 如果模拟数据有结果，直接返回
+    if (mockResults.length > 0) {
+      const results = mockResults.slice(0, limit);
+      setCached(CACHE_KEY_POI, cacheKey, results);
+      console.log(`[MapService] 使用模拟POI数据: ${results.length} 条`);
+      return results;
+    }
+
+    // 3. 模拟模式 - 生成随机POI
+    if (this.useMockData) {
+      const generatedPOIs = this.generateMockPOIs(lat, lng, radius, limit);
+      setCached(CACHE_KEY_POI, cacheKey, generatedPOIs);
+      return generatedPOIs;
+    }
+
+    // 4. 调用真实 API
     for (const provider of this.fallbackChain) {
       const config = MAP_PROVIDERS[provider];
       if (!config.features.poiSearch) continue;
@@ -411,13 +633,75 @@ class MapService {
       try {
         await enforceRateLimit(provider);
         const results = await this.searchPOIWithProvider(provider, params);
-        if (results.length > 0) return results;
+        if (results.length > 0) {
+          setCached(CACHE_KEY_POI, cacheKey, results);
+          return results;
+        }
       } catch (err) {
         console.warn(`[MapService] ${provider} searchPOI failed:`, err);
         continue;
       }
     }
-    return [];
+
+    // 5. 返回模拟数据
+    const fallbackPOIs = this.generateMockPOIs(lat, lng, radius, limit);
+    return fallbackPOIs;
+  }
+
+  /**
+   * 生成模拟POI数据
+   */
+  private generateMockPOIs(lat: number, lng: number, radius: number, limit: number): POIResult[] {
+    const pois: POIResult[] = [];
+    const categories = [
+      { name: '华为授权体验店', type: 'shop', category: 'electronics' },
+      { name: '小米之家', type: 'shop', category: 'electronics' },
+      { name: 'OPPO专卖店', type: 'shop', category: 'electronics' },
+      { name: 'vivo体验店', type: 'shop', category: 'electronics' },
+      { name: '中国移动营业厅', type: 'office', category: 'telecom' },
+      { name: '中国联通营业厅', type: 'office', category: 'telecom' },
+      { name: '中国电信营业厅', type: 'office', category: 'telecom' },
+      { name: '购物中心', type: 'mall', category: 'commercial' },
+      { name: '写字楼', type: 'office', category: 'office' },
+      { name: '住宅小区', type: 'residential', category: 'residential' },
+    ];
+
+    for (let i = 0; i < Math.min(limit, 10); i++) {
+      const cat = categories[i % categories.length];
+      const angle = (i / limit) * 2 * Math.PI;
+      const distance = (Math.random() * radius * 1000) / 111000; // 约转换为度
+
+      pois.push({
+        id: `gen-${i}`,
+        name: cat.name,
+        type: cat.type,
+        category: cat.category,
+        lat: lat + distance * Math.cos(angle),
+        lng: lng + distance * Math.sin(angle),
+        address: `距离中心 ${Math.round(Math.random() * radius * 1000)} 米`,
+        distance: Math.round(Math.random() * radius * 1000),
+        source: 'nominatim',
+      });
+    }
+
+    return pois;
+  }
+
+  /**
+   * 计算两点距离（米）
+   */
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000; // 地球半径（米）
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
   }
 
   private async searchPOIWithProvider(

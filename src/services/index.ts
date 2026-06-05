@@ -106,6 +106,10 @@ export type { NFCTapEvent, NFCTapResponse, NFCAction } from './nfcTapApi';
 export { mapService, MAP_PROVIDERS } from './mapService';
 export type { MapProvider, MapConfig, GeocodingResult, POIResult } from './mapService';
 
+// 地理定位服务
+export { geolocationService } from './geolocation';
+export type { LocationResult, WatchPositionOptions } from './geolocation';
+
 // 数据采集
 export { dataCollector, DataCollector, PRESET_SCANS } from './dataCollector';
 export type { ScanRadius, POICategory, ScanConfig, ScanResult, ScanReport } from './dataCollector';

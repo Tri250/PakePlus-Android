@@ -82,7 +82,24 @@ const DB_VERSION = 1;
 
 let db: IDBDatabase | null = null;
 
-export async function initDB(): Promise<IDBDatabase> {
+// Node.js 环境内存存储模拟
+const memoryStore: Map<string, Map<string, any>> = new Map();
+const isIndexedDBAvailable = typeof indexedDB !== 'undefined';
+
+export async function initDB(): Promise<IDBDatabase | null> {
+  // Node.js 环境：使用内存存储
+  if (!isIndexedDBAvailable) {
+    console.log('[Storage] IndexedDB 不可用，使用内存存储');
+    // 初始化内存存储
+    ['customers', 'leads', 'tasks', 'syncQueue', 'nfcEvents'].forEach(name => {
+      if (!memoryStore.has(name)) {
+        memoryStore.set(name, new Map());
+      }
+    });
+    return null;
+  }
+
+  // 浏览器环境：使用 IndexedDB
   if (db) return db;
 
   return new Promise((resolve, reject) => {
@@ -135,7 +152,16 @@ export async function initDB(): Promise<IDBDatabase> {
 }
 
 export async function dbGet<T>(storeName: string, id: string): Promise<T | null> {
+  // Node.js 环境：使用内存存储
+  if (!isIndexedDBAvailable) {
+    const store = memoryStore.get(storeName);
+    return store?.get(id) || null;
+  }
+
+  // 浏览器环境：使用 IndexedDB
   const database = await initDB();
+  if (!database) return null;
+  
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, 'readonly');
     const store = tx.objectStore(storeName);
@@ -146,7 +172,16 @@ export async function dbGet<T>(storeName: string, id: string): Promise<T | null>
 }
 
 export async function dbGetAll<T>(storeName: string): Promise<T[]> {
+  // Node.js 环境：使用内存存储
+  if (!isIndexedDBAvailable) {
+    const store = memoryStore.get(storeName);
+    return store ? Array.from(store.values()) : [];
+  }
+
+  // 浏览器环境：使用 IndexedDB
   const database = await initDB();
+  if (!database) return [];
+  
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, 'readonly');
     const store = tx.objectStore(storeName);
@@ -157,12 +192,27 @@ export async function dbGetAll<T>(storeName: string): Promise<T[]> {
 }
 
 export async function dbPut<T extends StoredEntity>(storeName: string, data: T): Promise<void> {
-  const database = await initDB();
   const enrichedData = {
     ...data,
     _version: (data._version || 0) + 1,
     _updatedAt: new Date().toISOString(),
   };
+
+  // Node.js 环境：使用内存存储
+  if (!isIndexedDBAvailable) {
+    let store = memoryStore.get(storeName);
+    if (!store) {
+      store = new Map();
+      memoryStore.set(storeName, store);
+    }
+    store.set(data.id, enrichedData);
+    console.log(`[Storage] 内存存储: ${storeName}[${data.id}]`);
+    return;
+  }
+
+  // 浏览器环境：使用 IndexedDB
+  const database = await initDB();
+  if (!database) return;
 
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, 'readwrite');
@@ -174,7 +224,17 @@ export async function dbPut<T extends StoredEntity>(storeName: string, data: T):
 }
 
 export async function dbDelete(storeName: string, id: string): Promise<void> {
+  // Node.js 环境：使用内存存储
+  if (!isIndexedDBAvailable) {
+    const store = memoryStore.get(storeName);
+    store?.delete(id);
+    return;
+  }
+
+  // 浏览器环境：使用 IndexedDB
   const database = await initDB();
+  if (!database) return;
+  
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
@@ -189,7 +249,18 @@ export async function dbQueryByIndex<T>(
   indexName: string,
   value: IDBValidKey
 ): Promise<T[]> {
+  // Node.js 环境：使用内存存储（简化实现）
+  if (!isIndexedDBAvailable) {
+    const store = memoryStore.get(storeName);
+    if (!store) return [];
+    // 简单过滤
+    return Array.from(store.values()).filter((item: any) => item[indexName] === value);
+  }
+
+  // 浏览器环境：使用 IndexedDB
   const database = await initDB();
+  if (!database) return [];
+  
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, 'readonly');
     const store = tx.objectStore(storeName);

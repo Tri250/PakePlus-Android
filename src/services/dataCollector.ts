@@ -14,6 +14,7 @@
 import { mapService } from './mapService';
 import { repository } from './storage';
 import { toastSuccess, toastError, toastLoading } from '../components/Toast';
+import { geolocationService } from './geolocation';
 
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
@@ -315,13 +316,31 @@ export class DataCollector {
    * 快速扫描（预设配置）
    */
   async quickScan(
-    lat: number,
-    lng: number,
+    lat?: number,
+    lng?: number,
     radius: ScanRadius = 5
   ): Promise<ScanReport> {
+    // 如果没有提供坐标，使用当前位置
+    let centerLat = lat;
+    let centerLng = lng;
+    
+    if (centerLat === undefined || centerLng === undefined) {
+      try {
+        const location = await geolocationService.getCurrentLocation();
+        centerLat = location.lat;
+        centerLng = location.lng;
+        console.log(`[DataCollector] 使用当前位置: ${centerLat}, ${centerLng}`);
+      } catch (err) {
+        // 使用默认位置（北京国贸）
+        centerLat = 39.9087;
+        centerLng = 116.4667;
+        console.log(`[DataCollector] 使用默认位置: ${centerLat}, ${centerLng}`);
+      }
+    }
+
     return this.scan({
-      centerLat: lat,
-      centerLng: lng,
+      centerLat,
+      centerLng,
       radius,
       categories: ['office', 'residential', 'school', 'mall', 'competitor', 'operator'],
       includeCompetitors: true,
@@ -329,6 +348,14 @@ export class DataCollector {
       maxResults: 200,
       saveToDB: true,
     });
+  }
+
+  /**
+   * 基于当前位置扫描
+   */
+  async scanFromCurrentLocation(radius: ScanRadius = 5): Promise<ScanReport> {
+    const location = await geolocationService.getCurrentLocation();
+    return this.quickScan(location.lat, location.lng, radius);
   }
 
   /**

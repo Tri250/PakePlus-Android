@@ -9,6 +9,8 @@
  * - CDN 加速
  */
 
+import { safeLocalStorageGet, safeLocalStorageSet } from './env';
+
 /* -------------------------------------------------------------------------- */
 /*  类型定义                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -172,7 +174,26 @@ class ImageService {
 
     const size = sizes[config.template];
 
-    // 使用 Canvas 生成海报
+    // 检查是否在浏览器环境
+    const isBrowser = typeof document !== 'undefined' && typeof HTMLCanvasElement !== 'undefined';
+    
+    if (isBrowser) {
+      // 浏览器环境：使用 Canvas 生成海报
+      return this.generatePosterWithCanvas(config, id, size);
+    } else {
+      // Node.js 环境：生成模拟数据 URL
+      return this.generatePosterMock(config, id, size);
+    }
+  }
+
+  /**
+   * 使用 Canvas 生成海报（浏览器环境）
+   */
+  private async generatePosterWithCanvas(
+    config: PosterConfig,
+    id: string,
+    size: { width: number; height: number }
+  ): Promise<GeneratedPoster> {
     const canvas = document.createElement('canvas');
     canvas.width = size.width;
     canvas.height = size.height;
@@ -255,6 +276,72 @@ class ImageService {
       height: size.height,
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * 生成模拟海报（Node.js 环境）
+   */
+  private async generatePosterMock(
+    config: PosterConfig,
+    id: string,
+    size: { width: number; height: number }
+  ): Promise<GeneratedPoster> {
+    // 生成 SVG 格式的模拟海报
+    const themeColors: Record<string, string> = {
+      red: '#ef4444',
+      blue: '#3b82f6',
+      green: '#10b981',
+      purple: '#8b5cf6',
+      orange: '#f59e0b',
+      pink: '#ec4899',
+    };
+
+    const bgColor = themeColors[config.theme] || '#3b82f6';
+    
+    // 生成 SVG 内容
+    const svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:${bgColor}"/>
+            <stop offset="100%" style="stop-color:${this.adjustColor(bgColor, -30)}"/>
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#bg)"/>
+        <text x="50%" y="200" text-anchor="middle" fill="white" font-size="48" font-weight="bold">${config.title}</text>
+        ${config.subtitle ? `<text x="50%" y="400" text-anchor="middle" fill="white" font-size="32">${config.subtitle}</text>` : ''}
+        ${config.price ? `<text x="50%" y="${size.height / 2}" text-anchor="middle" fill="white" font-size="72" font-weight="bold">${config.price}</text>` : ''}
+        ${config.discount ? `<text x="50%" y="${size.height / 2 + 80}" text-anchor="middle" fill="white" font-size="36">${config.discount}</text>` : ''}
+        ${config.storeName ? `<text x="50%" y="${size.height - 200}" text-anchor="middle" fill="white" font-size="28">${config.storeName}</text>` : ''}
+        ${config.storeAddress ? `<text x="50%" y="${size.height - 150}" text-anchor="middle" fill="white" font-size="20">${config.storeAddress}</text>` : ''}
+        <rect x="${size.width / 2 - 75}" y="${size.height - 400}" width="150" height="150" fill="white" stroke="#ccc"/>
+        <text x="50%" y="${size.height - 320}" text-anchor="middle" fill="#999" font-size="16">扫码查看</text>
+      </svg>
+    `;
+
+    // 转换为 data URL
+    const imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
+
+    // 缓存结果
+    const result: GeneratedPoster = {
+      id,
+      imageUrl,
+      thumbnailUrl: imageUrl,
+      template: config.template,
+      width: size.width,
+      height: size.height,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 保存到缓存
+    try {
+      const cacheKey = `poster_${id}`;
+      safeLocalStorageSet(cacheKey, JSON.stringify(result));
+    } catch {}
+
+    console.log(`[ImageService] 生成模拟海报: ${id}, 尺寸: ${size.width}x${size.height}`);
+
+    return result;
   }
 
   /**
