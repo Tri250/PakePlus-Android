@@ -1,16 +1,29 @@
 <resources>
-    <string name="app_name">PakePlus</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
-    <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Settings</string>
-    <string name="debug">close</string>
+    <string name="app_name">掌上商客</string>
+    <string name="app_subtitle">智能获客中枢</string>
+    <string name="navigation_drawer_open">打开导航</string>
+    <string name="navigation_drawer_close">关闭导航</string>
+    <string name="nav_header_title">掌上商客</string>
+    <string name="nav_header_subtitle">V2.0 智能版</string>
+    <string name="nav_header_desc">导航头部</string>
+    <string name="action_settings">设置</string>
+    <string name="debug">关闭调试</string>
     <string name="downloading">正在下载</string>
     <string name="download_started">已开始下载</string>
-
-    <string name="menu_home">Home</string>
-    <string name="menu_gallery">Gallery</string>
-    <string name="menu_slideshow">Slideshow</string>
+    <string name="download_failed">下载失败</string>
+    <string name="save_success">已保存到下载目录</string>
+    <string name="save_failed">保存失败</string>
+    <string name="permission_required">需要权限</string>
+    <string name="location_permission_denied">定位权限被拒绝，无法使用LBS功能</string>
+    <string name="phone_call_disabled">已禁用拨打电话功能</string>
+    <string name="phone_call_not_found">未找到可拨号的应用</string>
+    <string name="menu_home">首页</string>
+    <string name="menu_gallery">客户</string>
+    <string name="menu_slideshow">营销</string>
+    <string name="lbs_radar">LBS雷达</string>
+    <string name="geo_search">GEO搜索</string>
+    <string name="customer_manage">客户管理</string>
+    <string name="marketing">营销作战</string>
+    <string name="analytics">数据分析</string>
+    <string name="settings">系统设置</string>
 </resources>

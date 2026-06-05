@@ -1,151 +1,96 @@
-<h4 align="right"> 
-<span href=".README.md">English</span> 
-<a href="https://www.pakeplus.com/zh/" 
-style="margin: 0 10px;" >简体中文</a> 
-<a href="https://github.com/Sjj1024/PakePlus/discussions/108">日本语</a>
-</h4>  
-<p align="center">
-    <img src="https://github.com/Sjj1024/PakePlus/raw/main/docs/static/imgs/pakeplus.png" width=138/>
-</p>  
-<h1 align="center">PakePlus-Android</h1>  
-<p align="center"><strong>Turn any webpage into a desktop or mobile app in just 9 minutes. Simple and easy to use.</strong></p>
+# 掌上商客 V2.0 (HandBiz Radar)
 
-<div align="left">PakePlus supports Mac, Windows, and Linux, and support Android and iOS. There’s no need to install complex dependencies locally— all you need is a Github Token. Plus, PakePlus is only about 5MB in size. For the latest version, please see the <a href="[#popular-packages](https://github.com/Sjj1024/PakePlus/releases)">release page</a>. or visit: <a href="https://pakeplus.pages.dev" target="_blank">PakePlus Web</a>. Check the README for information on <a href="#popular-packages">popular packages</a> and <a href="#development">custom development</a>. Feel free to share your suggestions in the <a href="https://github.com/Sjj1024/PakePlus/discussions">discussion area</a>.</div>
+> 智能获客中枢 - 基于 PakePlus 的 LBS 雷达移动应用
 
-https://github.com/user-attachments/assets/b88bf541-0b26-4020-9eec-da79e1734fc9
+## 项目概述
 
-<h1 align="center">Sponsors</h1>
+掌上商客 V2.0 是一款专为品牌体验店设计的智能获客辅助 App，集成 LBS 雷达扫描、地理围栏、客户分层管理、地推作战等功能。基于 PakePlus WebView 壳引擎，将 Web 应用打包为原生 Android 应用。
 
-<p>
-PakePlus is an MIT-licensed open source project with its ongoing development made possible entirely by the support of these awesome backers. If you'd like to join them, please consider sponsoring PakePlus's development.
-</p>
+## 核心功能
 
-<table style="border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
-    <tr>
-        <td align="center" style="border: 1px solid #ddd; padding: 20px;">
-            <img style="border-radius: 1.5rem" src="https://files.pakeplus.com/finevoice.png" width="100"/>
-            <h3 style="margin: 0"><a href="https://finevoice.ai/" target="_blank">FineVoice</a></h3>
-            <p style="margin: 0">Create Every Voice You Imagine</p>
-        </td>
-        <td align="center" style="border: 1px solid #ddd; padding: 20px;">
-            <img style="border-radius: 1.5rem" src="https://avatars.githubusercontent.com/u/54536011?s=200&v=4" width="100"/>
-            <h3 style="margin: 0"><a href="https://tauri.app/" target="_blank">Tauri</a></h3>
-            <p style="margin: 0">Create cross-platform applications</p>
-        </td>
-        <td align="center" style="border: 1px solid #ddd; padding: 20px;">
-            <img style="border-radius: 1.5rem" src="https://avatars.githubusercontent.com/u/126759922?s=200&v=4" width="100"/>
-            <h3 style="margin: 0"><a href="https://cursor.com/agents" target="_blank">Cursor</a></h3>
-            <p style="margin: 0">Cursor is the best way to code with AI.</p>
-        </td>
-        <td align="center" style="border: 1px solid #ddd; padding: 20px;">
-            <img style="border-radius: 1.5rem" src="https://avatars.githubusercontent.com/u/878437?s=200&v=4" width="100"/>
-            <h3 style="margin: 0"><a href="https://www.jetbrains.com/idea/" target="_blank">JetBrains</a></h3>
-            <p style="margin: 0">The Leading IDE for Professional Development</p>
-        </td>
-    </tr>
-</table>
+### 📡 智能获客中枢
+- **LBS 雷达扫描**: 基于浏览器 Geolocation API 的实时定位和周边 POI 扫描
+- **GEO 搜索优化**: 智能搜索 + POI 评分 + 客流密度分析
+- **竞品热力监控**: 实时监控竞品门店分布与客流热点
+- **换机周期预测**: AI 预测客户换机时间，精准触达
 
-## Features
+### 👥 客户资产库
+- **品牌潜客分层**: S/A/B/C/D 智能分层模型
+- **以旧换新意向**: 评估客户换机意向
+- **服务事件时间轴**: 客户互动历史
+- **企业微信侧边栏**: CRM 对接
 
--   🎐 Approximately 20 times smaller than Electron (less than 5MB!) and 10 times faster.
--   🚀 Built with Rust Tauri, PakePlus is lighter and faster than JavaScript-based frameworks.
--   📦 Comes with rich built-in features — supports shortcuts, immersive windows, and minimalist customization.
--   👻 PakePlus is a minimalist tool that replaces traditional packaging with Tauri for cross-platform desktop apps.
--   📲 Uses native frameworks to package Android and iOS apps — smaller and faster than Tauri2.
--   🤗 Easy to use — just one GitHub Token is all you need to get a desktop app.
--   🌹 No need to install complex dependencies locally — use GitHub Actions for cloud-based automatic packaging.
--   🧑‍🤝‍🧑 Internationalization support — automatically follows your system language.
--   💡 Supports custom JavaScript injection — write your own JS to inject into the page.
--   🎨 Beautiful and user-friendly UI — better experience for beginners, supports Chinese names for packaging.
--   📡 Usable directly via the web, but the client offers stronger functionality and is recommended.
--   🔐 Data security — your token is stored only locally, and your project stays safely in your own Git repo.
--   🍀 Supports static file packaging — drop in a compiled dist folder or index.html from Vue/React to create a client app.
--   🐞 Debug mode supported — find and eliminate bugs during preview or release.
--   💬 If you run into any issues, feel free to join our technical community for help.
+### 🎯 地推作战系统
+- **AI 智能路线规划**: 基于 POI 密度和客户价值的最优路径
+- **扫街任务派发**: 任务追踪、进度管理
+- **话术智能推荐**: AI 生成个性化销售话术
+- **品牌物料一键生成**: 海报、视频、手册快速生成
 
-## Use Cases
+### 📊 品牌数据中台
+- **总部驾驶舱**: 全国门店运营数据
+- **竞品热力地图**: 区域竞争态势
+- **客户换机周期看板**: 销售预测
+- **数据 API 回传**: 与品牌 CRM 对接
 
--   Have a website? Instantly turn it into a app and elevate its appearance.
--   Have a Vue/React project and don’t want to buy a server? Package it as a desktop app.
--   Want your Cocos game to run as a cross-platform client? No problem.
--   Need to build your Unity project as a cross-platform client? Also no problem.
--   Hide your website address from casual sharing or bots scraping your content.
--   For internal company platforms — restrict access to your site via a dedicated client only.
--   Turn any website into your custom client — inject JS for automation and custom features.
--   Annoyed by website ads? Hide them with powerful JS.
--   Want to use Tauri2 but the environment is too heavy? Use PakePlus instead!
+## 技术架构
 
-## Getting Started
+### Android 端 (PakePlus 壳)
+- **WebView 引擎**: 基于系统 WebView 加载 LBS 应用
+- **定位权限管理**: 集成 Android 6.0+ 运行时权限申请
+- **JS 桥接**: JsBridge 支持 Web 端调用原生能力
+- **下载管理**: 支持 HTTP/HTTPS/data/blob 多协议文件下载
 
-1. Download the app from the release page：https://github.com/Sjj1024/PakePlus/releases,  
-   double-click to install, and run the app. or visit web: <a href="https://pakeplus.pages.dev" target="_blank">PakePlus Web</a>
+### Web 端 (React + TypeScript)
+- **React 18 + TypeScript**: 现代化前端框架
+- **Vite 6**: 快速构建工具
+- **Tailwind CSS**: 原子化样式
+- **Zustand**: 轻量级状态管理
+- **Lucide React**: 图标库
 
-2. Configure a Github Token, create a new project, and set up the configurations. get token guide:  
-   <a href="https://sjj1024.github.io/PakePlus/index_en.html">English</a> <a href="https://sjj1024.github.io/PakePlus/index_zh.html" style="margin: 0 50px;">简体中文</a><a href="https://sjj1024.github.io/PakePlus/index_ja.html">日本语</a>
+## 权限说明
 
-```
-Explanation of Github Token permissions:
-1. For the beta version, token permissions required:
-All repositories: Fork an original template repository
-Actions: Manage GitHub actions
-Administration: Fork and manage files in the repository
-Contents: Add, delete, modify, and find repository contents
-Issues: Submit issues to PakePlus
+| 权限 | 用途 | 是否必需 |
+|------|------|----------|
+| ACCESS_FINE_LOCATION | 精确定位（LBS雷达） | ✅ 必需 |
+| ACCESS_COARSE_LOCATION | 粗略定位 | ✅ 必需 |
+| INTERNET | 网络访问 | ✅ 必需 |
+| CAMERA | 拍照/视频通话 | 可选 |
+| RECORD_AUDIO | 录音 | 可选 |
+| READ_MEDIA_* | 媒体文件选择 | 可选 |
 
-1. For the classic version, token permissions required:
-repo: Fork and manage template code
-workflow: Compile and release your software
+## 快速开始
+
+### Android 构建
+```bash
+# 构建 debug APK
+./gradlew assembleDebug
+
+# 构建 release APK
+./gradlew assembleRelease
 ```
 
-1. You can preview the app in a new window and click the publish button to package the app.
-2. You can download the app from the release page.
+### Web 端开发
+```bash
+# 安装依赖
+npm install
 
-## FAQ
+# 启动开发服务器
+npm run dev
 
-1. Mac users may see an “App is damaged” warning on installation. click cancel and Run the following command, then reopen the app:（This is because the application requires an official signature to avoid the prompt of "The application is damaged" popping up after installation. However, the cost of the official signature is $99 per year... Therefore, it is necessary to manually bypass the signature to use it normally）
-
-```sh
-sudo xattr -r -d com.apple.quarantine /Applications/PakePlus.app
+# 构建生产版本
+npm run build
 ```
 
-1. When you package the app, Mac users may see an “App is damaged” warning on installation. click cancel and Run the following command, then reopen the app:
+## 应用信息
 
-```sh
-sudo xattr -r -d com.apple.quarantine /Applications/YourAppName.app
-```
+- **应用名称**: 掌上商客
+- **版本**: 2.0.0
+- **版本号**: 2
+- **包名**: com.handbiz.radar
+- **最小 SDK**: 24 (Android 7.0)
+- **目标 SDK**: 34 (Android 14)
+- **支持架构**: armeabi-v7a, arm64-v8a, x86, x86_64
 
-3. If you encounter any issues while using the program, please download the latest version, as versions developed before 2025 were based on Tauri v1.0. In 2025, Tauri was upgraded to v2.0. If the latest version still has issues, please submit an issue with detailed information so that we can update and resolve it more quickly.
+## 许可证
 
-4. After you add the GitHub Token, PakePlus will fork a PakePlus repository into your own repository. All your future projects will rely on this repository for creation and compilation, so please do not delete your PakePlus repository.
-
-## Developing PakePlus
-
-If you want to develop PakePlus locally, ensure your environment is prepared beforehand. Make sure Rust `>=1.63` and Node `>=16` (e.g., `16.18.1`) are installed on your computer. For installation guidance, please refer to the [Tauri Documentation](https://tauri.app/v1/guides/getting-started/prerequisites).
-
-If you’re unfamiliar with these, it’s best to try the one-click packaging tool above.
-
-```sh
-# Install dependencies
-pnpm i
-
-# Local development [Right-click to open debug mode.]
-pnpm run dev
-
-# Package the app
-pnpm run build
-
-```
-
-## Support
-
-1. wechat and group，my wechat is lanxingme，welcome to join the wechat group.
- <p align="center" style="display:flex; justify-content: flex-start;" >
-    <img src="https://github.com/Sjj1024/PakePlus/raw/main/docs/static/imgs/mywx.png" width=200/>
-    <img src="https://github.com/Sjj1024/PakePlus/raw/main/docs/static/imgs/wxcode.png" width=200/>
-    <img src="https://github.com/Sjj1024/PakePlus/raw/main/docs/static/imgs/qq.jpg" width=200/>
- </p>
-
-2. 💖If PakePlus has brought joy to your life, feel free to support it.
- <p align="center" style="display:flex; justify-content: flex-start;">
-    <img src="https://github.com/Sjj1024/PakePlus/raw/main/docs/static/imgs/sponsor.webp" width=620/>
- </p>
+本项目基于 PakePlus 开源协议。
