@@ -564,7 +564,7 @@ function MetricCard({
   sub: string;
   subColor: string;
   fetchedAt?: number;
-  source?: 'api' | 'crawler' | 'cache' | 'mock' | null;
+  source?: 'api' | 'crawler' | 'cache' | 'mock' | 'synthetic' | null;
 }) {
   return (
     <div className="metric-card">

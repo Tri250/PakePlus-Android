@@ -3,7 +3,7 @@ import { Radio } from 'lucide-react';
 
 interface Props {
   fetchedAt: number;
-  source?: 'api' | 'crawler' | 'cache' | 'mock' | null;
+  source?: 'api' | 'crawler' | 'cache' | 'mock' | 'synthetic' | null;
   className?: string;
 }
 

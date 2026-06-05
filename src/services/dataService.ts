@@ -13,6 +13,7 @@
 import { customers as mockCustomers, tasks as mockTasks, activities as mockActivities, competitorEvents as mockCompetitorEvents, leads as mockLeads, weeklyTrend as mockTrend, competitors as mockCompetitors, achievements as mockAchievements, alerts as mockAlerts, teamMembers as mockTeam, notifications as mockNotifications, type Customer, type Task, type Lead, type CompetitorEvent, type Achievement, type Alert, type TeamMember, type Notification } from '../data/mockData';
 import { dataCrawlerService } from './dataCrawler';
 import { api } from './api';
+import { poiCollector, type POICollectResult, type CustomerLead } from './poiCollector';
 
 /* -------------------------------------------------------------------------- */
 /*  稳定契约 (Stable Contracts)                                                  */
@@ -20,7 +21,7 @@ import { api } from './api';
 
 export interface DataResult<T> {
   data: T;
-  source: 'api' | 'crawler' | 'cache' | 'mock';
+  source: 'api' | 'crawler' | 'cache' | 'mock' | 'synthetic';
   isLive: boolean;          // 是否为实时数据
   fetchedAt: number;        // 获取时间戳
   staleIn: number;          // 多久后会过期 (ms)
@@ -405,6 +406,62 @@ export const dataService = {
   // 停止实时数据流
   stopRealtimeStream() {
     realtimeStatus = { ...realtimeStatus, isStreaming: false, sourcesActive: 0 };
+  },
+
+  /**
+   * 通过多源 POI 采集服务获取客户线索
+   * 高德 → 百度 → 腾讯 → 合成  降级链
+   * @param center 中心点坐标
+   * @param rings 自定义距离环（米），默认 [200, 500, 1000, 3000, 5000]
+   * @param keyword 关键字（可选）
+   * @param force 强制刷新（绕过缓存）
+   */
+  async getLeadsFromPOI(opts: {
+    center: { lat: number; lng: number };
+    rings?: number[];
+    keyword?: string;
+    force?: boolean;
+  }): Promise<POICollectResult> {
+    const cacheKey = `poi:${opts.center.lat.toFixed(4)},${opts.center.lng.toFixed(4)}_${(opts.rings || [200, 500, 1000, 3000, 5000]).join('-')}_${opts.keyword || 'all'}`;
+
+    // 1. 优先缓存
+    if (!opts.force) {
+      const cached = getFromCache<POICollectResult>(cacheKey);
+      if (cached) {
+        notify('poi-leads', cached.data);
+        return cached.data;
+      }
+    } else {
+      invalidate('poi-leads');
+    }
+
+    // 2. 调用 POI 采集器（内部已自带多源降级 + 合成兜底）
+    const result = await poiCollector.collect({
+      center: opts.center,
+      rings: opts.rings,
+      keyword: opts.keyword,
+      force: opts.force,
+    });
+
+    // 3. 缓存 60s
+    const source: DataResult<POICollectResult>['source'] = result.stats.byProvider.amap
+      ? 'api'
+      : result.stats.byProvider.baidu
+      ? 'crawler'
+      : result.stats.byProvider.tencent
+      ? 'crawler'
+      : 'synthetic';
+    const data: DataResult<POICollectResult> = {
+      data: result,
+      source,
+      isLive: true,
+      fetchedAt: Date.now(),
+      staleIn: 60_000,
+    };
+    setCache(cacheKey, data, source, 60_000);
+    notify('poi-leads', result);
+
+    return result;
   },
 };
 
