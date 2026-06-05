@@ -537,6 +537,159 @@ export async function testGEOModules(): Promise<TestResult[]> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  基础设施模块测试                                                              */
+/* -------------------------------------------------------------------------- */
+
+export async function testInfrastructureModules(): Promise<TestResult[]> {
+  const results: TestResult[] = [];
+
+  // 导入新模块
+  const { dataCrawlerService } = await import('./dataCrawler');
+  const { networkManager } = await import('./networkManager');
+  const { resolutionAdapter } = await import('./resolutionAdapter');
+  const { dynamicLoader } = await import('./dynamicLoader');
+  const { moduleChecker } = await import('./moduleChecker');
+
+  // 测试数据爬虫 - POI采集
+  results.push(
+    await runTest('爬虫POI采集', '数据爬虫', async () => {
+      const result = await dataCrawlerService.crawlPOI({
+        query: '华为体验店',
+        lat: 39.9087,
+        lng: 116.4667,
+        radius: 5000,
+        limit: 10,
+      });
+      return {
+        success: result.success,
+        message: `采集 ${result.count} 条POI，耗时 ${result.duration}ms`,
+        details: { source: result.source, cached: result.cached },
+      };
+    })
+  );
+
+  // 测试数据爬虫 - 产品采集
+  results.push(
+    await runTest('爬虫产品采集', '数据爬虫', async () => {
+      const result = await dataCrawlerService.crawlProduct({
+        brand: '华为',
+        limit: 5,
+      });
+      return {
+        success: result.success,
+        message: `采集 ${result.count} 个产品`,
+        details: result.data.slice(0, 2).map(p => ({ name: p.name, price: p.price })),
+      };
+    })
+  );
+
+  // 测试数据爬虫 - 补贴政策
+  results.push(
+    await runTest('爬虫补贴政策', '数据爬虫', async () => {
+      const result = await dataCrawlerService.crawlSubsidy({});
+      return {
+        success: result.success,
+        message: `采集 ${result.count} 条补贴政策`,
+        details: result.data.map(s => ({ title: s.title, amount: s.amount })),
+      };
+    })
+  );
+
+  // 测试数据源配置
+  results.push(
+    await runTest('数据源配置', '数据爬虫', async () => {
+      const configs = dataCrawlerService.getAllConfigs();
+      const enabled = configs.filter(c => c.enabled).length;
+      return {
+        success: enabled >= 10,
+        message: `支持 ${configs.length} 个数据源，${enabled} 个已启用`,
+        details: configs.slice(0, 5).map(c => c.name),
+      };
+    })
+  );
+
+  // 测试网络管理
+  results.push(
+    await runTest('网络状态检测', '网络管理', async () => {
+      const info = networkManager.getNetworkInfo();
+      return {
+        success: true,
+        message: `状态: ${info.status}, 类型: ${info.type}, 下行: ${info.downlink}Mbps`,
+        details: info,
+      };
+    })
+  );
+
+  // 测试分辨率适配
+  results.push(
+    await runTest('分辨率检测', '分辨率适配', async () => {
+      const info = resolutionAdapter.getScreenInfo();
+      return {
+        success: true,
+        message: `${info.width}x${info.height}, ${info.deviceType}, ${info.density}`,
+        details: info,
+      };
+    })
+  );
+
+  // 测试设备预设
+  results.push(
+    await runTest('设备预设', '分辨率适配', async () => {
+      const presets = resolutionAdapter.getDevicePresets();
+      const count = Object.keys(presets).length;
+      return {
+        success: count >= 10,
+        message: `支持 ${count} 个设备预设`,
+        details: Object.keys(presets).slice(0, 5),
+      };
+    })
+  );
+
+  // 测试动态加载
+  results.push(
+    await runTest('动态加载状态', '动态加载', async () => {
+      const states = dynamicLoader.getAllModuleStates();
+      const loaded = states.filter(s => s.status === 'loaded').length;
+      return {
+        success: states.length > 0,
+        message: `${states.length} 个模块，${loaded} 个已加载`,
+        details: states.slice(0, 3).map(s => ({ id: s.id, status: s.status })),
+      };
+    })
+  );
+
+  // 测试模块检查
+  results.push(
+    await runTest('模块完整性检查', '模块检查', async () => {
+      const report = await moduleChecker.checkAllModules();
+      return {
+        success: report.overallScore >= 70,
+        message: `总分 ${report.overallScore}分，覆盖率 ${report.coverage.percentage}%`,
+        details: {
+          total: report.coverage.total,
+          covered: report.coverage.covered,
+          recommendations: report.recommendations.slice(0, 2),
+        },
+      };
+    })
+  );
+
+  // 测试快速健康检查
+  results.push(
+    await runTest('快速健康检查', '模块检查', async () => {
+      const { healthy, issues } = await moduleChecker.quickHealthCheck();
+      return {
+        success: healthy,
+        message: healthy ? '所有关键模块正常' : `问题: ${issues.join(', ')}`,
+        details: { issues },
+      };
+    })
+  );
+
+  return results;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  运行所有测试                                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -552,6 +705,7 @@ export async function runAllTests(): Promise<TestReport> {
   results.push(...await testStorage());
   results.push(...await testAIService());
   results.push(...await testGEOModules());
+  results.push(...await testInfrastructureModules());
 
   const endTime = new Date().toISOString();
   const passed = results.filter(r => r.status === 'pass').length;

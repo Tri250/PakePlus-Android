@@ -170,3 +170,54 @@ export {
   testAIService,
 } from './test';
 export type { TestResult, TestReport } from './test';
+
+// 数据爬虫采集
+export { dataCrawlerService } from './dataCrawler';
+export type {
+  CrawlerSource,
+  CrawlerConfig,
+  CrawlerResult,
+  POICrawlData,
+  ProductCrawlData,
+  SubsidyCrawlData,
+} from './dataCrawler';
+
+// 网络服务管理
+export { networkManager } from './networkManager';
+export type {
+  NetworkStatus,
+  NetworkType,
+  NetworkInfo,
+  NetworkConfig,
+} from './networkManager';
+
+// 分辨率适配
+export { resolutionAdapter } from './resolutionAdapter';
+export type {
+  DeviceType,
+  Orientation,
+  PixelDensity,
+  ScreenInfo,
+  AdaptiveValue,
+  Breakpoints,
+} from './resolutionAdapter';
+
+// 动态加载
+export { dynamicLoader } from './dynamicLoader';
+export type {
+  LoadStatus,
+  LoadPriority,
+  ModuleConfig,
+  ModuleState,
+  LoadProgress,
+} from './dynamicLoader';
+
+// 模块完整性检查
+export { moduleChecker } from './moduleChecker';
+export type {
+  CheckStatus,
+  ModuleCheckResult as ModuleQualityResult,
+  CheckItem as ModuleCheckItem,
+  CoverageReport,
+  QualityReport,
+} from './moduleChecker';
