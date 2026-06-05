@@ -221,3 +221,36 @@ export type {
   CoverageReport,
   QualityReport,
 } from './moduleChecker';
+
+// API路由配置
+export { apiRouterService } from './apiRouter';
+export type {
+  ApiRoute,
+  CrawlerEndpoint,
+  RouteGroup,
+  HttpMethod,
+  RouteCategory,
+} from './apiRouter';
+
+// 权限隐私安全
+export { securityService } from './security';
+export type {
+  PrivacyPolicy,
+  SecurityAudit,
+  DataEncryption,
+  AccessControl,
+  PermissionLevel,
+  DataCategory,
+} from './security';
+
+// UI/UX统一
+export { uiuxService } from './uiux';
+export type {
+  ThemeMode,
+  ThemeConfig,
+  CardStyle,
+  CardConfig,
+  AnimationType,
+  AnimationConfig,
+  ComponentStyle,
+} from './uiux';
