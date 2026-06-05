@@ -31,8 +31,8 @@ export {
 } from './ai';
 export type {
   CustomerProfile,
-  ReplacementPrediction,
-  CustomerSegment,
+  ReplacementPrediction as AIReplacementPrediction,
+  CustomerSegment as AICustomerSegment,
   SmartScript,
   RoutePoint,
   OptimizedRoute,
@@ -109,6 +109,42 @@ export type { MapProvider, MapConfig, GeocodingResult, POIResult } from './mapSe
 // 地理定位服务
 export { geolocationService } from './geolocation';
 export type { LocationResult, WatchPositionOptions } from './geolocation';
+
+// GEO 搜索优化引擎
+export { geoOptimizationEngine } from './geoOptimization';
+export type {
+  BrandKeyword,
+  StoreDescription,
+  AISearchRankResult,
+  AttributionRecord,
+  GEORankingReport,
+  AISearchPlatform,
+} from './geoOptimization';
+
+// 竞品热力监控
+export { competitorMonitorService } from './competitorMonitor';
+export type {
+  CompetitorStore,
+  CompetitorActivity,
+  HeatmapData,
+  InterceptionPlan,
+  CompetitorMonitorReport,
+  CompetitorBrand,
+} from './competitorMonitor';
+
+// LBS 雷达扫描
+export { lbsRadarService } from './lbsRadar';
+export type {
+  SalesLead,
+  POIData,
+  CRMData,
+  ReplacementPrediction as LBSReplacementPrediction,
+  TradeInQuote,
+  LBSRadarScanResult,
+  HeatmapPoint,
+  CustomerSegment as LBSCustomerSegment,
+  AlertLevel as LBSAlertLevel,
+} from './lbsRadar';
 
 // 数据采集
 export { dataCollector, DataCollector, PRESET_SCANS } from './dataCollector';

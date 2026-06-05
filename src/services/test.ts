@@ -374,6 +374,169 @@ export async function testAIService(): Promise<TestResult[]> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  新模块测试                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export async function testGEOModules(): Promise<TestResult[]> {
+  const results: TestResult[] = [];
+
+  // 导入新模块
+  const { geoOptimizationEngine } = await import('./geoOptimization');
+  const { competitorMonitorService } = await import('./competitorMonitor');
+  const { lbsRadarService } = await import('./lbsRadar');
+
+  // 测试 GEO 关键词管理
+  results.push(
+    await runTest('GEO 关键词管理', 'GEO优化', async () => {
+      const keywords = geoOptimizationEngine.getKeywords();
+      if (keywords.length > 0) {
+        return {
+          success: true,
+          message: `已加载 ${keywords.length} 个品牌关键词`,
+          details: keywords.slice(0, 5).map(k => k.keyword),
+        };
+      }
+      return { success: false, message: '关键词库为空' };
+    })
+  );
+
+  // 测试门店描述生成
+  results.push(
+    await runTest('门店描述生成', 'GEO优化', async () => {
+      const description = geoOptimizationEngine.generateStoreDescription({
+        id: 'STORE-001',
+        name: '华为授权体验店（国贸店）',
+        address: '北京市朝阳区国贸商城B1层',
+        phone: '010-88888888',
+        lat: 39.9087,
+        lng: 116.4667,
+      });
+      if (description.structuredContent && description.services.length > 0) {
+        return {
+          success: true,
+          message: `生成结构化描述，${description.services.length} 项服务`,
+        };
+      }
+      return { success: false, message: '描述生成失败' };
+    })
+  );
+
+  // 测试行政区划搜索
+  results.push(
+    await runTest('行政区划搜索', 'GEO优化', async () => {
+      const regions = geoOptimizationEngine.searchRegion('北京');
+      if (regions.length > 0) {
+        return {
+          success: true,
+          message: `找到 ${regions.length} 个匹配区域`,
+          details: regions.slice(0, 3).map(r => r.fullPath),
+        };
+      }
+      return { success: false, message: '未找到匹配区域' };
+    })
+  );
+
+  // 测试竞品监控
+  results.push(
+    await runTest('竞品门店扫描', '竞品监控', async () => {
+      const report = await competitorMonitorService.scanCompetitors(
+        'STORE-001',
+        39.9087,
+        116.4667,
+        5000
+      );
+      if (report.totalCompetitors >= 0) {
+        return {
+          success: true,
+          message: report.summary,
+          details: { total: report.totalCompetitors, heatmap: report.heatmapData.length },
+        };
+      }
+      return { success: false, message: '竞品扫描失败' };
+    })
+  );
+
+  // 测试竞品品牌配置
+  results.push(
+    await runTest('竞品品牌配置', '竞品监控', async () => {
+      const configs = competitorMonitorService.getCompetitorConfigs();
+      const brands = Object.keys(configs);
+      if (brands.length >= 7) {
+        return {
+          success: true,
+          message: `支持 ${brands.length} 个竞品品牌`,
+          details: brands,
+        };
+      }
+      return { success: false, message: '品牌配置不足' };
+    })
+  );
+
+  // 测试 LBS 雷达扫描
+  results.push(
+    await runTest('LBS 雷达四层融合', 'LBS雷达', async () => {
+      const result = await lbsRadarService.scan('STORE-001', {
+        lat: 39.9087,
+        lng: 116.4667,
+        radius: 3,
+      });
+      if (result.salesLeads.length > 0) {
+        return {
+          success: true,
+          message: `生成 ${result.salesLeads.length} 条销售线索`,
+          details: {
+            layer1: result.layer1POIs.length,
+            layer2: result.layer2CRMCustomers.length,
+            layer3: result.layer3Predictions.length,
+            layer4: result.layer4TradeInQuotes.length,
+          },
+        };
+      }
+      return { success: false, message: '未生成销售线索' };
+    })
+  );
+
+  // 测试换机预测
+  results.push(
+    await runTest('换机周期预测', 'LBS雷达', async () => {
+      const result = await lbsRadarService.scan('STORE-001', {
+        lat: 39.9087,
+        lng: 116.4667,
+        radius: 3,
+      });
+      const highAlerts = result.layer3Predictions.filter(p => p.alertLevel === 'high');
+      return {
+        success: true,
+        message: `${result.layer3Predictions.length} 个换机预测，${highAlerts.length} 个高优先级`,
+        details: result.stats,
+      };
+    })
+  );
+
+  // 测试以旧换新报价
+  results.push(
+    await runTest('以旧换新报价', 'LBS雷达', async () => {
+      const result = await lbsRadarService.scan('STORE-001', {
+        lat: 39.9087,
+        lng: 116.4667,
+        radius: 3,
+      });
+      if (result.layer4TradeInQuotes.length > 0) {
+        const quote = result.layer4TradeInQuotes[0];
+        return {
+          success: true,
+          message: `总抵扣: ¥${quote.totalDeduction} (国补: ¥${quote.governmentSubsidy})`,
+          details: quote,
+        };
+      }
+      return { success: false, message: '未生成报价' };
+    })
+  );
+
+  return results;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  运行所有测试                                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -388,6 +551,7 @@ export async function runAllTests(): Promise<TestReport> {
   results.push(...await testImageService());
   results.push(...await testStorage());
   results.push(...await testAIService());
+  results.push(...await testGEOModules());
 
   const endTime = new Date().toISOString();
   const passed = results.filter(r => r.status === 'pass').length;
