@@ -101,7 +101,7 @@ export interface RealtimeLocateInput {
 }
 
 export interface RealtimeLocateResult {
-  position: { lng: number; lat: number; accuracy?: number };
+  position: { lng: number; lat: number; accuracy?: number; source?: string };
   address: { province: string; city: string; district: string; detail: string; nearestPoi: { name: string; category: string } | null };
   nearestStore: (ReturnType<typeof findNearestStore>) | null;
   nearbyPoiCount: number;

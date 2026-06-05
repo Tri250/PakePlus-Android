@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, Reorder } from 'framer-motion';
+import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import {
   Workflow,
   Plus,
@@ -19,10 +19,10 @@ import {
 } from 'lucide-react';
 import RadiusSelector from '@/components/RadiusSelector';
 import SectionHeader from '@/components/SectionHeader';
-import { toast } from '@/components/Toast';
 import { useGlobal } from '@/store/useGlobal';
 import { api } from '@/lib/api';
-import type { Campaign, Channel, FlowNode } from '@/lib/types';
+import { toast } from '@/components/Toast';
+import type { RadiusKm, Store } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const NODE_TEMPLATES: { type: FlowNode['type']; label: string; icon: typeof MessageSquare; tone: string }[] = [

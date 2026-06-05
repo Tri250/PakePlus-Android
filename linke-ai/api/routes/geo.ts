@@ -85,7 +85,4 @@ router.get('/poi/nearby-by-city', (req: Request, res: Response) => {
   res.json({ success: true, total: items.length, items });
 });
 
-// 反向补充
-export { reverseGeocode as _reverseGeocode };
-
 export default router;
