@@ -342,6 +342,21 @@ class NetworkManager {
   }
 
   /**
+   * 获取网络状态（简化接口）
+   */
+  async getStatus(): Promise<NetworkInfo> {
+    this.updateNetworkInfo();
+    return { ...this.networkInfo };
+  }
+
+  /**
+   * 订阅网络状态变化
+   */
+  subscribe(callback: (info: NetworkInfo) => void): () => void {
+    return this.onNetworkChange(callback);
+  }
+
+  /**
    * 通知监听器
    */
   private notifyListeners(): void {

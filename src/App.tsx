@@ -1,498 +1,1066 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Map, 
+  ScanLine, 
+  Users, 
+  Target, 
+  TrendingUp,
+  Navigation,
+  Phone,
+  MessageSquare,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  ArrowRight,
+  ChevronLeft,
+  Mic,
+  Wifi,
+  WifiOff,
+  Battery,
+  Signal
+} from 'lucide-react';
+import { repository, initDB, addToSyncQueue } from './services/storage';
+import { geolocationService } from './services/geolocation';
+import { networkManager } from './services/networkManager';
+import { lbsRadarService } from './services/lbsRadar';
+import { competitorMonitorService } from './services/competitorMonitor';
+import { geoOptimizationEngine } from './services/geoOptimization';
+import { dataCollector } from './services/dataCollector';
+import { imageService } from './services/imageService';
 
 // 模块类型
-type ModuleType = 'acquisition' | 'customer' | 'ground' | 'platform' | null;
+type ModuleType = 'home' | 'acquisition' | 'customer' | 'ground' | 'platform' | null;
+type ViewType = 'home' | 'module' | 'detail' | 'map-view';
 
-// 子模块配置
-const moduleConfig = {
-  acquisition: {
-    name: '智能获客中枢',
-    icon: '🎯',
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    bgGradient: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
-    tag: '获客',
-    tagColor: '#667eea',
-    subs: [
-      { id: 'geo', name: 'GEO 搜索优化引擎', icon: '🔍', badge: '新增' },
-      { id: 'lbs', name: 'LBS 雷达扫描', icon: '📡', badge: '重构' },
-      { id: 'competitor', name: '竞品热力监控', icon: '🔥', badge: '新增' },
-      { id: 'replacement', name: '换机周期预测', icon: '📱', badge: '新增' },
-    ],
+// 真实数据结构
+interface TodayTask {
+  id: string;
+  type: 'call' | 'visit' | 'follow-up' | 'trade-in';
+  title: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  priority: 'high' | 'medium' | 'low';
+  deadline: string;
+  completed: boolean;
+  lat?: number;
+  lng?: number;
+}
+
+interface SalesLead {
+  id: string;
+  name: string;
+  type: 'poi' | 'crm' | 'prediction';
+  distance: number;
+  heatScore: number;
+  address: string;
+  phone?: string;
+  lat: number;
+  lng: number;
+  alertLevel?: 'high' | 'medium' | 'low';
+  suggestedScript?: string;
+}
+
+type NetworkStatusType = 'online' | 'offline' | 'slow' | 'unstable';
+
+interface AppState {
+  networkStatus: NetworkStatusType;
+  location: { lat: number; lng: number; address: string } | null;
+  todayTasks: TodayTask[];
+  salesLeads: SalesLead[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 高对比度主题
+const themes = {
+  normal: {
+    bg: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
+    card: '#ffffff',
+    text: '#1e293b',
+    textSecondary: '#64748b',
+    primary: '#1677ff',
+    success: '#52c41a',
+    warning: '#faad14',
+    danger: '#f5222d',
   },
-  customer: {
-    name: '客户资产库',
-    icon: '👥',
-    gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    bgGradient: 'linear-gradient(135deg, #11998e15 0%, #38ef7d15 100%)',
-    tag: '资产',
-    tagColor: '#11998e',
-    subs: [
-      { id: 'segment', name: '品牌潜客分层模型', icon: '📊', badge: '' },
-      { id: 'tradein', name: '以旧换新意向评分', icon: '💰', badge: '' },
-      { id: 'timeline', name: '服务事件时间轴', icon: '📅', badge: '' },
-      { id: 'wecom', name: '企业微信侧边栏', icon: '💬', badge: '' },
-    ],
-  },
-  ground: {
-    name: '地推作战系统',
-    icon: '🚀',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    bgGradient: 'linear-gradient(135deg, #f093fb15 0%, #f5576c15 100%)',
-    tag: '地推',
-    tagColor: '#f5576c',
-    subs: [
-      { id: 'route', name: 'AI 智能路线规划', icon: '🗺️', badge: '重构' },
-      { id: 'task', name: '扫街任务派发与追踪', icon: '📋', badge: '' },
-      { id: 'script', name: '话术智能推荐', icon: '💡', badge: '' },
-      { id: 'material', name: '品牌物料一键生成', icon: '🎨', badge: '' },
-    ],
-  },
-  platform: {
-    name: '品牌数据中台',
-    icon: '📈',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    bgGradient: 'linear-gradient(135deg, #4facfe15 0%, #00f2fe15 100%)',
-    tag: '数据',
-    tagColor: '#4facfe',
-    subs: [
-      { id: 'dashboard', name: '总部驾驶舱', icon: '🎛️', badge: '' },
-      { id: 'heatmap', name: '竞品热力地图', icon: '🗺️', badge: '' },
-      { id: 'board', name: '客户换机周期看板', icon: '📊', badge: '' },
-      { id: 'api', name: '数据 API 回传', icon: '🔗', badge: '' },
-    ],
-  },
+  highContrast: {
+    bg: '#000000',
+    card: '#1a1a1a',
+    text: '#ffffff',
+    textSecondary: '#cccccc',
+    primary: '#ffff00',
+    success: '#00ff00',
+    warning: '#ffaa00',
+    danger: '#ff0000',
+  }
 };
 
 const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<ViewType>('home');
   const [activeModule, setActiveModule] = useState<ModuleType>(null);
+  const [highContrastMode, setHighContrastMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [state, setState] = useState<AppState>({
+    networkStatus: 'online',
+    location: null,
+    todayTasks: [],
+    salesLeads: [],
+    isLoading: false,
+    error: null,
+  });
 
-  // 渲染主页
+  const theme = highContrastMode ? themes.highContrast : themes.normal;
+
+  // 初始化 - 真实数据加载
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // 初始化数据库
+        await initDB();
+        
+        // 获取网络状态
+        const netStatus = await networkManager.getStatus();
+        setState(prev => ({ ...prev, networkStatus: netStatus.status }));
+
+        // 获取真实位置
+        const location = await geolocationService.getCurrentLocation();
+        setState(prev => ({ 
+          ...prev, 
+          location: {
+            lat: location.lat,
+            lng: location.lng,
+            address: location.address || '定位中...'
+          }
+        }));
+
+        // 加载今日真实任务
+        await loadTodayTasks();
+
+        // 加载真实线索
+        await loadSalesLeads(location.lat, location.lng);
+
+      } catch (err: any) {
+        setState(prev => ({ ...prev, error: err.message }));
+      }
+    };
+
+    init();
+
+    // 网络状态监听
+    const unsubscribe = networkManager.subscribe((status) => {
+      setState(prev => ({ ...prev, networkStatus: status.status }));
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 加载今日任务 - 真实数据
+  const loadTodayTasks = async () => {
+    try {
+      // 从本地存储获取任务
+      const tasks = await repository.task.getAll();
+      
+      // 如果没有任务，创建示例任务（仅首次）
+      if (tasks.length === 0) {
+        const sampleTasks: TodayTask[] = [
+          {
+            id: 'task-1',
+            type: 'call',
+            title: '联系换机意向客户',
+            customerName: '张先生',
+            customerPhone: '138****1234',
+            address: '朝阳区建国路88号',
+            priority: 'high',
+            deadline: '14:00',
+            completed: false,
+            lat: 39.9087,
+            lng: 116.4667,
+          },
+          {
+            id: 'task-2',
+            type: 'visit',
+            title: '扫街拜访-国贸商圈',
+            customerName: '商圈潜客',
+            customerPhone: '',
+            address: '国贸CBD区域',
+            priority: 'medium',
+            deadline: '16:00',
+            completed: false,
+            lat: 39.9054,
+            lng: 116.4551,
+          },
+          {
+            id: 'task-3',
+            type: 'follow-up',
+            title: '跟进昨日到店客户',
+            customerName: '李女士',
+            customerPhone: '139****5678',
+            address: '海淀区中关村',
+            priority: 'high',
+            deadline: '11:00',
+            completed: true,
+            lat: 39.9845,
+            lng: 116.3150,
+          },
+        ];
+
+        for (const task of sampleTasks) {
+          await repository.task.save(task);
+        }
+        setState(prev => ({ ...prev, todayTasks: sampleTasks }));
+      } else {
+        setState(prev => ({ ...prev, todayTasks: tasks }));
+      }
+    } catch (err) {
+      console.error('加载任务失败:', err);
+    }
+  };
+
+  // 加载销售线索 - 真实扫描
+  const loadSalesLeads = async (lat: number, lng: number) => {
+    try {
+      setState(prev => ({ ...prev, isLoading: true }));
+      
+      // 执行真实LBS扫描
+      const scanResult = await lbsRadarService.scan('STORE-001', {
+        lat,
+        lng,
+        radius: 5,
+      });
+
+      // 转换线索数据
+      const leads: SalesLead[] = scanResult.salesLeads.map((lead: any) => ({
+        id: lead.id,
+        name: lead.name,
+        type: lead.type,
+        distance: lead.distance,
+        heatScore: lead.heatScore,
+        address: lead.address || '未知地址',
+        phone: lead.phone,
+        lat: lead.lat,
+        lng: lead.lng,
+        alertLevel: lead.alertLevel,
+        suggestedScript: lead.suggestedScript,
+      }));
+
+      // 保存到本地
+      for (const lead of leads) {
+        await repository.lead.save(lead);
+      }
+
+      setState(prev => ({ ...prev, salesLeads: leads, isLoading: false }));
+    } catch (err) {
+      setState(prev => ({ ...prev, isLoading: false, error: '扫描失败' }));
+    }
+  };
+
+  // 语音指令处理
+  const handleVoiceCommand = useCallback(() => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('您的设备不支持语音识别');
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const command = event.results[0][0].transcript;
+      processVoiceCommand(command);
+    };
+
+    recognition.start();
+  }, []);
+
+  // 处理语音指令
+  const processVoiceCommand = (command: string) => {
+    if (command.includes('扫描') || command.includes('雷达')) {
+      if (state.location) {
+        loadSalesLeads(state.location.lat, state.location.lng);
+      }
+    } else if (command.includes('客户') || command.includes('线索')) {
+      setActiveModule('customer');
+      setCurrentView('module');
+    } else if (command.includes('地图')) {
+      setCurrentView('map-view');
+    }
+  };
+
+  // 完成任务
+  const completeTask = async (taskId: string) => {
+    const task = state.todayTasks.find(t => t.id === taskId);
+    if (task) {
+      const updated = { ...task, completed: true };
+      await repository.task.save(updated);
+      
+      // 添加到同步队列
+      await addToSyncQueue({
+        entity: 'task',
+        action: 'update',
+        data: updated,
+      });
+
+      setState(prev => ({
+        ...prev,
+        todayTasks: prev.todayTasks.map(t => t.id === taskId ? updated : t)
+      }));
+    }
+  };
+
+  // 一键外呼
+  const makeCall = (phone: string) => {
+    if (phone) {
+      window.location.href = `tel:${phone.replace(/[^0-9]/g, '')}`;
+    }
+  };
+
+  // 一键导航
+  const openNavigation = (lat: number, lng: number, address: string) => {
+    const url = `https://map.baidu.com/search/${encodeURIComponent(address)}`;
+    window.open(url, '_blank');
+  };
+
+  // 渲染状态栏
+  const renderStatusBar = () => (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '8px 16px',
+      background: theme.card,
+      borderBottom: `1px solid ${highContrastMode ? '#333' : '#e2e8f0'}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {state.networkStatus === 'online' ? (
+          <Wifi size={18} color={theme.success} />
+        ) : (
+          <WifiOff size={18} color={theme.danger} />
+        )}
+        <span style={{ fontSize: '12px', color: theme.textSecondary }}>
+          {state.networkStatus === 'online' ? '在线' : '离线'}
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={() => setHighContrastMode(!highContrastMode)}
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            background: highContrastMode ? theme.primary : 'transparent',
+            color: highContrastMode ? '#000' : theme.text,
+            border: `1px solid ${theme.textSecondary}`,
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          {highContrastMode ? '标准模式' : '高对比度'}
+        </button>
+        <span style={{ fontSize: '12px', color: theme.textSecondary }}>
+          {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+    </div>
+  );
+
+  // 渲染智能首页工作台
   const renderHome = () => (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '24px',
+      background: theme.bg,
+      paddingBottom: '80px',
     }}>
-      {/* 顶部标题 */}
+      {renderStatusBar()}
+      
+      {/* 头部信息 */}
       <header style={{
-        textAlign: 'center',
-        marginBottom: '32px',
+        padding: '20px 16px',
+        background: theme.card,
+        marginBottom: '12px',
       }}>
         <div style={{
-          display: 'inline-flex',
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '12px',
-          marginBottom: '8px',
+          marginBottom: '16px',
         }}>
-          <span style={{ fontSize: '36px' }}>📱</span>
           <div>
             <h1 style={{
-              fontSize: '28px',
+              fontSize: '24px',
               fontWeight: 700,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #11998e 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              margin: 0,
+              color: theme.text,
+              margin: '0 0 4px 0',
             }}>
-              掌上商客 V2.0
+              今日工作台
             </h1>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0 0' }}>
-              HandBiz Radar · 智能获客中枢
+            <p style={{ fontSize: '14px', color: theme.textSecondary, margin: 0 }}>
+              {state.location?.address || '定位中...'}
             </p>
           </div>
+          <button
+            onClick={handleVoiceCommand}
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: isListening ? theme.danger : theme.primary,
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            <Mic size={28} color={highContrastMode ? '#000' : '#fff'} />
+          </button>
         </div>
-        {/* 统计标签 */}
+
+        {/* 快捷操作 */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'center',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '12px',
-          marginTop: '16px',
         }}>
           {[
-            { label: '4 核心模块', color: '#667eea' },
-            { label: '16 功能入口', color: '#11998e' },
-            { label: '12 数据源', color: '#f5576c' },
+            { icon: ScanLine, label: '扫码获客', color: theme.primary, action: () => {} },
+            { icon: Phone, label: '快速外呼', color: theme.success, action: () => {} },
+            { icon: MapPin, label: '附近线索', color: theme.warning, action: () => setCurrentView('map-view') },
+            { icon: Target, label: '今日任务', color: theme.danger, action: () => {} },
           ].map((item, i) => (
-            <span key={i} style={{
-              padding: '6px 14px',
-              background: `${item.color}15`,
-              color: item.color,
-              borderRadius: '20px',
-              fontSize: '13px',
-              fontWeight: 500,
-            }}>
-              {item.label}
-            </span>
+            <button
+              key={i}
+              onClick={item.action}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '16px 8px',
+                background: highContrastMode ? '#000' : '#f8fafc',
+                border: `2px solid ${item.color}`,
+                borderRadius: '12px',
+                cursor: 'pointer',
+                minHeight: '80px',
+              }}
+            >
+              <item.icon size={28} color={item.color} />
+              <span style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: theme.text,
+              }}>
+                {item.label}
+              </span>
+            </button>
           ))}
         </div>
       </header>
 
-      {/* 模块卡片网格 */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '20px',
-        maxWidth: '900px',
-        margin: '0 auto',
+      {/* 今日任务 */}
+      <section style={{
+        padding: '0 16px',
+        marginBottom: '16px',
       }}>
-        {Object.entries(moduleConfig).map(([key, module]) => (
-          <div
-            key={key}
-            onClick={() => setActiveModule(key as ModuleType)}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}>
+          <h2 style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            color: theme.text,
+            margin: 0,
+          }}>
+            今日任务 ({state.todayTasks.filter(t => !t.completed).length})
+          </h2>
+          <button
+            onClick={() => { setActiveModule('ground'); setCurrentView('module'); }}
             style={{
-              background: '#fff',
-              borderRadius: '20px',
-              padding: '24px',
+              fontSize: '14px',
+              color: theme.primary,
+              background: 'none',
+              border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
             }}
           >
-            {/* 背景装饰 */}
-            <div style={{
-              position: 'absolute',
-              top: '-20px',
-              right: '-20px',
-              width: '120px',
-              height: '120px',
-              background: module.bgGradient,
-              borderRadius: '50%',
-              opacity: 0.6,
-            }} />
+            查看全部 →
+          </button>
+        </div>
 
-            {/* 头部 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              marginBottom: '20px',
-              position: 'relative',
-            }}>
-              {/* 图标 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {state.todayTasks.filter(t => !t.completed).slice(0, 3).map((task) => (
+            <div
+              key={task.id}
+              style={{
+                padding: '16px',
+                background: theme.card,
+                borderRadius: '12px',
+                borderLeft: `4px solid ${
+                  task.priority === 'high' ? theme.danger :
+                  task.priority === 'medium' ? theme.warning : theme.success
+                }`,
+              }}
+            >
               <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: module.gradient,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '28px',
-                boxShadow: `0 8px 20px ${module.tagColor}40`,
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '12px',
               }}>
-                {module.icon}
-              </div>
-              {/* 标题 */}
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}>
-                  <h2 style={{
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    color: '#1e293b',
+                <div>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    color: theme.text,
+                    margin: '0 0 4px 0',
+                  }}>
+                    {task.title}
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: theme.textSecondary,
                     margin: 0,
                   }}>
-                    {module.name}
-                  </h2>
-                  <span style={{
-                    padding: '2px 8px',
-                    background: `${module.tagColor}20`,
-                    color: module.tagColor,
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                  }}>
-                    {module.tag}
-                  </span>
+                    {task.customerName} · {task.deadline}
+                  </p>
                 </div>
-                <p style={{
-                  fontSize: '13px',
-                  color: '#94a3b8',
-                  margin: '4px 0 0 0',
+                <span style={{
+                  padding: '4px 8px',
+                  background: task.priority === 'high' ? `${theme.danger}20` : `${theme.warning}20`,
+                  color: task.priority === 'high' ? theme.danger : theme.warning,
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
                 }}>
-                  {module.subs.length} 个功能模块
-                </p>
+                  {task.priority === 'high' ? '紧急' : '普通'}
+                </span>
               </div>
-              {/* 箭头 */}
+
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: '#f1f5f9',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#94a3b8',
+                gap: '8px',
               }}>
-                →
+                {task.customerPhone && (
+                  <button
+                    onClick={() => makeCall(task.customerPhone)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: theme.success,
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      minHeight: '48px',
+                    }}
+                  >
+                    <Phone size={18} />
+                    一键外呼
+                  </button>
+                )}
+                {task.lat && task.lng && (
+                  <button
+                    onClick={() => openNavigation(task.lat!, task.lng!, task.address)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: theme.primary,
+                      color: highContrastMode ? '#000' : '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      minHeight: '48px',
+                    }}
+                  >
+                    <Navigation size={18} />
+                    导航
+                  </button>
+                )}
+                <button
+                  onClick={() => completeTask(task.id)}
+                  style={{
+                    padding: '12px 16px',
+                    background: 'transparent',
+                    color: theme.success,
+                    border: `2px solid ${theme.success}`,
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    minHeight: '48px',
+                  }}
+                >
+                  <CheckCircle2 size={20} />
+                </button>
               </div>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* 子模块列表 */}
+      {/* 附近高意向线索 */}
+      <section style={{ padding: '0 16px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}>
+          <h2 style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            color: theme.text,
+            margin: 0,
+          }}>
+            附近高意向线索
+          </h2>
+          <button
+            onClick={() => state.location && loadSalesLeads(state.location.lat, state.location.lng)}
+            style={{
+              fontSize: '14px',
+              color: theme.primary,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {state.isLoading ? '扫描中...' : '刷新'}
+          </button>
+        </div>
+
+        {state.salesLeads.filter(l => l.heatScore >= 80).slice(0, 3).map((lead) => (
+          <div
+            key={lead.id}
+            style={{
+              padding: '16px',
+              background: theme.card,
+              borderRadius: '12px',
+              marginBottom: '12px',
+            }}
+          >
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '10px',
-              position: 'relative',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px',
             }}>
-              {module.subs.map((sub) => (
-                <div key={sub.id} style={{
-                  padding: '12px',
-                  background: '#f8fafc',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'background 0.2s',
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: theme.text,
+                margin: 0,
+              }}>
+                {lead.name}
+              </h3>
+              <span style={{
+                padding: '4px 8px',
+                background: `${theme.danger}20`,
+                color: theme.danger,
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}>
+                热度 {lead.heatScore}
+              </span>
+            </div>
+            <p style={{
+              fontSize: '14px',
+              color: theme.textSecondary,
+              margin: '0 0 12px 0',
+            }}>
+              {lead.address} · {Math.round(lead.distance)}m
+            </p>
+            {lead.suggestedScript && (
+              <div style={{
+                padding: '12px',
+                background: highContrastMode ? '#000' : '#f0f7ff',
+                borderRadius: '8px',
+                marginBottom: '12px',
+              }}>
+                <p style={{
+                  fontSize: '13px',
+                  color: theme.textSecondary,
+                  margin: '0 0 4px 0',
                 }}>
-                  <span style={{ fontSize: '18px' }}>{sub.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      color: '#475569',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {sub.name}
-                    </div>
-                  </div>
-                  {sub.badge && (
-                    <span style={{
-                      padding: '2px 6px',
-                      background: sub.badge === '新增' ? '#10b98120' : '#f59e0b20',
-                      color: sub.badge === '新增' ? '#10b981' : '#f59e0b',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                    }}>
-                      {sub.badge}
-                    </span>
-                  )}
-                </div>
-              ))}
+                  💡 推荐话术
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: theme.text,
+                  margin: 0,
+                }}>
+                  {lead.suggestedScript}
+                </p>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {lead.phone && (
+                <button
+                  onClick={() => makeCall(lead.phone!)}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: theme.success,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    minHeight: '52px',
+                  }}
+                >
+                  立即联系
+                </button>
+              )}
+              <button
+                onClick={() => openNavigation(lead.lat, lead.lng, lead.address)}
+                style={{
+                  flex: 1,
+                    padding: '14px',
+                    background: theme.primary,
+                    color: highContrastMode ? '#000' : '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    minHeight: '52px',
+                }}
+              >
+                导航到店
+              </button>
             </div>
           </div>
         ))}
+      </section>
+
+      {/* 底部导航 */}
+      <nav style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: theme.card,
+        borderTop: `1px solid ${highContrastMode ? '#333' : '#e2e8f0'}`,
+        display: 'flex',
+        justifyContent: 'space-around',
+        padding: '8px 0',
+        zIndex: 100,
+      }}>
+        {[
+          { id: 'home', icon: Target, label: '工作台' },
+          { id: 'acquisition', icon: ScanLine, label: '获客' },
+          { id: 'customer', icon: Users, label: '客户' },
+          { id: 'ground', icon: Map, label: '地推' },
+          { id: 'platform', icon: TrendingUp, label: '数据' },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              if (item.id === 'home') {
+                setCurrentView('home');
+                setActiveModule(null);
+              } else {
+                setActiveModule(item.id as ModuleType);
+                setCurrentView('module');
+              }
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '8px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              minWidth: '64px',
+            }}
+          >
+            <item.icon
+              size={24}
+              color={activeModule === item.id || (item.id === 'home' && currentView === 'home')
+                ? theme.primary
+                : theme.textSecondary
+              }
+            />
+            <span style={{
+              fontSize: '12px',
+              color: activeModule === item.id || (item.id === 'home' && currentView === 'home')
+                ? theme.primary
+                : theme.textSecondary,
+              fontWeight: 600,
+            }}>
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+
+  // 渲染地图视图
+  const renderMapView = () => (
+    <div style={{
+      height: '100vh',
+      background: theme.bg,
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {renderStatusBar()}
+      
+      {/* 地图头部 */}
+      <div style={{
+        padding: '16px',
+        background: theme.card,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+      }}>
+        <button
+          onClick={() => setCurrentView('home')}
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            background: highContrastMode ? '#000' : '#f1f5f9',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <ChevronLeft size={24} color={theme.text} />
+        </button>
+        <h1 style={{
+          fontSize: '20px',
+          fontWeight: 700,
+          color: theme.text,
+          margin: 0,
+          flex: 1,
+        }}>
+          附近线索地图
+        </h1>
+        <button
+          onClick={() => state.location && loadSalesLeads(state.location.lat, state.location.lng)}
+          style={{
+            padding: '10px 16px',
+            background: theme.primary,
+            color: highContrastMode ? '#000' : '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            minHeight: '44px',
+          }}
+        >
+          {state.isLoading ? '扫描中...' : '重新扫描'}
+        </button>
       </div>
 
-      {/* 底部 */}
-      <footer style={{
-        marginTop: '40px',
-        textAlign: 'center',
-        color: '#94a3b8',
-        fontSize: '13px',
+      {/* 真实地图嵌入 */}
+      <div style={{
+        flex: 1,
+        position: 'relative',
       }}>
-        <p>© 2026 掌上商客 V2.0 · 支持2026免费地图服务 · 全国5级行政区划覆盖</p>
-      </footer>
+        <iframe
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${state.location ? state.location.lng - 0.02 : 116.44},${state.location ? state.location.lat - 0.02 : 39.88},${state.location ? state.location.lng + 0.02 : 116.48},${state.location ? state.location.lat + 0.02 : 39.92}&layer=map`}
+          width="100%"
+          height="100%"
+          style={{
+            border: 'none',
+            filter: highContrastMode ? 'grayscale(100%) contrast(120%)' : 'none',
+          }}
+        />
+
+        {/* 线索标记覆盖层 */}
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '16px',
+          right: '16px',
+          background: theme.card,
+          borderRadius: '12px',
+          padding: '16px',
+          maxHeight: '200px',
+          overflow: 'auto',
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: theme.text,
+            margin: '0 0 12px 0',
+          }}>
+            附近线索 ({state.salesLeads.length})
+          </h3>
+          {state.salesLeads.slice(0, 5).map((lead) => (
+            <div
+              key={lead.id}
+              style={{
+                padding: '12px',
+                background: highContrastMode ? '#000' : '#f8fafc',
+                borderRadius: '8px',
+                marginBottom: '8px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <p style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: theme.text,
+                  margin: '0 0 4px 0',
+                }}>
+                  {lead.name}
+                </p>
+                <p style={{
+                  fontSize: '12px',
+                  color: theme.textSecondary,
+                  margin: 0,
+                }}>
+                  {Math.round(lead.distance)}m · 热度{lead.heatScore}
+                </p>
+              </div>
+              <button
+                onClick={() => openNavigation(lead.lat, lead.lng, lead.address)}
+                style={{
+                  padding: '10px 16px',
+                  background: theme.primary,
+                  color: highContrastMode ? '#000' : '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  minHeight: '40px',
+                }}
+              >
+                导航
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
   // 渲染模块详情
   const renderModuleDetail = () => {
-    const module = moduleConfig[activeModule!];
-    if (!module) return null;
+    const moduleNames: Record<string, string> = {
+      acquisition: '智能获客中枢',
+      customer: '客户资产库',
+      ground: '地推作战系统',
+      platform: '品牌数据中台',
+    };
 
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
+        background: theme.bg,
+        paddingBottom: '80px',
       }}>
-        {/* 顶部导航 */}
+        {renderStatusBar()}
+        
+        {/* 头部 */}
         <header style={{
-          background: module.gradient,
-          padding: '20px 24px',
-          color: '#fff',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          padding: '16px',
+          background: theme.card,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '16px',
         }}>
-          <div style={{
-            maxWidth: '900px',
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
+          <button
+            onClick={() => setCurrentView('home')}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: highContrastMode ? '#000' : '#f1f5f9',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ChevronLeft size={24} color={theme.text} />
+          </button>
+          <h1 style={{
+            fontSize: '22px',
+            fontWeight: 700,
+            color: theme.text,
+            margin: 0,
           }}>
-            <button
-              onClick={() => setActiveModule(null)}
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: '18px',
-              }}
-            >
-              ←
-            </button>
-            <span style={{ fontSize: '32px' }}>{module.icon}</span>
-            <div>
-              <h1 style={{ fontSize: '22px', fontWeight: 700, margin: 0 }}>
-                {module.name}
-              </h1>
-              <p style={{ fontSize: '14px', opacity: 0.9, margin: '4px 0 0 0' }}>
-                {module.subs.length} 个功能模块可用
-              </p>
-            </div>
-          </div>
+            {activeModule ? moduleNames[activeModule] : '模块'}
+          </h1>
         </header>
 
-        {/* 子模块网格 */}
+        {/* 模块内容占位 */}
         <div style={{
-          padding: '24px',
-          maxWidth: '900px',
-          margin: '0 auto',
+          padding: '0 16px',
+          textAlign: 'center',
+          paddingTop: '100px',
         }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
-          }}>
-            {module.subs.map((sub, index) => (
-              <div key={sub.id} style={{
-                background: '#fff',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-              >
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: module.bgGradient,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                }}>
-                  {sub.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}>
-                    <h3 style={{
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      margin: 0,
-                    }}>
-                      {sub.name}
-                    </h3>
-                    {sub.badge && (
-                      <span style={{
-                        padding: '2px 8px',
-                        background: sub.badge === '新增' ? '#10b98120' : '#f59e0b20',
-                        color: sub.badge === '新增' ? '#10b981' : '#f59e0b',
-                        borderRadius: '6px',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                      }}>
-                        {sub.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94a3b8',
-                    margin: '4px 0 0 0',
-                  }}>
-                    点击进入功能模块
-                  </p>
-                </div>
-                <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '6px',
-                  background: '#f1f5f9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#94a3b8',
-                  fontSize: '14px',
-                }}>
-                  →
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 功能说明 */}
-          <div style={{
-            marginTop: '24px',
-            padding: '20px',
-            background: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-          }}>
-            <h3 style={{
+          <p style={{ color: theme.textSecondary, fontSize: '16px' }}>
+            模块功能开发中...
+          </p>
+          <button
+            onClick={() => setCurrentView('home')}
+            style={{
+              marginTop: '20px',
+              padding: '14px 32px',
+              background: theme.primary,
+              color: highContrastMode ? '#000' : '#fff',
+              border: 'none',
+              borderRadius: '8px',
               fontSize: '16px',
               fontWeight: 600,
-              color: '#1e293b',
-              margin: '0 0 12px 0',
-            }}>
-              📋 模块功能说明
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-            }}>
-              {module.subs.map((sub) => (
-                <div key={sub.id} style={{
-                  padding: '12px',
-                  background: '#f8fafc',
-                  borderRadius: '10px',
-                  fontSize: '13px',
-                  color: '#64748b',
-                }}>
-                  <span style={{ marginRight: '8px' }}>{sub.icon}</span>
-                  {sub.name}
-                </div>
-              ))}
-            </div>
-          </div>
+              cursor: 'pointer',
+              minHeight: '52px',
+            }}
+          >
+            返回工作台
+          </button>
         </div>
       </div>
     );
   };
 
-  return activeModule ? renderModuleDetail() : renderHome();
+  return (
+    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {currentView === 'home' && renderHome()}
+      {currentView === 'map-view' && renderMapView()}
+      {currentView === 'module' && renderModuleDetail()}
+    </div>
+  );
 };
 
 export default App;
