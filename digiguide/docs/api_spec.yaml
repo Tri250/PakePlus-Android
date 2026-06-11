@@ -1,392 +1,591 @@
 openapi: 3.0.3
 info:
-  title: 数码指南 API
-  description: 手机数码产品信息查询和电池健康检测服务
+  title: DigiGuide API
+  description: 数码指南APP后端API接口文档 - SN序列号查询和电池健康度分析
   version: 3.1.0
   contact:
     name: DigiGuide Team
+    email: support@digiguide.com
 
 servers:
-  - url: https://api.digiguide.cn/v1
+  - url: https://api.digiguide.com/v1
     description: 生产环境
   - url: http://localhost:8080/v1
     description: 开发环境
 
 tags:
   - name: SN Query
-    description: 序列号查询服务
-  - name: Battery Report
-    description: 电池报告分析服务
+    description: SN序列号查询相关接口
+  - name: Battery Analysis
+    description: 电池健康度分析相关接口
+  - name: Brand
+    description: 品牌信息相关接口
 
 paths:
-  /sn/query:
-    post:
+  /sn/decode:
+    get:
       tags:
         - SN Query
-      summary: 查询序列号信息
-      description: 根据SN序列号自动识别品牌并返回生产信息
-      operationId: querySN
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SNQueryRequest'
+      summary: 解码SN序列号
+      description: 自动识别品牌并解码SN序列号，返回生产日期信息
+      operationId: decodeSN
+      parameters:
+        - name: sn
+          in: query
+          required: true
+          description: 序列号
+          schema:
+            type: string
+            example: C3LXK2XXXXX
+        - name: brand
+          in: query
+          required: false
+          description: 指定品牌（可选）
+          schema:
+            $ref: '#/components/schemas/Brand'
       responses:
         '200':
-          description: 查询成功
+          description: 解码成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SNQueryResponse'
+                $ref: '#/components/schemas/SNDecodeResult'
         '400':
-          description: 请求参数错误
+          description: 参数错误
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: 请求频率超限
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /sn/validate:
-    post:
+    get:
       tags:
         - SN Query
       summary: 验证SN格式
-      description: 验证序列号格式是否合法
-      operationId: validateSN
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SNValidateRequest'
+      description: 验证SN序列号格式是否符合指定品牌规范
+      operationId: validateSNFormat
+      parameters:
+        - name: sn
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: brand
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Brand'
       responses:
         '200':
           description: 验证结果
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SNValidateResponse'
+                type: object
+                properties:
+                  valid:
+                    type: boolean
 
-  /battery/upload:
+  /sn/format/{brand}:
+    get:
+      tags:
+        - SN Query
+      summary: 获取品牌SN格式说明
+      description: 获取指定品牌的SN序列号格式说明
+      operationId: getFormatHint
+      parameters:
+        - name: brand
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Brand'
+      responses:
+        '200':
+          description: 格式说明
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hint:
+                    type: string
+
+  /sn/warranty:
+    get:
+      tags:
+        - SN Query
+      summary: 获取保修信息
+      description: 根据SN序列号估算保修状态
+      operationId: getWarrantyInfo
+      parameters:
+        - name: sn
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 保修信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarrantyInfo'
+
+  /sn/batch:
     post:
       tags:
-        - Battery Report
-      summary: 上传电池报告
-      description: 上传bugreport文件进行电池健康分析
-      operationId: uploadBatteryReport
+        - SN Query
+      summary: 批量解码SN
+      description: 批量解码多个SN序列号
+      operationId: batchDecodeSN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                snList:
+                  type: array
+                  items:
+                    type: string
+                  example: ["C3LXK2XXXXX", "R5CR70H1N4"]
+      responses:
+        '200':
+          description: 批量解码结果
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SNDecodeResult'
+
+  /battery/analyze:
+    post:
+      tags:
+        - Battery Analysis
+      summary: 上传bugreport文件分析
+      description: 上传bugreport文件进行电池健康度分析
+      operationId: analyzeBugreport
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required:
-                - file
-                - brand
               properties:
                 file:
                   type: string
                   format: binary
-                  description: bugreport ZIP文件
-                brand:
-                  type: string
-                  enum: [XIAOMI, HUAWEI, OPPO, VIVO, APPLE, HONOR, SAMSUNG, LENOVO, HP, ASUS, DELL]
-                  description: 设备品牌
-                model:
-                  type: string
-                  description: 设备型号（可选）
       responses:
         '200':
-          description: 分析成功
+          description: 分析结果
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatteryAnalysisResponse'
         '400':
-          description: 文件格式错误或缺少必要参数
+          description: 文件上传失败
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
 
-  /battery/history/{deviceId}:
+  /battery/analyze/text:
+    post:
+      tags:
+        - Battery Analysis
+      summary: 分析bugreport文本
+      description: 直接提交bugreport文本内容进行电池健康度分析
+      operationId: analyzeBugreportText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              description: bugreport文本内容
+      responses:
+        '200':
+          description: 分析结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatteryAnalysisResponse'
+
+  /battery/health:
+    post:
+      tags:
+        - Battery Analysis
+      summary: 计算电池健康度
+      description: 根据电池原始数据计算健康度
+      operationId: calculateHealth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatteryRawData'
+      responses:
+        '200':
+          description: 健康度结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatteryHealthResult'
+
+  /battery/reports:
     get:
       tags:
-        - Battery Report
-      summary: 获取电池历史报告
-      description: 获取指定设备的电池健康历史记录
-      operationId: getBatteryHistory
+        - Battery Analysis
+      summary: 获取报告列表
+      description: 获取电池分析报告历史列表
+      operationId: getReports
       parameters:
-        - name: deviceId
-          in: path
-          required: true
+        - name: page
+          in: query
           schema:
-            type: string
-          description: 设备唯一标识
+            type: integer
+            default: 1
         - name: limit
           in: query
           schema:
             type: integer
-            default: 10
-            maximum: 50
-          description: 返回记录数量限制
+            default: 20
+            maximum: 100
       responses:
         '200':
-          description: 历史记录列表
+          description: 报告列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatteryHistoryResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/BatteryReportResponse'
+
+  /battery/reports/{id}:
+    get:
+      tags:
+        - Battery Analysis
+      summary: 获取报告详情
+      description: 获取指定电池分析报告详情
+      operationId: getReportDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 报告详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatteryReportResponse'
+        '404':
+          description: 报告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Battery Analysis
+      summary: 删除报告
+      description: 删除指定电池分析报告
+      operationId: deleteReport
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /brand/list:
+    get:
+      tags:
+        - Brand
+      summary: 获取品牌列表
+      description: 获取支持的品牌列表
+      operationId: getBrandList
+      responses:
+        '200':
+          description: 品牌列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brands:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          $ref: '#/components/schemas/Brand'
+                        chinese:
+                          type: string
+
+  /brand/{brand}/info:
+    get:
+      tags:
+        - Brand
+      summary: 获取品牌信息
+      description: 获取指定品牌的详细信息
+      operationId: getBrandInfo
+      parameters:
+        - name: brand
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Brand'
+      responses:
+        '200':
+          description: 品牌信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    $ref: '#/components/schemas/Brand'
+                  chinese:
+                    type: string
+                  formatHint:
+                    type: string
+                  warrantyMonths:
+                    type: integer
 
 components:
   schemas:
-    SNQueryRequest:
-      type: object
-      required:
-        - sn
-      properties:
-        sn:
-          type: string
-          minLength: 8
-          maxLength: 20
-          description: 序列号
-          example: "C3LXK2XXXXX"
-        brand:
-          type: string
-          enum: [XIAOMI, HUAWEI, OPPO, VIVO, APPLE, HONOR, SAMSUNG, LENOVO, HP, ASUS, DELL, APPLE_MAC]
-          description: 指定品牌（可选，不指定则自动识别）
+    Brand:
+      type: string
+      enum:
+        - XIAOMI
+        - HUAWEI
+        - OPPO
+        - VIVO
+        - APPLE
+        - HONOR
+        - SAMSUNG
+        - LENOVO
+        - HP
+        - ASUS
+        - DELL
+        - APPLE_MAC
+        - UNKNOWN
+      description: 品牌枚举
 
-    SNQueryResponse:
+    SNDecodeStatus:
+      type: string
+      enum:
+        - SUCCESS
+        - PARTIAL
+        - FAILED
+      description: 解码状态
+
+    SNDecodeResult:
       type: object
       properties:
-        sn:
+        brand:
+          $ref: '#/components/schemas/Brand'
+        rawSn:
           type: string
           description: 原始序列号
-        brand:
-          type: string
-          description: 识别的品牌
-        brand_cn:
-          type: string
-          description: 品牌中文名
-        factory_year:
+        factoryYear:
           type: integer
           description: 生产年份
-        factory_month:
+        factoryMonth:
           type: integer
           description: 生产月份
-        factory_week:
+        factoryWeek:
           type: integer
           description: 生产周次
-        half_year:
+        halfYear:
           type: string
-          description: 半年代码（Apple）
-        production_date:
-          type: string
-          format: date
-          description: 推算的生产日期
-        warranty_status:
-          type: string
-          enum: [ACTIVE, EXPIRED, UNKNOWN]
-          description: 保修状态
-        warranty_end_date:
-          type: string
-          format: date
-          description: 保修截止日期
+          description: 半年（Apple）
         status:
+          $ref: '#/components/schemas/SNDecodeStatus'
+        errorMessage:
           type: string
-          enum: [SUCCESS, PARTIAL, FAILED]
-          description: 解码状态
-        error_message:
+          description: 错误信息
+        productionDate:
           type: string
-          description: 错误信息（如有）
-        official_info:
-          type: object
-          description: 品牌官方查询结果（如有）
-          properties:
-            model:
-              type: string
-            color:
-              type: string
-            capacity:
-              type: string
-            purchase_date:
-              type: string
-              format: date
-            activation_date:
-              type: string
-              format: date
+          description: 生产日期估算
+        warrantyStatus:
+          type: string
+          description: 保修状态
 
-    SNValidateRequest:
+    WarrantyInfo:
       type: object
-      required:
-        - sn
-        - brand
       properties:
         sn:
           type: string
-          description: 序列号
         brand:
+          $ref: '#/components/schemas/Brand'
+        purchaseDate:
           type: string
-          description: 品牌
+          format: date
+        warrantyStartDate:
+          type: string
+          format: date
+        warrantyEndDate:
+          type: string
+          format: date
+        warrantyStatus:
+          type: string
+        remainingDays:
+          type: integer
 
-    SNValidateResponse:
+    BatteryRawData:
       type: object
       properties:
-        valid:
-          type: boolean
-          description: 是否有效
-        format_hint:
+        brand:
           type: string
-          description: 格式说明
-        issues:
+        model:
+          type: string
+        sn:
+          type: string
+        designCapacityMah:
+          type: integer
+          description: 设计容量(mAh)
+        currentCapacityMah:
+          type: integer
+          description: 当前容量(mAh)
+        chargeCounterMah:
+          type: integer
+          description: 当前电量计数器(mAh)
+        cycleCount:
+          type: integer
+          description: 循环次数
+        manufacturingDate:
+          type: string
+          description: 制造日期
+        temperatureCelsius:
+          type: number
+          description: 温度(°C)
+        screenOnTimeHours:
+          type: integer
+          description: 亮屏时间(小时)
+        chargeCount:
+          type: integer
+          description: 充电次数
+
+    ConfidenceLevel:
+      type: string
+      enum:
+        - HIGH
+        - MEDIUM
+        - LOW
+        - NONE
+      description: 置信度级别
+
+    HealthFactors:
+      type: object
+      properties:
+        capacityRetention:
+          type: number
+          description: 容量保持率(0-1)
+        cycleDecay:
+          type: number
+          description: 循环衰减(0-1)
+        resistanceGrowth:
+          type: number
+          description: 内阻增长(0-1)
+        thermalAging:
+          type: number
+          description: 温度老化(0-1)
+        chargingDamage:
+          type: number
+          description: 充电损伤(0-1)
+        availableFactors:
+          type: integer
+          description: 可用因子数量
+
+    BatteryHealthResult:
+      type: object
+      properties:
+        healthPercentage:
+          type: number
+          description: 综合健康度(0-100)
+        grade:
+          type: string
+          enum: [A+, A, B, C, D, F]
+          description: 健康度等级
+        factors:
+          $ref: '#/components/schemas/HealthFactors'
+        diagnosisText:
+          type: string
+          description: 诊断文字
+        suggestions:
           type: array
           items:
             type: string
-          description: 格式问题列表
+          description: 使用建议
+        estimatedResistanceMohm:
+          type: number
+          description: 估算内阻(mΩ)
+        remainingLifespanMonths:
+          type: integer
+          description: 预估剩余寿命(月)
+        confidence:
+          $ref: '#/components/schemas/ConfidenceLevel'
 
     BatteryAnalysisResponse:
       type: object
       properties:
-        device_info:
-          type: object
-          properties:
-            brand:
-              type: string
-            model:
-              type: string
-            sn:
-              type: string
-        battery_info:
-          type: object
-          properties:
-            design_capacity_mah:
-              type: integer
-              description: 设计容量
-            current_capacity_mah:
-              type: integer
-              description: 当前容量
-            cycle_count:
-              type: integer
-              description: 循环次数
-            manufacturing_date:
-              type: string
-              format: date
-              description: 制造日期
-            temperature_celsius:
-              type: number
-              description: 当前温度
-        health_result:
-          type: object
-          properties:
-            health_percentage:
-              type: number
-              minimum: 0
-              maximum: 100
-              description: 健康度百分比
-            grade:
-              type: string
-              enum: [A+, A, B, C, D, F]
-              description: 健康等级
-            diagnosis_text:
-              type: string
-              description: 诊断说明
-            suggestions:
-              type: array
-              items:
-                type: string
-              description: 使用建议
-            confidence:
-              type: string
-              enum: [HIGH, MEDIUM, LOW, NONE]
-              description: 置信度
-            factors:
-              type: object
-              properties:
-                capacity_retention:
-                  type: number
-                cycle_decay:
-                  type: number
-                resistance_growth:
-                  type: number
-                thermal_aging:
-                  type: number
-                charging_damage:
-                  type: number
-            remaining_lifespan_months:
-              type: integer
-              description: 预估剩余寿命（月）
-        top_power_apps:
-          type: array
-          items:
-            type: object
-            properties:
-              package_name:
-                type: string
-              display_name:
-                type: string
-              power_mah:
-                type: number
-              wakeup_count:
-                type: integer
-          description: 耗电最多的应用
-        parse_detail:
-          type: object
-          properties:
-            extracted_fields:
-              type: array
-              items:
-                type: string
-              description: 成功提取的字段
-            missing_fields:
-              type: array
-              items:
-                type: string
-              description: 缺失的字段
-            parse_warnings:
-              type: array
-              items:
-                type: string
-              description: 解析警告
+        rawData:
+          $ref: '#/components/schemas/BatteryRawData'
+        healthResult:
+          $ref: '#/components/schemas/BatteryHealthResult'
+        reportId:
+          type: integer
+          description: 报告ID
+        analysisTime:
+          type: string
+          format: date-time
 
-    BatteryHistoryResponse:
+    BatteryReportResponse:
       type: object
       properties:
-        device_id:
+        id:
+          type: integer
+        brand:
           type: string
-        records:
-          type: array
-          items:
-            type: object
-            properties:
-              report_id:
-                type: string
-              report_date:
-                type: string
-                format: date-time
-              health_percentage:
-                type: number
-              grade:
-                type: string
-              cycle_count:
-                type: integer
-              capacity_mah:
-                type: integer
+        model:
+          type: string
+        sn:
+          type: string
+        designCapacityMah:
+          type: integer
+        currentCapacityMah:
+          type: integer
+        cycleCount:
+          type: integer
+        healthPercentage:
+          type: number
+        grade:
+          type: string
+        reportTime:
+          type: string
+          format: date-time
+        diagnosisText:
+          type: string
 
-    ErrorResponse:
+    Error:
       type: object
       properties:
-        error_code:
+        error:
           type: string
-          description: 错误代码
-        message:
-          type: string
-          description: 错误消息
-        details:
-          type: object
-          description: 详细错误信息
+          description: 错误信息

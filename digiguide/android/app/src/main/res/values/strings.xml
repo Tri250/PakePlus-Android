@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">数码指南</string>
+    <string name="title_home">首页</string>
+    <string name="title_verify">验机</string>
+    <string name="title_report">报告</string>
+    <string name="title_discover">发现</string>
+    <string name="title_profile">我的</string>
+
+    <!-- SN查询 -->
+    <string name="sn_query_title">SN序列号查询</string>
+    <string name="sn_input_hint">请输入设备序列号</string>
+    <string name="sn_query_button">开始查询</string>
+    <string name="sn_brand_select">选择品牌（可选）</string>
+
+    <!-- 电池分析 -->
+    <string name="battery_analysis_title">电池健康分析</string>
+    <string name="battery_upload_hint">上传bugreport文件</string>
+    <string name="battery_upload_button">选择文件</string>
+    <string name="battery_analyze_button">开始分析</string>
+
+    <!-- 品牌名称 -->
+    <string name="brand_apple">苹果</string>
+    <string name="brand_samsung">三星</string>
+    <string name="brand_huawei">华为</string>
+    <string name="brand_honor">荣耀</string>
+    <string name="brand_xiaomi">小米</string>
+    <string name="brand_oppo">OPPO</string>
+    <string name="brand_vivo">vivo</string>
+    <string name="brand_lenovo">联想</string>
+    <string name="brand_hp">惠普</string>
+    <string name="brand_asus">华硕</string>
+    <string name="brand_dell">戴尔</string>
+
+    <!-- 健康度等级 -->
+    <string name="grade_a_plus">极佳</string>
+    <string name="grade_a">良好</string>
+    <string name="grade_b">一般</string>
+    <string name="grade_c">较差</string>
+    <string name="grade_d">很差</string>
+    <string name="grade_f">极差</string>
+</resources>
