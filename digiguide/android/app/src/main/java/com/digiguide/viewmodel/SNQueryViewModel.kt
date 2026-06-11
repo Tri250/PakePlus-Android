@@ -26,13 +26,19 @@ class SNQueryViewModel : ViewModel() {
     private val _selectedBrand = MutableStateFlow<Brand?>(null)
     val selectedBrand: StateFlow<Brand?> = _selectedBrand.asStateFlow()
 
+    // 购买日期（可选，用于更精确的保修计算）
+    private val _purchaseDate = MutableStateFlow<String?>(null)
+    val purchaseDate: StateFlow<String?> = _purchaseDate.asStateFlow()
+
     // 解码结果
     private val _decodeResult = MutableStateFlow<SNDecodeResult?>(null)
     val decodeResult: StateFlow<SNDecodeResult?> = _decodeResult.asStateFlow()
+    val queryResult: SNDecodeResult? = _decodeResult.value
 
     // 加载状态
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isQuerying: Boolean = _isLoading.value
 
     // 错误信息
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -45,6 +51,9 @@ class SNQueryViewModel : ViewModel() {
     // 格式提示
     private val _formatHint = MutableStateFlow<String?>(null)
     val formatHint: StateFlow<String?> = _formatHint.asStateFlow()
+
+    // 表单验证
+    val isFormValid: Boolean = _snInput.value.isNotEmpty()
 
     init {
         loadQueryHistory()
@@ -76,6 +85,20 @@ class SNQueryViewModel : ViewModel() {
     }
 
     /**
+     * 设置购买日期
+     */
+    fun setPurchaseDate(date: String?) {
+        _purchaseDate.value = date
+    }
+
+    /**
+     * 执行查询（performQuery别名）
+     */
+    fun performQuery() {
+        decode()
+    }
+
+    /**
      * 执行解码
      */
     fun decode() {
@@ -95,6 +118,11 @@ class SNQueryViewModel : ViewModel() {
                     CoreBridge.decodeSN(sn, brand)
                 } else {
                     CoreBridge.decodeSN(sn)
+                }
+
+                // 如果有购买日期，更新保修计算
+                if (_purchaseDate.value != null && result.isSuccess()) {
+                    // TODO: 根据购买日期重新计算保修状态
                 }
 
                 _decodeResult.value = result
