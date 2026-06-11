@@ -7,6 +7,7 @@ data class BatteryRawData(
     // 基础信息
     var brand: String? = null,
     var model: String? = null,
+    var manufacturer: String? = null,
     var sn: String? = null,
 
     // 容量数据
@@ -25,14 +26,16 @@ data class BatteryRawData(
     var screenOnTimeHours: Int? = null,
     var chargeCount: Int? = null,
 
+    // 电压/电流数据（用于内阻估算）
+    var lastVoltageMv: Float? = null,
+    var lastCurrentMa: Float? = null,
+    var voltageCurrentPairs: List<Pair<Float, Float>> = emptyList(),
+
     // 充电行为
     var chargingEvents: List<ChargingEvent> = emptyList(),
 
     // 应用耗电
-    var appPowerUsages: List<AppPowerUsage> = emptyList(),
-
-    // 电压/电流数据
-    var voltageCurrentPairs: List<Pair<Float, Float>> = emptyList()
+    var appPowerUsages: List<AppPowerUsage> = emptyList()
 ) {
     /**
      * 充电事件
