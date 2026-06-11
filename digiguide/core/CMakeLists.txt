@@ -17,6 +17,7 @@ set(CORE_SOURCES
     src/battery_health.cpp
     src/battery_models.cpp
     src/zip_parser.cpp
+    src/sn_rules_config.cpp
 )
 
 # 头文件目录
