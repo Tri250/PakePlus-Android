@@ -42,4 +42,8 @@ interface QueryHistoryDao {
 
     @Query("SELECT * FROM query_history WHERE queryTime >= :startTime AND queryTime <= :endTime ORDER BY queryTime DESC")
     fun getHistoryByTimeRange(startTime: Long, endTime: Long): Flow<List<QueryHistoryEntity>>
+
+    // 非Flow版本，用于导出等场景
+    @Query("SELECT * FROM query_history ORDER BY queryTime DESC")
+    suspend fun getAllOnce(): List<QueryHistoryEntity>
 }

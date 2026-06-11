@@ -65,6 +65,20 @@ class BatteryAnalysisViewModel : ViewModel() {
     }
 
     /**
+     * 设置错误消息
+     */
+    fun setErrorMessage(message: String) {
+        _errorMessage.value = message
+    }
+
+    /**
+     * 设置文件大小信息
+     */
+    fun setFileSizeInfo(info: String) {
+        _fileSizeInfo.value = info
+    }
+
+    /**
      * 设置bugreport文件
      * 包含文件大小验证
      */

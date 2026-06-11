@@ -51,4 +51,11 @@ interface BatteryReportDao {
 
     @Query("SELECT * FROM battery_reports WHERE reportTime >= :startTime AND reportTime <= :endTime ORDER BY reportTime DESC")
     fun getReportsByTimeRange(startTime: Long, endTime: Long): Flow<List<BatteryReportEntity>>
+
+    // 非Flow版本，用于导出等场景
+    @Query("SELECT * FROM battery_reports ORDER BY reportTime DESC")
+    suspend fun getAllOnce(): List<BatteryReportEntity>
+
+    @Query("SELECT AVG(cycleCount) FROM battery_reports WHERE cycleCount IS NOT NULL")
+    suspend fun getAverageCycleCount(): Float?
 }
