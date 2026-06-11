@@ -2,6 +2,7 @@ package com.digiguide.ui.feature.verify
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -9,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.digiguide.model.BatteryHealthResult
@@ -63,6 +66,14 @@ fun BatteryResultScreen(
         ) {
             // 健康度等级卡片
             HealthGradeCard(result)
+
+            // 循环次数详情卡片
+            CycleCountDetailCard(
+                cycleCount = result.cycleCount,
+                cycleGrade = result.cycleGrade,
+                cyclePercentUsed = result.cyclePercentUsed,
+                estimatedRemainingCycles = result.estimatedRemainingCycles
+            )
 
             // 原始数据卡片
             if (rawData != null) {
@@ -133,8 +144,237 @@ fun HealthGradeCard(result: BatteryHealthResult) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White
             )
+            
+            // 置信度显示
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = "置信度",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "置信度: ${result.confidence.name} (${result.getAvailableFactorsCount()}个因子)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
         }
     }
+}
+
+/**
+ * 循环次数详情卡片
+ */
+@Composable
+fun CycleCountDetailCard(
+    cycleCount: Int?,
+    cycleGrade: String,
+    cyclePercentUsed: Float,
+    estimatedRemainingCycles: Int?
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 标题行
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "电池循环次数",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (cycleCount != null) {
+                // 主数字：当前循环次数
+                Text(
+                    text = "$cycleCount 次",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // 循环进度条
+                LinearProgressIndicator(
+                    progress = { (cyclePercentUsed / 100f).coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = when {
+                        cyclePercentUsed <= 40f -> Color(0xFF4CAF50)
+                        cyclePercentUsed <= 80f -> Color(0xFFFFC107)
+                        else -> Color(0xFFF44336)
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+
+                // 循环状态标签
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("循环状态", style = MaterialTheme.typography.bodyMedium)
+                    CycleGradeChip(cycleGrade)
+                }
+
+                // 循环寿命消耗
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("寿命消耗", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "${String.format("%.1f", cyclePercentUsed)}%",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // 预估剩余循环
+                if (estimatedRemainingCycles != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("预估剩余循环", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "约 $estimatedRemainingCycles 次",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = when {
+                                estimatedRemainingCycles > 200 -> Color(0xFF4CAF50)
+                                estimatedRemainingCycles > 50 -> Color(0xFFFFC107)
+                                else -> Color(0xFFF44336)
+                            }
+                        )
+                    }
+
+                    // 预估剩余使用时间
+                    val remainingMonths = estimatedRemainingCycles / 30  // 假设每天约1次循环
+                    Text(
+                        "按每日一充估算，还可使用约 $remainingMonths 个月",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // 循环次数说明
+                Text(
+                    "锂电池典型额定寿命为 500 次循环，达到该值后容量通常降至原始的 80% 左右。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                // 循环次数不可用
+                InfoBanner(
+                    icon = Icons.Default.Warning,
+                    text = "未能从日志中提取到循环次数，请确保在设置-电池中采集完整数据后再生成bugreport。",
+                    severity = BannerSeverity.Warning
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 循环等级标签
+ */
+@Composable
+fun CycleGradeChip(cycleGrade: String) {
+    val (color, text) = when (cycleGrade) {
+        "极佳" -> Pair(Color(0xFF4CAF50), "极佳")
+        "良好" -> Pair(Color(0xFF8BC34A), "良好")
+        "一般" -> Pair(Color(0xFFFFC107), "一般")
+        "警告" -> Pair(Color(0xFFFF9800), "警告")
+        "危险" -> Pair(Color(0xFFF44336), "危险")
+        else -> Pair(Color(0xFF9E9E9E), cycleGrade)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = color
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White
+        )
+    }
+}
+
+/**
+ * 信息提示条
+ */
+@Composable
+fun InfoBanner(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    severity: BannerSeverity
+) {
+    val backgroundColor = when (severity) {
+        BannerSeverity.Info -> MaterialTheme.colorScheme.secondaryContainer
+        BannerSeverity.Warning -> Color(0xFFFFF3E0)
+        BannerSeverity.Error -> MaterialTheme.colorScheme.errorContainer
+    }
+
+    val iconColor = when (severity) {
+        BannerSeverity.Info -> MaterialTheme.colorScheme.secondary
+        BannerSeverity.Warning -> Color(0xFFFF9800)
+        BannerSeverity.Error -> MaterialTheme.colorScheme.error
+    }
+
+    val textColor = when (severity) {
+        BannerSeverity.Info -> MaterialTheme.colorScheme.onSecondaryContainer
+        BannerSeverity.Warning -> Color(0xFFE65100)
+        BannerSeverity.Error -> MaterialTheme.colorScheme.onErrorContainer
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+        }
+    }
+}
+
+enum class BannerSeverity {
+    Info, Warning, Error
 }
 
 @Composable
@@ -211,6 +451,12 @@ fun DetailedAnalysisCard(result: BatteryHealthResult) {
                     value = "${(result.thermalAging!! * 100).toInt()}%"
                 )
             }
+            if (result.chargingDamage != null) {
+                ResultItem(
+                    label = "充电损伤因子",
+                    value = "${(result.chargingDamage!! * 100).toInt()}%"
+                )
+            }
             if (result.estimatedResistanceMohm != null) {
                 ResultItem(
                     label = "估算内阻",
@@ -223,13 +469,6 @@ fun DetailedAnalysisCard(result: BatteryHealthResult) {
                     value = "${result.remainingLifespanMonths!!} 个月"
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "置信度: ${result.confidence.name} (${result.getAvailableFactorsCount()}个因子)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
@@ -269,5 +508,28 @@ fun SuggestionsCard(result: BatteryHealthResult) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ResultItem(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

@@ -15,7 +15,12 @@ data class BatteryHealthResult(
     var suggestions: List<String> = emptyList(),
     var estimatedResistanceMohm: Float? = null,
     var remainingLifespanMonths: Int? = null,
-    var confidence: ConfidenceLevel = ConfidenceLevel.NONE
+    var confidence: ConfidenceLevel = ConfidenceLevel.NONE,
+    // 循环次数专项分析
+    var cycleCount: Int? = null,
+    var cycleGrade: String = "未知",
+    var cyclePercentUsed: Float = 0f,
+    var estimatedRemainingCycles: Int? = null
 ) {
     /**
      * 置信度级别

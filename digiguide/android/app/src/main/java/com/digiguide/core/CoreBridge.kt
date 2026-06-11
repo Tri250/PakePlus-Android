@@ -262,6 +262,32 @@ object CoreBridge {
             result.cycleDecay = decay.coerceIn(0f, 1f)
             score += result.cycleDecay!! * 0.30f
             totalWeight += 0.30f
+            
+            // 循环次数专项分析
+            result.cycleCount = cycles
+            val ratedCycles = 500  // 手机锂电池典型额定循环次数
+            result.cyclePercentUsed = (cycles.toFloat() / ratedCycles) * 100f
+            result.cycleGrade = when {
+                cycles <= 100 -> "极佳"
+                cycles <= 200 -> "良好"
+                cycles <= 350 -> "一般"
+                cycles <= 450 -> "警告"
+                else -> "危险"
+            }
+            result.estimatedRemainingCycles = (ratedCycles - cycles).coerceAtLeast(0)
+        }
+
+        // 温度老化 (10%权重)
+        if (rawData.temperatureCelsius != null) {
+            val temp = rawData.temperatureCelsius!!
+            val thermalAging = if (temp <= 25f) {
+                1.0f
+            } else {
+                1.0f - (temp - 25f) / 100f
+            }
+            result.thermalAging = thermalAging.coerceIn(0f, 1f)
+            score += thermalAging * 0.10f
+            totalWeight += 0.10f
         }
 
         // 计算综合健康度
@@ -287,8 +313,20 @@ object CoreBridge {
         if (rawData.cycleCount != null && rawData.cycleCount!! > 400) {
             result.suggestions.add("循环次数较高，电池已接近设计寿命")
         }
+        if (rawData.temperatureCelsius != null && rawData.temperatureCelsius!! > 40f) {
+            result.suggestions.add("电池温度偏高，建议避免高温环境使用")
+        }
         if (result.suggestions.isEmpty()) {
             result.suggestions.add("电池状态良好，继续保持良好使用习惯")
+        }
+
+        // 设置置信度
+        val factorCount = result.getAvailableFactorsCount()
+        result.confidence = when {
+            factorCount >= 4 -> BatteryHealthResult.ConfidenceLevel.HIGH
+            factorCount >= 2 -> BatteryHealthResult.ConfidenceLevel.MEDIUM
+            factorCount >= 1 -> BatteryHealthResult.ConfidenceLevel.LOW
+            else -> BatteryHealthResult.ConfidenceLevel.NONE
         }
 
         return result
