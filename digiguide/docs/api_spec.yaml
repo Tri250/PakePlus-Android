@@ -1,0 +1,392 @@
+openapi: 3.0.3
+info:
+  title: 数码指南 API
+  description: 手机数码产品信息查询和电池健康检测服务
+  version: 3.1.0
+  contact:
+    name: DigiGuide Team
+
+servers:
+  - url: https://api.digiguide.cn/v1
+    description: 生产环境
+  - url: http://localhost:8080/v1
+    description: 开发环境
+
+tags:
+  - name: SN Query
+    description: 序列号查询服务
+  - name: Battery Report
+    description: 电池报告分析服务
+
+paths:
+  /sn/query:
+    post:
+      tags:
+        - SN Query
+      summary: 查询序列号信息
+      description: 根据SN序列号自动识别品牌并返回生产信息
+      operationId: querySN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SNQueryRequest'
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SNQueryResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 请求频率超限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sn/validate:
+    post:
+      tags:
+        - SN Query
+      summary: 验证SN格式
+      description: 验证序列号格式是否合法
+      operationId: validateSN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SNValidateRequest'
+      responses:
+        '200':
+          description: 验证结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SNValidateResponse'
+
+  /battery/upload:
+    post:
+      tags:
+        - Battery Report
+      summary: 上传电池报告
+      description: 上传bugreport文件进行电池健康分析
+      operationId: uploadBatteryReport
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - brand
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: bugreport ZIP文件
+                brand:
+                  type: string
+                  enum: [XIAOMI, HUAWEI, OPPO, VIVO, APPLE, HONOR, SAMSUNG, LENOVO, HP, ASUS, DELL]
+                  description: 设备品牌
+                model:
+                  type: string
+                  description: 设备型号（可选）
+      responses:
+        '200':
+          description: 分析成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatteryAnalysisResponse'
+        '400':
+          description: 文件格式错误或缺少必要参数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /battery/history/{deviceId}:
+    get:
+      tags:
+        - Battery Report
+      summary: 获取电池历史报告
+      description: 获取指定设备的电池健康历史记录
+      operationId: getBatteryHistory
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 设备唯一标识
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: 返回记录数量限制
+      responses:
+        '200':
+          description: 历史记录列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatteryHistoryResponse'
+
+components:
+  schemas:
+    SNQueryRequest:
+      type: object
+      required:
+        - sn
+      properties:
+        sn:
+          type: string
+          minLength: 8
+          maxLength: 20
+          description: 序列号
+          example: "C3LXK2XXXXX"
+        brand:
+          type: string
+          enum: [XIAOMI, HUAWEI, OPPO, VIVO, APPLE, HONOR, SAMSUNG, LENOVO, HP, ASUS, DELL, APPLE_MAC]
+          description: 指定品牌（可选，不指定则自动识别）
+
+    SNQueryResponse:
+      type: object
+      properties:
+        sn:
+          type: string
+          description: 原始序列号
+        brand:
+          type: string
+          description: 识别的品牌
+        brand_cn:
+          type: string
+          description: 品牌中文名
+        factory_year:
+          type: integer
+          description: 生产年份
+        factory_month:
+          type: integer
+          description: 生产月份
+        factory_week:
+          type: integer
+          description: 生产周次
+        half_year:
+          type: string
+          description: 半年代码（Apple）
+        production_date:
+          type: string
+          format: date
+          description: 推算的生产日期
+        warranty_status:
+          type: string
+          enum: [ACTIVE, EXPIRED, UNKNOWN]
+          description: 保修状态
+        warranty_end_date:
+          type: string
+          format: date
+          description: 保修截止日期
+        status:
+          type: string
+          enum: [SUCCESS, PARTIAL, FAILED]
+          description: 解码状态
+        error_message:
+          type: string
+          description: 错误信息（如有）
+        official_info:
+          type: object
+          description: 品牌官方查询结果（如有）
+          properties:
+            model:
+              type: string
+            color:
+              type: string
+            capacity:
+              type: string
+            purchase_date:
+              type: string
+              format: date
+            activation_date:
+              type: string
+              format: date
+
+    SNValidateRequest:
+      type: object
+      required:
+        - sn
+        - brand
+      properties:
+        sn:
+          type: string
+          description: 序列号
+        brand:
+          type: string
+          description: 品牌
+
+    SNValidateResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: 是否有效
+        format_hint:
+          type: string
+          description: 格式说明
+        issues:
+          type: array
+          items:
+            type: string
+          description: 格式问题列表
+
+    BatteryAnalysisResponse:
+      type: object
+      properties:
+        device_info:
+          type: object
+          properties:
+            brand:
+              type: string
+            model:
+              type: string
+            sn:
+              type: string
+        battery_info:
+          type: object
+          properties:
+            design_capacity_mah:
+              type: integer
+              description: 设计容量
+            current_capacity_mah:
+              type: integer
+              description: 当前容量
+            cycle_count:
+              type: integer
+              description: 循环次数
+            manufacturing_date:
+              type: string
+              format: date
+              description: 制造日期
+            temperature_celsius:
+              type: number
+              description: 当前温度
+        health_result:
+          type: object
+          properties:
+            health_percentage:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: 健康度百分比
+            grade:
+              type: string
+              enum: [A+, A, B, C, D, F]
+              description: 健康等级
+            diagnosis_text:
+              type: string
+              description: 诊断说明
+            suggestions:
+              type: array
+              items:
+                type: string
+              description: 使用建议
+            confidence:
+              type: string
+              enum: [HIGH, MEDIUM, LOW, NONE]
+              description: 置信度
+            factors:
+              type: object
+              properties:
+                capacity_retention:
+                  type: number
+                cycle_decay:
+                  type: number
+                resistance_growth:
+                  type: number
+                thermal_aging:
+                  type: number
+                charging_damage:
+                  type: number
+            remaining_lifespan_months:
+              type: integer
+              description: 预估剩余寿命（月）
+        top_power_apps:
+          type: array
+          items:
+            type: object
+            properties:
+              package_name:
+                type: string
+              display_name:
+                type: string
+              power_mah:
+                type: number
+              wakeup_count:
+                type: integer
+          description: 耗电最多的应用
+        parse_detail:
+          type: object
+          properties:
+            extracted_fields:
+              type: array
+              items:
+                type: string
+              description: 成功提取的字段
+            missing_fields:
+              type: array
+              items:
+                type: string
+              description: 缺失的字段
+            parse_warnings:
+              type: array
+              items:
+                type: string
+              description: 解析警告
+
+    BatteryHistoryResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              report_id:
+                type: string
+              report_date:
+                type: string
+                format: date-time
+              health_percentage:
+                type: number
+              grade:
+                type: string
+              cycle_count:
+                type: integer
+              capacity_mah:
+                type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+          description: 错误代码
+        message:
+          type: string
+          description: 错误消息
+        details:
+          type: object
+          description: 详细错误信息
