@@ -41,10 +41,15 @@ private val LightColorScheme = lightColorScheme(
     error = ErrorColor
 )
 
+/**
+ * 应用主题
+ * 支持动态颜色（Android 12+）和深色模式
+ */
 @Composable
 fun DigiGuideTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    // 动态颜色在API 31+可用，但为了兼容性默认关闭
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -58,9 +63,11 @@ fun DigiGuideTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                window.statusBarColor = colorScheme.primary.toArgb()
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            }
         }
     }
 

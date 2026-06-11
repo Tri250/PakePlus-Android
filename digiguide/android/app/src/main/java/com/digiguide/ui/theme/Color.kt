@@ -35,9 +35,9 @@ val OnPrimaryDark = Color(0xFFFFFFFF)
 val OnSecondaryLight = Color(0xFF000000)
 val OnSecondaryDark = Color(0xFF000000)
 val OnBackgroundLight = Color(0xFF1C1B1F)
-val OnBackgroundDark = Color(0FFE1D1E6)
+val OnBackgroundDark = Color(0xFFE1D1E6)
 val OnSurfaceLight = Color(0xFF1C1B1F)
-val OnSurfaceDark = Color(0FFE1D1E6)
+val OnSurfaceDark = Color(0xFFE1D1E6)
 
 // 辅助颜色
 val ErrorColor = Color(0xFFB3261E)

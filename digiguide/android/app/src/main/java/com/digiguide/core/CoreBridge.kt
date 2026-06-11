@@ -103,8 +103,17 @@ object CoreBridge {
     // ========== Kotlin完整实现 ==========
 
     private fun kotlinDecodeSN(sn: String): SNDecodeResult {
-        val brand = identifyBrand(sn)
-        return kotlinDecodeSN(sn, brand)
+        return try {
+            val brand = identifyBrand(sn)
+            kotlinDecodeSN(sn, brand)
+        } catch (e: Exception) {
+            SNDecodeResult(
+                brand = Brand.UNKNOWN,
+                rawSn = sn,
+                status = SNDecodeStatus.FAILED,
+                errorMessage = "解码异常: ${e.message}"
+            )
+        }
     }
 
     private fun kotlinDecodeSN(sn: String, brand: Brand): SNDecodeResult {
@@ -114,22 +123,27 @@ object CoreBridge {
             status = SNDecodeStatus.PARTIAL
         )
 
-        when (brand) {
-            Brand.APPLE, Brand.APPLE_MAC -> decodeAppleSN(sn, result)
-            Brand.SAMSUNG -> decodeSamsungSN(sn, result)
-            Brand.HUAWEI -> decodeHuaweiSN(sn, result)
-            Brand.HONOR -> decodeHuaweiSN(sn, result.apply { brand = Brand.HONOR })
-            Brand.XIAOMI -> decodeXiaomiSN(sn, result)
-            Brand.OPPO -> decodeOPPOSN(sn, result)
-            Brand.VIVO -> decodeVivoSN(sn, result)
-            Brand.LENOVO -> decodeLenovoSN(sn, result)
-            Brand.HP -> decodeHPSN(sn, result)
-            Brand.ASUS -> decodeASUSSN(sn, result)
-            Brand.DELL -> decodeDellSN(sn, result)
-            Brand.UNKNOWN -> {
-                result.status = SNDecodeStatus.FAILED
-                result.errorMessage = "无法识别品牌，请手动选择"
+        try {
+            when (brand) {
+                Brand.APPLE, Brand.APPLE_MAC -> decodeAppleSN(sn, result)
+                Brand.SAMSUNG -> decodeSamsungSN(sn, result)
+                Brand.HUAWEI -> decodeHuaweiSN(sn, result)
+                Brand.HONOR -> decodeHuaweiSN(sn, result.apply { brand = Brand.HONOR })
+                Brand.XIAOMI -> decodeXiaomiSN(sn, result)
+                Brand.OPPO -> decodeOPPOSN(sn, result)
+                Brand.VIVO -> decodeVivoSN(sn, result)
+                Brand.LENOVO -> decodeLenovoSN(sn, result)
+                Brand.HP -> decodeHPSN(sn, result)
+                Brand.ASUS -> decodeASUSSN(sn, result)
+                Brand.DELL -> decodeDellSN(sn, result)
+                Brand.UNKNOWN -> {
+                    result.status = SNDecodeStatus.FAILED
+                    result.errorMessage = "无法识别品牌，请手动选择"
+                }
             }
+        } catch (e: Exception) {
+            result.status = SNDecodeStatus.FAILED
+            result.errorMessage = "解码异常: ${e.message}"
         }
 
         return result
@@ -512,17 +526,18 @@ object CoreBridge {
     private fun kotlinParseBugreport(text: String): BatteryRawData {
         val data = BatteryRawData()
 
-        // 提取品牌
-        Regex("""ro\.product\.brand=\s*([A-Za-z0-9_\- ]+)""")
-            .find(text)?.let { data.brand = it.groupValues[1].trim() }
+        try {
+            // 提取品牌
+            Regex("""ro\.product\.brand=\s*([A-Za-z0-9_\- ]+)""")
+                .find(text)?.let { data.brand = it.groupValues[1].trim() }
 
-        // 提取型号
-        Regex("""ro\.product\.model=\s*([A-Za-z0-9_\- ]+)""")
-            .find(text)?.let { data.model = it.groupValues[1].trim() }
+            // 提取型号
+            Regex("""ro\.product\.model=\s*([A-Za-z0-9_\- ]+)""")
+                .find(text)?.let { data.model = it.groupValues[1].trim() }
 
-        // 提取制造商
-        Regex("""ro\.product\.manufacturer=\s*([A-Za-z0-9_\- ]+)""")
-            .find(text)?.let { data.manufacturer = it.groupValues[1].trim() }
+            // 提取制造商
+            Regex("""ro\.product\.manufacturer=\s*([A-Za-z0-9_\- ]+)""")
+                .find(text)?.let { data.manufacturer = it.groupValues[1].trim() }
 
         // 提取设计容量（多模式）
         val designPatterns = listOf(
@@ -628,6 +643,9 @@ object CoreBridge {
         // 提取电流
         Regex("""battery current:\s*(-?\d+\.?\d*)\s*mA""")
             .find(text)?.let { data.lastCurrentMa = it.groupValues[1].toFloatOrNull() }
+        } catch (e: Exception) {
+            // 解析失败，返回空数据
+        }
 
         return data
     }
@@ -639,13 +657,14 @@ object CoreBridge {
         var totalWeight = 0f
         var score = 0f
 
-        // 容量保持率 (35%权重)
-        if (rawData.currentCapacityMah != null && rawData.designCapacityMah != null) {
-            val retention = rawData.currentCapacityMah.toFloat() / rawData.designCapacityMah.toFloat()
-            result.capacityRetention = retention.coerceIn(0f, 1.5f)  // 新电池可能略高于设计容量
-            score += result.capacityRetention!! * 0.35f
-            totalWeight += 0.35f
-        }
+        try {
+            // 容量保持率 (35%权重)
+            if (rawData.currentCapacityMah != null && rawData.designCapacityMah != null) {
+                val retention = rawData.currentCapacityMah.toFloat() / rawData.designCapacityMah.toFloat()
+                result.capacityRetention = retention.coerceIn(0f, 1.5f)  // 新电池可能略高于设计容量
+                score += result.capacityRetention!! * 0.35f
+                totalWeight += 0.35f
+            }
 
         // 循环衰减 (30%权重)
         if (rawData.cycleCount != null) {
@@ -738,6 +757,12 @@ object CoreBridge {
         if (result.cycleCount != null && result.cycleCount!! > 0) {
             val remainingCycles = result.estimatedRemainingCycles ?: 0
             result.remainingLifespanMonths = (remainingCycles / 30).coerceAtLeast(0)  // 每月约30次循环
+        }
+        } catch (e: Exception) {
+            // 计算失败，返回默认结果
+            result.healthPercentage = 0f
+            result.grade = "F"
+            result.diagnosisText = "健康度计算失败: ${e.message}"
         }
 
         return result

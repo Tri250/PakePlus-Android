@@ -115,10 +115,20 @@ fun BatteryResultScreen(
 
 @Composable
 fun HealthGradeCard(result: BatteryHealthResult) {
+    val gradeColor = when (result.grade) {
+        "A+" -> Color(0xFF4CAF50)
+        "A" -> Color(0xFF8BC34A)
+        "B" -> Color(0xFFFFC107)
+        "C" -> Color(0xFFFF9800)
+        "D" -> Color(0xFFF44336)
+        "F" -> Color(0xFF9C27B0)
+        else -> Color(0xFF9E9E9E)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(android.graphics.Color.parseColor(result.getGradeColor()))
+            containerColor = gradeColor
         )
     ) {
         Column(
