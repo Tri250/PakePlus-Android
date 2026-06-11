@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 编译选项
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
+# 是否使用libzip（默认ON，可通过 -DUSE_LIBZIP=OFF 禁用）
+option(USE_LIBZIP "Use libzip for ZIP parsing" ON)
+
 # 源文件
 set(CORE_SOURCES
     src/sn_decoder.cpp
@@ -22,7 +25,38 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 # 核心库
 add_library(digiguide_core STATIC ${CORE_SOURCES})
 
-# 链接依赖（libzip用于ZIP解析）
+# libzip依赖（用于ZIP解析）
+if(USE_LIBZIP)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(LIBZIP QUIET libzip)
+    endif()
+    
+    if(LIBZIP_FOUND)
+        message(STATUS "Found libzip: ${LIBZIP_LIBRARIES}")
+        target_include_directories(digiguide_core PRIVATE ${LIBZIP_INCLUDE_DIRS})
+        target_link_libraries(digiguide_core ${LIBZIP_LIBRARIES})
+        target_compile_definitions(digiguide_core PRIVATE USE_LIBZIP)
+    else()
+        # 尝试手动查找libzip
+        find_path(LIBZIP_INCLUDE_DIR zip.h
+            PATHS /usr/include /usr/local/include)
+        find_library(LIBZIP_LIBRARY zip
+            PATHS /usr/lib /usr/local/lib)
+        
+        if(LIBZIP_INCLUDE_DIR AND LIBZIP_LIBRARY)
+            message(STATUS "Found libzip manually: ${LIBZIP_LIBRARY}")
+            target_include_directories(digiguide_core PRIVATE ${LIBZIP_INCLUDE_DIR})
+            target_link_libraries(digiguide_core ${LIBZIP_LIBRARY})
+            target_compile_definitions(digiguide_core PRIVATE USE_LIBZIP)
+        else()
+            message(WARNING "libzip not found, using fallback implementation")
+            set(USE_LIBZIP OFF)
+        endif()
+    endif()
+endif()
+
+# ZLIB依赖
 find_package(ZLIB QUIET)
 if(ZLIB_FOUND)
     target_link_libraries(digiguide_core ZLIB::ZLIB)
