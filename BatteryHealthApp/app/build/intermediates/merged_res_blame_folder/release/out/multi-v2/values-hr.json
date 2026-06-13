@@ -4,7 +4,7 @@
             "outputFile": "com.batteryhealth.app-mergeReleaseResources-30:/values-hr/values-hr.xml",
             "map": [
                 {
-                    "source": "/root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/res/values-hr/values-hr.xml",
+                    "source": "/root/.gradle/caches/8.14/transforms/8ee156ce46034740c32e51f44ad1dc56/transformed/core-1.9.0/res/values-hr/values-hr.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "/root/.gradle/caches/8.14.4/transforms/2f03a977d2f7d0b40a2504115bc111d3/transformed/material-1.11.0/res/values-hr/values-hr.xml",
+                    "source": "/root/.gradle/caches/8.14/transforms/47e09f85239f53336500f8dfff651de7/transformed/material-1.11.0/res/values-hr/values-hr.xml",
                     "from": {
                         "startLines": "2,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -40,7 +40,7 @@
                     }
                 },
                 {
-                    "source": "/root/.gradle/caches/8.14.4/transforms/66e72122a9b7c5e4615926b5a2f90fd2/transformed/appcompat-1.6.1/res/values-hr/values-hr.xml",
+                    "source": "/root/.gradle/caches/8.14/transforms/d5fbac4987c29473382ba941c912437c/transformed/appcompat-1.6.1/res/values-hr/values-hr.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
