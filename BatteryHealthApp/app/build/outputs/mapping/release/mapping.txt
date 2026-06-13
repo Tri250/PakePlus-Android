@@ -3,8 +3,8 @@
 # min_api: 24
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: 5e401cd
-# pg_map_hash: SHA-256 5e401cd5d2467f3add701bda7b95005cf2c5019fbf044d7ce611cbb2347a5852
+# pg_map_id: 5604ff4
+# pg_map_hash: SHA-256 5604ff4c9e4289d1c62b6a4fb4eef11298ca941c6b9d85d0278acbfacd86b3fa
 android.app.AppComponentFactory -> android.app.AppComponentFactory:
 # {"id":"com.android.tools.r8.synthesized"}
 android.app.UiModeManager$ContrastChangeListener -> android.app.UiModeManager$ContrastChangeListener:
@@ -75395,27 +75395,29 @@ androidx.viewpager2.widget.ViewPager2$SmoothScrollToPosition -> androidx.viewpag
     5:8:void run():1069:1069 -> run
 com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    1:7:void <init>():43:43 -> <init>
-    1:3:android.webkit.ValueCallback access$000(com.batteryhealth.app.MainActivity):43:43 -> access$000
-    1:3:android.webkit.ValueCallback access$002(com.batteryhealth.app.MainActivity,android.webkit.ValueCallback):43:43 -> access$002
-    3:8:void checkAndRequestPermissions():109:109 -> checkAndRequestPermissions
-    9:18:void checkAndRequestPermissions():110:110 -> checkAndRequestPermissions
-    19:26:void checkAndRequestPermissions():117:117 -> checkAndRequestPermissions
-    1:4:java.lang.String getFileName(android.net.Uri):304:304 -> getFileName
-    5:28:java.lang.String getFileName(android.net.Uri):306:306 -> getFileName
-    29:34:java.lang.String getFileName(android.net.Uri):307:307 -> getFileName
-    35:42:java.lang.String getFileName(android.net.Uri):308:308 -> getFileName
-    43:48:java.lang.String getFileName(android.net.Uri):309:309 -> getFileName
-    49:52:java.lang.String getFileName(android.net.Uri):311:311 -> getFileName
-    53:57:java.lang.String getFileName(android.net.Uri):313:313 -> getFileName
-    58:62:java.lang.String getFileName(android.net.Uri):318:318 -> getFileName
-    3:15:void initWebView():143:143 -> initWebView
-    16:23:void initWebView():147:147 -> initWebView
-    24:28:void initWebView():151:151 -> initWebView
-    29:31:void initWebView():154:154 -> initWebView
-    32:34:void initWebView():155:155 -> initWebView
-    35:37:void initWebView():159:159 -> initWebView
-    38:40:void initWebView():160:160 -> initWebView
+    1:7:void <init>():48:48 -> <init>
+    1:4:void access$000(com.batteryhealth.app.MainActivity):48:48 -> access$000
+    1:3:android.webkit.ValueCallback access$100(com.batteryhealth.app.MainActivity):48:48 -> access$100
+    1:3:android.webkit.ValueCallback access$102(com.batteryhealth.app.MainActivity,android.webkit.ValueCallback):48:48 -> access$102
+    1:4:void access$200(com.batteryhealth.app.MainActivity):48:48 -> access$200
+    3:8:void checkAndRequestPermissions():113:113 -> checkAndRequestPermissions
+    9:18:void checkAndRequestPermissions():114:114 -> checkAndRequestPermissions
+    19:26:void checkAndRequestPermissions():121:121 -> checkAndRequestPermissions
+    1:4:java.lang.String getFileName(android.net.Uri):342:342 -> getFileName
+    5:28:java.lang.String getFileName(android.net.Uri):344:344 -> getFileName
+    29:34:java.lang.String getFileName(android.net.Uri):345:345 -> getFileName
+    35:42:java.lang.String getFileName(android.net.Uri):346:346 -> getFileName
+    43:48:java.lang.String getFileName(android.net.Uri):347:347 -> getFileName
+    49:52:java.lang.String getFileName(android.net.Uri):349:349 -> getFileName
+    53:57:java.lang.String getFileName(android.net.Uri):351:351 -> getFileName
+    58:62:java.lang.String getFileName(android.net.Uri):356:356 -> getFileName
+    3:15:void initWebView():146:146 -> initWebView
+    16:23:void initWebView():150:150 -> initWebView
+    24:28:void initWebView():154:154 -> initWebView
+    29:31:void initWebView():157:157 -> initWebView
+    32:34:void initWebView():158:158 -> initWebView
+    35:37:void initWebView():161:161 -> initWebView
+    38:40:void initWebView():162:162 -> initWebView
     41:43:void initWebView():163:163 -> initWebView
     44:46:void initWebView():164:164 -> initWebView
     47:49:void initWebView():167:167 -> initWebView
@@ -75423,96 +75425,118 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
     53:55:void initWebView():171:171 -> initWebView
     56:58:void initWebView():172:172 -> initWebView
     59:62:void initWebView():173:173 -> initWebView
-    63:65:void initWebView():177:177 -> initWebView
-    66:68:void initWebView():180:180 -> initWebView
-    69:71:void initWebView():181:181 -> initWebView
-    72:74:void initWebView():182:182 -> initWebView
-    75:77:void initWebView():183:183 -> initWebView
-    78:82:void initWebView():184:184 -> initWebView
-    83:89:void initWebView():187:187 -> initWebView
-    90:94:void initWebView():191:191 -> initWebView
-    95:104:void initWebView():195:195 -> initWebView
-    105:116:void initWebView():244:244 -> initWebView
-    117:122:void initWebView():291:291 -> initWebView
-    123:130:void initWebView():295:295 -> initWebView
-    1:8:boolean isZipFile(android.net.Uri):329:329 -> isZipFile
-    9:14:boolean isZipFile(android.net.Uri):339:339 -> isZipFile
-    15:37:boolean isZipFile(android.net.Uri):340:340 -> isZipFile
-    38:41:boolean isZipFile(android.net.Uri):346:346 -> isZipFile
-    42:49:boolean isZipFile(android.net.Uri):347:347 -> isZipFile
-    50:57:boolean isZipFile(android.net.Uri):351:351 -> isZipFile
-    58:65:boolean isZipFile(android.net.Uri):352:352 -> isZipFile
-    66:69:boolean isZipFile(android.net.Uri):353:353 -> isZipFile
-    1:19:void onActivityResult(int,int,android.content.Intent):366:366 -> onActivityResult
-    20:23:void onActivityResult(int,int,android.content.Intent):378:378 -> onActivityResult
-    24:28:void onActivityResult(int,int,android.content.Intent):379:379 -> onActivityResult
-    29:39:void onActivityResult(int,int,android.content.Intent):383:383 -> onActivityResult
-    40:43:void onActivityResult(int,int,android.content.Intent):385:385 -> onActivityResult
-    44:71:void onActivityResult(int,int,android.content.Intent):387:387 -> onActivityResult
-    72:81:void onActivityResult(int,int,android.content.Intent):392:392 -> onActivityResult
-    82:91:void onActivityResult(int,int,android.content.Intent):397:397 -> onActivityResult
-    92:97:void onActivityResult(int,int,android.content.Intent):401:401 -> onActivityResult
-    9:16:void onBackPressed():408:408 -> onBackPressed
-    17:20:void onBackPressed():409:409 -> onBackPressed
-    21:24:void onBackPressed():411:411 -> onBackPressed
-    1:3:void onCreate(android.os.Bundle):56:56 -> onCreate
-    4:14:void onCreate(android.os.Bundle):59:59 -> onCreate
-    15:17:void onCreate(android.os.Bundle):64:64 -> onCreate
-    18:20:void onCreate(android.os.Bundle):67:67 -> onCreate
-    21:23:void onCreate(android.os.Bundle):70:70 -> onCreate
-    24:27:void onCreate(android.os.Bundle):73:73 -> onCreate
-    8:13:void onDestroy():449:449 -> onDestroy
-    14:18:void onDestroy():450:450 -> onDestroy
-    19:25:void onDestroy():451:451 -> onDestroy
-    26:30:void onDestroy():452:452 -> onDestroy
-    31:35:void onDestroy():453:453 -> onDestroy
-    36:40:void onDestroy():454:454 -> onDestroy
-    41:45:void onDestroy():455:455 -> onDestroy
-    46:50:void onDestroy():456:456 -> onDestroy
-    51:54:void onDestroy():460:460 -> onDestroy
-    1:11:void onPause():417:417 -> onPause
-    12:16:void onPause():419:419 -> onPause
-    17:20:void onPause():420:420 -> onPause
-    1:7:void onRequestPermissionsResult(int,java.lang.String[],int[]):123:123 -> onRequestPermissionsResult
-    8:18:void onRequestPermissionsResult(int,java.lang.String[],int[]):126:126 -> onRequestPermissionsResult
-    19:30:void onRequestPermissionsResult(int,java.lang.String[],int[]):133:133 -> onRequestPermissionsResult
-    1:11:void onResume():426:426 -> onResume
-    12:16:void onResume():428:428 -> onResume
-    17:20:void onResume():429:429 -> onResume
-    1:8:void onStop():435:435 -> onStop
-    9:14:void onStop():438:438 -> onStop
+    63:65:void initWebView():176:176 -> initWebView
+    66:68:void initWebView():177:177 -> initWebView
+    69:71:void initWebView():178:178 -> initWebView
+    72:74:void initWebView():179:179 -> initWebView
+    75:77:void initWebView():180:180 -> initWebView
+    78:82:void initWebView():181:181 -> initWebView
+    83:89:void initWebView():182:182 -> initWebView
+    90:94:void initWebView():186:186 -> initWebView
+    95:106:void initWebView():191:191 -> initWebView
+    107:116:void initWebView():195:195 -> initWebView
+    117:128:void initWebView():248:248 -> initWebView
+    129:134:void initWebView():267:267 -> initWebView
+    135:142:void initWebView():271:271 -> initWebView
+    6:9:void injectFilePickerScript():299:299 -> injectFilePickerScript
+    1:25:void notifyFileSelected(java.lang.String,java.lang.String):462:462 -> notifyFileSelected
+    26:32:void notifyFileSelected(java.lang.String,java.lang.String):0:0 -> notifyFileSelected
+      # {"id":"com.android.tools.r8.outlineCallsite","positions":{"1":37,"4":39,"7":42},"outline":"Lh2;g(Ljava/lang/StringBuilder;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"}
+    33:36:void notifyFileSelected(java.lang.String,java.lang.String):476:476 -> notifyFileSelected
+    37:37:void notifyFileSelected(java.lang.String,java.lang.String):462:462 -> notifyFileSelected
+    39:39:void notifyFileSelected(java.lang.String,java.lang.String):462:462 -> notifyFileSelected
+    42:42:void notifyFileSelected(java.lang.String,java.lang.String):462:462 -> notifyFileSelected
+    1:19:void onActivityResult(int,int,android.content.Intent):423:423 -> onActivityResult
+    20:23:void onActivityResult(int,int,android.content.Intent):435:435 -> onActivityResult
+    24:33:void onActivityResult(int,int,android.content.Intent):436:436 -> onActivityResult
+    34:37:void onActivityResult(int,int,android.content.Intent):440:440 -> onActivityResult
+    38:58:void onActivityResult(int,int,android.content.Intent):442:442 -> onActivityResult
+    59:68:void onActivityResult(int,int,android.content.Intent):445:445 -> onActivityResult
+    69:78:void onActivityResult(int,int,android.content.Intent):449:449 -> onActivityResult
+    79:84:void onActivityResult(int,int,android.content.Intent):452:452 -> onActivityResult
+    9:16:void onBackPressed():482:482 -> onBackPressed
+    17:20:void onBackPressed():483:483 -> onBackPressed
+    21:24:void onBackPressed():485:485 -> onBackPressed
+    1:3:void onCreate(android.os.Bundle):61:61 -> onCreate
+    4:14:void onCreate(android.os.Bundle):64:64 -> onCreate
+    15:17:void onCreate(android.os.Bundle):69:69 -> onCreate
+    18:20:void onCreate(android.os.Bundle):72:72 -> onCreate
+    21:23:void onCreate(android.os.Bundle):75:75 -> onCreate
+    24:27:void onCreate(android.os.Bundle):78:78 -> onCreate
+    8:14:void onDestroy():521:521 -> onDestroy
+    15:20:void onDestroy():522:522 -> onDestroy
+    21:25:void onDestroy():523:523 -> onDestroy
+    26:32:void onDestroy():524:524 -> onDestroy
+    33:37:void onDestroy():525:525 -> onDestroy
+    38:42:void onDestroy():526:526 -> onDestroy
+    43:47:void onDestroy():527:527 -> onDestroy
+    48:52:void onDestroy():528:528 -> onDestroy
+    53:57:void onDestroy():529:529 -> onDestroy
+    58:61:void onDestroy():533:533 -> onDestroy
+    1:11:void onPause():491:491 -> onPause
+    12:16:void onPause():493:493 -> onPause
+    17:20:void onPause():494:494 -> onPause
+    1:7:void onRequestPermissionsResult(int,java.lang.String[],int[]):127:127 -> onRequestPermissionsResult
+    8:18:void onRequestPermissionsResult(int,java.lang.String[],int[]):130:130 -> onRequestPermissionsResult
+    19:30:void onRequestPermissionsResult(int,java.lang.String[],int[]):137:137 -> onRequestPermissionsResult
+    1:11:void onResume():500:500 -> onResume
+    12:16:void onResume():502:502 -> onResume
+    17:20:void onResume():503:503 -> onResume
+    1:8:void onStop():509:509 -> onStop
+    9:14:void onStop():511:511 -> onStop
+    1:9:void openFileChooser():309:309 -> openFileChooser
+    10:14:void openFileChooser():310:310 -> openFileChooser
+    15:29:void openFileChooser():311:311 -> openFileChooser
+    30:34:void openFileChooser():319:319 -> openFileChooser
+    35:40:void openFileChooser():323:323 -> openFileChooser
+    41:49:void openFileChooser():322:322 -> openFileChooser
+    50:57:void openFileChooser():330:330 -> openFileChooser
+    58:65:void openFileChooser():333:333 -> openFileChooser
 com.batteryhealth.app.MainActivity$1 -> com.batteryhealth.app.MainActivity$1:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
     3:6:void <init>(com.batteryhealth.app.MainActivity):195:195 -> <init>
-    1:3:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):227:227 -> onReceivedError
-    4:9:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):228:228 -> onReceivedError
-    10:21:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):229:229 -> onReceivedError
-    22:29:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):230:230 -> onReceivedError
-    1:3:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):237:237 -> onReceivedSslError
-    4:11:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):238:238 -> onReceivedSslError
-    12:19:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):239:239 -> onReceivedSslError
+    1:5:void onPageFinished(android.webkit.WebView,java.lang.String):240:240 -> onPageFinished
+    6:9:void onPageFinished(android.webkit.WebView,java.lang.String):243:243 -> onPageFinished
+    1:3:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):224:224 -> onReceivedError
+    4:9:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):225:225 -> onReceivedError
+    10:21:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):226:226 -> onReceivedError
+    22:29:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):227:227 -> onReceivedError
+    1:3:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):233:233 -> onReceivedSslError
+    4:11:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):234:234 -> onReceivedSslError
+    12:19:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):235:235 -> onReceivedSslError
     1:10:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):198:198 -> shouldOverrideUrlLoading
-    11:20:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):201:201 -> shouldOverrideUrlLoading
-    21:29:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):206:206 -> shouldOverrideUrlLoading
-    30:46:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):211:211 -> shouldOverrideUrlLoading
-    47:59:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):213:213 -> shouldOverrideUrlLoading
-    60:67:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):214:214 -> shouldOverrideUrlLoading
-    68:75:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):217:217 -> shouldOverrideUrlLoading
+    11:20:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):200:200 -> shouldOverrideUrlLoading
+    21:29:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):204:204 -> shouldOverrideUrlLoading
+    30:46:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):208:208 -> shouldOverrideUrlLoading
+    47:59:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):210:210 -> shouldOverrideUrlLoading
+    60:67:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):211:211 -> shouldOverrideUrlLoading
+    68:75:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):214:214 -> shouldOverrideUrlLoading
 com.batteryhealth.app.MainActivity$2 -> com.batteryhealth.app.MainActivity$2:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    3:6:void <init>(com.batteryhealth.app.MainActivity):244:244 -> <init>
-    3:11:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):248:248 -> onShowFileChooser
-    12:20:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):249:249 -> onShowFileChooser
-    21:25:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):250:250 -> onShowFileChooser
-    26:28:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):253:253 -> onShowFileChooser
-    29:37:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):257:257 -> onShowFileChooser
-    38:42:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):258:258 -> onShowFileChooser
-    43:57:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):261:261 -> onShowFileChooser
-    58:64:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):270:270 -> onShowFileChooser
-    65:70:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):274:274 -> onShowFileChooser
-    71:77:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):273:273 -> onShowFileChooser
-    78:85:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):280:280 -> onShowFileChooser
-    86:93:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):281:281 -> onShowFileChooser
+    3:6:void <init>(com.batteryhealth.app.MainActivity):248:248 -> <init>
+    3:10:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):253:253 -> onShowFileChooser
+    11:20:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):254:254 -> onShowFileChooser
+    21:25:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):255:255 -> onShowFileChooser
+    26:30:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):258:258 -> onShowFileChooser
+    31:35:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):260:260 -> onShowFileChooser
+com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.MainActivity$WebAppInterface:
+# {"id":"sourceFile","fileName":"MainActivity.java"}
+    3:6:void <init>(com.batteryhealth.app.MainActivity):366:366 -> <init>
+    1:1:void $r8$lambda$PXVmTCXuDmPE6aRKuAuWO8VoQMo(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    3:6:void lambda$openFilePicker$0():372:372 -> lambda$openFilePicker$0
+    3:12:void openFilePicker():370:370 -> openFilePicker
+    2:7:java.lang.String readFileContent(java.lang.String):389:389 -> readFileContent
+    8:11:java.lang.String readFileContent(java.lang.String):390:390 -> readFileContent
+    12:18:java.lang.String readFileContent(java.lang.String):391:391 -> readFileContent
+    19:27:java.lang.String readFileContent(java.lang.String):398:398 -> readFileContent
+    28:35:java.lang.String readFileContent(java.lang.String):402:402 -> readFileContent
+    36:39:java.lang.String readFileContent(java.lang.String):403:403 -> readFileContent
+    40:42:java.lang.String readFileContent(java.lang.String):406:406 -> readFileContent
+    43:45:java.lang.String readFileContent(java.lang.String):407:407 -> readFileContent
+    46:49:java.lang.String readFileContent(java.lang.String):409:409 -> readFileContent
+    50:53:java.lang.String readFileContent(java.lang.String):410:410 -> readFileContent
+    54:56:java.lang.String readFileContent(java.lang.String):412:412 -> readFileContent
 com.google.android.material.animation.AnimatableView -> com.google.android.material.animation.AnimatableView:
 # {"id":"sourceFile","fileName":"AnimatableView.java"}
 com.google.android.material.animation.AnimatableView$Listener -> com.google.android.material.animation.AnimatableView$Listener:

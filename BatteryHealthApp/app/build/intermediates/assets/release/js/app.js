@@ -337,9 +337,54 @@ const BatteryHealthApp = {
     
     /**
      * 分析 ZIP 文件
+     * 关键修复：支持Android传递的URI文件
      */
     async analyzeZipFile(file, initialCapacity) {
         return new Promise((resolve, reject) => {
+            // 检查是否是Android URI文件
+            if (file.isAndroidUri && file.uri) {
+                console.log('Processing Android URI file:', file.uri);
+                
+                // 使用Android接口读取文件内容
+                if (window.AndroidFilePicker) {
+                    this.updateProgress(10, '正在读取Android文件...');
+                    
+                    // 在后台线程读取文件内容
+                    setTimeout(() => {
+                        try {
+                            const base64Content = window.AndroidFilePicker.readFileContent(file.uri);
+                            
+                            if (!base64Content) {
+                                reject(new Error('无法读取文件内容'));
+                                return;
+                            }
+                            
+                            this.updateProgress(40, '正在解压文件...');
+                            
+                            // 将Base64转换为Blob
+                            const binaryString = atob(base64Content.trim());
+                            const bytes = new Uint8Array(binaryString.length);
+                            for (let i = 0; i < binaryString.length; i++) {
+                                bytes[i] = binaryString.charCodeAt(i);
+                            }
+                            const blob = new Blob([bytes], { type: 'application/zip' });
+                            
+                            // 解压ZIP文件
+                            this.processZipBlob(blob, initialCapacity, resolve, reject);
+                            
+                        } catch (error) {
+                            console.error('Failed to process Android file:', error);
+                            reject(new Error('文件处理失败: ' + error.message));
+                        }
+                    }, 100);
+                    
+                } else {
+                    reject(new Error('Android文件接口不可用'));
+                }
+                return;
+            }
+            
+            // 常规文件处理（浏览器环境）
             const reader = new FileReader();
             
             reader.onprogress = (e) => {
@@ -351,72 +396,87 @@ const BatteryHealthApp = {
             
             reader.onload = async (e) => {
                 try {
-                    this.updateProgress(40, '正在解压文件...');
-                    
                     const blob = new Blob([e.target.result]);
-                    const zipReader = new zip.ZipReader(new zip.BlobReader(blob));
-                    const entries = await zipReader.getEntries();
-                    
-                    this.updateProgress(60, '正在查找电池信息...');
-                    
-                    // 检测品牌
-                    let detectedBrand = 'generic';
-                    let batteryInfo = null;
-                    
-                    // 查找可能包含电池信息的文件
-                    for (let i = 0; i < entries.length; i++) {
-                        const entry = entries[i];
-                        const filename = entry.filename.toLowerCase();
-                        
-                        // 更新进度
-                        const progress = 60 + Math.round((i / entries.length) * 20);
-                        this.updateProgress(progress, `正在分析: ${entry.filename}...`);
-                        
-                        // 查找电池相关文件
-                        if (filename.includes('battery') || 
-                            filename.includes('dumpstate') ||
-                            filename.includes('bugreport') ||
-                            filename.endsWith('.txt')) {
-                            
-                            try {
-                                const content = await entry.getData(new zip.TextWriter());
-                                
-                                // 检测品牌
-                                if (detectedBrand === 'generic') {
-                                    detectedBrand = BatteryParsers.detectBrand(entries, content);
-                                }
-                                
-                                // 解析电池信息
-                                const info = BatteryParsers.parse(content, detectedBrand);
-                                if (info && info.currentCapacity) {
-                                    batteryInfo = info;
-                                    break;
-                                }
-                            } catch (err) {
-                                console.log('Error reading entry:', entry.filename, err);
-                            }
-                        }
-                    }
-                    
-                    await zipReader.close();
-                    
-                    this.updateProgress(85, '正在计算健康度...');
-                    
-                    if (batteryInfo) {
-                        batteryInfo.brand = detectedBrand;
-                        resolve(batteryInfo);
-                    } else {
-                        reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
-                    }
-                    
+                    this.processZipBlob(blob, initialCapacity, resolve, reject);
                 } catch (error) {
                     reject(error);
                 }
             };
             
-            reader.onerror = () => reject(new Error('文件读取失败'));
+            reader.onerror = () => {
+                reject(new Error('文件读取失败'));
+            };
+            
             reader.readAsArrayBuffer(file);
         });
+    },
+    
+    /**
+     * 处理ZIP Blob文件
+     */
+    async processZipBlob(blob, initialCapacity, resolve, reject) {
+        try {
+            this.updateProgress(40, '正在解压文件...');
+            
+            const zipReader = new zip.ZipReader(new zip.BlobReader(blob));
+            const entries = await zipReader.getEntries();
+            
+            this.updateProgress(60, '正在查找电池信息...');
+            
+            // 检测品牌
+            let detectedBrand = 'generic';
+            let batteryInfo = null;
+            
+            // 查找可能包含电池信息的文件
+            for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i];
+                const filename = entry.filename.toLowerCase();
+                
+                // 更新进度
+                const progress = 60 + Math.round((i / entries.length) * 20);
+                this.updateProgress(progress, `正在分析: ${entry.filename}...`);
+                
+                // 查找电池相关文件
+                if (filename.includes('battery') || 
+                    filename.includes('dumpstate') ||
+                    filename.includes('bugreport') ||
+                    filename.endsWith('.txt')) {
+                    
+                    try {
+                        const content = await entry.getData(new zip.TextWriter());
+                        
+                        // 检测品牌
+                        if (detectedBrand === 'generic') {
+                            detectedBrand = BatteryParsers.detectBrand(entries, content);
+                        }
+                        
+                        // 解析电池信息
+                        const info = BatteryParsers.parse(content, detectedBrand);
+                        if (info && info.currentCapacity) {
+                            batteryInfo = info;
+                            break;
+                        }
+                    } catch (err) {
+                        console.log('Error reading entry:', entry.filename, err);
+                    }
+                }
+            }
+            
+            await zipReader.close();
+            
+            this.updateProgress(85, '正在计算健康度...');
+            
+            if (batteryInfo) {
+                batteryInfo.brand = detectedBrand;
+                resolve(batteryInfo);
+            } else {
+                reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
+            }
+            
+        } catch (error) {
+            console.error('processZipBlob error:', error);
+            reject(error);
+        }
     },
     
     /**
@@ -905,6 +965,30 @@ const BatteryHealthApp = {
         URL.revokeObjectURL(url);
         
         this.showToast('报告已保存', 'success');
+    },
+    
+    /**
+     * Android文件选择处理方法
+     * 关键修复：接收Android传递的文件URI并处理
+     */
+    handleAndroidFileSelected(uriString, fileName) {
+        console.log('Android file selected:', uriString, fileName);
+        
+        // 显示文件名
+        this.elements.selectedFileName.textContent = fileName;
+        this.elements.fileNameDisplay.style.display = 'flex';
+        this.elements.fileValidationError.classList.remove('show');
+        
+        // 创建一个模拟File对象用于后续处理
+        // 注意：Android传递的是content:// URI，需要特殊处理
+        this.currentFile = {
+            name: fileName,
+            uri: uriString,
+            isAndroidUri: true
+        };
+        
+        this.showToast('已选择文件: ' + fileName, 'success');
+        console.log('File ready for analysis');
     }
 };
 

@@ -6542,6 +6542,7 @@ androidx.transition.ViewUtilsApi23:
     static void <clinit>()
 androidx.viewpager2.widget.ViewPager2:
     static void <clinit>()
+com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$44d80dbb9ad7a590560647b113fd692811d2768ab991e6beaf4fd468a9eccfb4$0
 com.google.android.material.bottomsheet.BottomSheetDragHandleView$$InternalSyntheticLambda$1$6e0c29d7213493c55d30ad4b742182cc19d419d02261296a64cf8befddf5292a$0
 com.google.android.material.carousel.CarouselLayoutManager$$InternalSyntheticLambda$1$5b3cd3f2363bbf6dfb26c125a0d027b2b230878b3b1338036a5c5c692bf44f54$0
 com.google.android.material.carousel.CarouselLayoutManager$$InternalSyntheticLambda$1$fc583b889c18a289c690fb7099cae881be2922f09eebf72ab42aa12a903ef5aa$0

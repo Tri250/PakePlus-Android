@@ -13,6 +13,7 @@ import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -28,16 +29,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
 /**
  * 电池健康度分析工具主Activity
  *
  * 功能特性：
  * - WebView安全加固
  * - 文件选择器支持（完整修复）
+ * - JavaScript接口支持
  * - 内存泄漏防护
  * - 性能优化配置
  *
- * @version 1.2.1
+ * @version 1.2.2
  * @author 带娃的小陈工
  */
 public class MainActivity extends AppCompatActivity {
@@ -75,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 初始化权限数组 - 适配不同Android版本
-     * 关键修复：添加访问所有文件的权限
      */
     private void initPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -84,10 +88,10 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.READ_MEDIA_IMAGES,
                 Manifest.permission.READ_MEDIA_VIDEO,
                 Manifest.permission.READ_MEDIA_AUDIO,
-                Manifest.permission.READ_EXTERNAL_STORAGE  // 兼容旧应用
+                Manifest.permission.READ_EXTERNAL_STORAGE
             };
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11-12 需要MANAGE_EXTERNAL_STORAGE或READ_EXTERNAL_STORAGE
+            // Android 11-12
             permissions = new String[]{
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -137,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 初始化WebView - 安全加固与性能优化
-     * 关键修复：启用文件访问以支持ZIP文件上传
      */
     private void initWebView() {
         webView = findViewById(R.id.webView);
@@ -154,13 +157,10 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
 
-        // 关键修复：启用文件访问以支持文件选择器
-        // 注意：虽然启用了文件访问，但通过其他安全措施保护
-        webSettings.setAllowFileAccess(true);           // 允许访问文件系统
-        webSettings.setAllowContentAccess(true);        // 允许访问ContentProvider
-        
-        // 保持跨域安全限制
-        webSettings.setAllowFileAccessFromFileURLs(false);  // 禁止file URL跨域
+        // 启用文件访问以支持文件选择器
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+        webSettings.setAllowFileAccessFromFileURLs(false);
         webSettings.setAllowUniversalAccessFromFileURLs(false);
 
         // 仅允许 HTTPS 混合内容
@@ -173,17 +173,12 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setSaveFormData(false);
 
         // ========== 性能优化配置 ==========
-        // 缓存策略
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-
-        // 渲染优化
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setSupportZoom(true);
         webSettings.setBuiltInZoomControls(true);
         webSettings.setDisplayZoomControls(false);
-
-        // 文字渲染优化
         webSettings.setTextZoom(100);
 
         // 硬件加速
@@ -191,23 +186,25 @@ public class MainActivity extends AppCompatActivity {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
+        // ========== 添加JavaScript接口 ==========
+        // 关键修复：添加JavaScript接口，让JS可以调用Android原生文件选择器
+        webView.addJavascriptInterface(new WebAppInterface(), "AndroidFilePicker");
+        Log.d(TAG, "JavaScript interface added");
+
         // ========== WebViewClient配置 ==========
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
 
-                // 允许本地资源
                 if (url.startsWith("file:///android_asset/")) {
                     return false;
                 }
 
-                // 允许content:// URL（文件选择器返回的URI）
                 if (url.startsWith("content://")) {
                     return false;
                 }
 
-                // 拦截所有外部链接
                 if (url.startsWith("http://") || url.startsWith("https://")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -233,55 +230,34 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, android.net.http.SslError error) {
-                // 安全策略：拒绝处理SSL错误，防止中间人攻击
                 Log.e(TAG, "SSL Error: " + error.toString());
                 handler.cancel();
                 Toast.makeText(MainActivity.this, "安全连接错误", Toast.LENGTH_SHORT).show();
             }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                Log.d(TAG, "Page finished loading: " + url);
+                // 注入JavaScript代码来监听文件选择器点击
+                injectFilePickerScript();
+            }
         });
 
-        // ========== WebChromeClient配置 - 文件选择器 ==========
+        // ========== WebChromeClient配置 ==========
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                // 清理之前的回调
+                Log.d(TAG, "onShowFileChooser triggered");
+                
                 if (MainActivity.this.filePathCallback != null) {
                     MainActivity.this.filePathCallback.onReceiveValue(null);
                     MainActivity.this.filePathCallback = null;
                 }
 
                 MainActivity.this.filePathCallback = filePathCallback;
-                Log.d(TAG, "File chooser triggered");
 
-                // 创建文件选择Intent - 支持所有文件类型
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                
-                // 关键修复：使用更宽松的MIME类型配置
-                intent.setType("*/*");  // 允许所有文件类型
-                
-                // 备选MIME类型 - 包含ZIP相关类型
-                String[] mimeTypes = {
-                    "application/zip",
-                    "application/x-zip-compressed",
-                    "application/octet-stream",
-                    "*/*"
-                };
-                intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
-
-                try {
-                    startActivityForResult(
-                        Intent.createChooser(intent, "选择诊断文件（ZIP格式）"),
-                        FILE_CHOOSER_REQUEST_CODE
-                    );
-                    Log.d(TAG, "File chooser intent launched");
-                } catch (Exception ex) {
-                    Log.e(TAG, "Failed to open file chooser", ex);
-                    MainActivity.this.filePathCallback = null;
-                    Toast.makeText(MainActivity.this, "请安装文件管理器", Toast.LENGTH_SHORT).show();
-                    return false;
-                }
-
+                openFileChooser();
                 return true;
             }
         });
@@ -297,7 +273,69 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 获取文件名 - 从ContentProvider URI
+     * 注入JavaScript代码监听文件选择器点击
+     * 关键修复：确保点击事件能触发Android文件选择器
+     */
+    private void injectFilePickerScript() {
+        String jsCode = 
+            "(function() {" +
+            "   var dropArea = document.getElementById('drop-area');" +
+            "   var fileInput = document.getElementById('zip-file');" +
+            "   if (dropArea && fileInput) {" +
+            "       dropArea.addEventListener('click', function(e) {" +
+            "           e.preventDefault();" +
+            "           e.stopPropagation();" +
+            "           console.log('Drop area clicked, triggering file picker');" +
+            "           if (window.AndroidFilePicker) {" +
+            "               window.AndroidFilePicker.openFilePicker();" +
+            "           } else {" +
+            "               fileInput.click();" +
+            "           }" +
+            "       }, true);" +
+            "       console.log('File picker script injected successfully');" +
+            "   }" +
+            "})();";
+        
+        webView.evaluateJavascript(jsCode, null);
+        Log.d(TAG, "File picker script injected");
+    }
+
+    /**
+     * 打开文件选择器
+     */
+    private void openFileChooser() {
+        Log.d(TAG, "Opening file chooser");
+        
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        
+        String[] mimeTypes = {
+            "application/zip",
+            "application/x-zip-compressed",
+            "application/octet-stream",
+            "*/*"
+        };
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+
+        try {
+            startActivityForResult(
+                Intent.createChooser(intent, "选择诊断文件（ZIP格式）"),
+                FILE_CHOOSER_REQUEST_CODE
+            );
+            Log.d(TAG, "File chooser intent launched");
+        } catch (Exception ex) {
+            Log.e(TAG, "Failed to open file chooser", ex);
+            if (filePathCallback != null) {
+                filePathCallback.onReceiveValue(null);
+                filePathCallback = null;
+            }
+            Toast.makeText(this, "请安装文件管理器", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 获取文件名
      */
     private String getFileName(Uri uri) {
         String fileName = null;
@@ -322,43 +360,62 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 检查文件是否为ZIP格式
-     * 关键修复：使用多种方式验证文件类型
+     * JavaScript接口类
+     * 关键修复：让JavaScript可以调用Android原生文件选择器
      */
-    private boolean isZipFile(Uri uri) {
-        String fileName = getFileName(uri);
-        Log.d(TAG, "Checking file: " + fileName);
-        
-        if (fileName == null) {
-            // 如果无法获取文件名，允许通过（让JS处理）
-            Log.w(TAG, "Cannot get file name, allowing file");
-            return true;
+    public class WebAppInterface {
+        @JavascriptInterface
+        public void openFilePicker() {
+            Log.d(TAG, "JavaScript called openFilePicker");
+            runOnUiThread(() -> {
+                // 直接触发文件选择器
+                openFileChooser();
+            });
         }
-        
-        // 检查文件扩展名
-        String lowerName = fileName.toLowerCase();
-        if (lowerName.endsWith(".zip") || lowerName.contains("zip") || lowerName.contains("bugreport")) {
-            Log.d(TAG, "File is ZIP by name: " + fileName);
-            return true;
+
+        @JavascriptInterface
+        public void log(String message) {
+            Log.d(TAG, "JS Log: " + message);
         }
-        
-        // 检查MIME类型
-        ContentResolver resolver = getContentResolver();
-        String mimeType = resolver.getType(uri);
-        Log.d(TAG, "File MIME type: " + mimeType);
-        
-        if (mimeType != null) {
-            if (mimeType.equals("application/zip") || 
-                mimeType.equals("application/x-zip-compressed") ||
-                mimeType.equals("application/octet-stream")) {
-                Log.d(TAG, "File is ZIP by MIME type");
-                return true;
+
+        /**
+         * 读取文件内容并返回Base64编码
+         * 关键修复：让JavaScript可以获取文件内容
+         */
+        @JavascriptInterface
+        public String readFileContent(String uriString) {
+            Log.d(TAG, "JavaScript called readFileContent for: " + uriString);
+            try {
+                Uri uri = Uri.parse(uriString);
+                ContentResolver resolver = getContentResolver();
+                InputStream inputStream = resolver.openInputStream(uri);
+                
+                if (inputStream == null) {
+                    Log.e(TAG, "Failed to open input stream");
+                    return null;
+                }
+                
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                
+                inputStream.close();
+                outputStream.close();
+                
+                byte[] fileBytes = outputStream.toByteArray();
+                String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+                
+                Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
+                return base64;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read file content", e);
+                return null;
             }
         }
-        
-        // 放宽限制：允许所有文件（让JavaScript处理验证）
-        Log.w(TAG, "Allowing file for JS validation: " + fileName);
-        return true;
     }
 
     @Override
@@ -379,28 +436,45 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Selected URI: " + uri);
                 
                 if (uri != null) {
-                    // 关键修复：放宽文件验证，允许所有文件
-                    if (isZipFile(uri)) {
-                        results = new Uri[]{uri};
-                        String fileName = getFileName(uri);
-                        Log.d(TAG, "File accepted: " + fileName);
-                        Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
-                    } else {
-                        // 即使验证失败也允许（让JS处理）
-                        Log.w(TAG, "File validation relaxed, allowing anyway");
-                        results = new Uri[]{uri};
-                        Toast.makeText(this, "已选择文件，请确保是ZIP格式", Toast.LENGTH_SHORT).show();
-                    }
+                    results = new Uri[]{uri};
+                    String fileName = getFileName(uri);
+                    Log.d(TAG, "File accepted: " + fileName);
+                    Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
+                    
+                    // 关键修复：通知JavaScript文件已选择
+                    notifyFileSelected(uri.toString(), fileName);
                 }
             } else {
                 Log.d(TAG, "File selection cancelled or failed");
                 Toast.makeText(this, "未选择文件", Toast.LENGTH_SHORT).show();
             }
 
-            // 必须调用回调，即使results为null
             filePathCallback.onReceiveValue(results);
             filePathCallback = null;
         }
+    }
+
+    /**
+     * 通知JavaScript文件已选择
+     * 关键修复：让JavaScript知道文件已选择并触发处理
+     */
+    private void notifyFileSelected(String uriString, String fileName) {
+        String jsCode = 
+            "(function() {" +
+            "   if (window.BatteryHealthApp && window.BatteryHealthApp.handleAndroidFileSelected) {" +
+            "       window.BatteryHealthApp.handleAndroidFileSelected('" + uriString + "', '" + fileName + "');" +
+            "   }" +
+            "   var fileInput = document.getElementById('zip-file');" +
+            "   var fileNameDisplay = document.getElementById('selected-file-name');" +
+            "   var fileDisplayContainer = document.getElementById('file-name-display');" +
+            "   if (fileNameDisplay && fileDisplayContainer) {" +
+            "       fileNameDisplay.textContent = '" + fileName + "');" +
+            "       fileDisplayContainer.style.display = 'flex';" +
+            "   }" +
+            "})();";
+        
+        webView.evaluateJavascript(jsCode, null);
+        Log.d(TAG, "Notified JavaScript about file selection");
     }
 
     @Override
@@ -433,7 +507,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        // 清理文件选择回调
         if (filePathCallback != null) {
             filePathCallback.onReceiveValue(null);
             filePathCallback = null;
@@ -445,8 +518,8 @@ public class MainActivity extends AppCompatActivity {
         isWebViewDestroyed = true;
 
         if (webView != null) {
-            // 安全销毁WebView - 防止内存泄漏
             webView.stopLoading();
+            webView.removeJavascriptInterface("AndroidFilePicker");
             webView.setWebViewClient(null);
             webView.setWebChromeClient(null);
             webView.loadUrl("about:blank");
