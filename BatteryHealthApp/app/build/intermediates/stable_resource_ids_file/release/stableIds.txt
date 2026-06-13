@@ -4836,6 +4836,7 @@ com.batteryhealth.app:attr/dividerPadding = 0x7f030181
 com.batteryhealth.app:style/Base.V21.ThemeOverlay.AppCompat.Dialog = 0x7f1000a9
 com.batteryhealth.app:macro/m3_comp_switch_unselected_track_color = 0x7f0c0141
 com.batteryhealth.app:attr/colorSurfaceContainerLowest = 0x7f030126
+com.batteryhealth.app:xml/network_security_config = 0x7f120002
 com.batteryhealth.app:attr/dropdownListPreferredItemHeight = 0x7f030196
 com.batteryhealth.app:styleable/MaterialRadioButton = 0x7f110057
 com.batteryhealth.app:style/Widget.MaterialComponents.CheckedTextView = 0x7f100400

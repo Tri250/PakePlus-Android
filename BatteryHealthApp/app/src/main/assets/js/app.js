@@ -1058,6 +1058,20 @@ const BatteryHealthApp = {
         
         this.showToast('已选择文件: ' + fileName, 'success');
         console.log('File ready for analysis');
+    },
+    
+    /**
+     * 内存警告处理
+     * 当Android系统内存紧张时调用
+     */
+    onMemoryWarning() {
+        console.warn('Memory warning received from Android');
+        this.showToast('内存紧张，正在优化...', 'warning');
+        
+        // 如果正在处理大文件，显示警告
+        if (this.currentFile && this.currentFile.isAndroidUri) {
+            this.showStatus('内存紧张，处理可能较慢，请耐心等待', true);
+        }
     }
 };
 

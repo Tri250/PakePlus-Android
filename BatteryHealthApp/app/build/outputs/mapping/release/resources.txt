@@ -692,6 +692,7 @@ app:layout_goneMarginEnd
 parcel
 secondary_fixed_dim
 toScene
+%.1f
 ACTION_ARGUMENT_HTML_ELEMENT_STRING
 AnimateCircleAngleTo
 java.lang.annotation.Annotation
@@ -3032,6 +3033,7 @@ Marking color:error_color_material_dark:2131034201 used because it matches strin
 Marking color:error_color_material_light:2131034202 used because it matches string pool constant error
 Marking string:error_a11y_label:2131689512 used because it matches string pool constant error
 Marking string:error_icon_content_description:2131689513 used because it matches string pool constant error
+Marking xml:network_security_config:2131886082 used because it matches string pool constant network
 Marking id:shortcut:2131231109 used because it matches string pool constant shortcut
 Marking attr:shortcutMatchRequired:2130903995 used because it matches string pool constant shortcut
 Marking id:shortcut:2131231109 used because it matches string pool constant shortcut
@@ -18387,6 +18389,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @attr/statusBarBackground
 @xml/backup_rules : reachable=true
 @xml/data_extraction_rules : reachable=true
+@xml/network_security_config : reachable=true
 
 The root reachable resources are:
  anim:fragment_fast_out_extra_slow_in:2130771996
@@ -20173,6 +20176,7 @@ The root reachable resources are:
  style:Widget_Support_CoordinatorLayout:2131756124
  xml:backup_rules:2131886080
  xml:data_extraction_rules:2131886081
+ xml:network_security_config:2131886082
 Unused resources are: 
  anim:abc_fade_in:2130771968
  anim:abc_fade_out:2130771969

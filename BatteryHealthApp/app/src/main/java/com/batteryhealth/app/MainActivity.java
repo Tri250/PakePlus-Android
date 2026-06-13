@@ -41,8 +41,10 @@ import java.io.InputStream;
  * - JavaScript接口支持
  * - 内存泄漏防护
  * - 性能优化配置
+ * - 大文件进度显示
+ * - 网络安全配置
  *
- * @version 1.2.2
+ * @version 1.2.3
  * @author 带娃的小陈工
  */
 public class MainActivity extends AppCompatActivity {
@@ -50,11 +52,13 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BatteryHealthApp";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_REQUEST_CODE = 1002;
+    private static final long MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB限制
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
     private String[] permissions;
     private boolean isWebViewDestroyed = false;
+    private boolean isMemoryLow = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,53 @@ public class MainActivity extends AppCompatActivity {
 
         // 初始化WebView
         initWebView();
+    }
+
+    /**
+     * 内存警告处理 - 优化大文件处理
+     */
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        Log.d(TAG, "onTrimMemory called with level: " + level);
+        
+        isMemoryLow = true;
+        
+        if (level >= TRIM_MEMORY_MODERATE) {
+            // 内存紧张时清理WebView缓存
+            if (webView != null && !isWebViewDestroyed) {
+                webView.clearCache(true);
+                webView.clearHistory();
+                Log.d(TAG, "WebView cache cleared due to memory pressure");
+            }
+            
+            // 通知JavaScript端暂停处理
+            if (webView != null) {
+                webView.evaluateJavascript(
+                    "if(window.BatteryHealthApp) window.BatteryHealthApp.onMemoryWarning();",
+                    null
+                );
+            }
+        }
+        
+        if (level >= TRIM_MEMORY_RUNNING_CRITICAL) {
+            // 极端内存压力时显示警告
+            Toast.makeText(this, "内存不足，建议关闭其他应用", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 低内存警告处理
+     */
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        Log.w(TAG, "onLowMemory called");
+        isMemoryLow = true;
+        
+        if (webView != null && !isWebViewDestroyed) {
+            webView.clearCache(true);
+        }
     }
 
     /**
@@ -590,6 +641,19 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Selected URI: " + uri);
                 
                 if (uri != null) {
+                    // 检查文件大小
+                    long fileSize = getFileSizeFromUri(uri);
+                    Log.d(TAG, "File size: " + fileSize + " bytes");
+                    
+                    if (fileSize > MAX_FILE_SIZE) {
+                        // 文件过大，拒绝处理
+                        String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
+                        Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
+                        filePathCallback.onReceiveValue(null);
+                        filePathCallback = null;
+                        return;
+                    }
+                    
                     results = new Uri[]{uri};
                     String fileName = getFileName(uri);
                     Log.d(TAG, "File accepted: " + fileName);
@@ -605,6 +669,31 @@ public class MainActivity extends AppCompatActivity {
 
             filePathCallback.onReceiveValue(results);
             filePathCallback = null;
+        }
+    }
+
+    /**
+     * 获取文件大小
+     * @param uri 文件URI
+     * @return 文件大小（字节），-1表示无法获取
+     */
+    private long getFileSizeFromUri(Uri uri) {
+        try {
+            ContentResolver resolver = getContentResolver();
+            Cursor cursor = resolver.query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                if (sizeIndex >= 0) {
+                    long size = cursor.getLong(sizeIndex);
+                    cursor.close();
+                    return size;
+                }
+                cursor.close();
+            }
+            return -1;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get file size", e);
+            return -1;
         }
     }
 
