@@ -106,7 +106,6 @@
                         <div class="step-number">1</div>
                         <h3>开启开发者选项</h3>
                         <p>打开【设置】→【关于手机】，连续点击【版本号】7次开启开发者选项</p>
-                        <p style="margin-top: var(--spacing-xs); color: var(--gray);">本教程也适用于努比亚子品牌红魔</p>
                     </article>
                     <article class="step">
                         <div class="step-number">2</div>
@@ -158,6 +157,23 @@
             <!-- 电池容量数据库 -->
             <div class="capacity-database">
                 <h3><i class="fas fa-search"></i> 不知道初始容量？搜索手机型号</h3>
+                <div class="database-stats">
+                    <span class="stat-badge"><i class="fas fa-mobile-alt"></i> <span id="db-model-count">500+</span> 款机型</span>
+                    <span class="stat-badge"><i class="fas fa-building"></i> <span id="db-brand-count">15+</span> 个品牌</span>
+                </div>
+                <div class="brand-quick-select" role="group" aria-label="快捷品牌选择">
+                    <button class="brand-quick-btn" data-brand="小米">小米</button>
+                    <button class="brand-quick-btn" data-brand="华为">华为</button>
+                    <button class="brand-quick-btn" data-brand="荣耀">荣耀</button>
+                    <button class="brand-quick-btn" data-brand="vivo">vivo</button>
+                    <button class="brand-quick-btn" data-brand="iQOO">iQOO</button>
+                    <button class="brand-quick-btn" data-brand="OPPO">OPPO</button>
+                    <button class="brand-quick-btn" data-brand="一加">一加</button>
+                    <button class="brand-quick-btn" data-brand="realme">realme</button>
+                    <button class="brand-quick-btn" data-brand="红魔">红魔</button>
+                    <button class="brand-quick-btn" data-brand="三星">三星</button>
+                    <button class="brand-quick-btn" data-brand="苹果">苹果</button>
+                </div>
                 <div class="capacity-search">
                     <input type="text" id="capacity-search-input" placeholder="输入手机型号，如：小米14、华为P60" aria-label="搜索手机型号">
                     <button id="capacity-search-btn" class="ripple"><i class="fas fa-search"></i></button>
@@ -357,6 +373,17 @@
                 <h2>分析历史</h2>
             </div>
             <div class="history-section">
+                <!-- 趋势图表 -->
+                <div class="trend-section" id="trend-section">
+                    <div class="trend-title">
+                        <i class="fas fa-chart-line"></i>
+                        <span>健康度趋势</span>
+                    </div>
+                    <div id="trend-chart" class="trend-chart">
+                        <div class="trend-empty">暂无足够数据显示趋势</div>
+                    </div>
+                </div>
+                
                 <div id="history-list" class="history-list" role="list">
                     <div class="history-empty" role="listitem">暂无历史记录</div>
                 </div>
@@ -432,9 +459,47 @@
                     </div>
                     <div class="original-text" id="original-text" aria-hidden="true"></div>
                 </div>
+
+                <!-- 保养建议 -->
+                <div class="maintenance-section" id="maintenance-section">
+                    <div class="maintenance-title">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>电池保养建议</span>
+                    </div>
+                    <div class="maintenance-list" id="maintenance-list"></div>
+                </div>
+
+                <!-- 分享报告 -->
+                <div class="share-section">
+                    <button class="share-btn ripple" onclick="BatteryHealthApp.shareReport()" aria-label="分享报告">
+                        <i class="fas fa-share-alt"></i>
+                        <span>分享报告</span>
+                    </button>
+                    <button class="share-btn ripple" onclick="BatteryHealthApp.saveReport()" aria-label="保存报告">
+                        <i class="fas fa-download"></i>
+                        <span>保存报告</span>
+                    </button>
+                </div>
             </div>
         </section>
     </main>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+    <!-- 首次使用引导 -->
+    <div id="guide-overlay" class="guide-overlay" aria-hidden="true">
+        <div class="guide-card">
+            <div class="guide-icon"><i class="fas fa-battery-full"></i></div>
+            <div class="guide-title">欢迎使用电池健康度分析工具</div>
+            <div class="guide-text">
+                本工具可以帮助您分析安卓手机的电池健康状态。<br>
+                只需上传诊断文件，即可获取详细的电池健康报告。<br>
+                所有数据均在本地处理，保护您的隐私安全。
+            </div>
+            <button class="guide-btn ripple" onclick="BatteryHealthApp.closeGuide()">开始使用</button>
+        </div>
+    </div>
 
     <footer class="footer">
         <p>安卓手机电池健康度分析工具 · 数据本地处理 · 保护隐私</p>
