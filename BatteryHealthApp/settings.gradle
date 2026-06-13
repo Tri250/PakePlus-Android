@@ -1,21 +1,27 @@
 pluginManagement {
     repositories {
+        // 阿里云镜像优先
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        gradlePluginPortal()
+        // 腾讯云镜像备用
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        // 官方源
         google()
         mavenCentral()
+        gradlePluginPortal()
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        // 阿里云镜像优先
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        // 腾讯云镜像备用
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        // 官方源
         google()
         mavenCentral()
     }

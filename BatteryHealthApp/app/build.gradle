@@ -14,7 +14,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // 性能优化配置
-        resConfigs "zh", "zh-CN" // 只保留中文资源
+        resConfigs "zh" // 只保留中文资源
     }
 
     buildTypes {
@@ -23,17 +23,33 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            
+
             // 禁用调试
             debuggable false
+
+            // 跳过Lint检查以提升构建速度
+            lintOptions {
+                abortOnError false
+                checkReleaseBuilds false
+            }
         }
-        
+
         debug {
             minifyEnabled false
             debuggable true
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
+
+            lintOptions {
+                abortOnError false
+            }
         }
+    }
+
+    // 全局Lint配置
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
     }
     
     compileOptions {

@@ -1,10 +1,13 @@
-// Top-level build file - 国内镜像源优化配置
+// Top-level build file - 阿里云镜像源优化配置
 buildscript {
     repositories {
+        // 阿里云镜像优先
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
+        // 腾讯云镜像备用
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        // 官方源
         google()
         mavenCentral()
     }
@@ -15,10 +18,13 @@ buildscript {
 
 allprojects {
     repositories {
+        // 阿里云镜像优先
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        // 腾讯云镜像备用
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        // 官方源
         google()
         mavenCentral()
     }
