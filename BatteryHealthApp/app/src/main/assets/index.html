@@ -470,6 +470,95 @@
             align-items: center;
             gap: 8px;
         }
+        /* 参考表格样式 */
+        .reference-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f4f8;
+        }
+        .reference-title {
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .reference-title i {
+            color: var(--primary);
+            font-size: 1.4rem;
+        }
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .reference-table th {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .reference-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f0f4f8;
+            color: var(--dark);
+            line-height: 1.5;
+        }
+        .reference-table tr:last-child td {
+            border-bottom: none;
+        }
+        .reference-table tr:nth-child(even) {
+            background: #fafbfc;
+        }
+        .reference-table tr:hover {
+            background: #f0f7ff;
+        }
+        .status-good {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+        .status-normal {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .status-warning {
+            color: var(--warning);
+            font-weight: 600;
+        }
+        .status-danger {
+            color: var(--danger);
+            font-weight: 600;
+        }
+        .severity-light {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        .severity-medium {
+            color: var(--warning);
+            font-weight: 600;
+        }
+        .severity-heavy {
+            color: #e67e22;
+            font-weight: 600;
+        }
+        .severity-danger {
+            color: var(--danger);
+            font-weight: 700;
+        }
+        .table-note {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+            font-style: italic;
+        }
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.2rem;
@@ -583,6 +672,132 @@
                     <li>当前版本生成的debug文件默认存储在MIUI->debug_log目录，如遇路径变更请自行查找</li>
                 </ul>
                 <p style="margin-top: 10px;"><i class="fas fa-info-circle" style="color: var(--primary);"></i> <strong>技术说明</strong>：诊断数据来源于您设备生成的系统日志文件，分析算法基于公开技术文档实现</p>
+            </div>
+
+            <!-- 电池健康度参考表格 -->
+            <div class="reference-section">
+                <div class="reference-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>电池健康度参考标准</h3>
+                </div>
+
+                <!-- 表格1：电池容量与健康状态 -->
+                <table class="reference-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 18%;">电池最大容量</th>
+                            <th style="width: 18%;">电池状态</th>
+                            <th style="width: 38%;">续航&使用表现</th>
+                            <th style="width: 26%;">处理建议</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-good">90%~100%</span></td>
+                            <td>全新/状态优秀</td>
+                            <td>续航正常，电量稳定，无跳电、无故关机</td>
+                            <td>正常使用，坚持日常保养</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-normal">80%~89%</span></td>
+                            <td>正常衰减</td>
+                            <td>续航小幅下降，日常使用无异常</td>
+                            <td>继续保养，无需更换</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-warning">75%~79%</span></td>
+                            <td>轻度老化</td>
+                            <td>续航明显变短，偶尔电量小幅跳动</td>
+                            <td>按需备用，可暂不更换</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-danger">&lt; 75%</span></td>
+                            <td>重度老化</td>
+                            <td>续航断崖下跌、频繁跳电、低温/低电量自动关机，易发热</td>
+                            <td><strong>建议尽快更换电池</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 表格2：循环次数与健康度 -->
+                <div class="reference-title" style="margin-top: 35px;">
+                    <i class="fas fa-sync-alt"></i>
+                    <h3>充电循环次数参考</h3>
+                </div>
+                <table class="reference-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">循环次数</th>
+                            <th style="width: 22%;">预估健康度</th>
+                            <th style="width: 56%;">补充说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>0~300次</td>
+                            <td><span class="status-good">90%+</span></td>
+                            <td>新机/使用半年内，损耗极低</td>
+                        </tr>
+                        <tr>
+                            <td>300~500次</td>
+                            <td><span class="status-normal">80%~89%</span></td>
+                            <td>常规使用1~2年，标准自然衰减</td>
+                        </tr>
+                        <tr>
+                            <td>500~800次</td>
+                            <td><span class="status-warning">75%~79%</span></td>
+                            <td>使用2~3年，老化显现</td>
+                        </tr>
+                        <tr>
+                            <td>&gt; 800次</td>
+                            <td><span class="status-danger">普遍 &lt; 75%</span></td>
+                            <td>损耗严重，体验大幅下降</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 表格3：异常现象与处理 -->
+                <div class="reference-title" style="margin-top: 35px;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>异常现象判断与处理</h3>
+                </div>
+                <table class="reference-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 32%;">异常现象</th>
+                            <th style="width: 15%;">严重程度</th>
+                            <th style="width: 53%;">结论&做法</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>轻度耗电变快，无其他问题</td>
+                            <td><span class="severity-light">轻微</span></td>
+                            <td>电池正常老化，优化设置即可</td>
+                        </tr>
+                        <tr>
+                            <td>电量忽高忽低、百分比跳水</td>
+                            <td><span class="severity-medium">中等</span></td>
+                            <td>电芯老化，酌情准备换电池</td>
+                        </tr>
+                        <tr>
+                            <td>轻度使用/充电时手机异常发烫</td>
+                            <td><span class="severity-medium">中等</span></td>
+                            <td>损耗加剧，避免边充边玩</td>
+                        </tr>
+                        <tr>
+                            <td>低温环境下，剩余20%+电量自动关机</td>
+                            <td><span class="severity-heavy">较重</span></td>
+                            <td>电池性能大幅衰退，建议更换</td>
+                        </tr>
+                        <tr>
+                            <td>后盖翘起、机身鼓包、充电异味</td>
+                            <td><span class="severity-danger">高危</span></td>
+                            <td><strong>立即停用，马上更换，存在安全隐患</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="table-note"><i class="fas fa-info-circle"></i> 以上数据仅供参考，实际电池状况可能因使用习惯、环境温度等因素有所差异</p>
             </div>
         </div>
 
