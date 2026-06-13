@@ -40,13 +40,15 @@ import java.io.InputStream;
 /**
  * 电池健康度分析工具主Activity
  *
- * 核心修复（v1.2.5）：
- * 1. 修复openFileChooser清理callback的bug - 导致选择文件后无反应
- * 2. 优化权限管理 - 使用SAF框架无需存储权限
- * 3. 修复Android 13+媒体权限误用问题
- * 4. 添加详细诊断日志
+ * 核心修复（v1.2.9）：
+ * 1. 修复onStop()清空filePathCallback导致"请选择诊断文件"反复出现
+ *    - 根因：文件选择器打开时Activity进入后台触发onStop，清空了callback
+ *    - onActivityResult发现callback为null直接return，不通知JS
+ *    - 修复：添加isFilePickerActive标记，文件选择器活跃期间不清空callback
+ * 2. onActivityResult无论callback是否为null都通知JS
+ * 3. 三重保障机制：全局变量+函数调用+DOM操作
  *
- * @version 1.2.5
+ * @version 1.2.9
  * @author 带娃的小陈工
  */
 public class MainActivity extends AppCompatActivity {
@@ -62,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isWebViewDestroyed = false;
     private boolean isMemoryLow = false;
     private boolean isPickerFromJs = false; // 标记是否由JS触发
+    private boolean isFilePickerActive = false; // 标记文件选择器是否打开中
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -425,10 +428,11 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 打开文件选择器
-     * 关键修复：不再清理callback，避免清空刚设置的callback导致无反应
+     * 关键修复：标记文件选择器活跃状态，防止onStop清空callback
      */
     private void openFileChooser() {
         Log.d(TAG, "=== openFileChooser called ===");
+        isFilePickerActive = true;
 
         try {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -860,16 +864,13 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "=== onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode + ", data=" + (data != null) + " ===");
 
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            // 关键修复：标记文件选择器已关闭
+            isFilePickerActive = false;
+
             ValueCallback<Uri[]> callback = filePathCallback;
             filePathCallback = null;
 
-            if (callback == null) {
-                Log.w(TAG, "filePathCallback is null - cannot notify WebView");
-                return;
-            }
-
-            Uri[] results = null;
-
+            // 处理文件选择结果
             if (resultCode == Activity.RESULT_OK && data != null) {
                 Uri uri = data.getData();
                 Log.d(TAG, "Selected URI: " + uri);
@@ -891,49 +892,87 @@ public class MainActivity extends AppCompatActivity {
                     if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
                         String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
                         Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
-                        callback.onReceiveValue(null);
+                        if (callback != null) {
+                            callback.onReceiveValue(null);
+                        }
                         return;
                     }
 
-                    results = new Uri[]{uri};
                     String fileName = getFileName(uri);
                     Log.d(TAG, "File accepted: " + fileName);
                     Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
 
-                    // 通知JavaScript文件已选择
+                    // 关键修复：无论callback是否为null，都必须通知JS
+                    // 这是"请选择诊断文件"bug的根本原因：
+                    // 之前onStop()会清空callback，导致onActivityResult直接return
+                    // 不调用notifyFileSelected，JS端currentFile永远为null
                     notifyFileSelected(uri.toString(), fileName);
+
+                    // 通知WebView文件选择结果
+                    if (callback != null) {
+                        Uri[] results = new Uri[]{uri};
+                        callback.onReceiveValue(results);
+                        Log.d(TAG, "Callback notified with results");
+                    } else {
+                        Log.w(TAG, "filePathCallback is null, but JS has been notified via notifyFileSelected");
+                    }
                 } else {
                     Log.w(TAG, "URI is null");
                     Toast.makeText(this, "文件选择失败", Toast.LENGTH_SHORT).show();
+                    if (callback != null) {
+                        callback.onReceiveValue(null);
+                    }
                 }
             } else {
                 Log.d(TAG, "File selection cancelled: resultCode=" + resultCode);
                 if (resultCode == Activity.RESULT_CANCELED) {
                     Toast.makeText(this, "已取消选择", Toast.LENGTH_SHORT).show();
                 }
+                if (callback != null) {
+                    callback.onReceiveValue(null);
+                }
             }
-
-            // 关键：必须调用callback.onReceiveValue，否则WebView会挂起
-            callback.onReceiveValue(results);
-            Log.d(TAG, "Callback notified with results: " + (results != null ? results.length : "null"));
         }
     }
 
     /**
      * 通知JavaScript文件已选择
+     * 关键修复：使用全局变量+函数调用双重机制，确保currentFile一定被设置
      */
     private void notifyFileSelected(String uriString, String fileName) {
-        // 转义URI和文件名中的特殊字符
-        String safeUri = uriString.replace("\\", "\\\\").replace("'", "\\'");
-        String safeName = fileName.replace("\\", "\\\\").replace("'", "\\'");
+        // 转义特殊字符
+        String safeUri = uriString.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"");
+        String safeName = fileName.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"");
 
+        // 方案1：直接设置全局变量（最可靠，不依赖任何对象）
+        // 方案2：调用handleAndroidFileSelected（如果可用）
+        // 方案3：直接操作DOM显示文件名
+        // 三重保障，确保文件信息一定传递到JS
         String jsCode =
             "(function() {" +
             "   try {" +
-            "       console.log('Notify file selected:', '" + safeName + "');" +
-            "       if (window.BatteryHealthApp && window.BatteryHealthApp.handleAndroidFileSelected) {" +
+            "       console.log('=== notifyFileSelected ===');" +
+            "       console.log('File name:', '" + safeName + "');" +
+            "       console.log('URI length:', '" + safeUri.length() + "');" +
+            "" +
+            "       // 方案1：设置全局变量（最可靠）" +
+            "       window.__androidSelectedFile = {" +
+            "           uri: '" + safeUri + "'," +
+            "           name: '" + safeName + "'," +
+            "           isAndroidUri: true," +
+            "           size: -1" +
+            "       };" +
+            "       console.log('Global file variable set:', window.__androidSelectedFile.name);" +
+            "" +
+            "       // 方案2：调用BatteryHealthApp方法（如果可用）" +
+            "       if (window.BatteryHealthApp && typeof window.BatteryHealthApp.handleAndroidFileSelected === 'function') {" +
             "           window.BatteryHealthApp.handleAndroidFileSelected('" + safeUri + "', '" + safeName + "');" +
+            "           console.log('BatteryHealthApp.handleAndroidFileSelected called');" +
+            "       } else {" +
+            "           console.warn('BatteryHealthApp not available, using global variable fallback');" +
             "       }" +
+            "" +
+            "       // 方案3：直接操作DOM" +
             "       var fileNameDisplay = document.getElementById('selected-file-name');" +
             "       var fileDisplayContainer = document.getElementById('file-name-display');" +
             "       if (fileNameDisplay) {" +
@@ -942,9 +981,9 @@ public class MainActivity extends AppCompatActivity {
             "       if (fileDisplayContainer) {" +
             "           fileDisplayContainer.style.display = 'flex';" +
             "       }" +
-            "       console.log('File selected notification processed successfully');" +
+            "       console.log('File selected notification complete');" +
             "   } catch (e) {" +
-            "       console.error('notifyFileSelected error:', e);" +
+            "       console.error('notifyFileSelected error:', e.message, e.stack);" +
             "   }" +
             "})();";
 
@@ -984,7 +1023,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        if (filePathCallback != null) {
+        // 关键修复：文件选择器打开期间不清空callback
+        // 因为onStop在文件选择器打开时会被调用（Activity进入后台）
+        // 如果清空callback，onActivityResult就无法通知WebView
+        if (!isFilePickerActive && filePathCallback != null) {
             filePathCallback.onReceiveValue(null);
             filePathCallback = null;
         }

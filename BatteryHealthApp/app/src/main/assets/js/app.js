@@ -297,10 +297,24 @@ const BatteryHealthApp = {
      */
     async handleAnalyze() {
         const { calculateBtn, initialCapacityInput, progressContainer } = this.elements;
-        
+
         console.log('=== handleAnalyze called ===');
         console.log('currentFile:', this.currentFile);
-        
+        console.log('window.__androidSelectedFile:', window.__androidSelectedFile);
+
+        // 关键修复：如果currentFile为null，检查全局变量兜底
+        if (!this.currentFile && window.__androidSelectedFile) {
+            console.log('Using global variable fallback for file');
+            this.currentFile = window.__androidSelectedFile;
+            // 同时更新DOM
+            if (this.elements.selectedFileName) {
+                this.elements.selectedFileName.textContent = this.currentFile.name;
+            }
+            if (this.elements.fileNameDisplay) {
+                this.elements.fileNameDisplay.style.display = 'flex';
+            }
+        }
+
         // 验证文件
         if (!this.currentFile) {
             console.warn('No file selected');
@@ -377,8 +391,14 @@ const BatteryHealthApp = {
      */
     async analyzeZipFile(file, initialCapacity) {
         return new Promise((resolve, reject) => {
+            // 兜底：如果file为null，从全局变量获取
+            if (!file && window.__androidSelectedFile) {
+                file = window.__androidSelectedFile;
+                console.log('analyzeZipFile: using global variable fallback');
+            }
+
             // 检查是否是Android URI文件
-            if (file.isAndroidUri && file.uri) {
+            if (file && file.isAndroidUri && file.uri) {
                 console.log('Processing Android URI file:', file.uri);
 
                 // 使用Android接口读取文件内容
