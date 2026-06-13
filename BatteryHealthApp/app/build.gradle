@@ -17,6 +17,16 @@ android {
         resConfigs "zh" // 只保留中文资源
     }
 
+    // 签名配置
+    signingConfigs {
+        release {
+            storeFile file('release-keystore.jks')
+            storePassword 'batteryhealth123'
+            keyAlias 'batteryhealth'
+            keyPassword 'batteryhealth123'
+        }
+    }
+
     buildTypes {
         release {
             // Release配置 - 性能优化
@@ -26,6 +36,9 @@ android {
 
             // 禁用调试
             debuggable false
+            
+            // 使用签名配置
+            signingConfig signingConfigs.release
 
             // 跳过Lint检查以提升构建速度
             lintOptions {
