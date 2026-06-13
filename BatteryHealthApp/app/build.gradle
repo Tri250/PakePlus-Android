@@ -1,6 +1,4 @@
-plugins {
-    id 'com.android.application'
-}
+apply plugin: 'com.android.application'
 
 android {
     namespace 'com.batteryhealth.app'
@@ -26,14 +24,8 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
-            // 性能优化
-            zipAlignEnabled true
-            pseudoLocalesEnabled false
-            
             // 禁用调试
             debuggable false
-            jniDebuggable false
-            renderscriptDebuggable false
         }
         
         debug {
@@ -47,19 +39,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-    }
-    
-    // 性能优化：启用构建缓存
-    buildFeatures {
-        buildCache true
-        prefab false
-    }
-    
-    // 优化APK大小
-    packagingOptions {
-        resources {
-            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt']
-        }
     }
 }
 
