@@ -432,19 +432,31 @@ const BatteryHealthApp = {
             currentCapacity: result.currentCapacity,
             healthPercentage: healthPercentage,
             cycleCount: result.cycleCount,
-            batteryTemp: result.batteryTemp
+            batteryTemp: result.batteryTemp,
+            healthGrade: result.healthGrade,
+            voltage: result.voltage,
+            technology: result.technology
         };
         
-        // 更新数值
+        // 更新数值 - 添加动画效果
+        const statValues = document.querySelectorAll('.stat-value');
+        statValues.forEach(el => el.classList.add('animate'));
+        
         document.getElementById('initial-capacity-value').textContent = initialCapacity;
         document.getElementById('current-capacity-value').textContent = result.currentCapacity;
         document.getElementById('health-percentage').textContent = healthPercentage;
         document.getElementById('cycle-count').textContent = result.cycleCount || '未检测到';
         document.getElementById('battery-temp').textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) : '未检测到';
         
+        // 移除动画类
+        setTimeout(() => {
+            statValues.forEach(el => el.classList.remove('animate'));
+        }, 300);
+        
         // 更新电池进度条
         const batteryLevel = document.getElementById('battery-level');
         batteryLevel.style.width = Math.min(healthPercentage, 100) + '%';
+        batteryLevel.classList.add('animate');
         
         // 设置健康状态
         const qualityIndicator = document.getElementById('quality-indicator');
@@ -473,15 +485,71 @@ const BatteryHealthApp = {
         // 显示保养建议
         this.showMaintenanceAdvice(parseFloat(healthPercentage));
         
+        // 显示健康等级评估
+        this.showHealthGrade(result);
+        
         // 更新趋势图表
         this.renderTrendChart();
         
+        // 添加统计卡片动画
+        const statsGrid = document.querySelector('.stats-grid');
+        if (statsGrid) {
+            statsGrid.classList.add('animate');
+        }
+        
         // 显示结果
         this.elements.result.classList.add('show');
+        this.elements.result.classList.add('animate-expand');
         this.elements.result.scrollIntoView({ behavior: 'smooth' });
         
         // 显示成功提示
         this.showToast('分析完成！', 'success');
+    },
+    
+    /**
+     * 显示健康等级评估
+     * @param {Object} result - 解析结果
+     */
+    showHealthGrade(result) {
+        const gradeBadge = document.getElementById('health-grade-badge');
+        const gradeDescription = document.getElementById('health-grade-description');
+        const gradeEstimated = document.getElementById('health-grade-estimated');
+        const gradeCycleCount = document.getElementById('grade-cycle-count');
+        const gradeEstimatedHealth = document.getElementById('grade-estimated-health');
+        
+        if (result.healthGrade) {
+            const grade = result.healthGrade;
+            
+            // 设置等级徽章
+            gradeBadge.textContent = grade.grade;
+            gradeBadge.className = 'health-grade-badge';
+            
+            // 根据等级添加对应的样式类
+            const gradeClassMap = {
+                'A+': 'grade-a-plus',
+                'A': 'grade-a',
+                'B+': 'grade-b-plus',
+                'B': 'grade-b',
+                'C': 'grade-c',
+                'D': 'grade-d',
+                'E': 'grade-e'
+            };
+            gradeBadge.classList.add(gradeClassMap[grade.grade] || 'grade-b');
+            
+            // 设置描述和预估健康度
+            gradeDescription.textContent = grade.description;
+            gradeEstimated.textContent = `预估健康度范围：${grade.estimatedHealth}`;
+            gradeCycleCount.textContent = grade.cycleCount + ' 次';
+            gradeEstimatedHealth.textContent = grade.estimatedHealth;
+        } else {
+            // 如果没有循环次数数据，显示提示
+            gradeBadge.textContent = '?';
+            gradeBadge.className = 'health-grade-badge grade-b';
+            gradeDescription.textContent = '无法评估健康等级';
+            gradeEstimated.textContent = '诊断文件未包含循环次数数据';
+            gradeCycleCount.textContent = '未检测到';
+            gradeEstimatedHealth.textContent = '-';
+        }
     },
     
     /**

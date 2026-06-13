@@ -1297,10 +1297,36 @@ body {
    十九、页脚
    ============================================ */
 .footer {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl) var(--spacing-lg);
     text-align: center;
     color: var(--gray);
     font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+}
+
+.footer p:first-child {
+    font-weight: var(--font-weight-medium);
+    color: var(--dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+.footer-author {
+    font-weight: var(--font-weight-semibold);
+    color: var(--primary);
+    font-size: var(--font-size-base);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.footer-author::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: var(--gradient);
+    border-radius: 50%;
+    opacity: 0.8;
 }
 
 /* ============================================
@@ -1848,3 +1874,257 @@ a:focus-visible {
     color: var(--gray);
     font-size: var(--font-size-sm);
 }
+
+/* ============================================
+   二十八、健康等级徽章
+   ============================================ */
+.health-grade-section {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f0f7ff, #e8f4fd);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(52, 152, 219, 0.1);
+    text-align: center;
+}
+
+.health-grade-title {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.health-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-extrabold);
+    color: white;
+    margin: var(--spacing-md) auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: gradePopIn 0.5s var(--ease-out);
+}
+
+@keyframes gradePopIn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.health-grade-badge.grade-a-plus { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+.health-grade-badge.grade-a { background: linear-gradient(135deg, #27ae60, #1e8449); }
+.health-grade-badge.grade-b-plus { background: linear-gradient(135deg, #3498db, #2980b9); }
+.health-grade-badge.grade-b { background: linear-gradient(135deg, #2980b9, #1a5276); }
+.health-grade-badge.grade-c { background: linear-gradient(135deg, #f39c12, #d68910); }
+.health-grade-badge.grade-d { background: linear-gradient(135deg, #e67e22, #ca6f1e); }
+.health-grade-badge.grade-e { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+.health-grade-description {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--dark);
+    margin-top: var(--spacing-sm);
+}
+
+.health-grade-estimated {
+    font-size: var(--font-size-sm);
+    color: var(--gray);
+    margin-top: var(--spacing-xs);
+}
+
+.health-grade-cycle-info {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--gray-light);
+}
+
+.cycle-info-item {
+    text-align: center;
+}
+
+.cycle-info-item .label {
+    font-size: var(--font-size-xs);
+    color: var(--gray);
+    margin-bottom: var(--spacing-xs);
+}
+
+.cycle-info-item .value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--dark);
+}
+
+/* ============================================
+   二十九、高级动画效果
+   ============================================ */
+/* 数字跳动动画 */
+@keyframes numberPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.stat-value.animate {
+    animation: numberPop 0.3s ease;
+}
+
+/* 卡片入场动画 */
+@keyframes cardSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card.animate-in {
+    animation: cardSlideUp 0.4s var(--ease-out);
+}
+
+/* 进度条脉冲效果 */
+@keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.progress-fill.animate {
+    animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+/* 结果区域展开动画 */
+@keyframes resultExpand {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+.result.animate-expand {
+    animation: resultExpand 0.5s var(--ease-out);
+}
+
+/* 统计卡片依次入场 */
+.stats-grid .stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-grid .stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stats-grid .stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stats-grid .stat-card:nth-child(4) { animation-delay: 0.4s; }
+.stats-grid .stat-card:nth-child(5) { animation-delay: 0.5s; }
+
+.stats-grid.animate .stat-card {
+    animation: cardSlideUp 0.4s var(--ease-out) both;
+}
+
+/* 悬停微交互 */
+.stat-card:hover .stat-icon {
+    transform: scale(1.1);
+    transition: transform var(--transition-fast);
+}
+
+.step:hover .step-number {
+    transform: rotate(5deg);
+    transition: transform var(--transition-fast);
+}
+
+.brand-tab:hover i {
+    transform: scale(1.2);
+    transition: transform var(--transition-fast);
+}
+
+/* 按钮点击反馈 */
+.btn:active {
+    transform: scale(0.98);
+}
+
+/* Toast滑入动画 */
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.toast.show {
+    animation: toastSlideIn 0.3s var(--ease-out);
+}
+
+/* 引导卡片入场 */
+@keyframes guideCardIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.guide-card {
+    animation: guideCardIn 0.4s var(--ease-out);
+}
+
+/* 趋势柱状图动画 */
+@keyframes barGrow {
+    from {
+        height: 0;
+    }
+}
+
+.trend-bar.animate {
+    animation: barGrow 0.5s var(--ease-out);
+}
+
+/* 保养建议卡片入场 */
+.maintenance-item {
+    animation: cardSlideUp 0.3s var(--ease-out);
+}
+
+.maintenance-item:nth-child(1) { animation-delay: 0.1s; }
+.maintenance-item:nth-child(2) { animation-delay: 0.2s; }
+.maintenance-item:nth-child(3) { animation-delay: 0.3s; }
+
+/* 分享按钮入场 */
+@keyframes shareBtnIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+.share-btn.animate {
+    animation: shareBtnIn 0.3s var(--ease-out) both;
+}
+
+.share-btn:nth-child(1) { animation-delay: 0.1s; }
+.share-btn:nth-child(2) { animation-delay: 0.2s; }

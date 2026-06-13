@@ -469,6 +469,27 @@
                     <div class="maintenance-list" id="maintenance-list"></div>
                 </div>
 
+                <!-- 健康等级评估 -->
+                <div class="health-grade-section" id="health-grade-section">
+                    <div class="health-grade-title">
+                        <i class="fas fa-medal"></i>
+                        <span>电池健康等级评估</span>
+                    </div>
+                    <div class="health-grade-badge" id="health-grade-badge">-</div>
+                    <div class="health-grade-description" id="health-grade-description">-</div>
+                    <div class="health-grade-estimated" id="health-grade-estimated">-</div>
+                    <div class="health-grade-cycle-info">
+                        <div class="cycle-info-item">
+                            <div class="label">循环次数</div>
+                            <div class="value" id="grade-cycle-count">-</div>
+                        </div>
+                        <div class="cycle-info-item">
+                            <div class="label">预估健康度</div>
+                            <div class="value" id="grade-estimated-health">-</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 分享报告 -->
                 <div class="share-section">
                     <button class="share-btn ripple" onclick="BatteryHealthApp.shareReport()" aria-label="分享报告">
@@ -503,6 +524,7 @@
 
     <footer class="footer">
         <p>安卓手机电池健康度分析工具 · 数据本地处理 · 保护隐私</p>
+        <p class="footer-author">抖音：带娃的小陈工</p>
     </footer>
 
     <!-- 本地脚本 -->
