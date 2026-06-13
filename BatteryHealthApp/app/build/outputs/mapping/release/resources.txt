@@ -139,6 +139,7 @@ repeatMode
 COMPLETING_WAITING_CHILDREN
 androidx.core.app.unusedapprestrictio...
 DEEP_COPY_VALIDATOR_KEY
+未选择文件
 sColorStateCacheLock
 _invoked
 BatteryHealthApp
@@ -267,6 +268,7 @@ setEpicenterBounds
 android.progressIndeterminate
 yMMMd
 repeatCount
+bugreport
 void
 tertiary
 statusBarStyle
@@ -505,6 +507,7 @@ LUMINOSITY
 java.lang.Throwable
 targetName
 /data/misc/profiles/cur/0/
+content://
 FragmentManager:
 PrivateApi
 androidx.viewpager.widget.ViewPager
@@ -1055,6 +1058,7 @@ android.remoteinput.results
 PrivateConstructorForUtilityClass
 NONE
 layout_constraintHorizontal_bias
+zip
 androidx.core.app.NotificationCompat$...
 overshootInterpolator
 java.util.Set
@@ -1276,7 +1280,6 @@ mockLocation
 RadioButton
 staggered
 on_primary
-选择诊断文件
 TypefaceCompatUtil
 layout_constraintStart_toEndOf
 mUnthemedEntries
@@ -1840,7 +1843,6 @@ DST_ATOP
 observe
 ACTION_DRAG_CANCEL
 minState
-请选择ZIP格式的文件
 androidx.view.accessibility.Accessibi...
 waveVariesBy
 android.bigText
