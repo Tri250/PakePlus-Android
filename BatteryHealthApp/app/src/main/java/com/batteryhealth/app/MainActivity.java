@@ -328,26 +328,42 @@ public class MainActivity extends AppCompatActivity {
      * 关键修复：确保点击事件能触发Android文件选择器
      */
     private void injectFilePickerScript() {
-        String jsCode = 
+        String jsCode =
             "(function() {" +
-            "   var dropArea = document.getElementById('drop-area');" +
-            "   var fileInput = document.getElementById('zip-file');" +
-            "   if (dropArea && fileInput) {" +
-            "       dropArea.addEventListener('click', function(e) {" +
-            "           e.preventDefault();" +
-            "           e.stopPropagation();" +
-            "           console.log('Drop area clicked, triggering file picker');" +
-            "           if (window.AndroidFilePicker) {" +
-            "               window.AndroidFilePicker.openFilePicker();" +
-            "           } else {" +
-            "               fileInput.click();" +
+            "   try {" +
+            "       var dropArea = document.getElementById('drop-area');" +
+            "       var fileInput = document.getElementById('zip-file');" +
+            "       if (dropArea) {" +
+            "           // 移除可能存在的旧监听器，避免重复触发" +
+            "           if (window.__bhaClickHandler) {" +
+            "               dropArea.removeEventListener('click', window.__bhaClickHandler, true);" +
             "           }" +
-            "       }, true);" +
-            "       console.log('File picker script injected successfully');" +
+            "           // 创建新的点击处理函数" +
+            "           window.__bhaClickHandler = function(e) {" +
+            "               e.preventDefault();" +
+            "               e.stopPropagation();" +
+            "               console.log('Drop area clicked, calling Android picker');" +
+            "               if (window.AndroidFilePicker && window.AndroidFilePicker.openFilePicker) {" +
+            "                   window.AndroidFilePicker.openFilePicker();" +
+            "               } else {" +
+            "                   console.warn('AndroidFilePicker not available');" +
+            "                   if (fileInput) fileInput.click();" +
+            "               }" +
+            "           };" +
+            "           // 使用捕获阶段，确保优先处理" +
+            "           dropArea.addEventListener('click', window.__bhaClickHandler, true);" +
+            "           console.log('File picker script injected successfully');" +
+            "       } else {" +
+            "           console.warn('Drop area element not found');" +
+            "       }" +
+            "   } catch (e) {" +
+            "       console.error('injectFilePickerScript error:', e);" +
             "   }" +
             "})();";
-        
-        webView.evaluateJavascript(jsCode, null);
+
+        if (webView != null && !isWebViewDestroyed) {
+            webView.evaluateJavascript(jsCode, null);
+        }
         Log.d(TAG, "File picker script injected");
     }
 
@@ -356,11 +372,17 @@ public class MainActivity extends AppCompatActivity {
      */
     private void openFileChooser() {
         Log.d(TAG, "Opening file chooser");
-        
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+
+        // 先清理旧的callback
+        if (filePathCallback != null) {
+            filePathCallback.onReceiveValue(null);
+            filePathCallback = null;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
-        
+
         String[] mimeTypes = {
             "application/zip",
             "application/x-zip-compressed",
@@ -368,6 +390,8 @@ public class MainActivity extends AppCompatActivity {
             "*/*"
         };
         intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        // 添加读取URI权限标志
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         try {
             startActivityForResult(
@@ -377,11 +401,26 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "File chooser intent launched");
         } catch (Exception ex) {
             Log.e(TAG, "Failed to open file chooser", ex);
-            if (filePathCallback != null) {
-                filePathCallback.onReceiveValue(null);
-                filePathCallback = null;
+            // 回退到ACTION_GET_CONTENT
+            try {
+                Intent fallbackIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                fallbackIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                fallbackIntent.setType("*/*");
+                fallbackIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+                fallbackIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivityForResult(
+                    Intent.createChooser(fallbackIntent, "选择诊断文件（ZIP格式）"),
+                    FILE_CHOOSER_REQUEST_CODE
+                );
+                Log.d(TAG, "Fallback file chooser launched");
+            } catch (Exception ex2) {
+                Log.e(TAG, "Failed to open fallback file chooser", ex2);
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                    filePathCallback = null;
+                }
+                Toast.makeText(this, "请安装文件管理器", Toast.LENGTH_LONG).show();
             }
-            Toast.makeText(this, "请安装文件管理器", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -626,10 +665,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode + ", data=" + (data != null));
 
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
-            if (filePathCallback == null) {
+            // 保存callback临时变量
+            ValueCallback<Uri[]> callback = filePathCallback;
+            filePathCallback = null;
+
+            if (callback == null) {
                 Log.w(TAG, "filePathCallback is null");
                 return;
             }
@@ -639,36 +682,49 @@ public class MainActivity extends AppCompatActivity {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 Uri uri = data.getData();
                 Log.d(TAG, "Selected URI: " + uri);
-                
+
                 if (uri != null) {
+                    // 关键：保留URI权限，确保后续可读取
+                    try {
+                        getContentResolver().takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        Log.d(TAG, "Persistable URI permission granted");
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not take persistable permission: " + e.getMessage());
+                    }
+
                     // 检查文件大小
                     long fileSize = getFileSizeFromUri(uri);
                     Log.d(TAG, "File size: " + fileSize + " bytes");
-                    
-                    if (fileSize > MAX_FILE_SIZE) {
+
+                    if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
                         // 文件过大，拒绝处理
                         String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
                         Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
-                        filePathCallback.onReceiveValue(null);
-                        filePathCallback = null;
+                        callback.onReceiveValue(null);
                         return;
                     }
-                    
+
                     results = new Uri[]{uri};
                     String fileName = getFileName(uri);
                     Log.d(TAG, "File accepted: " + fileName);
                     Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
-                    
+
                     // 关键修复：通知JavaScript文件已选择
                     notifyFileSelected(uri.toString(), fileName);
+                } else {
+                    Log.w(TAG, "URI is null");
+                    Toast.makeText(this, "文件选择失败", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Log.d(TAG, "File selection cancelled or failed");
-                Toast.makeText(this, "未选择文件", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "File selection cancelled or failed: resultCode=" + resultCode);
+                if (resultCode == Activity.RESULT_CANCELED) {
+                    Toast.makeText(this, "已取消选择", Toast.LENGTH_SHORT).show();
+                }
             }
 
-            filePathCallback.onReceiveValue(results);
-            filePathCallback = null;
+            // 关键：必须调用callback的onReceiveValue，否则WebView会挂起
+            callback.onReceiveValue(results);
         }
     }
 
@@ -702,22 +758,35 @@ public class MainActivity extends AppCompatActivity {
      * 关键修复：让JavaScript知道文件已选择并触发处理
      */
     private void notifyFileSelected(String uriString, String fileName) {
-        String jsCode = 
+        // 转义URI和文件名中的特殊字符，避免JS注入
+        String safeUri = uriString.replace("\\", "\\\\").replace("'", "\\'");
+        String safeName = fileName.replace("\\", "\\\\").replace("'", "\\'");
+        
+        String jsCode =
             "(function() {" +
-            "   if (window.BatteryHealthApp && window.BatteryHealthApp.handleAndroidFileSelected) {" +
-            "       window.BatteryHealthApp.handleAndroidFileSelected('" + uriString + "', '" + fileName + "');" +
-            "   }" +
-            "   var fileInput = document.getElementById('zip-file');" +
-            "   var fileNameDisplay = document.getElementById('selected-file-name');" +
-            "   var fileDisplayContainer = document.getElementById('file-name-display');" +
-            "   if (fileNameDisplay && fileDisplayContainer) {" +
-            "       fileNameDisplay.textContent = '" + fileName + "');" +
-            "       fileDisplayContainer.style.display = 'flex';" +
+            "   try {" +
+            "       console.log('Notify file selected:', '" + safeName + "');" +
+            "       if (window.BatteryHealthApp && window.BatteryHealthApp.handleAndroidFileSelected) {" +
+            "           window.BatteryHealthApp.handleAndroidFileSelected('" + safeUri + "', '" + safeName + "');" +
+            "       }" +
+            "       var fileNameDisplay = document.getElementById('selected-file-name');" +
+            "       var fileDisplayContainer = document.getElementById('file-name-display');" +
+            "       if (fileNameDisplay) {" +
+            "           fileNameDisplay.textContent = '" + safeName + "';" +
+            "       }" +
+            "       if (fileDisplayContainer) {" +
+            "           fileDisplayContainer.style.display = 'flex';" +
+            "       }" +
+            "       console.log('File selected notification processed successfully');" +
+            "   } catch (e) {" +
+            "       console.error('notifyFileSelected error:', e);" +
             "   }" +
             "})();";
-        
-        webView.evaluateJavascript(jsCode, null);
-        Log.d(TAG, "Notified JavaScript about file selection");
+
+        if (webView != null && !isWebViewDestroyed) {
+            webView.evaluateJavascript(jsCode, null);
+        }
+        Log.d(TAG, "Notified JavaScript about file selection: " + fileName);
     }
 
     @Override

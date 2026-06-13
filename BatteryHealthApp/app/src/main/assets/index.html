@@ -325,7 +325,7 @@
             </div>
 
             <div class="file-upload">
-                <label for="zip-file">选择诊断压缩文件 (ZIP格式)</label>
+                <label>选择诊断压缩文件 (ZIP格式)</label>
                 <div class="file-upload-area" id="drop-area" role="button" tabindex="0" aria-label="点击或拖放上传文件">
                     <i class="fas fa-file-archive"></i>
                     <p>拖放文件到此处 或 <strong>点击选择文件</strong></p>
@@ -339,7 +339,7 @@
                     <i class="fas fa-exclamation-circle"></i>
                     <span id="validation-error-text"></span>
                 </div>
-                <input type="file" id="zip-file" accept=".zip" aria-hidden="true">
+                <input type="file" id="zip-file" accept=".zip,application/zip,application/x-zip-compressed" aria-hidden="true" style="display: none;">
             </div>
 
             <div class="input-group">

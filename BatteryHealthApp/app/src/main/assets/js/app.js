@@ -82,10 +82,19 @@ const BatteryHealthApp = {
         });
         
         dropArea.addEventListener('drop', (e) => this.handleDrop(e), false);
-        dropArea.addEventListener('click', () => fileInput.click());
         
         // 文件选择事件
         fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        
+        // 注意：dropArea的click事件由Android端injectFilePickerScript注入统一处理
+        // 避免重复触发文件选择器
+        if (!window.AndroidFilePicker) {
+            // 仅在Android接口不可用时才使用web方式
+            dropArea.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
         
         // 分析按钮事件
         calculateBtn.addEventListener('click', () => this.handleAnalyze());
