@@ -211,8 +211,9 @@ public class MainActivity extends AppCompatActivity {
 
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
-        webSettings.setAllowFileAccessFromFileURLs(false);
-        webSettings.setAllowUniversalAccessFromFileURLs(false);
+        // 关键：允许file://页面访问其他file://资源（用于读取临时文件）
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setAllowUniversalAccessFromFileURLs(true);
 
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
@@ -568,14 +569,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         /**
-         * 带进度的文件读取方法
+         * 带进度的文件复制到临时目录
+         * 关键修复：使用临时文件方案，避免200MB大文件OOM
+         * 将content:// URI流式复制到应用cacheDir，返回file:// URL
+         *
+         * @param uriString 文件URI
+         * @param callbackJs JavaScript回调函数名
+         * @param startPercent 进度条起始百分比
+         * @param endPercent 进度条结束百分比
          */
         @JavascriptInterface
         public void readFileContentWithProgress(String uriString, final String callbackJs,
                                                  final int startPercent, final int endPercent) {
-            Log.d(TAG, "JavaScript called readFileContentWithProgress for: " + uriString);
+            Log.d(TAG, "=== readFileContentWithProgress (copy to cache) for: " + uriString + " ===");
 
             new Thread(() -> {
+                java.io.File tempFile = null;
                 try {
                     Uri uri = Uri.parse(uriString);
                     ContentResolver resolver = getContentResolver();
@@ -603,19 +612,34 @@ public class MainActivity extends AppCompatActivity {
                         cursor.close();
                     }
 
-                    Log.d(TAG, "File size: " + fileSize);
+                    Log.d(TAG, "File size: " + fileSize + " bytes");
 
-                    // 分块读取
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    // 创建临时文件
+                    String originalName = getFileName(uri);
+                    if (originalName == null || originalName.isEmpty()) {
+                        originalName = "upload_" + System.currentTimeMillis() + ".zip";
+                    }
+                    // 安全文件名
+                    String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+                    java.io.File cacheDir = getCacheDir();
+                    // 清理旧的临时文件
+                    cleanOldTempFiles(cacheDir);
+
+                    tempFile = new java.io.File(cacheDir, "bha_" + System.currentTimeMillis() + "_" + safeName);
+
+                    // 关键修复：使用FileOutputStream流式写入，避免内存爆炸
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
                     byte[] buffer = new byte[64 * 1024];
                     int bytesRead;
                     long totalRead = 0;
                     int lastReportedPercent = startPercent;
 
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
+                        fos.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
 
+                        // 实时更新进度
                         if (fileSize > 0) {
                             int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
 
@@ -641,42 +665,116 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
+                    fos.flush();
+                    fos.close();
                     inputStream.close();
 
-                    byte[] fileBytes = outputStream.toByteArray();
-                    final String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+                    final long finalSize = totalRead;
+                    final String finalPath = tempFile.getAbsolutePath();
+                    final String fileUrl = "file://" + finalPath;
 
-                    Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
+                    Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
 
+                    // 回调JS，传递file:// URL和文件信息（对象形式，避免大字符串）
                     runOnUiThread(() -> {
-                        String escapedBase64 = base64.replace("\\", "\\\\")
-                                                      .replace("'", "\\'")
-                                                      .replace("\n", "\\n")
-                                                      .replace("\r", "\\r");
-
                         String jsCode = String.format(
                             "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s('%s');" +
+                            "  window.BatteryHealthApp.%s({url: '%s', size: %d, name: '%s', path: '%s'});" +
                             "}",
-                            callbackJs, callbackJs, escapedBase64
+                            callbackJs, callbackJs,
+                            fileUrl.replace("'", "\\'"),
+                            finalSize,
+                            safeName.replace("'", "\\'"),
+                            finalPath.replace("'", "\\'")
                         );
                         webView.evaluateJavascript(jsCode, null);
                         Log.d(TAG, "Callback executed: " + callbackJs);
                     });
 
+                } catch (OutOfMemoryError oom) {
+                    Log.e(TAG, "Out of memory while copying file", oom);
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
+                    runOnUiThread(() -> {
+                        webView.evaluateJavascript(
+                            "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('内存不足，请尝试较小的文件');",
+                            null
+                        );
+                    });
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to read file content with progress", e);
+                    Log.e(TAG, "Failed to copy file with progress", e);
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
+                    final String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
                     runOnUiThread(() -> {
                         webView.evaluateJavascript(
                             String.format(
                                 "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
-                                e.getMessage() != null ? e.getMessage().replace("'", "\\'") : "Unknown error"
+                                errorMsg.replace("'", "\\'")
                             ),
                             null
                         );
                     });
                 }
             }).start();
+        }
+
+        /**
+         * 清理旧的临时文件
+         * 避免cacheDir累积
+         */
+        private void cleanOldTempFiles(java.io.File cacheDir) {
+            try {
+                java.io.File[] files = cacheDir.listFiles((dir, name) -> name.startsWith("bha_"));
+                if (files != null && files.length > 5) {
+                    // 按修改时间排序，删除最旧的
+                    java.util.Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+                    int toDelete = files.length - 5;
+                    for (int i = 0; i < toDelete; i++) {
+                        if (files[i].delete()) {
+                            Log.d(TAG, "Cleaned old temp file: " + files[i].getName());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to clean old temp files", e);
+            }
+        }
+
+        /**
+         * 清理所有临时文件
+         */
+        @JavascriptInterface
+        public void cleanAllTempFiles() {
+            try {
+                java.io.File cacheDir = getCacheDir();
+                java.io.File[] files = cacheDir.listFiles((dir, name) -> name.startsWith("bha_"));
+                if (files != null) {
+                    for (java.io.File f : files) {
+                        f.delete();
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to clean all temp files", e);
+            }
+        }
+
+        /**
+         * 删除指定的临时文件
+         */
+        @JavascriptInterface
+        public void deleteTempFile(String filePath) {
+            try {
+                java.io.File file = new java.io.File(filePath);
+                if (file.exists() && file.getName().startsWith("bha_")) {
+                    file.delete();
+                    Log.d(TAG, "Deleted temp file: " + filePath);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to delete temp file", e);
+            }
         }
 
         /**
@@ -843,6 +941,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         isWebViewDestroyed = true;
+
+        // 清理所有临时文件
+        try {
+            java.io.File cacheDir = getCacheDir();
+            java.io.File[] files = cacheDir.listFiles((dir, name) -> name.startsWith("bha_"));
+            if (files != null) {
+                for (java.io.File f : files) {
+                    f.delete();
+                    Log.d(TAG, "Cleaned temp file on destroy: " + f.getName());
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to clean temp files on destroy", e);
+        }
 
         if (webView != null) {
             webView.stopLoading();

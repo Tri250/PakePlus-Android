@@ -6,12 +6,13 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    
+
     <!-- 本地资源例外（WebView加载本地HTML） -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">file</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
     </domain-config>
-    
+
     <!-- Google Fonts CDN（HTTPS） -->
     <domain-config>
         <domain includeSubdomains="true">fonts.googleapis.com</domain>
