@@ -9,8 +9,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.SslErrorHandler;
+import android.webkit.SslError;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -91,55 +94,83 @@ public class MainActivity extends AppCompatActivity {
     private void initWebView() {
         webView = findViewById(R.id.webView);
         
-        // WebView设置
+        // WebView设置 - 安全加固
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
-        webSettings.setAllowFileAccessFromFileURLs(true);
-        webSettings.setAllowUniversalAccessFromFileURLs(true);
-        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        // 禁用不安全的文件访问
+        webSettings.setAllowFileAccess(false);
+        webSettings.setAllowContentAccess(false);
+        webSettings.setAllowFileAccessFromFileURLs(false);
+        webSettings.setAllowUniversalAccessFromFileURLs(false);
+        // 仅允许 HTTPS 混合内容
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setSupportZoom(true);
         webSettings.setBuiltInZoomControls(true);
         webSettings.setDisplayZoomControls(false);
+        // 禁用不必要的功能
+        webSettings.setGeolocationEnabled(false);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
 
-        // 设置WebViewClient
+        // 设置WebViewClient - 添加错误处理和拦截
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                // 对于外部链接，使用系统浏览器打开
+                // 拦截所有外部链接，只允许本地资源
                 if (url.startsWith("http://") || url.startsWith("https://")) {
-                    if (!url.contains("cdnjs.cloudflare.com") && 
-                        !url.contains("cdn.jsdelivr.net")) {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    // 所有外部链接都使用系统浏览器打开
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    try {
                         startActivity(intent);
-                        return true;
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "无法打开链接", Toast.LENGTH_SHORT).show();
                     }
+                    return true;
                 }
                 return false;
             }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (request.isForMainFrame()) {
+                    view.loadUrl("about:blank");
+                    Toast.makeText(MainActivity.this, "页面加载失败，请重试", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // 拒绝处理 SSL 错误，防止中间人攻击
+                handler.cancel();
+                Toast.makeText(MainActivity.this, "安全连接错误", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        // 设置WebChromeClient以支持文件选择
+        // 设置WebChromeClient以支持文件选择 - 添加文件类型验证
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                // 如果之前有未完成的回调，先取消
+                if (MainActivity.this.filePathCallback != null) {
+                    MainActivity.this.filePathCallback.onReceiveValue(null);
+                }
                 MainActivity.this.filePathCallback = filePathCallback;
                 
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
-                // 允许选择任何文件类型
-                String[] mimeTypes = {"application/zip", "application/octet-stream", "*/*"};
+                // 严格限制只选择 ZIP 文件
+                intent.setType("application/zip");
+                // 备选 MIME 类型
+                String[] mimeTypes = {"application/zip", "application/x-zip-compressed", "application/octet-stream"};
                 intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
                 
                 try {
-                    startActivityForResult(Intent.createChooser(intent, "选择文件"), FILE_CHOOSER_REQUEST_CODE);
+                    startActivityForResult(Intent.createChooser(intent, "选择 ZIP 格式的诊断文件"), FILE_CHOOSER_REQUEST_CODE);
                 } catch (android.content.ActivityNotFoundException ex) {
                     MainActivity.this.filePathCallback = null;
                     Toast.makeText(MainActivity.this, "请安装文件管理器", Toast.LENGTH_SHORT).show();

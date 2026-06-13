@@ -2,696 +2,23 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:;">
     <title>安卓手机电池健康度分析工具</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"></script>
-    <style>
-        :root {
-            --primary: #3498db;
-            --primary-dark: #2980b9;
-            --primary-light: #e1f0fa;
-            --secondary: #2ecc71;
-            --secondary-dark: #27ae60;
-            --secondary-light: #e8f8ef;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --warning-light: #fef3e2;
-            --dark: #34495e;
-            --light: #f8f9fa;
-            --gray: #95a5a6;
-            --gray-light: #e0e6ed;
-            --shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-            --gradient: linear-gradient(135deg, #3498db, #2ecc71);
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f5f9fc, #e6edf5);
-            color: var(--dark);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            line-height: 1.6;
-        }
-        .header {
-            text-align: center;
-            margin: 20px 0 30px;
-            color: var(--dark);
-        }
-        .header h1 {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            display: inline-block;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        .header p {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto;
-            color: #5c6b7e;
-            font-weight: 400;
-        }
-        .app-container {
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto 30px;
-        }
-        .card {
-            background: white;
-            border-radius: 24px;
-            padding: 35px;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            transition: var(--transition);
-        }
-        .card-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: var(--primary);
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-            position: relative;
-            padding-bottom: 15px;
-        }
-        .card-title::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 60px;
-            height: 4px;
-            background: var(--gradient);
-            border-radius: 2px;
-        }
-        .card-title i {
-            background: var(--gradient);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
-        }
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        .step {
-            background: white;
-            border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
-            border: 1px solid #f0f4f8;
-            position: relative;
-            overflow: hidden;
-        }
-        .step::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: var(--gradient);
-        }
-        .step-number {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: var(--gradient);
-            color: white;
-            border-radius: 12px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
-        }
-        .step h3 {
-            font-size: 1.3rem;
-            margin-bottom: 12px;
-            color: var(--dark);
-        }
-        .step p {
-            color: #6c7a89;
-            line-height: 1.6;
-        }
-        .input-group {
-            margin-bottom: 25px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 12px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--dark);
-            padding-left: 5px;
-        }
-        .file-upload {
-            position: relative;
-            margin-bottom: 30px;
-        }
-        .file-upload-area {
-            width: 100%;
-            padding: 30px 20px;
-            border: 2px dashed var(--gray-light);
-            border-radius: 15px;
-            background: rgba(240, 245, 250, 0.5);
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-        .file-upload-area:hover {
-            border-color: var(--primary);
-            background: rgba(52, 152, 219, 0.05);
-        }
-        .file-upload-area i {
-            font-size: 3rem;
-            color: var(--primary);
-            opacity: 0.7;
-        }
-        .file-upload-area p {
-            color: #6c7a89;
-            font-size: 1.1rem;
-        }
-        .file-upload-area strong {
-            color: var(--primary);
-            font-weight: 600;
-        }
-        .file-upload input {
-            display: none;
-        }
-        .custom-input {
-            width: 100%;
-            padding: 17px 20px;
-            border: 2px solid #e0e6ed;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            transition: var(--transition);
-            background: white;
-            color: var(--dark);
-        }
-        .custom-input:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.15);
-        }
-        .btn {
-            background: var(--gradient);
-            color: white;
-            border: none;
-            padding: 18px 30px;
-            border-radius: 18px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: 600;
-            width: 100%;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.25);
-            margin-top: 10px;
-        }
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 25px rgba(52, 152, 219, 0.35);
-        }
-        .btn:active {
-            transform: translateY(1px);
-        }
-        .status {
-            background: rgba(52, 152, 219, 0.08);
-            border-left: 4px solid var(--primary);
-            padding: 18px 20px;
-            border-radius: 12px;
-            margin: 25px 0;
-            display: none;
-            color: var(--dark);
-            font-weight: 500;
-            font-size: 1.1rem;
-        }
-        .result {
-            margin-top: 30px;
-            padding: 0;
-            border-radius: 24px;
-            display: none;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-        .result-header {
-            background: var(--gradient);
-            color: white;
-            padding: 35px 25px;
-            text-align: center;
-        }
-        .result-header h2 {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-        .result-content {
-            padding: 35px 30px;
-            background: white;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 18px;
-            padding: 30px 25px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            transition: var(--transition);
-            border: 1px solid #f0f4f8;
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 6px;
-            background: var(--gradient);
-        }
-        .stat-icon {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: var(--primary);
-            opacity: 0.8;
-        }
-        .stat-value {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin: 15px 0;
-            color: var(--dark);
-            line-height: 1;
-            letter-spacing: -1px;
-        }
-        .stat-label {
-            font-size: 1.15rem;
-            color: var(--gray);
-            font-weight: 500;
-        }
-        .battery-section {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 24px;
-            padding: 35px 30px;
-            margin: 40px 0;
-            text-align: center;
-            border: 1px solid #eaeff5;
-        }
-        .battery-title {
-            font-size: 1.8rem;
-            margin-bottom: 35px;
-            color: var(--dark);
-            font-weight: 600;
-        }
-        .battery-container {
-            position: relative;
-            height: 100px;
-            background: #f0f4f8;
-            border-radius: 60px;
-            overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-            margin: 40px 0;
-            display: flex;
-            align-items: center;
-        }
-        .battery-icon {
-            position: absolute;
-            left: 35px;
-            font-size: 3.5rem;
-            color: var(--primary);
-            z-index: 2;
-        }
-        .battery-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(to right, #e6ebf2, #f0f4f8);
-            border-radius: 60px;
-        }
-        .battery-level {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: var(--gradient);
-            border-radius: 60px;
-            box-shadow: 0 0 25px rgba(46, 204, 113, 0.2);
-            transition: width 1.5s cubic-bezier(0.22, 0.61, 0.36, 1);
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 50px;
-            font-weight: bold;
-            color: white;
-            font-size: 2.2rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-        .quality-indicator {
-            display: flex;
-            justify-content: center;
-            margin-top: 25px;
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-        .quality-good {
-            color: var(--secondary);
-        }
-        .quality-fair {
-            color: var(--warning);
-        }
-        .quality-poor {
-            color: var(--danger);
-        }
-        .original-text-container {
-            margin-top: 40px;
-            padding: 30px;
-            background: #f8fafc;
-            border-radius: 18px;
-            border: 1px solid #eaeff5;
-        }
-        .original-text-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .toggle-btn {
-            background: var(--gradient);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.05rem;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
-        }
-        .toggle-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 18px rgba(52, 152, 219, 0.3);
-        }
-        .original-text {
-            display: none;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            max-height: 300px;
-            overflow: auto;
-            font-family: monospace;
-            white-space: pre-wrap;
-            border: 1px solid #eaeff5;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
-            font-size: 0.95rem;
-        }
-        .footer {
-            text-align: center;
-            color: #6c7a89;
-            margin-top: 30px;
-            padding: 20px;
-            font-size: 1rem;
-            width: 100%;
-        }
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        .file-name-display {
-            margin-top: 10px;
-            font-weight: 600;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        /* 参考表格样式 */
-        .reference-section {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 2px solid #f0f4f8;
-        }
-        .reference-title {
-            font-size: 1.5rem;
-            color: var(--dark);
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .reference-title i {
-            color: var(--primary);
-            font-size: 1.4rem;
-        }
-        .reference-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        .reference-table th {
-            background: linear-gradient(135deg, #3498db, #2ecc71);
-            color: white;
-            padding: 15px 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-        .reference-table td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #f0f4f8;
-            color: var(--dark);
-            line-height: 1.5;
-        }
-        .reference-table tr:last-child td {
-            border-bottom: none;
-        }
-        .reference-table tr:nth-child(even) {
-            background: #fafbfc;
-        }
-        .reference-table tr:hover {
-            background: #f0f7ff;
-        }
-        .status-good {
-            color: var(--secondary);
-            font-weight: 600;
-        }
-        .status-normal {
-            color: var(--primary);
-            font-weight: 600;
-        }
-        .status-warning {
-            color: var(--warning);
-            font-weight: 600;
-        }
-        .status-danger {
-            color: var(--danger);
-            font-weight: 600;
-        }
-        .severity-light {
-            color: #7f8c8d;
-            font-weight: 500;
-        }
-        .severity-medium {
-            color: var(--warning);
-            font-weight: 600;
-        }
-        .severity-heavy {
-            color: #e67e22;
-            font-weight: 600;
-        }
-        .severity-danger {
-            color: var(--danger);
-            font-weight: 700;
-        }
-        .table-note {
-            font-size: 0.85rem;
-            color: #7f8c8d;
-            margin-top: 10px;
-            font-style: italic;
-        }
-        /* 品牌标签样式 */
-        .brand-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 25px;
-            padding: 5px;
-            background: #f8fafc;
-            border-radius: 15px;
-        }
-        .brand-tab {
-            flex: 1;
-            min-width: 120px;
-            padding: 12px 16px;
-            border: none;
-            background: white;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #5c6b7e;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .brand-tab:hover {
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        .brand-tab.active {
-            background: var(--gradient);
-            color: white;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-        }
-        .brand-tab i {
-            font-size: 1rem;
-        }
-        .brand-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .brand-content.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        code {
-            background: #e8f4fd;
-            color: var(--primary-dark);
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2.2rem;
-            }
-            .card {
-                padding: 25px 20px;
-            }
-            .card-title {
-                font-size: 1.5rem;
-            }
-            .step {
-                padding: 20px;
-            }
-            .stat-value {
-                font-size: 3rem;
-            }
-            .battery-container {
-                height: 85px;
-            }
-        }
-        @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
-            .header h1 {
-                font-size: 1.9rem;
-            }
-            .header p {
-                font-size: 1rem;
-            }
-            .card-title {
-                font-size: 1.4rem;
-            }
-            .card-title i {
-                width: 45px;
-                height: 45px;
-                font-size: 1.2rem;
-            }
-            .step h3 {
-                font-size: 1.1rem;
-            }
-            .stat-value {
-                font-size: 2.5rem;
-            }
-            .battery-container {
-                height: 75px;
-            }
-            .battery-icon {
-                font-size: 2.8rem;
-                left: 25px;
-            }
-            .battery-level {
-                font-size: 1.8rem;
-                padding-right: 40px;
-            }
-            .original-text-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-            .toggle-btn {
-                width: 100%;
-            }
-        }
-    </style>
+    
+    <!-- 本地资源 -->
+    <link rel="stylesheet" href="lib/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- 头部 -->
     <div class="header">
         <h1><i class="fas fa-battery-full"></i> 安卓手机电池健康度分析工具</h1>
         <p>上传设备诊断文件，获取电池健康度详细分析报告</p>
     </div>
 
     <div class="app-container">
+        <!-- 使用说明卡片 -->
         <div class="card">
             <div class="card-title">
                 <i class="fas fa-lightbulb"></i>
@@ -807,32 +134,23 @@
                 </div>
             </div>
 
-            <div style="padding: 20px; background: #f8fafc; border-radius: 15px; margin-top: 25px;">
-                <p><i class="fas fa-shield-alt" style="color: var(--primary);"></i> <strong>隐私保护声明</strong>：所有分析过程均在您的设备本地完成，数据不会上传至任何服务器，确保您的信息安全</p>
-                <p style="margin-top: 10px;"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> <strong>免责声明</strong>：</p>
-                <ul style="margin-top: 5px; padding-left: 20px;">
-                    <li>本工具提供的信息仅供参考，不构成任何专业建议或保证</li>
-                    <li>本工具通过debug方式解析小米手机诊断文件内容，不同获取方式可能导致结果差异，属正常现象</li>
-                    <li>本网页由AI辅助生成，如发现任何异常问题敬请谅解</li>
-                    <li>使用本工具即表示您知悉并同意自行承担可能的风险</li>
-                </ul>
-                <p style="margin-top: 10px;"><i class="fas fa-lightbulb" style="color: var(--primary);"></i> <strong>使用建议</strong>：</p>
-                <ul style="margin-top: 5px; padding-left: 20px;">
-                    <li>每次充放电后测试结果会有波动属于正常现象</li>
-                    <li>建议充满电再导出debug文件（结果相对更准确）</li>
-                    <li>当前版本生成的debug文件默认存储在MIUI->debug_log目录，如遇路径变更请自行查找</li>
-                </ul>
-                <p style="margin-top: 10px;"><i class="fas fa-info-circle" style="color: var(--primary);"></i> <strong>技术说明</strong>：诊断数据来源于您设备生成的系统日志文件，分析算法基于公开技术文档实现</p>
+            <!-- 电池容量数据库 -->
+            <div class="capacity-database">
+                <h3 style="margin-bottom: 15px; font-size: 1.1rem;"><i class="fas fa-search"></i> 不知道初始容量？搜索手机型号</h3>
+                <div class="capacity-search">
+                    <input type="text" id="capacity-search-input" placeholder="输入手机型号，如：小米14">
+                    <button id="capacity-search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="capacity-search-result" class="capacity-result"></div>
             </div>
 
-            <!-- 电池健康度参考表格 -->
+            <!-- 参考表格 -->
             <div class="reference-section">
                 <div class="reference-title">
                     <i class="fas fa-chart-bar"></i>
                     <h3>电池健康度参考标准</h3>
                 </div>
 
-                <!-- 表格1：电池容量与健康状态 -->
                 <table class="reference-table">
                     <thead>
                         <tr>
@@ -870,7 +188,6 @@
                     </tbody>
                 </table>
 
-                <!-- 表格2：循环次数与健康度 -->
                 <div class="reference-title" style="margin-top: 35px;">
                     <i class="fas fa-sync-alt"></i>
                     <h3>充电循环次数参考</h3>
@@ -907,7 +224,6 @@
                     </tbody>
                 </table>
 
-                <!-- 表格3：异常现象与处理 -->
                 <div class="reference-title" style="margin-top: 35px;">
                     <i class="fas fa-exclamation-circle"></i>
                     <h3>异常现象判断与处理</h3>
@@ -923,35 +239,42 @@
                     <tbody>
                         <tr>
                             <td>轻度耗电变快，无其他问题</td>
-                            <td><span class="severity-light">轻微</span></td>
+                            <td><span style="color: #7f8c8d;">轻微</span></td>
                             <td>电池正常老化，优化设置即可</td>
                         </tr>
                         <tr>
                             <td>电量忽高忽低、百分比跳水</td>
-                            <td><span class="severity-medium">中等</span></td>
+                            <td><span style="color: var(--warning); font-weight: 600;">中等</span></td>
                             <td>电芯老化，酌情准备换电池</td>
                         </tr>
                         <tr>
                             <td>轻度使用/充电时手机异常发烫</td>
-                            <td><span class="severity-medium">中等</span></td>
+                            <td><span style="color: var(--warning); font-weight: 600;">中等</span></td>
                             <td>损耗加剧，避免边充边玩</td>
                         </tr>
                         <tr>
                             <td>低温环境下，剩余20%+电量自动关机</td>
-                            <td><span class="severity-heavy">较重</span></td>
+                            <td><span style="color: #e67e22; font-weight: 600;">较重</span></td>
                             <td>电池性能大幅衰退，建议更换</td>
                         </tr>
                         <tr>
                             <td>后盖翘起、机身鼓包、充电异味</td>
-                            <td><span class="severity-danger">高危</span></td>
+                            <td><span style="color: var(--danger); font-weight: 700;">高危</span></td>
                             <td><strong>立即停用，马上更换，存在安全隐患</strong></td>
                         </tr>
                     </tbody>
                 </table>
                 <p class="table-note"><i class="fas fa-info-circle"></i> 以上数据仅供参考，实际电池状况可能因使用习惯、环境温度等因素有所差异</p>
             </div>
+
+            <!-- 隐私声明 -->
+            <div style="padding: 20px; background: #f8fafc; border-radius: 15px; margin-top: 25px;">
+                <p><i class="fas fa-shield-alt" style="color: var(--primary);"></i> <strong>隐私保护声明</strong>：所有分析过程均在您的设备本地完成，数据不会上传至任何服务器，确保您的信息安全</p>
+                <p style="margin-top: 10px;"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> <strong>免责声明</strong>：本工具提供的信息仅供参考，不构成任何专业建议或保证。使用本工具即表示您知悉并同意自行承担可能的风险。</p>
+            </div>
         </div>
 
+        <!-- 分析功能区 -->
         <div class="card">
             <div class="card-title">
                 <i class="fas fa-tools"></i>
@@ -969,6 +292,9 @@
                     <i class="fas fa-file-alt"></i>
                     <span id="selected-file-name">未选择文件</span>
                 </div>
+                <div id="file-validation-error" class="file-validation-error">
+                    <i class="fas fa-exclamation-circle"></i> <span></span>
+                </div>
                 <input type="file" id="zip-file" accept=".zip" required>
             </div>
 
@@ -981,9 +307,34 @@
                 <i class="fas fa-calculator"></i> 分析电池健康度
             </button>
 
+            <!-- 进度条 -->
+            <div id="progress-container" class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="progress-text" class="progress-text">准备中...</div>
+            </div>
+
             <div id="status" class="status"></div>
         </div>
 
+        <!-- 历史记录 -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-history"></i>
+                <h2>分析历史</h2>
+            </div>
+            <div class="history-section">
+                <div id="history-list" class="history-list">
+                    <div class="history-empty">暂无历史记录</div>
+                </div>
+                <button class="clear-history-btn" onclick="BatteryHealthApp.clearHistory()">
+                    <i class="fas fa-trash"></i> 清空历史
+                </button>
+            </div>
+        </div>
+
+        <!-- 结果区域 -->
         <div id="result" class="result">
             <div class="result-header">
                 <h2>电池健康度报告</h2>
@@ -1055,381 +406,11 @@
         <p>安卓手机电池健康度分析工具 | 数据仅在本地处理，保护您的隐私</p>
     </div>
 
-    <script>
-        // 初始化 zip.js
-        zip.useWebWorkers = false;
-
-        const dropArea = document.getElementById('drop-area');
-        const fileInput = document.getElementById('zip-file');
-        const calculateBtn = document.getElementById('calculate-btn');
-        const statusDiv = document.getElementById('status');
-        const resultDiv = document.getElementById('result');
-        const fileNameDisplay = document.getElementById('file-name-display');
-        const selectedFileName = document.getElementById('selected-file-name');
-
-        // 拖放功能
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight() {
-            dropArea.style.borderColor = '#3498db';
-            dropArea.style.background = 'rgba(52, 152, 219, 0.1)';
-        }
-
-        function unhighlight() {
-            dropArea.style.borderColor = '#e0e6ed';
-            dropArea.style.background = 'rgba(240, 245, 250, 0.5)';
-        }
-
-        dropArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                updateFileName(files[0].name);
-            }
-        }
-
-        dropArea.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                updateFileName(e.target.files[0].name);
-            }
-        });
-
-        function updateFileName(name) {
-            selectedFileName.textContent = name;
-            fileNameDisplay.style.display = 'flex';
-        }
-
-        function showStatus(message, isError = false) {
-            statusDiv.textContent = message;
-            statusDiv.style.display = 'block';
-            statusDiv.style.background = isError ? 'rgba(231, 76, 60, 0.1)' : 'rgba(52, 152, 219, 0.08)';
-            statusDiv.style.borderLeftColor = isError ? '#e74c3c' : '#3498db';
-        }
-
-        function hideStatus() {
-            statusDiv.style.display = 'none';
-        }
-
-        calculateBtn.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            const initialCapacity = parseInt(document.getElementById('initial-capacity').value);
-
-            if (!file) {
-                showStatus('请选择诊断文件', true);
-                return;
-            }
-
-            if (!initialCapacity || initialCapacity <= 0) {
-                showStatus('请输入有效的初始电池容量', true);
-                return;
-            }
-
-            showStatus('正在分析文件，请稍候...');
-            calculateBtn.disabled = true;
-
-            try {
-                const result = await analyzeZipFile(file, initialCapacity);
-                displayResult(result, initialCapacity);
-                hideStatus();
-            } catch (error) {
-                showStatus('分析失败: ' + error.message, true);
-                console.error(error);
-            } finally {
-                calculateBtn.disabled = false;
-            }
-        });
-
-        async function analyzeZipFile(file, initialCapacity) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const blob = new Blob([e.target.result]);
-                        const zipReader = new zip.ZipReader(new zip.BlobReader(blob));
-                        const entries = await zipReader.getEntries();
-                        
-                        let batteryInfo = null;
-                        let foundFiles = [];
-
-                        // 查找可能包含电池信息的文件
-                        for (const entry of entries) {
-                            const filename = entry.filename.toLowerCase();
-                            foundFiles.push(entry.filename);
-                            
-                            // 查找常见的电池信息文件
-                            if (filename.includes('battery') || 
-                                filename.includes('power') || 
-                                filename.includes('dumpstate') ||
-                                filename.includes('bugreport') ||
-                                filename === 'dumpstate.txt' ||
-                                filename.includes('health')) {
-                                
-                                try {
-                                    const content = await entry.getData(new zip.TextWriter());
-                                    const info = extractBatteryInfo(content);
-                                    if (info) {
-                                        batteryInfo = info;
-                                        break;
-                                    }
-                                } catch (err) {
-                                    console.log('Error reading entry:', entry.filename, err);
-                                }
-                            }
-                        }
-
-                        await zipReader.close();
-
-                        if (batteryInfo) {
-                            resolve({
-                                ...batteryInfo,
-                                foundFiles: foundFiles
-                            });
-                        } else {
-                            reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
-                        }
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject(new Error('文件读取失败'));
-                reader.readAsArrayBuffer(file);
-            });
-        }
-
-        function extractBatteryInfo(content) {
-            let chargeCounter = null;
-            let currentNow = null;
-            let capacity = null;
-            let health = null;
-            let cycleCount = null;
-            let batteryTemp = null;
-
-            // 提取 charge_counter (充电计数器，单位微安时)
-            const chargeCounterMatch = content.match(/charge[_-]?counter[:\s]+(\d+)/i);
-            if (chargeCounterMatch) {
-                chargeCounter = parseInt(chargeCounterMatch[1]);
-            }
-
-            // 提取 current_now (当前电流)
-            const currentNowMatch = content.match(/current[_-]?now[:\s]+(-?\d+)/i);
-            if (currentNowMatch) {
-                currentNow = parseInt(currentNowMatch[1]);
-            }
-
-            // 提取 capacity (电池容量百分比)
-            const capacityMatch = content.match(/capacity[:\s]+(\d+)/i);
-            if (capacityMatch) {
-                capacity = parseInt(capacityMatch[1]);
-            }
-
-            // 提取 health (健康状态)
-            const healthMatch = content.match(/health[:\s]+(\d+)/i);
-            if (healthMatch) {
-                health = parseInt(healthMatch[1]);
-            }
-
-            // 提取 cycle_count (充电循环次数)
-            const cycleCountPatterns = [
-                /cycle[_-]?count[:\s]+(\d+)/i,
-                /charge[_-]?cycle[:\s]+(\d+)/i,
-                /battery[_-]?cycle[:\s]+(\d+)/i,
-                /cycle[:\s]+(\d+)[\s\w]*次/i,
-                /已充电[:\s]*(\d+)[\s\w]*次/i
-            ];
-            for (const pattern of cycleCountPatterns) {
-                const match = content.match(pattern);
-                if (match) {
-                    cycleCount = parseInt(match[1]);
-                    break;
-                }
-            }
-
-            // 提取电池温度 (多种格式)
-            const tempPatterns = [
-                /temperature[:\s]+(-?\d+\.?\d*)/i,
-                /battery[_-]?temp[:\s]+(-?\d+\.?\d*)/i,
-                /temp[:\s]+(-?\d+\.?\d*)/i,
-                /电池温度[:\s]+(-?\d+\.?\d*)/i,
-                /温度[:\s]+(-?\d+\.?\d*)/i
-            ];
-            for (const pattern of tempPatterns) {
-                const match = content.match(pattern);
-                if (match) {
-                    let temp = parseFloat(match[1]);
-                    // 如果温度大于100，可能是以0.1度为单位
-                    if (temp > 100 && temp < 1000) {
-                        temp = temp / 10;
-                    }
-                    batteryTemp = temp;
-                    break;
-                }
-            }
-
-            // 尝试从 dumpstate 中提取更详细的电池信息
-            const batterySection = content.match(/Battery\s+Service[\s\S]*?(?=\n\n|\n[A-Z])/i);
-            if (batterySection) {
-                const section = batterySection[0];
-                
-                // 在电池服务部分再次查找
-                if (!chargeCounter) {
-                    const match = section.match(/charge[_-]?counter[:\s]+(\d+)/i);
-                    if (match) chargeCounter = parseInt(match[1]);
-                }
-                // 在电池服务部分查找循环次数
-                if (!cycleCount) {
-                    const match = section.match(/cycle[_-]?count[:\s]+(\d+)/i);
-                    if (match) cycleCount = parseInt(match[1]);
-                }
-                // 在电池服务部分查找温度
-                if (batteryTemp === null) {
-                    const match = section.match(/temperature[:\s]+(-?\d+\.?\d*)/i);
-                    if (match) {
-                        let temp = parseFloat(match[1]);
-                        if (temp > 100 && temp < 1000) {
-                            temp = temp / 10;
-                        }
-                        batteryTemp = temp;
-                    }
-                }
-            }
-
-            // 如果找到了 charge_counter，计算当前容量
-            if (chargeCounter) {
-                // charge_counter 单位是微安时 (uAh)，转换为毫安时 (mAh)
-                const currentCapacity = chargeCounter / 1000;
-                return {
-                    currentCapacity: Math.round(currentCapacity),
-                    chargeCounter: chargeCounter,
-                    currentNow: currentNow,
-                    capacity: capacity,
-                    health: health,
-                    cycleCount: cycleCount,
-                    batteryTemp: batteryTemp,
-                    rawContent: content.substring(0, 5000) // 保存部分原始内容用于显示
-                };
-            }
-
-            // 尝试其他方式提取
-            // 查找类似 "Battery capacity: 4500 mAh" 的格式
-            const capacityMention = content.match(/battery\s*capacity[:\s]*(\d+)\s*(mAh|uAh)/i);
-            if (capacityMention) {
-                let cap = parseInt(capacityMention[1]);
-                if (capacityMention[2].toLowerCase() === 'uah') {
-                    cap = cap / 1000;
-                }
-                return {
-                    currentCapacity: Math.round(cap),
-                    cycleCount: cycleCount,
-                    batteryTemp: batteryTemp,
-                    rawContent: content.substring(0, 5000)
-                };
-            }
-
-            return null;
-        }
-
-        function displayResult(result, initialCapacity) {
-            document.getElementById('initial-capacity-value').textContent = initialCapacity;
-            document.getElementById('current-capacity-value').textContent = result.currentCapacity;
-            
-            const healthPercentage = ((result.currentCapacity / initialCapacity) * 100).toFixed(1);
-            document.getElementById('health-percentage').textContent = healthPercentage;
-
-            // 显示循环次数
-            const cycleCountEl = document.getElementById('cycle-count');
-            if (result.cycleCount !== null && result.cycleCount !== undefined) {
-                cycleCountEl.textContent = result.cycleCount;
-            } else {
-                cycleCountEl.textContent = '未检测到';
-            }
-
-            // 显示电池温度
-            const batteryTempEl = document.getElementById('battery-temp');
-            if (result.batteryTemp !== null && result.batteryTemp !== undefined) {
-                batteryTempEl.textContent = result.batteryTemp.toFixed(1);
-            } else {
-                batteryTempEl.textContent = '未检测到';
-            }
-
-            // 更新电池进度条
-            const batteryLevel = document.getElementById('battery-level');
-            batteryLevel.style.width = Math.min(healthPercentage, 100) + '%';
-
-            // 设置健康状态指示
-            const qualityIndicator = document.getElementById('quality-indicator');
-            let qualityText = '';
-            let qualityClass = '';
-
-            if (healthPercentage >= 85) {
-                qualityText = '电池状态良好';
-                qualityClass = 'quality-good';
-            } else if (healthPercentage >= 70) {
-                qualityText = '电池状态一般';
-                qualityClass = 'quality-fair';
-            } else {
-                qualityText = '电池状态较差，建议更换';
-                qualityClass = 'quality-poor';
-            }
-
-            qualityIndicator.innerHTML = `<span class="${qualityClass}"><i class="fas fa-${healthPercentage >= 85 ? 'check-circle' : healthPercentage >= 70 ? 'exclamation-circle' : 'times-circle'}"></i> ${qualityText}</span>`;
-
-            // 显示原始数据
-            if (result.rawContent) {
-                document.getElementById('original-text').textContent = result.rawContent;
-            }
-
-            // 显示结果
-            resultDiv.style.display = 'block';
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // 切换原始数据显示
-        document.getElementById('toggle-text').addEventListener('click', function() {
-            const textDiv = document.getElementById('original-text');
-            const btn = this;
-
-            if (textDiv.style.display === 'none' || textDiv.style.display === '') {
-                textDiv.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏详情';
-            } else {
-                textDiv.style.display = 'none';
-                btn.innerHTML = '<i class="fas fa-eye"></i> 显示详情';
-            }
-        });
-
-        // 品牌标签切换功能
-        document.querySelectorAll('.brand-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                // 移除所有标签的active状态
-                document.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.brand-content').forEach(c => c.classList.remove('active'));
-
-                // 添加当前标签的active状态
-                this.classList.add('active');
-                const brand = this.getAttribute('data-brand');
-                document.getElementById(brand + '-content').classList.add('active');
-            });
-        });
-    </script>
+    <!-- 本地脚本 -->
+    <script src="lib/zip.min.js"></script>
+    <script src="js/batteryDatabase.js"></script>
+    <script src="js/parsers.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
