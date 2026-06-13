@@ -265,9 +265,14 @@ const BatteryHealthApp = {
             return;
         }
         
-        // 设置加载状态
+        // 设置加载状态 - 显示旋转图标
         calculateBtn.disabled = true;
         calculateBtn.classList.add('loading');
+        const btnIcon = calculateBtn.querySelector('i');
+        const originalIcon = btnIcon.className;
+        btnIcon.className = 'fas fa-spinner';
+        calculateBtn.querySelector('span').textContent = '正在分析...';
+        
         progressContainer.classList.add('show');
         this.hideStatus();
         
@@ -297,6 +302,8 @@ const BatteryHealthApp = {
         } finally {
             calculateBtn.disabled = false;
             calculateBtn.classList.remove('loading');
+            btnIcon.className = originalIcon;
+            calculateBtn.querySelector('span').textContent = '分析电池健康度';
             setTimeout(() => {
                 progressContainer.classList.remove('show');
             }, 1000);
@@ -457,24 +464,34 @@ const BatteryHealthApp = {
         const history = HistoryManager.getAll();
         
         if (history.length === 0) {
-            historyList.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+            historyList.innerHTML = '<div class="history-empty" role="listitem">暂无历史记录</div>';
             return;
         }
         
         historyList.innerHTML = history.map(item => `
-            <div class="history-item" data-id="${item.id}">
-                <div>
+            <div class="history-item" role="listitem" data-id="${item.id}">
+                <div class="info">
                     <div class="history-date">${HistoryManager.formatDate(item.timestamp)}</div>
-                    <div style="font-size: 0.85rem; color: #7f8c8d;">
-                        ${item.initialCapacity}mAh → ${item.currentCapacity}mAh
-                        ${item.cycleCount ? `· ${item.cycleCount}次循环` : ''}
-                    </div>
+                    <div class="history-detail">${item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? `· ${item.cycleCount}次循环` : ''}</div>
                 </div>
                 <div class="history-health ${HistoryManager.getHealthColor(item.healthPercentage)}">
                     ${item.healthPercentage}%
                 </div>
+                <button class="delete-btn" onclick="BatteryHealthApp.deleteHistoryItem(${item.id})" aria-label="删除此记录">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         `).join('');
+    },
+    
+    /**
+     * 删除单条历史记录
+     */
+    deleteHistoryItem(id) {
+        if (confirm('确定删除此记录？')) {
+            HistoryManager.delete(id);
+            this.renderHistory();
+        }
     },
     
     /**
