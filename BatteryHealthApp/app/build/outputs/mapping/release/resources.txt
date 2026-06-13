@@ -217,8 +217,8 @@ TypefaceCompatApi24Impl
 top
 ACTION_PAGE_UP
 ICUCompat
-anticipateOvershootInterpolator
 it.parameterTypes
+anticipateOvershootInterpolator
 mNextServedView
 com.google.android.gms.provider.actio...
 KeyFrames
@@ -520,8 +520,8 @@ android.text.TextDirectionHeuristics
 INITIALIZED
 android.messagingStyleUser
 android.support.v13.view.inputmethod....
-REMOVE
 producerIndex
+REMOVE
 android:changeScroll:x
 android:changeBounds:bounds
 neutral_palette_key_color
@@ -572,9 +572,9 @@ KeyCycleOscillator
 SLACK
 values
 androidx.core.app.unusedapprestrictio...
+consumerIndex
 androidx.lifecycle.LifecycleCoroutine...
 percent
-consumerIndex
 ListMenuPresenter
 _removedRef
 on_secondary_fixed_variant
@@ -666,8 +666,8 @@ app:barrierMargin
 LayoutInflaterCompatHC
 androidx.core.view.inputmethod.InputC...
 controlX2
-controlX1
 missingDelimiterValue
+controlX1
 android.backgroundImageUri
 listener
 android.intent.extra.CC
@@ -1754,7 +1754,6 @@ getSuppressed
 FLAG_REQUEST_TOUCH_EXPLORATION_MODE
 nativeCreateWeightAlias
 Toolbar
-ab
 ACTION_UNKNOWN
 defaultLifecycleObserver
 continuousVelocity
@@ -1846,6 +1845,7 @@ android.bigText
 autoMirrored
 minUpdateDistanceMeters
 vivo
+eb
 btn_check_material_anim
 android.speech.extra.MAX_RESULTS
 layout_height
@@ -3413,262 +3413,6 @@ Marking id:parentRelative:2131231060 used because it matches string pool constan
 Marking id:parent_matrix:2131231061 used because it matches string pool constant parent
 Marking attr:layout_constraintEnd_toEndOf:2130903680 used because it matches string pool constant layout_constraintEnd_toEndOf
 Marking attr:layout_constraintEnd_toEndOf:2130903680 used because it matches string pool constant layout_constraintEnd_toEndOf
-Marking anim:abc_fade_in:2130771968 used because it matches string pool constant ab
-Marking anim:abc_fade_out:2130771969 used because it matches string pool constant ab
-Marking anim:abc_grow_fade_in_from_bottom:2130771970 used because it matches string pool constant ab
-Marking anim:abc_popup_enter:2130771971 used because it matches string pool constant ab
-Marking anim:abc_popup_exit:2130771972 used because it matches string pool constant ab
-Marking anim:abc_shrink_fade_out_from_bottom:2130771973 used because it matches string pool constant ab
-Marking anim:abc_slide_in_bottom:2130771974 used because it matches string pool constant ab
-Marking anim:abc_slide_in_top:2130771975 used because it matches string pool constant ab
-Marking anim:abc_slide_out_bottom:2130771976 used because it matches string pool constant ab
-Marking anim:abc_slide_out_top:2130771977 used because it matches string pool constant ab
-Marking anim:abc_tooltip_enter:2130771978 used because it matches string pool constant ab
-Marking anim:abc_tooltip_exit:2130771979 used because it matches string pool constant ab
-Marking bool:abc_action_bar_embed_tabs:2130968576 used because it matches string pool constant ab
-Marking bool:abc_config_actionMenuItemAllCaps:2130968577 used because it matches string pool constant ab
-Marking color:abc_background_cache_hint_selector_material_dark:2131034112 used because it matches string pool constant ab
-Marking color:abc_background_cache_hint_selector_material_light:2131034113 used because it matches string pool constant ab
-Marking color:abc_btn_colored_borderless_text_material:2131034114 used because it matches string pool constant ab
-Marking color:abc_btn_colored_text_material:2131034115 used because it matches string pool constant ab
-Marking color:abc_color_highlight_material:2131034116 used because it matches string pool constant ab
-Marking color:abc_decor_view_status_guard:2131034117 used because it matches string pool constant ab
-Marking color:abc_decor_view_status_guard_light:2131034118 used because it matches string pool constant ab
-Marking color:abc_hint_foreground_material_dark:2131034119 used because it matches string pool constant ab
-Marking color:abc_hint_foreground_material_light:2131034120 used because it matches string pool constant ab
-Marking color:abc_primary_text_disable_only_material_dark:2131034121 used because it matches string pool constant ab
-Marking color:abc_primary_text_disable_only_material_light:2131034122 used because it matches string pool constant ab
-Marking color:abc_primary_text_material_dark:2131034123 used because it matches string pool constant ab
-Marking color:abc_primary_text_material_light:2131034124 used because it matches string pool constant ab
-Marking color:abc_search_url_text:2131034125 used because it matches string pool constant ab
-Marking color:abc_search_url_text_normal:2131034126 used because it matches string pool constant ab
-Marking color:abc_search_url_text_pressed:2131034127 used because it matches string pool constant ab
-Marking color:abc_search_url_text_selected:2131034128 used because it matches string pool constant ab
-Marking color:abc_secondary_text_material_dark:2131034129 used because it matches string pool constant ab
-Marking color:abc_secondary_text_material_light:2131034130 used because it matches string pool constant ab
-Marking color:abc_tint_btn_checkable:2131034131 used because it matches string pool constant ab
-Marking color:abc_tint_default:2131034132 used because it matches string pool constant ab
-Marking color:abc_tint_edittext:2131034133 used because it matches string pool constant ab
-Marking color:abc_tint_seek_thumb:2131034134 used because it matches string pool constant ab
-Marking color:abc_tint_spinner:2131034135 used because it matches string pool constant ab
-Marking color:abc_tint_switch_track:2131034136 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_content_inset_material:2131099648 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_content_inset_with_nav:2131099649 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_default_height_material:2131099650 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_default_padding_end_material:2131099651 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_default_padding_start_material:2131099652 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_elevation_material:2131099653 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_icon_vertical_padding_material:2131099654 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_overflow_padding_end_material:2131099655 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_overflow_padding_start_material:2131099656 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_stacked_max_height:2131099657 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_stacked_tab_max_width:2131099658 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_subtitle_bottom_margin_material:2131099659 used because it matches string pool constant ab
-Marking dimen:abc_action_bar_subtitle_top_margin_material:2131099660 used because it matches string pool constant ab
-Marking dimen:abc_action_button_min_height_material:2131099661 used because it matches string pool constant ab
-Marking dimen:abc_action_button_min_width_material:2131099662 used because it matches string pool constant ab
-Marking dimen:abc_action_button_min_width_overflow_material:2131099663 used because it matches string pool constant ab
-Marking dimen:abc_alert_dialog_button_bar_height:2131099664 used because it matches string pool constant ab
-Marking dimen:abc_alert_dialog_button_dimen:2131099665 used because it matches string pool constant ab
-Marking dimen:abc_button_inset_horizontal_material:2131099666 used because it matches string pool constant ab
-Marking dimen:abc_button_inset_vertical_material:2131099667 used because it matches string pool constant ab
-Marking dimen:abc_button_padding_horizontal_material:2131099668 used because it matches string pool constant ab
-Marking dimen:abc_button_padding_vertical_material:2131099669 used because it matches string pool constant ab
-Marking dimen:abc_cascading_menus_min_smallest_width:2131099670 used because it matches string pool constant ab
-Marking dimen:abc_config_prefDialogWidth:2131099671 used because it matches string pool constant ab
-Marking dimen:abc_control_corner_material:2131099672 used because it matches string pool constant ab
-Marking dimen:abc_control_inset_material:2131099673 used because it matches string pool constant ab
-Marking dimen:abc_control_padding_material:2131099674 used because it matches string pool constant ab
-Marking dimen:abc_dialog_corner_radius_material:2131099675 used because it matches string pool constant ab
-Marking dimen:abc_dialog_fixed_height_major:2131099676 used because it matches string pool constant ab
-Marking dimen:abc_dialog_fixed_height_minor:2131099677 used because it matches string pool constant ab
-Marking dimen:abc_dialog_fixed_width_major:2131099678 used because it matches string pool constant ab
-Marking dimen:abc_dialog_fixed_width_minor:2131099679 used because it matches string pool constant ab
-Marking dimen:abc_dialog_list_padding_bottom_no_buttons:2131099680 used because it matches string pool constant ab
-Marking dimen:abc_dialog_list_padding_top_no_title:2131099681 used because it matches string pool constant ab
-Marking dimen:abc_dialog_min_width_major:2131099682 used because it matches string pool constant ab
-Marking dimen:abc_dialog_min_width_minor:2131099683 used because it matches string pool constant ab
-Marking dimen:abc_dialog_padding_material:2131099684 used because it matches string pool constant ab
-Marking dimen:abc_dialog_padding_top_material:2131099685 used because it matches string pool constant ab
-Marking dimen:abc_dialog_title_divider_material:2131099686 used because it matches string pool constant ab
-Marking dimen:abc_disabled_alpha_material_dark:2131099687 used because it matches string pool constant ab
-Marking dimen:abc_disabled_alpha_material_light:2131099688 used because it matches string pool constant ab
-Marking dimen:abc_dropdownitem_icon_width:2131099689 used because it matches string pool constant ab
-Marking dimen:abc_dropdownitem_text_padding_left:2131099690 used because it matches string pool constant ab
-Marking dimen:abc_dropdownitem_text_padding_right:2131099691 used because it matches string pool constant ab
-Marking dimen:abc_edit_text_inset_bottom_material:2131099692 used because it matches string pool constant ab
-Marking dimen:abc_edit_text_inset_horizontal_material:2131099693 used because it matches string pool constant ab
-Marking dimen:abc_edit_text_inset_top_material:2131099694 used because it matches string pool constant ab
-Marking dimen:abc_floating_window_z:2131099695 used because it matches string pool constant ab
-Marking dimen:abc_list_item_height_large_material:2131099696 used because it matches string pool constant ab
-Marking dimen:abc_list_item_height_material:2131099697 used because it matches string pool constant ab
-Marking dimen:abc_list_item_height_small_material:2131099698 used because it matches string pool constant ab
-Marking dimen:abc_list_item_padding_horizontal_material:2131099699 used because it matches string pool constant ab
-Marking dimen:abc_panel_menu_list_width:2131099700 used because it matches string pool constant ab
-Marking dimen:abc_progress_bar_height_material:2131099701 used because it matches string pool constant ab
-Marking dimen:abc_search_view_preferred_height:2131099702 used because it matches string pool constant ab
-Marking dimen:abc_search_view_preferred_width:2131099703 used because it matches string pool constant ab
-Marking dimen:abc_seekbar_track_background_height_material:2131099704 used because it matches string pool constant ab
-Marking dimen:abc_seekbar_track_progress_height_material:2131099705 used because it matches string pool constant ab
-Marking dimen:abc_select_dialog_padding_start_material:2131099706 used because it matches string pool constant ab
-Marking dimen:abc_star_big:2131099707 used because it matches string pool constant ab
-Marking dimen:abc_star_medium:2131099708 used because it matches string pool constant ab
-Marking dimen:abc_star_small:2131099709 used because it matches string pool constant ab
-Marking dimen:abc_switch_padding:2131099710 used because it matches string pool constant ab
-Marking dimen:abc_text_size_body_1_material:2131099711 used because it matches string pool constant ab
-Marking dimen:abc_text_size_body_2_material:2131099712 used because it matches string pool constant ab
-Marking dimen:abc_text_size_button_material:2131099713 used because it matches string pool constant ab
-Marking dimen:abc_text_size_caption_material:2131099714 used because it matches string pool constant ab
-Marking dimen:abc_text_size_display_1_material:2131099715 used because it matches string pool constant ab
-Marking dimen:abc_text_size_display_2_material:2131099716 used because it matches string pool constant ab
-Marking dimen:abc_text_size_display_3_material:2131099717 used because it matches string pool constant ab
-Marking dimen:abc_text_size_display_4_material:2131099718 used because it matches string pool constant ab
-Marking dimen:abc_text_size_headline_material:2131099719 used because it matches string pool constant ab
-Marking dimen:abc_text_size_large_material:2131099720 used because it matches string pool constant ab
-Marking dimen:abc_text_size_medium_material:2131099721 used because it matches string pool constant ab
-Marking dimen:abc_text_size_menu_header_material:2131099722 used because it matches string pool constant ab
-Marking dimen:abc_text_size_menu_material:2131099723 used because it matches string pool constant ab
-Marking dimen:abc_text_size_small_material:2131099724 used because it matches string pool constant ab
-Marking dimen:abc_text_size_subhead_material:2131099725 used because it matches string pool constant ab
-Marking dimen:abc_text_size_subtitle_material_toolbar:2131099726 used because it matches string pool constant ab
-Marking dimen:abc_text_size_title_material:2131099727 used because it matches string pool constant ab
-Marking dimen:abc_text_size_title_material_toolbar:2131099728 used because it matches string pool constant ab
-Marking drawable:abc_ab_share_pack_mtrl_alpha:2131165224 used because it matches string pool constant ab
-Marking drawable:abc_action_bar_item_background_material:2131165225 used because it matches string pool constant ab
-Marking drawable:abc_btn_borderless_material:2131165226 used because it matches string pool constant ab
-Marking drawable:abc_btn_check_material:2131165227 used because it matches string pool constant ab
-Marking drawable:abc_btn_check_material_anim:2131165228 used because it matches string pool constant ab
-Marking drawable:abc_btn_check_to_on_mtrl_000:2131165229 used because it matches string pool constant ab
-Marking drawable:abc_btn_check_to_on_mtrl_015:2131165230 used because it matches string pool constant ab
-Marking drawable:abc_btn_colored_material:2131165231 used because it matches string pool constant ab
-Marking drawable:abc_btn_default_mtrl_shape:2131165232 used because it matches string pool constant ab
-Marking drawable:abc_btn_radio_material:2131165233 used because it matches string pool constant ab
-Marking drawable:abc_btn_radio_material_anim:2131165234 used because it matches string pool constant ab
-Marking drawable:abc_btn_radio_to_on_mtrl_000:2131165235 used because it matches string pool constant ab
-Marking drawable:abc_btn_radio_to_on_mtrl_015:2131165236 used because it matches string pool constant ab
-Marking drawable:abc_btn_switch_to_on_mtrl_00001:2131165237 used because it matches string pool constant ab
-Marking drawable:abc_btn_switch_to_on_mtrl_00012:2131165238 used because it matches string pool constant ab
-Marking drawable:abc_cab_background_internal_bg:2131165239 used because it matches string pool constant ab
-Marking drawable:abc_cab_background_top_material:2131165240 used because it matches string pool constant ab
-Marking drawable:abc_cab_background_top_mtrl_alpha:2131165241 used because it matches string pool constant ab
-Marking drawable:abc_control_background_material:2131165242 used because it matches string pool constant ab
-Marking drawable:abc_dialog_material_background:2131165243 used because it matches string pool constant ab
-Marking drawable:abc_edit_text_material:2131165244 used because it matches string pool constant ab
-Marking drawable:abc_ic_ab_back_material:2131165245 used because it matches string pool constant ab
-Marking drawable:abc_ic_arrow_drop_right_black_24dp:2131165246 used because it matches string pool constant ab
-Marking drawable:abc_ic_clear_material:2131165247 used because it matches string pool constant ab
-Marking drawable:abc_ic_commit_search_api_mtrl_alpha:2131165248 used because it matches string pool constant ab
-Marking drawable:abc_ic_go_search_api_material:2131165249 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_copy_mtrl_am_alpha:2131165250 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_cut_mtrl_alpha:2131165251 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_overflow_material:2131165252 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_paste_mtrl_am_alpha:2131165253 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_selectall_mtrl_alpha:2131165254 used because it matches string pool constant ab
-Marking drawable:abc_ic_menu_share_mtrl_alpha:2131165255 used because it matches string pool constant ab
-Marking drawable:abc_ic_search_api_material:2131165256 used because it matches string pool constant ab
-Marking drawable:abc_ic_voice_search_api_material:2131165257 used because it matches string pool constant ab
-Marking drawable:abc_item_background_holo_dark:2131165258 used because it matches string pool constant ab
-Marking drawable:abc_item_background_holo_light:2131165259 used because it matches string pool constant ab
-Marking drawable:abc_list_divider_material:2131165260 used because it matches string pool constant ab
-Marking drawable:abc_list_divider_mtrl_alpha:2131165261 used because it matches string pool constant ab
-Marking drawable:abc_list_focused_holo:2131165262 used because it matches string pool constant ab
-Marking drawable:abc_list_longpressed_holo:2131165263 used because it matches string pool constant ab
-Marking drawable:abc_list_pressed_holo_dark:2131165264 used because it matches string pool constant ab
-Marking drawable:abc_list_pressed_holo_light:2131165265 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_background_transition_holo_dark:2131165266 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_background_transition_holo_light:2131165267 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_disabled_holo_dark:2131165268 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_disabled_holo_light:2131165269 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_holo_dark:2131165270 used because it matches string pool constant ab
-Marking drawable:abc_list_selector_holo_light:2131165271 used because it matches string pool constant ab
-Marking drawable:abc_menu_hardkey_panel_mtrl_mult:2131165272 used because it matches string pool constant ab
-Marking drawable:abc_popup_background_mtrl_mult:2131165273 used because it matches string pool constant ab
-Marking drawable:abc_ratingbar_indicator_material:2131165274 used because it matches string pool constant ab
-Marking drawable:abc_ratingbar_material:2131165275 used because it matches string pool constant ab
-Marking drawable:abc_ratingbar_small_material:2131165276 used because it matches string pool constant ab
-Marking drawable:abc_scrubber_control_off_mtrl_alpha:2131165277 used because it matches string pool constant ab
-Marking drawable:abc_scrubber_control_to_pressed_mtrl_000:2131165278 used because it matches string pool constant ab
-Marking drawable:abc_scrubber_control_to_pressed_mtrl_005:2131165279 used because it matches string pool constant ab
-Marking drawable:abc_scrubber_primary_mtrl_alpha:2131165280 used because it matches string pool constant ab
-Marking drawable:abc_scrubber_track_mtrl_alpha:2131165281 used because it matches string pool constant ab
-Marking drawable:abc_seekbar_thumb_material:2131165282 used because it matches string pool constant ab
-Marking drawable:abc_seekbar_tick_mark_material:2131165283 used because it matches string pool constant ab
-Marking drawable:abc_seekbar_track_material:2131165284 used because it matches string pool constant ab
-Marking drawable:abc_spinner_mtrl_am_alpha:2131165285 used because it matches string pool constant ab
-Marking drawable:abc_spinner_textfield_background_material:2131165286 used because it matches string pool constant ab
-Marking drawable:abc_star_black_48dp:2131165287 used because it matches string pool constant ab
-Marking drawable:abc_star_half_black_48dp:2131165288 used because it matches string pool constant ab
-Marking drawable:abc_switch_thumb_material:2131165289 used because it matches string pool constant ab
-Marking drawable:abc_switch_track_mtrl_alpha:2131165290 used because it matches string pool constant ab
-Marking drawable:abc_tab_indicator_material:2131165291 used because it matches string pool constant ab
-Marking drawable:abc_tab_indicator_mtrl_alpha:2131165292 used because it matches string pool constant ab
-Marking drawable:abc_text_cursor_material:2131165293 used because it matches string pool constant ab
-Marking drawable:abc_text_select_handle_left_mtrl:2131165294 used because it matches string pool constant ab
-Marking drawable:abc_text_select_handle_middle_mtrl:2131165295 used because it matches string pool constant ab
-Marking drawable:abc_text_select_handle_right_mtrl:2131165296 used because it matches string pool constant ab
-Marking drawable:abc_textfield_activated_mtrl_alpha:2131165297 used because it matches string pool constant ab
-Marking drawable:abc_textfield_default_mtrl_alpha:2131165298 used because it matches string pool constant ab
-Marking drawable:abc_textfield_search_activated_mtrl_alpha:2131165299 used because it matches string pool constant ab
-Marking drawable:abc_textfield_search_default_mtrl_alpha:2131165300 used because it matches string pool constant ab
-Marking drawable:abc_textfield_search_material:2131165301 used because it matches string pool constant ab
-Marking drawable:abc_vector_test:2131165302 used because it matches string pool constant ab
-Marking integer:abc_config_activityDefaultDur:2131296256 used because it matches string pool constant ab
-Marking integer:abc_config_activityShortDur:2131296257 used because it matches string pool constant ab
-Marking layout:abc_action_bar_title_item:2131427328 used because it matches string pool constant ab
-Marking layout:abc_action_bar_up_container:2131427329 used because it matches string pool constant ab
-Marking layout:abc_action_menu_item_layout:2131427330 used because it matches string pool constant ab
-Marking layout:abc_action_menu_layout:2131427331 used because it matches string pool constant ab
-Marking layout:abc_action_mode_bar:2131427332 used because it matches string pool constant ab
-Marking layout:abc_action_mode_close_item_material:2131427333 used because it matches string pool constant ab
-Marking layout:abc_activity_chooser_view:2131427334 used because it matches string pool constant ab
-Marking layout:abc_activity_chooser_view_list_item:2131427335 used because it matches string pool constant ab
-Marking layout:abc_alert_dialog_button_bar_material:2131427336 used because it matches string pool constant ab
-Marking layout:abc_alert_dialog_material:2131427337 used because it matches string pool constant ab
-Marking layout:abc_alert_dialog_title_material:2131427338 used because it matches string pool constant ab
-Marking layout:abc_cascading_menu_item_layout:2131427339 used because it matches string pool constant ab
-Marking layout:abc_dialog_title_material:2131427340 used because it matches string pool constant ab
-Marking layout:abc_expanded_menu_layout:2131427341 used because it matches string pool constant ab
-Marking layout:abc_list_menu_item_checkbox:2131427342 used because it matches string pool constant ab
-Marking layout:abc_list_menu_item_icon:2131427343 used because it matches string pool constant ab
-Marking layout:abc_list_menu_item_layout:2131427344 used because it matches string pool constant ab
-Marking layout:abc_list_menu_item_radio:2131427345 used because it matches string pool constant ab
-Marking layout:abc_popup_menu_header_item_layout:2131427346 used because it matches string pool constant ab
-Marking layout:abc_popup_menu_item_layout:2131427347 used because it matches string pool constant ab
-Marking layout:abc_screen_content_include:2131427348 used because it matches string pool constant ab
-Marking layout:abc_screen_simple:2131427349 used because it matches string pool constant ab
-Marking layout:abc_screen_simple_overlay_action_mode:2131427350 used because it matches string pool constant ab
-Marking layout:abc_screen_toolbar:2131427351 used because it matches string pool constant ab
-Marking layout:abc_search_dropdown_item_icons_2line:2131427352 used because it matches string pool constant ab
-Marking layout:abc_search_view:2131427353 used because it matches string pool constant ab
-Marking layout:abc_select_dialog_material:2131427354 used because it matches string pool constant ab
-Marking layout:abc_tooltip:2131427355 used because it matches string pool constant ab
-Marking string:abc_action_bar_home_description:2131689472 used because it matches string pool constant ab
-Marking string:abc_action_bar_up_description:2131689473 used because it matches string pool constant ab
-Marking string:abc_action_menu_overflow_description:2131689474 used because it matches string pool constant ab
-Marking string:abc_action_mode_done:2131689475 used because it matches string pool constant ab
-Marking string:abc_activity_chooser_view_see_all:2131689476 used because it matches string pool constant ab
-Marking string:abc_activitychooserview_choose_application:2131689477 used because it matches string pool constant ab
-Marking string:abc_capital_off:2131689478 used because it matches string pool constant ab
-Marking string:abc_capital_on:2131689479 used because it matches string pool constant ab
-Marking string:abc_menu_alt_shortcut_label:2131689480 used because it matches string pool constant ab
-Marking string:abc_menu_ctrl_shortcut_label:2131689481 used because it matches string pool constant ab
-Marking string:abc_menu_delete_shortcut_label:2131689482 used because it matches string pool constant ab
-Marking string:abc_menu_enter_shortcut_label:2131689483 used because it matches string pool constant ab
-Marking string:abc_menu_function_shortcut_label:2131689484 used because it matches string pool constant ab
-Marking string:abc_menu_meta_shortcut_label:2131689485 used because it matches string pool constant ab
-Marking string:abc_menu_shift_shortcut_label:2131689486 used because it matches string pool constant ab
-Marking string:abc_menu_space_shortcut_label:2131689487 used because it matches string pool constant ab
-Marking string:abc_menu_sym_shortcut_label:2131689488 used because it matches string pool constant ab
-Marking string:abc_prepend_shortcut_label:2131689489 used because it matches string pool constant ab
-Marking string:abc_search_hint:2131689490 used because it matches string pool constant ab
-Marking string:abc_searchview_description_clear:2131689491 used because it matches string pool constant ab
-Marking string:abc_searchview_description_query:2131689492 used because it matches string pool constant ab
-Marking string:abc_searchview_description_search:2131689493 used because it matches string pool constant ab
-Marking string:abc_searchview_description_submit:2131689494 used because it matches string pool constant ab
-Marking string:abc_searchview_description_voice:2131689495 used because it matches string pool constant ab
-Marking string:abc_shareactionprovider_share_with:2131689496 used because it matches string pool constant ab
-Marking string:abc_shareactionprovider_share_with_application:2131689497 used because it matches string pool constant ab
-Marking string:abc_toolbar_collapse_description:2131689498 used because it matches string pool constant ab
 Marking id:continuousVelocity:2131230848 used because it matches string pool constant continuousVelocity
 Marking id:continuousVelocity:2131230848 used because it matches string pool constant continuousVelocity
 Marking attr:alertDialogButtonGroupStyle:2130903081 used because it matches string pool constant al
@@ -4132,25 +3876,25 @@ Marking animator:fragment_open_exit:2130837512 used because it matches string po
 Marking id:fragment_container_view_tag:2131230915 used because it matches string pool constant fragment
 Marking attr:viewTransitionOnCross:2130904256 used because it matches string pool constant viewTransitionOnCross
 Marking attr:viewTransitionOnCross:2130904256 used because it matches string pool constant viewTransitionOnCross
-@anim/abc_fade_in : reachable=true
-@anim/abc_fade_out : reachable=true
-@anim/abc_grow_fade_in_from_bottom : reachable=true
+@anim/abc_fade_in : reachable=false
+@anim/abc_fade_out : reachable=false
+@anim/abc_grow_fade_in_from_bottom : reachable=false
     @integer/abc_config_activityDefaultDur
     @integer/abc_config_activityShortDur
-@anim/abc_popup_enter : reachable=true
+@anim/abc_popup_enter : reachable=false
     @integer/abc_config_activityShortDur
-@anim/abc_popup_exit : reachable=true
+@anim/abc_popup_exit : reachable=false
     @integer/abc_config_activityShortDur
-@anim/abc_shrink_fade_out_from_bottom : reachable=true
+@anim/abc_shrink_fade_out_from_bottom : reachable=false
     @integer/abc_config_activityDefaultDur
     @integer/abc_config_activityShortDur
-@anim/abc_slide_in_bottom : reachable=true
-@anim/abc_slide_in_top : reachable=true
-@anim/abc_slide_out_bottom : reachable=true
-@anim/abc_slide_out_top : reachable=true
-@anim/abc_tooltip_enter : reachable=true
+@anim/abc_slide_in_bottom : reachable=false
+@anim/abc_slide_in_top : reachable=false
+@anim/abc_slide_out_bottom : reachable=false
+@anim/abc_slide_out_top : reachable=false
+@anim/abc_tooltip_enter : reachable=false
     @integer/config_tooltipAnimTime
-@anim/abc_tooltip_exit : reachable=true
+@anim/abc_tooltip_exit : reachable=false
     @integer/config_tooltipAnimTime
 @anim/btn_checkbox_to_checked_box_inner_merged_animation : reachable=false
     @interpolator/btn_checkbox_unchecked_mtrl_animation_interpolator_1
@@ -5592,50 +5336,50 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @attr/yearStyle : reachable=false
 @attr/yearTodayStyle : reachable=false
 @bool/abc_action_bar_embed_tabs : reachable=true
-@bool/abc_config_actionMenuItemAllCaps : reachable=true
+@bool/abc_config_actionMenuItemAllCaps : reachable=false
 @bool/mtrl_btn_textappearance_all_caps : reachable=false
-@color/abc_background_cache_hint_selector_material_dark : reachable=true
+@color/abc_background_cache_hint_selector_material_dark : reachable=false
     @color/background_material_dark
-@color/abc_background_cache_hint_selector_material_light : reachable=true
+@color/abc_background_cache_hint_selector_material_light : reachable=false
     @color/background_material_light
-@color/abc_btn_colored_borderless_text_material : reachable=true
+@color/abc_btn_colored_borderless_text_material : reachable=false
     @attr/colorAccent
-@color/abc_btn_colored_text_material : reachable=true
-@color/abc_color_highlight_material : reachable=true
+@color/abc_btn_colored_text_material : reachable=false
+@color/abc_color_highlight_material : reachable=false
     @dimen/highlight_alpha_material_colored
 @color/abc_decor_view_status_guard : reachable=true
 @color/abc_decor_view_status_guard_light : reachable=true
-@color/abc_hint_foreground_material_dark : reachable=true
+@color/abc_hint_foreground_material_dark : reachable=false
     @color/foreground_material_dark
     @dimen/hint_pressed_alpha_material_dark
     @dimen/hint_alpha_material_dark
-@color/abc_hint_foreground_material_light : reachable=true
+@color/abc_hint_foreground_material_light : reachable=false
     @color/foreground_material_light
     @dimen/hint_pressed_alpha_material_light
     @dimen/hint_alpha_material_light
-@color/abc_primary_text_disable_only_material_dark : reachable=true
+@color/abc_primary_text_disable_only_material_dark : reachable=false
     @color/bright_foreground_disabled_material_dark
     @color/bright_foreground_material_dark
-@color/abc_primary_text_disable_only_material_light : reachable=true
+@color/abc_primary_text_disable_only_material_light : reachable=false
     @color/bright_foreground_disabled_material_light
     @color/bright_foreground_material_light
-@color/abc_primary_text_material_dark : reachable=true
+@color/abc_primary_text_material_dark : reachable=false
     @color/primary_text_disabled_material_dark
     @color/primary_text_default_material_dark
-@color/abc_primary_text_material_light : reachable=true
+@color/abc_primary_text_material_light : reachable=false
     @color/primary_text_disabled_material_light
     @color/primary_text_default_material_light
-@color/abc_search_url_text : reachable=true
+@color/abc_search_url_text : reachable=false
     @color/abc_search_url_text_pressed
     @color/abc_search_url_text_selected
     @color/abc_search_url_text_normal
-@color/abc_search_url_text_normal : reachable=true
-@color/abc_search_url_text_pressed : reachable=true
-@color/abc_search_url_text_selected : reachable=true
-@color/abc_secondary_text_material_dark : reachable=true
+@color/abc_search_url_text_normal : reachable=false
+@color/abc_search_url_text_pressed : reachable=false
+@color/abc_search_url_text_selected : reachable=false
+@color/abc_secondary_text_material_dark : reachable=false
     @color/secondary_text_disabled_material_dark
     @color/secondary_text_default_material_dark
-@color/abc_secondary_text_material_light : reachable=true
+@color/abc_secondary_text_material_light : reachable=false
     @color/secondary_text_disabled_material_light
     @color/secondary_text_default_material_light
 @color/abc_tint_btn_checkable : reachable=true
@@ -7142,90 +6886,90 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @color/tooltip_background_dark : reachable=true
 @color/tooltip_background_light : reachable=true
 @color/white : reachable=false
-@dimen/abc_action_bar_content_inset_material : reachable=true
-@dimen/abc_action_bar_content_inset_with_nav : reachable=true
-@dimen/abc_action_bar_default_height_material : reachable=true
-@dimen/abc_action_bar_default_padding_end_material : reachable=true
-@dimen/abc_action_bar_default_padding_start_material : reachable=true
-@dimen/abc_action_bar_elevation_material : reachable=true
-@dimen/abc_action_bar_icon_vertical_padding_material : reachable=true
-@dimen/abc_action_bar_overflow_padding_end_material : reachable=true
-@dimen/abc_action_bar_overflow_padding_start_material : reachable=true
+@dimen/abc_action_bar_content_inset_material : reachable=false
+@dimen/abc_action_bar_content_inset_with_nav : reachable=false
+@dimen/abc_action_bar_default_height_material : reachable=false
+@dimen/abc_action_bar_default_padding_end_material : reachable=false
+@dimen/abc_action_bar_default_padding_start_material : reachable=false
+@dimen/abc_action_bar_elevation_material : reachable=false
+@dimen/abc_action_bar_icon_vertical_padding_material : reachable=false
+@dimen/abc_action_bar_overflow_padding_end_material : reachable=false
+@dimen/abc_action_bar_overflow_padding_start_material : reachable=false
 @dimen/abc_action_bar_stacked_max_height : reachable=true
 @dimen/abc_action_bar_stacked_tab_max_width : reachable=true
-@dimen/abc_action_bar_subtitle_bottom_margin_material : reachable=true
-@dimen/abc_action_bar_subtitle_top_margin_material : reachable=true
-@dimen/abc_action_button_min_height_material : reachable=true
-@dimen/abc_action_button_min_width_material : reachable=true
-@dimen/abc_action_button_min_width_overflow_material : reachable=true
-@dimen/abc_alert_dialog_button_bar_height : reachable=true
-@dimen/abc_alert_dialog_button_dimen : reachable=true
-@dimen/abc_button_inset_horizontal_material : reachable=true
+@dimen/abc_action_bar_subtitle_bottom_margin_material : reachable=false
+@dimen/abc_action_bar_subtitle_top_margin_material : reachable=false
+@dimen/abc_action_button_min_height_material : reachable=false
+@dimen/abc_action_button_min_width_material : reachable=false
+@dimen/abc_action_button_min_width_overflow_material : reachable=false
+@dimen/abc_alert_dialog_button_bar_height : reachable=false
+@dimen/abc_alert_dialog_button_dimen : reachable=false
+@dimen/abc_button_inset_horizontal_material : reachable=false
     @dimen/abc_control_inset_material
-@dimen/abc_button_inset_vertical_material : reachable=true
-@dimen/abc_button_padding_horizontal_material : reachable=true
-@dimen/abc_button_padding_vertical_material : reachable=true
+@dimen/abc_button_inset_vertical_material : reachable=false
+@dimen/abc_button_padding_horizontal_material : reachable=false
+@dimen/abc_button_padding_vertical_material : reachable=false
     @dimen/abc_control_padding_material
 @dimen/abc_cascading_menus_min_smallest_width : reachable=true
 @dimen/abc_config_prefDialogWidth : reachable=true
-@dimen/abc_control_corner_material : reachable=true
-@dimen/abc_control_inset_material : reachable=true
-@dimen/abc_control_padding_material : reachable=true
-@dimen/abc_dialog_corner_radius_material : reachable=true
-@dimen/abc_dialog_fixed_height_major : reachable=true
-@dimen/abc_dialog_fixed_height_minor : reachable=true
-@dimen/abc_dialog_fixed_width_major : reachable=true
-@dimen/abc_dialog_fixed_width_minor : reachable=true
-@dimen/abc_dialog_list_padding_bottom_no_buttons : reachable=true
-@dimen/abc_dialog_list_padding_top_no_title : reachable=true
-@dimen/abc_dialog_min_width_major : reachable=true
-@dimen/abc_dialog_min_width_minor : reachable=true
-@dimen/abc_dialog_padding_material : reachable=true
-@dimen/abc_dialog_padding_top_material : reachable=true
-@dimen/abc_dialog_title_divider_material : reachable=true
-@dimen/abc_disabled_alpha_material_dark : reachable=true
-@dimen/abc_disabled_alpha_material_light : reachable=true
+@dimen/abc_control_corner_material : reachable=false
+@dimen/abc_control_inset_material : reachable=false
+@dimen/abc_control_padding_material : reachable=false
+@dimen/abc_dialog_corner_radius_material : reachable=false
+@dimen/abc_dialog_fixed_height_major : reachable=false
+@dimen/abc_dialog_fixed_height_minor : reachable=false
+@dimen/abc_dialog_fixed_width_major : reachable=false
+@dimen/abc_dialog_fixed_width_minor : reachable=false
+@dimen/abc_dialog_list_padding_bottom_no_buttons : reachable=false
+@dimen/abc_dialog_list_padding_top_no_title : reachable=false
+@dimen/abc_dialog_min_width_major : reachable=false
+@dimen/abc_dialog_min_width_minor : reachable=false
+@dimen/abc_dialog_padding_material : reachable=false
+@dimen/abc_dialog_padding_top_material : reachable=false
+@dimen/abc_dialog_title_divider_material : reachable=false
+@dimen/abc_disabled_alpha_material_dark : reachable=false
+@dimen/abc_disabled_alpha_material_light : reachable=false
 @dimen/abc_dropdownitem_icon_width : reachable=true
 @dimen/abc_dropdownitem_text_padding_left : reachable=true
-@dimen/abc_dropdownitem_text_padding_right : reachable=true
-@dimen/abc_edit_text_inset_bottom_material : reachable=true
-@dimen/abc_edit_text_inset_horizontal_material : reachable=true
-@dimen/abc_edit_text_inset_top_material : reachable=true
-@dimen/abc_floating_window_z : reachable=true
-@dimen/abc_list_item_height_large_material : reachable=true
-@dimen/abc_list_item_height_material : reachable=true
-@dimen/abc_list_item_height_small_material : reachable=true
-@dimen/abc_list_item_padding_horizontal_material : reachable=true
+@dimen/abc_dropdownitem_text_padding_right : reachable=false
+@dimen/abc_edit_text_inset_bottom_material : reachable=false
+@dimen/abc_edit_text_inset_horizontal_material : reachable=false
+@dimen/abc_edit_text_inset_top_material : reachable=false
+@dimen/abc_floating_window_z : reachable=false
+@dimen/abc_list_item_height_large_material : reachable=false
+@dimen/abc_list_item_height_material : reachable=false
+@dimen/abc_list_item_height_small_material : reachable=false
+@dimen/abc_list_item_padding_horizontal_material : reachable=false
     @dimen/abc_action_bar_content_inset_material
-@dimen/abc_panel_menu_list_width : reachable=true
-@dimen/abc_progress_bar_height_material : reachable=true
+@dimen/abc_panel_menu_list_width : reachable=false
+@dimen/abc_progress_bar_height_material : reachable=false
 @dimen/abc_search_view_preferred_height : reachable=true
 @dimen/abc_search_view_preferred_width : reachable=true
-@dimen/abc_seekbar_track_background_height_material : reachable=true
-@dimen/abc_seekbar_track_progress_height_material : reachable=true
-@dimen/abc_select_dialog_padding_start_material : reachable=true
+@dimen/abc_seekbar_track_background_height_material : reachable=false
+@dimen/abc_seekbar_track_progress_height_material : reachable=false
+@dimen/abc_select_dialog_padding_start_material : reachable=false
 @dimen/abc_star_big : reachable=true
 @dimen/abc_star_medium : reachable=true
 @dimen/abc_star_small : reachable=true
-@dimen/abc_switch_padding : reachable=true
-@dimen/abc_text_size_body_1_material : reachable=true
-@dimen/abc_text_size_body_2_material : reachable=true
-@dimen/abc_text_size_button_material : reachable=true
-@dimen/abc_text_size_caption_material : reachable=true
-@dimen/abc_text_size_display_1_material : reachable=true
-@dimen/abc_text_size_display_2_material : reachable=true
-@dimen/abc_text_size_display_3_material : reachable=true
-@dimen/abc_text_size_display_4_material : reachable=true
-@dimen/abc_text_size_headline_material : reachable=true
-@dimen/abc_text_size_large_material : reachable=true
-@dimen/abc_text_size_medium_material : reachable=true
-@dimen/abc_text_size_menu_header_material : reachable=true
-@dimen/abc_text_size_menu_material : reachable=true
-@dimen/abc_text_size_small_material : reachable=true
-@dimen/abc_text_size_subhead_material : reachable=true
-@dimen/abc_text_size_subtitle_material_toolbar : reachable=true
-@dimen/abc_text_size_title_material : reachable=true
-@dimen/abc_text_size_title_material_toolbar : reachable=true
+@dimen/abc_switch_padding : reachable=false
+@dimen/abc_text_size_body_1_material : reachable=false
+@dimen/abc_text_size_body_2_material : reachable=false
+@dimen/abc_text_size_button_material : reachable=false
+@dimen/abc_text_size_caption_material : reachable=false
+@dimen/abc_text_size_display_1_material : reachable=false
+@dimen/abc_text_size_display_2_material : reachable=false
+@dimen/abc_text_size_display_3_material : reachable=false
+@dimen/abc_text_size_display_4_material : reachable=false
+@dimen/abc_text_size_headline_material : reachable=false
+@dimen/abc_text_size_large_material : reachable=false
+@dimen/abc_text_size_medium_material : reachable=false
+@dimen/abc_text_size_menu_header_material : reachable=false
+@dimen/abc_text_size_menu_material : reachable=false
+@dimen/abc_text_size_small_material : reachable=false
+@dimen/abc_text_size_subhead_material : reachable=false
+@dimen/abc_text_size_subtitle_material_toolbar : reachable=false
+@dimen/abc_text_size_title_material : reachable=false
+@dimen/abc_text_size_title_material_toolbar : reachable=false
 @dimen/appcompat_dialog_background_inset : reachable=false
 @dimen/cardview_compat_inset_shadow : reachable=true
 @dimen/cardview_default_elevation : reachable=false
@@ -8218,7 +7962,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @string/mtrl_switch_thumb_path_pressed
     @string/mtrl_switch_thumb_path_unchecked
 @drawable/abc_ab_share_pack_mtrl_alpha : reachable=true
-@drawable/abc_action_bar_item_background_material : reachable=true
+@drawable/abc_action_bar_item_background_material : reachable=false
 @drawable/abc_btn_borderless_material : reachable=true
     @drawable/abc_btn_default_mtrl_shape
 @drawable/abc_btn_check_material : reachable=true
@@ -8229,8 +7973,8 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @drawable/btn_checkbox_unchecked_mtrl
     @drawable/btn_checkbox_unchecked_to_checked_mtrl_animation
     @drawable/btn_checkbox_checked_to_unchecked_mtrl_animation
-@drawable/abc_btn_check_to_on_mtrl_000 : reachable=true
-@drawable/abc_btn_check_to_on_mtrl_015 : reachable=true
+@drawable/abc_btn_check_to_on_mtrl_000 : reachable=false
+@drawable/abc_btn_check_to_on_mtrl_015 : reachable=false
 @drawable/abc_btn_colored_material : reachable=true
     @dimen/abc_button_inset_horizontal_material
     @dimen/abc_button_inset_vertical_material
@@ -8251,14 +7995,14 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @drawable/btn_radio_off_mtrl
     @drawable/btn_radio_on_to_off_mtrl_animation
     @drawable/btn_radio_off_to_on_mtrl_animation
-@drawable/abc_btn_radio_to_on_mtrl_000 : reachable=true
-@drawable/abc_btn_radio_to_on_mtrl_015 : reachable=true
-@drawable/abc_btn_switch_to_on_mtrl_00001 : reachable=true
-@drawable/abc_btn_switch_to_on_mtrl_00012 : reachable=true
+@drawable/abc_btn_radio_to_on_mtrl_000 : reachable=false
+@drawable/abc_btn_radio_to_on_mtrl_015 : reachable=false
+@drawable/abc_btn_switch_to_on_mtrl_00001 : reachable=false
+@drawable/abc_btn_switch_to_on_mtrl_00012 : reachable=false
 @drawable/abc_cab_background_internal_bg : reachable=true
 @drawable/abc_cab_background_top_material : reachable=true
 @drawable/abc_cab_background_top_mtrl_alpha : reachable=true
-@drawable/abc_control_background_material : reachable=true
+@drawable/abc_control_background_material : reachable=false
     @color/abc_color_highlight_material
 @drawable/abc_dialog_material_background : reachable=true
     @attr/dialogCornerRadius
@@ -8272,51 +8016,51 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @attr/colorControlActivated
 @drawable/abc_ic_ab_back_material : reachable=true
     @attr/colorControlNormal
-@drawable/abc_ic_arrow_drop_right_black_24dp : reachable=true
+@drawable/abc_ic_arrow_drop_right_black_24dp : reachable=false
     @attr/colorControlNormal
-@drawable/abc_ic_clear_material : reachable=true
+@drawable/abc_ic_clear_material : reachable=false
     @attr/colorControlNormal
 @drawable/abc_ic_commit_search_api_mtrl_alpha : reachable=true
-@drawable/abc_ic_go_search_api_material : reachable=true
+@drawable/abc_ic_go_search_api_material : reachable=false
     @attr/colorControlNormal
 @drawable/abc_ic_menu_copy_mtrl_am_alpha : reachable=true
 @drawable/abc_ic_menu_cut_mtrl_alpha : reachable=true
-@drawable/abc_ic_menu_overflow_material : reachable=true
+@drawable/abc_ic_menu_overflow_material : reachable=false
     @attr/colorControlNormal
 @drawable/abc_ic_menu_paste_mtrl_am_alpha : reachable=true
 @drawable/abc_ic_menu_selectall_mtrl_alpha : reachable=true
 @drawable/abc_ic_menu_share_mtrl_alpha : reachable=true
-@drawable/abc_ic_search_api_material : reachable=true
+@drawable/abc_ic_search_api_material : reachable=false
     @attr/colorControlNormal
-@drawable/abc_ic_voice_search_api_material : reachable=true
+@drawable/abc_ic_voice_search_api_material : reachable=false
     @attr/colorControlNormal
-@drawable/abc_item_background_holo_dark : reachable=true
+@drawable/abc_item_background_holo_dark : reachable=false
     @drawable/abc_list_selector_disabled_holo_dark
     @drawable/abc_list_selector_background_transition_holo_dark
     @drawable/abc_list_focused_holo
-@drawable/abc_item_background_holo_light : reachable=true
+@drawable/abc_item_background_holo_light : reachable=false
     @drawable/abc_list_selector_disabled_holo_light
     @drawable/abc_list_selector_background_transition_holo_light
     @drawable/abc_list_focused_holo
-@drawable/abc_list_divider_material : reachable=true
+@drawable/abc_list_divider_material : reachable=false
 @drawable/abc_list_divider_mtrl_alpha : reachable=true
-@drawable/abc_list_focused_holo : reachable=true
-@drawable/abc_list_longpressed_holo : reachable=true
-@drawable/abc_list_pressed_holo_dark : reachable=true
-@drawable/abc_list_pressed_holo_light : reachable=true
-@drawable/abc_list_selector_background_transition_holo_dark : reachable=true
+@drawable/abc_list_focused_holo : reachable=false
+@drawable/abc_list_longpressed_holo : reachable=false
+@drawable/abc_list_pressed_holo_dark : reachable=false
+@drawable/abc_list_pressed_holo_light : reachable=false
+@drawable/abc_list_selector_background_transition_holo_dark : reachable=false
     @drawable/abc_list_pressed_holo_dark
     @drawable/abc_list_longpressed_holo
-@drawable/abc_list_selector_background_transition_holo_light : reachable=true
+@drawable/abc_list_selector_background_transition_holo_light : reachable=false
     @drawable/abc_list_pressed_holo_light
     @drawable/abc_list_longpressed_holo
-@drawable/abc_list_selector_disabled_holo_dark : reachable=true
-@drawable/abc_list_selector_disabled_holo_light : reachable=true
-@drawable/abc_list_selector_holo_dark : reachable=true
+@drawable/abc_list_selector_disabled_holo_dark : reachable=false
+@drawable/abc_list_selector_disabled_holo_light : reachable=false
+@drawable/abc_list_selector_holo_dark : reachable=false
     @drawable/abc_list_selector_disabled_holo_dark
     @drawable/abc_list_selector_background_transition_holo_dark
     @drawable/abc_list_focused_holo
-@drawable/abc_list_selector_holo_light : reachable=true
+@drawable/abc_list_selector_holo_light : reachable=false
     @drawable/abc_list_selector_disabled_holo_light
     @drawable/abc_list_selector_background_transition_holo_light
     @drawable/abc_list_focused_holo
@@ -8325,11 +8069,11 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @drawable/abc_ratingbar_indicator_material : reachable=true
 @drawable/abc_ratingbar_material : reachable=true
 @drawable/abc_ratingbar_small_material : reachable=true
-@drawable/abc_scrubber_control_off_mtrl_alpha : reachable=true
-@drawable/abc_scrubber_control_to_pressed_mtrl_000 : reachable=true
-@drawable/abc_scrubber_control_to_pressed_mtrl_005 : reachable=true
-@drawable/abc_scrubber_primary_mtrl_alpha : reachable=true
-@drawable/abc_scrubber_track_mtrl_alpha : reachable=true
+@drawable/abc_scrubber_control_off_mtrl_alpha : reachable=false
+@drawable/abc_scrubber_control_to_pressed_mtrl_000 : reachable=false
+@drawable/abc_scrubber_control_to_pressed_mtrl_005 : reachable=false
+@drawable/abc_scrubber_primary_mtrl_alpha : reachable=false
+@drawable/abc_scrubber_track_mtrl_alpha : reachable=false
 @drawable/abc_seekbar_thumb_material : reachable=true
     @drawable/abc_scrubber_control_off_mtrl_alpha
     @drawable/abc_scrubber_control_to_pressed_mtrl_005
@@ -8353,7 +8097,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @drawable/abc_switch_track_mtrl_alpha : reachable=true
 @drawable/abc_tab_indicator_material : reachable=true
     @drawable/abc_tab_indicator_mtrl_alpha
-@drawable/abc_tab_indicator_mtrl_alpha : reachable=true
+@drawable/abc_tab_indicator_mtrl_alpha : reachable=false
 @drawable/abc_text_cursor_material : reachable=true
 @drawable/abc_text_select_handle_left_mtrl : reachable=true
 @drawable/abc_text_select_handle_middle_mtrl : reachable=true
@@ -9179,8 +8923,8 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @id/wrap_content_constrained : reachable=true
 @id/x_left : reachable=true
 @id/x_right : reachable=true
-@integer/abc_config_activityDefaultDur : reachable=true
-@integer/abc_config_activityShortDur : reachable=true
+@integer/abc_config_activityDefaultDur : reachable=false
+@integer/abc_config_activityShortDur : reachable=false
 @integer/app_bar_elevation_anim_duration : reachable=true
 @integer/bottom_sheet_slide_duration : reachable=true
 @integer/cancel_button_image_alpha : reachable=true
@@ -9297,7 +9041,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @layout/abc_action_bar_title_item : reachable=true
     @style/RtlOverlay_Widget_AppCompat_ActionBar_TitleItem
     @dimen/abc_action_bar_subtitle_top_margin_material
-@layout/abc_action_bar_up_container : reachable=true
+@layout/abc_action_bar_up_container : reachable=false
     @attr/actionBarItemBackground
 @layout/abc_action_menu_item_layout : reachable=true
     @attr/actionMenuTextAppearance
@@ -9305,7 +9049,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @attr/actionButtonStyle
 @layout/abc_action_menu_layout : reachable=true
     @attr/actionBarDivider
-@layout/abc_action_mode_bar : reachable=true
+@layout/abc_action_mode_bar : reachable=false
     @attr/actionModeStyle
     @attr/actionModeTheme
 @layout/abc_action_mode_close_item_material : reachable=true
@@ -9319,18 +9063,18 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @attr/selectableItemBackground
     @attr/dropdownListPreferredItemHeight
     @attr/textAppearanceLargePopupMenu
-@layout/abc_alert_dialog_button_bar_material : reachable=true
+@layout/abc_alert_dialog_button_bar_material : reachable=false
     @attr/buttonBarStyle
     @attr/buttonBarNeutralButtonStyle
     @attr/buttonBarNegativeButtonStyle
     @attr/buttonBarPositiveButtonStyle
-@layout/abc_alert_dialog_material : reachable=true
+@layout/abc_alert_dialog_material : reachable=false
     @layout/abc_alert_dialog_title_material
     @dimen/abc_dialog_padding_top_material
     @attr/dialogPreferredPadding
     @style/TextAppearance_AppCompat_Subhead
     @layout/abc_alert_dialog_button_bar_material
-@layout/abc_alert_dialog_title_material : reachable=true
+@layout/abc_alert_dialog_title_material : reachable=false
     @attr/dialogPreferredPadding
     @dimen/abc_dialog_padding_top_material
     @dimen/abc_dialog_title_divider_material
@@ -9369,7 +9113,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @style/RtlOverlay_Widget_AppCompat_PopupMenuItem_Text
     @attr/textAppearanceSmallPopupMenu
     @style/RtlOverlay_Widget_AppCompat_PopupMenuItem_SubmenuArrow
-@layout/abc_screen_content_include : reachable=true
+@layout/abc_screen_content_include : reachable=false
 @layout/abc_screen_simple : reachable=true
     @layout/abc_action_mode_bar
     @layout/abc_screen_content_include
@@ -9403,7 +9147,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @attr/selectableItemBackgroundBorderless
     @string/abc_searchview_description_submit
     @string/abc_searchview_description_voice
-@layout/abc_select_dialog_material : reachable=true
+@layout/abc_select_dialog_material : reachable=false
     @dimen/abc_dialog_list_padding_bottom_no_buttons
     @dimen/abc_dialog_list_padding_top_no_title
     @attr/listDividerAlertDialog
@@ -9774,10 +9518,10 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
     @drawable/ic_launcher_background
     @drawable/ic_launcher_foreground
 @plurals/mtrl_badge_content_description : reachable=true
-@string/abc_action_bar_home_description : reachable=true
+@string/abc_action_bar_home_description : reachable=false
 @string/abc_action_bar_up_description : reachable=true
-@string/abc_action_menu_overflow_description : reachable=true
-@string/abc_action_mode_done : reachable=true
+@string/abc_action_menu_overflow_description : reachable=false
+@string/abc_action_mode_done : reachable=false
 @string/abc_activity_chooser_view_see_all : reachable=true
 @string/abc_activitychooserview_choose_application : reachable=true
 @string/abc_capital_off : reachable=true
@@ -9792,15 +9536,15 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @string/abc_menu_space_shortcut_label : reachable=true
 @string/abc_menu_sym_shortcut_label : reachable=true
 @string/abc_prepend_shortcut_label : reachable=true
-@string/abc_search_hint : reachable=true
-@string/abc_searchview_description_clear : reachable=true
-@string/abc_searchview_description_query : reachable=true
+@string/abc_search_hint : reachable=false
+@string/abc_searchview_description_clear : reachable=false
+@string/abc_searchview_description_query : reachable=false
 @string/abc_searchview_description_search : reachable=true
-@string/abc_searchview_description_submit : reachable=true
-@string/abc_searchview_description_voice : reachable=true
+@string/abc_searchview_description_submit : reachable=false
+@string/abc_searchview_description_voice : reachable=false
 @string/abc_shareactionprovider_share_with : reachable=true
 @string/abc_shareactionprovider_share_with_application : reachable=true
-@string/abc_toolbar_collapse_description : reachable=true
+@string/abc_toolbar_collapse_description : reachable=false
 @string/androidx_startup : reachable=true
 @string/app_name : reachable=true
 @string/appbar_scrolling_view_behavior : reachable=false
@@ -18645,18 +18389,6 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @xml/data_extraction_rules : reachable=true
 
 The root reachable resources are:
- anim:abc_fade_in:2130771968
- anim:abc_fade_out:2130771969
- anim:abc_grow_fade_in_from_bottom:2130771970
- anim:abc_popup_enter:2130771971
- anim:abc_popup_exit:2130771972
- anim:abc_shrink_fade_out_from_bottom:2130771973
- anim:abc_slide_in_bottom:2130771974
- anim:abc_slide_in_top:2130771975
- anim:abc_slide_out_bottom:2130771976
- anim:abc_slide_out_top:2130771977
- anim:abc_tooltip_enter:2130771978
- anim:abc_tooltip_exit:2130771979
  anim:fragment_fast_out_extra_slow_in:2130771996
  anim:linear_indeterminate_line1_head_interpolator:2130771997
  anim:linear_indeterminate_line1_tail_interpolator:2130771998
@@ -19422,26 +19154,8 @@ The root reachable resources are:
  attr:windowMinWidthMinor:2130904276
  attr:windowNoTitle:2130904277
  bool:abc_action_bar_embed_tabs:2130968576
- bool:abc_config_actionMenuItemAllCaps:2130968577
- color:abc_background_cache_hint_selector_material_dark:2131034112
- color:abc_background_cache_hint_selector_material_light:2131034113
- color:abc_btn_colored_borderless_text_material:2131034114
- color:abc_btn_colored_text_material:2131034115
- color:abc_color_highlight_material:2131034116
  color:abc_decor_view_status_guard:2131034117
  color:abc_decor_view_status_guard_light:2131034118
- color:abc_hint_foreground_material_dark:2131034119
- color:abc_hint_foreground_material_light:2131034120
- color:abc_primary_text_disable_only_material_dark:2131034121
- color:abc_primary_text_disable_only_material_light:2131034122
- color:abc_primary_text_material_dark:2131034123
- color:abc_primary_text_material_light:2131034124
- color:abc_search_url_text:2131034125
- color:abc_search_url_text_normal:2131034126
- color:abc_search_url_text_pressed:2131034127
- color:abc_search_url_text_selected:2131034128
- color:abc_secondary_text_material_dark:2131034129
- color:abc_secondary_text_material_light:2131034130
  color:abc_tint_btn_checkable:2131034131
  color:abc_tint_default:2131034132
  color:abc_tint_edittext:2131034133
@@ -19546,87 +19260,17 @@ The root reachable resources are:
  color:secondary_text_disabled_material_light:2131034877
  color:tooltip_background_dark:2131034884
  color:tooltip_background_light:2131034885
- dimen:abc_action_bar_content_inset_material:2131099648
- dimen:abc_action_bar_content_inset_with_nav:2131099649
- dimen:abc_action_bar_default_height_material:2131099650
- dimen:abc_action_bar_default_padding_end_material:2131099651
- dimen:abc_action_bar_default_padding_start_material:2131099652
- dimen:abc_action_bar_elevation_material:2131099653
- dimen:abc_action_bar_icon_vertical_padding_material:2131099654
- dimen:abc_action_bar_overflow_padding_end_material:2131099655
- dimen:abc_action_bar_overflow_padding_start_material:2131099656
  dimen:abc_action_bar_stacked_max_height:2131099657
  dimen:abc_action_bar_stacked_tab_max_width:2131099658
- dimen:abc_action_bar_subtitle_bottom_margin_material:2131099659
- dimen:abc_action_bar_subtitle_top_margin_material:2131099660
- dimen:abc_action_button_min_height_material:2131099661
- dimen:abc_action_button_min_width_material:2131099662
- dimen:abc_action_button_min_width_overflow_material:2131099663
- dimen:abc_alert_dialog_button_bar_height:2131099664
- dimen:abc_alert_dialog_button_dimen:2131099665
- dimen:abc_button_inset_horizontal_material:2131099666
- dimen:abc_button_inset_vertical_material:2131099667
- dimen:abc_button_padding_horizontal_material:2131099668
- dimen:abc_button_padding_vertical_material:2131099669
  dimen:abc_cascading_menus_min_smallest_width:2131099670
  dimen:abc_config_prefDialogWidth:2131099671
- dimen:abc_control_corner_material:2131099672
- dimen:abc_control_inset_material:2131099673
- dimen:abc_control_padding_material:2131099674
- dimen:abc_dialog_corner_radius_material:2131099675
- dimen:abc_dialog_fixed_height_major:2131099676
- dimen:abc_dialog_fixed_height_minor:2131099677
- dimen:abc_dialog_fixed_width_major:2131099678
- dimen:abc_dialog_fixed_width_minor:2131099679
- dimen:abc_dialog_list_padding_bottom_no_buttons:2131099680
- dimen:abc_dialog_list_padding_top_no_title:2131099681
- dimen:abc_dialog_min_width_major:2131099682
- dimen:abc_dialog_min_width_minor:2131099683
- dimen:abc_dialog_padding_material:2131099684
- dimen:abc_dialog_padding_top_material:2131099685
- dimen:abc_dialog_title_divider_material:2131099686
- dimen:abc_disabled_alpha_material_dark:2131099687
- dimen:abc_disabled_alpha_material_light:2131099688
  dimen:abc_dropdownitem_icon_width:2131099689
  dimen:abc_dropdownitem_text_padding_left:2131099690
- dimen:abc_dropdownitem_text_padding_right:2131099691
- dimen:abc_edit_text_inset_bottom_material:2131099692
- dimen:abc_edit_text_inset_horizontal_material:2131099693
- dimen:abc_edit_text_inset_top_material:2131099694
- dimen:abc_floating_window_z:2131099695
- dimen:abc_list_item_height_large_material:2131099696
- dimen:abc_list_item_height_material:2131099697
- dimen:abc_list_item_height_small_material:2131099698
- dimen:abc_list_item_padding_horizontal_material:2131099699
- dimen:abc_panel_menu_list_width:2131099700
- dimen:abc_progress_bar_height_material:2131099701
  dimen:abc_search_view_preferred_height:2131099702
  dimen:abc_search_view_preferred_width:2131099703
- dimen:abc_seekbar_track_background_height_material:2131099704
- dimen:abc_seekbar_track_progress_height_material:2131099705
- dimen:abc_select_dialog_padding_start_material:2131099706
  dimen:abc_star_big:2131099707
  dimen:abc_star_medium:2131099708
  dimen:abc_star_small:2131099709
- dimen:abc_switch_padding:2131099710
- dimen:abc_text_size_body_1_material:2131099711
- dimen:abc_text_size_body_2_material:2131099712
- dimen:abc_text_size_button_material:2131099713
- dimen:abc_text_size_caption_material:2131099714
- dimen:abc_text_size_display_1_material:2131099715
- dimen:abc_text_size_display_2_material:2131099716
- dimen:abc_text_size_display_3_material:2131099717
- dimen:abc_text_size_display_4_material:2131099718
- dimen:abc_text_size_headline_material:2131099719
- dimen:abc_text_size_large_material:2131099720
- dimen:abc_text_size_medium_material:2131099721
- dimen:abc_text_size_menu_header_material:2131099722
- dimen:abc_text_size_menu_material:2131099723
- dimen:abc_text_size_small_material:2131099724
- dimen:abc_text_size_subhead_material:2131099725
- dimen:abc_text_size_subtitle_material_toolbar:2131099726
- dimen:abc_text_size_title_material:2131099727
- dimen:abc_text_size_title_material_toolbar:2131099728
  dimen:cardview_compat_inset_shadow:2131099730
  dimen:compat_notification_large_icon_max_height:2131099739
  dimen:compat_notification_large_icon_max_width:2131099740
@@ -19773,63 +19417,31 @@ The root reachable resources are:
  dimen:tooltip_y_offset_non_touch:2131100442
  dimen:tooltip_y_offset_touch:2131100443
  drawable:abc_ab_share_pack_mtrl_alpha:2131165224
- drawable:abc_action_bar_item_background_material:2131165225
  drawable:abc_btn_borderless_material:2131165226
  drawable:abc_btn_check_material:2131165227
  drawable:abc_btn_check_material_anim:2131165228
- drawable:abc_btn_check_to_on_mtrl_000:2131165229
- drawable:abc_btn_check_to_on_mtrl_015:2131165230
  drawable:abc_btn_colored_material:2131165231
  drawable:abc_btn_default_mtrl_shape:2131165232
  drawable:abc_btn_radio_material:2131165233
  drawable:abc_btn_radio_material_anim:2131165234
- drawable:abc_btn_radio_to_on_mtrl_000:2131165235
- drawable:abc_btn_radio_to_on_mtrl_015:2131165236
- drawable:abc_btn_switch_to_on_mtrl_00001:2131165237
- drawable:abc_btn_switch_to_on_mtrl_00012:2131165238
  drawable:abc_cab_background_internal_bg:2131165239
  drawable:abc_cab_background_top_material:2131165240
  drawable:abc_cab_background_top_mtrl_alpha:2131165241
- drawable:abc_control_background_material:2131165242
  drawable:abc_dialog_material_background:2131165243
  drawable:abc_edit_text_material:2131165244
  drawable:abc_ic_ab_back_material:2131165245
- drawable:abc_ic_arrow_drop_right_black_24dp:2131165246
- drawable:abc_ic_clear_material:2131165247
  drawable:abc_ic_commit_search_api_mtrl_alpha:2131165248
- drawable:abc_ic_go_search_api_material:2131165249
  drawable:abc_ic_menu_copy_mtrl_am_alpha:2131165250
  drawable:abc_ic_menu_cut_mtrl_alpha:2131165251
- drawable:abc_ic_menu_overflow_material:2131165252
  drawable:abc_ic_menu_paste_mtrl_am_alpha:2131165253
  drawable:abc_ic_menu_selectall_mtrl_alpha:2131165254
  drawable:abc_ic_menu_share_mtrl_alpha:2131165255
- drawable:abc_ic_search_api_material:2131165256
- drawable:abc_ic_voice_search_api_material:2131165257
- drawable:abc_item_background_holo_dark:2131165258
- drawable:abc_item_background_holo_light:2131165259
- drawable:abc_list_divider_material:2131165260
  drawable:abc_list_divider_mtrl_alpha:2131165261
- drawable:abc_list_focused_holo:2131165262
- drawable:abc_list_longpressed_holo:2131165263
- drawable:abc_list_pressed_holo_dark:2131165264
- drawable:abc_list_pressed_holo_light:2131165265
- drawable:abc_list_selector_background_transition_holo_dark:2131165266
- drawable:abc_list_selector_background_transition_holo_light:2131165267
- drawable:abc_list_selector_disabled_holo_dark:2131165268
- drawable:abc_list_selector_disabled_holo_light:2131165269
- drawable:abc_list_selector_holo_dark:2131165270
- drawable:abc_list_selector_holo_light:2131165271
  drawable:abc_menu_hardkey_panel_mtrl_mult:2131165272
  drawable:abc_popup_background_mtrl_mult:2131165273
  drawable:abc_ratingbar_indicator_material:2131165274
  drawable:abc_ratingbar_material:2131165275
  drawable:abc_ratingbar_small_material:2131165276
- drawable:abc_scrubber_control_off_mtrl_alpha:2131165277
- drawable:abc_scrubber_control_to_pressed_mtrl_000:2131165278
- drawable:abc_scrubber_control_to_pressed_mtrl_005:2131165279
- drawable:abc_scrubber_primary_mtrl_alpha:2131165280
- drawable:abc_scrubber_track_mtrl_alpha:2131165281
  drawable:abc_seekbar_thumb_material:2131165282
  drawable:abc_seekbar_tick_mark_material:2131165283
  drawable:abc_seekbar_track_material:2131165284
@@ -19840,7 +19452,6 @@ The root reachable resources are:
  drawable:abc_switch_thumb_material:2131165289
  drawable:abc_switch_track_mtrl_alpha:2131165290
  drawable:abc_tab_indicator_material:2131165291
- drawable:abc_tab_indicator_mtrl_alpha:2131165292
  drawable:abc_text_cursor_material:2131165293
  drawable:abc_text_select_handle_left_mtrl:2131165294
  drawable:abc_text_select_handle_middle_mtrl:2131165295
@@ -20209,8 +19820,6 @@ The root reachable resources are:
  id:wrap_content_constrained:2131231212
  id:x_left:2131231213
  id:x_right:2131231214
- integer:abc_config_activityDefaultDur:2131296256
- integer:abc_config_activityShortDur:2131296257
  integer:app_bar_elevation_anim_duration:2131296258
  integer:bottom_sheet_slide_duration:2131296259
  integer:cancel_button_image_alpha:2131296260
@@ -20219,16 +19828,11 @@ The root reachable resources are:
  integer:mtrl_calendar_year_selector_span:2131296306
  integer:status_bar_notification_info_maxnum:2131296323
  layout:abc_action_bar_title_item:2131427328
- layout:abc_action_bar_up_container:2131427329
  layout:abc_action_menu_item_layout:2131427330
  layout:abc_action_menu_layout:2131427331
- layout:abc_action_mode_bar:2131427332
  layout:abc_action_mode_close_item_material:2131427333
  layout:abc_activity_chooser_view:2131427334
  layout:abc_activity_chooser_view_list_item:2131427335
- layout:abc_alert_dialog_button_bar_material:2131427336
- layout:abc_alert_dialog_material:2131427337
- layout:abc_alert_dialog_title_material:2131427338
  layout:abc_cascading_menu_item_layout:2131427339
  layout:abc_dialog_title_material:2131427340
  layout:abc_expanded_menu_layout:2131427341
@@ -20238,13 +19842,11 @@ The root reachable resources are:
  layout:abc_list_menu_item_radio:2131427345
  layout:abc_popup_menu_header_item_layout:2131427346
  layout:abc_popup_menu_item_layout:2131427347
- layout:abc_screen_content_include:2131427348
  layout:abc_screen_simple:2131427349
  layout:abc_screen_simple_overlay_action_mode:2131427350
  layout:abc_screen_toolbar:2131427351
  layout:abc_search_dropdown_item_icons_2line:2131427352
  layout:abc_search_view:2131427353
- layout:abc_select_dialog_material:2131427354
  layout:abc_tooltip:2131427355
  layout:activity_main:2131427356
  layout:custom_dialog:2131427357
@@ -20296,10 +19898,7 @@ The root reachable resources are:
  mipmap:ic_launcher:2131558400
  mipmap:ic_launcher_round:2131558401
  plurals:mtrl_badge_content_description:2131623936
- string:abc_action_bar_home_description:2131689472
  string:abc_action_bar_up_description:2131689473
- string:abc_action_menu_overflow_description:2131689474
- string:abc_action_mode_done:2131689475
  string:abc_activity_chooser_view_see_all:2131689476
  string:abc_activitychooserview_choose_application:2131689477
  string:abc_capital_off:2131689478
@@ -20314,15 +19913,9 @@ The root reachable resources are:
  string:abc_menu_space_shortcut_label:2131689487
  string:abc_menu_sym_shortcut_label:2131689488
  string:abc_prepend_shortcut_label:2131689489
- string:abc_search_hint:2131689490
- string:abc_searchview_description_clear:2131689491
- string:abc_searchview_description_query:2131689492
  string:abc_searchview_description_search:2131689493
- string:abc_searchview_description_submit:2131689494
- string:abc_searchview_description_voice:2131689495
  string:abc_shareactionprovider_share_with:2131689496
  string:abc_shareactionprovider_share_with_application:2131689497
- string:abc_toolbar_collapse_description:2131689498
  string:androidx_startup:2131689499
  string:app_name:2131689500
  string:bottom_sheet_behavior:2131689502
@@ -20581,13 +20174,22 @@ The root reachable resources are:
  xml:backup_rules:2131886080
  xml:data_extraction_rules:2131886081
 Unused resources are: 
+ anim:abc_fade_in:2130771968
+ anim:abc_fade_out:2130771969
+ anim:abc_slide_in_bottom:2130771974
+ anim:abc_slide_in_top:2130771975
+ anim:abc_slide_out_bottom:2130771976
+ anim:abc_slide_out_top:2130771977
  anim:design_snackbar_in:2130771994
  anim:design_snackbar_out:2130771995
  anim:m3_bottom_sheet_slide_in:2130772001
  anim:m3_bottom_sheet_slide_out:2130772002
  animator:m3_btn_elevated_btn_state_list_anim:2130837514
  animator:m3_elevated_chip_state_list_anim:2130837519
+ bool:abc_config_actionMenuItemAllCaps:2130968577
  bool:mtrl_btn_textappearance_all_caps:2130968578
+ color:abc_btn_colored_borderless_text_material:2131034114
+ color:abc_btn_colored_text_material:2131034115
  color:black:2131034146
  color:bright_foreground_inverse_material_dark:2131034149
  color:bright_foreground_inverse_material_light:2131034150
@@ -20857,6 +20459,38 @@ Unused resources are:
  color:mtrl_tabs_colored_ripple_color:2131034847
  color:mtrl_tabs_icon_color_selector_colored:2131034849
  color:mtrl_textinput_filled_box_default_background_color:2131034855
+ dimen:abc_action_bar_icon_vertical_padding_material:2131099654
+ dimen:abc_action_bar_overflow_padding_end_material:2131099655
+ dimen:abc_action_bar_overflow_padding_start_material:2131099656
+ dimen:abc_action_bar_subtitle_bottom_margin_material:2131099659
+ dimen:abc_action_button_min_height_material:2131099661
+ dimen:abc_action_button_min_width_material:2131099662
+ dimen:abc_action_button_min_width_overflow_material:2131099663
+ dimen:abc_dialog_fixed_height_major:2131099676
+ dimen:abc_dialog_fixed_height_minor:2131099677
+ dimen:abc_dialog_fixed_width_major:2131099678
+ dimen:abc_dialog_fixed_width_minor:2131099679
+ dimen:abc_disabled_alpha_material_dark:2131099687
+ dimen:abc_disabled_alpha_material_light:2131099688
+ dimen:abc_seekbar_track_background_height_material:2131099704
+ dimen:abc_seekbar_track_progress_height_material:2131099705
+ dimen:abc_text_size_body_1_material:2131099711
+ dimen:abc_text_size_body_2_material:2131099712
+ dimen:abc_text_size_button_material:2131099713
+ dimen:abc_text_size_caption_material:2131099714
+ dimen:abc_text_size_display_1_material:2131099715
+ dimen:abc_text_size_display_2_material:2131099716
+ dimen:abc_text_size_display_3_material:2131099717
+ dimen:abc_text_size_display_4_material:2131099718
+ dimen:abc_text_size_headline_material:2131099719
+ dimen:abc_text_size_large_material:2131099720
+ dimen:abc_text_size_medium_material:2131099721
+ dimen:abc_text_size_menu_material:2131099723
+ dimen:abc_text_size_small_material:2131099724
+ dimen:abc_text_size_subhead_material:2131099725
+ dimen:abc_text_size_subtitle_material_toolbar:2131099726
+ dimen:abc_text_size_title_material:2131099727
+ dimen:abc_text_size_title_material_toolbar:2131099728
  dimen:design_navigation_item_vertical_padding:2131099770
  dimen:disabled_alpha_material_dark:2131099790
  dimen:disabled_alpha_material_light:2131099791
@@ -20963,6 +20597,7 @@ Unused resources are:
  dimen:mtrl_textinput_box_corner_radius_medium:2131100405
  dimen:mtrl_textinput_outline_box_expanded_padding:2131100412
  dimen:mtrl_tooltip_cornerSize:2131100416
+ drawable:abc_ic_menu_overflow_material:2131165252
  drawable:ic_m3_chip_check:2131165324
  drawable:m3_tabs_transparent_background:2131165342
  drawable:material_ic_menu_arrow_up_black_24dp:2131165352
@@ -21142,6 +20777,10 @@ Unused resources are:
  integer:mtrl_switch_thumb_motion_duration:2131296310
  integer:mtrl_view_gone:2131296319
  integer:mtrl_view_visible:2131296321
+ layout:abc_action_bar_up_container:2131427329
+ string:abc_action_bar_home_description:2131689472
+ string:abc_action_menu_overflow_description:2131689474
+ string:abc_searchview_description_query:2131689492
  string:appbar_scrolling_view_behavior:2131689501
  string:fab_transformation_scrim_behavior:2131689515
  string:fab_transformation_sheet_behavior:2131689516
@@ -21469,12 +21108,20 @@ Unused resources are:
  style:Widget_MaterialComponents_Toolbar_Primary:2131756120
  style:Widget_MaterialComponents_Toolbar_PrimarySurface:2131756121
  style:Widget_MaterialComponents_Toolbar_Surface:2131756122
+Skipped unused resource res/anim/abc_fade_in.xml: 549 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/anim/abc_fade_out.xml: 549 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/anim/abc_slide_in_bottom.xml: 555 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/anim/abc_slide_in_top.xml: 556 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/anim/abc_slide_out_bottom.xml: 555 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/anim/abc_slide_out_top.xml: 556 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/anim/design_snackbar_in.xml: 238 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/anim/design_snackbar_out.xml: 238 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/anim-v21/m3_bottom_sheet_slide_in.xml: 769 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/anim-v21/m3_bottom_sheet_slide_out.xml: 1103 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/animator/m3_btn_elevated_btn_state_list_anim.xml: 3200 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/animator/m3_elevated_chip_state_list_anim.xml: 1685 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/color-v23/abc_btn_colored_borderless_text_material.xml: 587 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/color-v23/abc_btn_colored_text_material.xml: 624 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/color/m3_appbar_overlay_color.xml: 309 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/color/m3_assist_chip_stroke_color.xml: 1275 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/color/m3_button_ripple_color.xml: 1426 bytes (replaced with small dummy file of size 9 bytes)
@@ -21508,8 +21155,10 @@ Skipped unused resource res/color-v31/m3_ref_palette_dynamic_neutral_variant22.x
 Skipped unused resource res/color-v31/m3_ref_palette_dynamic_neutral_variant24.xml: 318 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/color-v31/m3_ref_palette_dynamic_neutral_variant4.xml: 317 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/color-v31/m3_ref_palette_dynamic_neutral_variant6.xml: 317 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/drawable/abc_ic_menu_overflow_material.xml: 934 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/drawable/ic_m3_chip_check.xml: 851 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/drawable-v23/m3_tabs_transparent_background.xml: 436 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/drawable/material_ic_menu_arrow_up_black_24dp.xml: 725 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/drawable/mtrl_bottomsheet_drag_handle.xml: 513 bytes (replaced with small dummy file of size 9 bytes)
 Skipped unused resource res/drawable/test_level_drawable.xml: 335 bytes (replaced with small dummy file of size 9 bytes)
+Skipped unused resource res/layout/abc_action_bar_up_container.xml: 588 bytes (replaced with small dummy file of size 9 bytes)

@@ -416,6 +416,160 @@ public class MainActivity extends AppCompatActivity {
                 return null;
             }
         }
+
+        /**
+         * 获取文件大小
+         * 用于计算进度
+         */
+        @JavascriptInterface
+        public long getFileSize(String uriString) {
+            Log.d(TAG, "JavaScript called getFileSize for: " + uriString);
+            try {
+                Uri uri = Uri.parse(uriString);
+                ContentResolver resolver = getContentResolver();
+                
+                // 尝试从ContentResolver获取大小
+                android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                if (cursor != null) {
+                    int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                    if (sizeIndex >= 0 && cursor.moveToFirst()) {
+                        long size = cursor.getLong(sizeIndex);
+                        cursor.close();
+                        Log.d(TAG, "File size from cursor: " + size);
+                        return size;
+                    }
+                    cursor.close();
+                }
+                
+                // 如果无法获取，返回-1表示需要手动计算
+                return -1;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to get file size", e);
+                return -1;
+            }
+        }
+
+        /**
+         * 带进度的文件读取方法
+         * 分块读取文件，每次读取后通过JavaScript回调更新进度
+         * @param uriString 文件URI
+         * @param callbackJs JavaScript回调函数名
+         * @param startPercent 进度条起始百分比
+         * @param endPercent 进度条结束百分比
+         */
+        @JavascriptInterface
+        public void readFileContentWithProgress(String uriString, final String callbackJs, 
+                                                 final int startPercent, final int endPercent) {
+            Log.d(TAG, "JavaScript called readFileContentWithProgress for: " + uriString);
+            
+            new Thread(() -> {
+                try {
+                    Uri uri = Uri.parse(uriString);
+                    ContentResolver resolver = getContentResolver();
+                    InputStream inputStream = resolver.openInputStream(uri);
+                    
+                    if (inputStream == null) {
+                        Log.e(TAG, "Failed to open input stream");
+                        runOnUiThread(() -> {
+                            webView.evaluateJavascript(
+                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('无法打开文件');", 
+                                null
+                            );
+                        });
+                        return;
+                    }
+                    
+                    // 获取文件大小
+                    long fileSize = -1;
+                    android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                    if (cursor != null) {
+                        int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                        if (sizeIndex >= 0 && cursor.moveToFirst()) {
+                            fileSize = cursor.getLong(sizeIndex);
+                        }
+                        cursor.close();
+                    }
+                    
+                    Log.d(TAG, "File size: " + fileSize);
+                    
+                    // 分块读取
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[64 * 1024]; // 64KB chunks for better progress updates
+                    int bytesRead;
+                    long totalRead = 0;
+                    int lastReportedPercent = startPercent;
+                    
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+                        
+                        // 计算并更新进度
+                        if (fileSize > 0) {
+                            int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
+                            
+                            // 每变化至少1%才更新，避免频繁调用
+                            if (currentPercent > lastReportedPercent) {
+                                lastReportedPercent = currentPercent;
+                                final int progress = currentPercent;
+                                final long readBytes = totalRead;
+                                final long totalBytes = fileSize;
+                                
+                                runOnUiThread(() -> {
+                                    String jsCode = String.format(
+                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " + 
+                                        "%.1fMB / %.1fMB');" +
+                                        "}",
+                                        progress,
+                                        readBytes / (1024.0 * 1024.0),
+                                        totalBytes / (1024.0 * 1024.0)
+                                    );
+                                    webView.evaluateJavascript(jsCode, null);
+                                });
+                            }
+                        }
+                    }
+                    
+                    inputStream.close();
+                    
+                    // 编码为Base64
+                    byte[] fileBytes = outputStream.toByteArray();
+                    final String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+                    
+                    Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
+                    
+                    // 调用JavaScript回调，传递Base64内容
+                    runOnUiThread(() -> {
+                        // 转义Base64字符串中的特殊字符
+                        String escapedBase64 = base64.replace("\\", "\\\\")
+                                                      .replace("'", "\\'")
+                                                      .replace("\n", "\\n")
+                                                      .replace("\r", "\\r");
+                        
+                        String jsCode = String.format(
+                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                            "  window.BatteryHealthApp.%s('%s');" +
+                            "}",
+                            callbackJs, callbackJs, escapedBase64
+                        );
+                        webView.evaluateJavascript(jsCode, null);
+                        Log.d(TAG, "Callback executed: " + callbackJs);
+                    });
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to read file content with progress", e);
+                    runOnUiThread(() -> {
+                        webView.evaluateJavascript(
+                            String.format(
+                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
+                                e.getMessage().replace("'", "\\'")
+                            ),
+                            null
+                        );
+                    });
+                }
+            }).start();
+        }
     }
 
     @Override
