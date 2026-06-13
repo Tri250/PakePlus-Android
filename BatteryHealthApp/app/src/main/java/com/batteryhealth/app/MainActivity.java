@@ -35,16 +35,13 @@ import java.io.InputStream;
 /**
  * 电池健康度分析工具主Activity
  *
- * 功能特性：
- * - WebView安全加固
- * - 文件选择器支持（完整修复）
- * - JavaScript接口支持
- * - 内存泄漏防护
- * - 性能优化配置
- * - 大文件进度显示
- * - 网络安全配置
+ * 核心修复（v1.2.5）：
+ * 1. 修复openFileChooser清理callback的bug - 导致选择文件后无反应
+ * 2. 优化权限管理 - 使用SAF框架无需存储权限
+ * 3. 修复Android 13+媒体权限误用问题
+ * 4. 添加详细诊断日志
  *
- * @version 1.2.3
+ * @version 1.2.5
  * @author 带娃的小陈工
  */
 public class MainActivity extends AppCompatActivity {
@@ -59,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private String[] permissions;
     private boolean isWebViewDestroyed = false;
     private boolean isMemoryLow = false;
+    private boolean isPickerFromJs = false; // 标记是否由JS触发
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,35 +70,35 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        // 初始化权限数组 - 根据Android版本适配
+        // 初始化权限数组
         initPermissions();
-
-        // 检查并请求权限
-        checkAndRequestPermissions();
 
         // 初始化WebView
         initWebView();
+
+        // 延迟请求权限 - 在WebView加载完成后请求，避免阻塞UI
+        if (webView != null) {
+            webView.postDelayed(this::checkAndRequestPermissions, 500);
+        }
     }
 
     /**
-     * 内存警告处理 - 优化大文件处理
+     * 内存警告处理
      */
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         Log.d(TAG, "onTrimMemory called with level: " + level);
-        
+
         isMemoryLow = true;
-        
+
         if (level >= TRIM_MEMORY_MODERATE) {
-            // 内存紧张时清理WebView缓存
             if (webView != null && !isWebViewDestroyed) {
                 webView.clearCache(true);
                 webView.clearHistory();
                 Log.d(TAG, "WebView cache cleared due to memory pressure");
             }
-            
-            // 通知JavaScript端暂停处理
+
             if (webView != null) {
                 webView.evaluateJavascript(
                     "if(window.BatteryHealthApp) window.BatteryHealthApp.onMemoryWarning();",
@@ -108,58 +106,54 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
         }
-        
+
         if (level >= TRIM_MEMORY_RUNNING_CRITICAL) {
-            // 极端内存压力时显示警告
             Toast.makeText(this, "内存不足，建议关闭其他应用", Toast.LENGTH_SHORT).show();
         }
     }
 
-    /**
-     * 低内存警告处理
-     */
     @Override
     public void onLowMemory() {
         super.onLowMemory();
         Log.w(TAG, "onLowMemory called");
         isMemoryLow = true;
-        
+
         if (webView != null && !isWebViewDestroyed) {
             webView.clearCache(true);
         }
     }
 
     /**
-     * 初始化权限数组 - 适配不同Android版本
+     * 初始化权限数组
+     * 关键修复：使用SAF框架，Android 11+无需任何存储权限
      */
     private void initPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ 需要媒体权限 + 读取文档权限
+            // Android 13+ - 使用SAF无需传统存储权限
+            // READ_MEDIA_VIDEO仅用于Android 14+的部分媒体访问兼容
+            permissions = new String[]{};
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11-12 - 使用SAF无需权限
+            permissions = new String[]{};
+        } else {
+            // Android 10及以下 - 旧权限模型
             permissions = new String[]{
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO,
                 Manifest.permission.READ_EXTERNAL_STORAGE
             };
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11-12
-            permissions = new String[]{
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            };
-        } else {
-            // Android 10及以下
-            permissions = new String[]{
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            };
         }
+        Log.d(TAG, "Permissions initialized, count: " + permissions.length);
     }
 
     /**
      * 检查并请求权限
+     * 仅在旧版本Android上需要存储权限
      */
     private void checkAndRequestPermissions() {
+        if (permissions == null || permissions.length == 0) {
+            Log.d(TAG, "No permissions needed (using SAF)");
+            return;
+        }
+
         boolean needRequest = false;
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
@@ -169,7 +163,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (needRequest) {
+            Log.d(TAG, "Requesting permissions: " + permissions.length);
             ActivityCompat.requestPermissions(this, permissions, PERMISSION_REQUEST_CODE);
+        } else {
+            Log.d(TAG, "All permissions already granted");
         }
     }
 
@@ -178,20 +175,24 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
+            for (int i = 0; i < grantResults.length; i++) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                     allGranted = false;
-                    break;
+                    Log.w(TAG, "Permission denied: " + permissions[i]);
                 }
             }
-            if (!allGranted) {
-                Toast.makeText(this, "需要存储权限才能选择文件", Toast.LENGTH_LONG).show();
+            if (allGranted) {
+                Log.d(TAG, "All permissions granted");
+            } else {
+                Log.w(TAG, "Some permissions denied");
+                // 关键：即使权限被拒，SAF仍可使用
+                Toast.makeText(this, "权限受限，将使用系统文件选择器", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     /**
-     * 初始化WebView - 安全加固与性能优化
+     * 初始化WebView
      */
     private void initWebView() {
         webView = findViewById(R.id.webView);
@@ -208,22 +209,19 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
 
-        // 启用文件访问以支持文件选择器
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
         webSettings.setAllowFileAccessFromFileURLs(false);
         webSettings.setAllowUniversalAccessFromFileURLs(false);
 
-        // 仅允许 HTTPS 混合内容
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
-        // 禁用不必要的功能
         webSettings.setGeolocationEnabled(false);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
         webSettings.setSavePassword(false);
         webSettings.setSaveFormData(false);
 
-        // ========== 性能优化配置 ==========
+        // ========== 性能优化 ==========
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
@@ -232,13 +230,14 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDisplayZoomControls(false);
         webSettings.setTextZoom(100);
 
-        // 硬件加速
+        // 启用数据库存储
+        webSettings.setDatabaseEnabled(true);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
         // ========== 添加JavaScript接口 ==========
-        // 关键修复：添加JavaScript接口，让JS可以调用Android原生文件选择器
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidFilePicker");
         Log.d(TAG, "JavaScript interface added");
 
@@ -262,7 +261,6 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(intent);
                     } catch (Exception e) {
                         Log.e(TAG, "Failed to open URL: " + url, e);
-                        Toast.makeText(MainActivity.this, "无法打开链接", Toast.LENGTH_SHORT).show();
                     }
                     return true;
                 }
@@ -283,7 +281,6 @@ public class MainActivity extends AppCompatActivity {
             public void onReceivedSslError(WebView view, SslErrorHandler handler, android.net.http.SslError error) {
                 Log.e(TAG, "SSL Error: " + error.toString());
                 handler.cancel();
-                Toast.makeText(MainActivity.this, "安全连接错误", Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -299,14 +296,17 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                Log.d(TAG, "onShowFileChooser triggered");
-                
+                Log.d(TAG, "=== onShowFileChooser triggered ===");
+
+                // 关键修复：不要在这里清理callback，让openFileChooser自己管理
                 if (MainActivity.this.filePathCallback != null) {
+                    Log.w(TAG, "Previous callback exists, cleaning up");
                     MainActivity.this.filePathCallback.onReceiveValue(null);
                     MainActivity.this.filePathCallback = null;
                 }
 
                 MainActivity.this.filePathCallback = filePathCallback;
+                isPickerFromJs = false; // 来自WebView input
 
                 openFileChooser();
                 return true;
@@ -325,7 +325,6 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 注入JavaScript代码监听文件选择器点击
-     * 关键修复：确保点击事件能触发Android文件选择器
      */
     private void injectFilePickerScript() {
         String jsCode =
@@ -334,27 +333,33 @@ public class MainActivity extends AppCompatActivity {
             "       var dropArea = document.getElementById('drop-area');" +
             "       var fileInput = document.getElementById('zip-file');" +
             "       if (dropArea) {" +
-            "           // 移除可能存在的旧监听器，避免重复触发" +
             "           if (window.__bhaClickHandler) {" +
             "               dropArea.removeEventListener('click', window.__bhaClickHandler, true);" +
             "           }" +
-            "           // 创建新的点击处理函数" +
             "           window.__bhaClickHandler = function(e) {" +
             "               e.preventDefault();" +
             "               e.stopPropagation();" +
             "               console.log('Drop area clicked, calling Android picker');" +
             "               if (window.AndroidFilePicker && window.AndroidFilePicker.openFilePicker) {" +
             "                   window.AndroidFilePicker.openFilePicker();" +
+            "               } else if (fileInput) {" +
+            "                   console.warn('AndroidFilePicker not available, using file input');" +
+            "                   fileInput.click();" +
             "               } else {" +
-            "                   console.warn('AndroidFilePicker not available');" +
-            "                   if (fileInput) fileInput.click();" +
+            "                   console.error('No file picker available');" +
             "               }" +
             "           };" +
-            "           // 使用捕获阶段，确保优先处理" +
             "           dropArea.addEventListener('click', window.__bhaClickHandler, true);" +
             "           console.log('File picker script injected successfully');" +
             "       } else {" +
-            "           console.warn('Drop area element not found');" +
+            "           console.warn('Drop area element not found, will retry');" +
+            "           setTimeout(function() {" +
+            "               var retryArea = document.getElementById('drop-area');" +
+            "               if (retryArea) {" +
+            "                   console.log('Drop area found on retry, injecting...');" +
+            "                   retryArea.addEventListener('click', window.__bhaClickHandler, true);" +
+            "               }" +
+            "           }, 1000);" +
             "       }" +
             "   } catch (e) {" +
             "       console.error('injectFilePickerScript error:', e);" +
@@ -369,44 +374,39 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 打开文件选择器
+     * 关键修复：不再清理callback，避免清空刚设置的callback导致无反应
      */
     private void openFileChooser() {
-        Log.d(TAG, "Opening file chooser");
-
-        // 先清理旧的callback
-        if (filePathCallback != null) {
-            filePathCallback.onReceiveValue(null);
-            filePathCallback = null;
-        }
-
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*");
-
-        String[] mimeTypes = {
-            "application/zip",
-            "application/x-zip-compressed",
-            "application/octet-stream",
-            "*/*"
-        };
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
-        // 添加读取URI权限标志
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Log.d(TAG, "=== openFileChooser called ===");
 
         try {
-            startActivityForResult(
-                Intent.createChooser(intent, "选择诊断文件（ZIP格式）"),
-                FILE_CHOOSER_REQUEST_CODE
-            );
-            Log.d(TAG, "File chooser intent launched");
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+
+            String[] mimeTypes = {
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/octet-stream",
+                "*/*"
+            };
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            Intent chooserIntent = Intent.createChooser(intent, "选择诊断文件（ZIP格式）");
+            // 关键：必须设置FLAG_GRANT_READ_URI_PERMISSION
+            chooserIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivityForResult(chooserIntent, FILE_CHOOSER_REQUEST_CODE);
+            Log.d(TAG, "File chooser intent launched successfully");
         } catch (Exception ex) {
             Log.e(TAG, "Failed to open file chooser", ex);
-            // 回退到ACTION_GET_CONTENT
+            // 回退方案
             try {
                 Intent fallbackIntent = new Intent(Intent.ACTION_GET_CONTENT);
                 fallbackIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 fallbackIntent.setType("*/*");
-                fallbackIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+                fallbackIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"*/*"});
                 fallbackIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 startActivityForResult(
                     Intent.createChooser(fallbackIntent, "选择诊断文件（ZIP格式）"),
@@ -415,11 +415,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Fallback file chooser launched");
             } catch (Exception ex2) {
                 Log.e(TAG, "Failed to open fallback file chooser", ex2);
+                // 关键：清理callback防止WebView挂起
                 if (filePathCallback != null) {
                     filePathCallback.onReceiveValue(null);
                     filePathCallback = null;
                 }
-                Toast.makeText(this, "请安装文件管理器", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "无法打开文件选择器，请检查系统", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -430,7 +431,7 @@ public class MainActivity extends AppCompatActivity {
     private String getFileName(Uri uri) {
         String fileName = null;
         ContentResolver resolver = getContentResolver();
-        
+
         if (uri.getScheme() != null && uri.getScheme().equals("content")) {
             Cursor cursor = resolver.query(uri, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
@@ -441,297 +442,19 @@ public class MainActivity extends AppCompatActivity {
                 cursor.close();
             }
         }
-        
+
         if (fileName == null) {
             fileName = uri.getLastPathSegment();
-        }
-        
-        return fileName;
-    }
-
-    /**
-     * JavaScript接口类
-     * 关键修复：让JavaScript可以调用Android原生文件选择器
-     */
-    public class WebAppInterface {
-        @JavascriptInterface
-        public void openFilePicker() {
-            Log.d(TAG, "JavaScript called openFilePicker");
-            runOnUiThread(() -> {
-                // 直接触发文件选择器
-                openFileChooser();
-            });
-        }
-
-        @JavascriptInterface
-        public void log(String message) {
-            Log.d(TAG, "JS Log: " + message);
-        }
-
-        /**
-         * 读取文件内容并返回Base64编码
-         * 关键修复：让JavaScript可以获取文件内容
-         */
-        @JavascriptInterface
-        public String readFileContent(String uriString) {
-            Log.d(TAG, "JavaScript called readFileContent for: " + uriString);
-            try {
-                Uri uri = Uri.parse(uriString);
-                ContentResolver resolver = getContentResolver();
-                InputStream inputStream = resolver.openInputStream(uri);
-                
-                if (inputStream == null) {
-                    Log.e(TAG, "Failed to open input stream");
-                    return null;
-                }
-                
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-                
-                inputStream.close();
-                outputStream.close();
-                
-                byte[] fileBytes = outputStream.toByteArray();
-                String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
-                
-                Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
-                return base64;
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to read file content", e);
-                return null;
+            if (fileName != null && fileName.contains("/")) {
+                fileName = fileName.substring(fileName.lastIndexOf("/") + 1);
             }
         }
 
-        /**
-         * 获取文件大小
-         * 用于计算进度
-         */
-        @JavascriptInterface
-        public long getFileSize(String uriString) {
-            Log.d(TAG, "JavaScript called getFileSize for: " + uriString);
-            try {
-                Uri uri = Uri.parse(uriString);
-                ContentResolver resolver = getContentResolver();
-                
-                // 尝试从ContentResolver获取大小
-                android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
-                if (cursor != null) {
-                    int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
-                    if (sizeIndex >= 0 && cursor.moveToFirst()) {
-                        long size = cursor.getLong(sizeIndex);
-                        cursor.close();
-                        Log.d(TAG, "File size from cursor: " + size);
-                        return size;
-                    }
-                    cursor.close();
-                }
-                
-                // 如果无法获取，返回-1表示需要手动计算
-                return -1;
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to get file size", e);
-                return -1;
-            }
-        }
-
-        /**
-         * 带进度的文件读取方法
-         * 分块读取文件，每次读取后通过JavaScript回调更新进度
-         * @param uriString 文件URI
-         * @param callbackJs JavaScript回调函数名
-         * @param startPercent 进度条起始百分比
-         * @param endPercent 进度条结束百分比
-         */
-        @JavascriptInterface
-        public void readFileContentWithProgress(String uriString, final String callbackJs, 
-                                                 final int startPercent, final int endPercent) {
-            Log.d(TAG, "JavaScript called readFileContentWithProgress for: " + uriString);
-            
-            new Thread(() -> {
-                try {
-                    Uri uri = Uri.parse(uriString);
-                    ContentResolver resolver = getContentResolver();
-                    InputStream inputStream = resolver.openInputStream(uri);
-                    
-                    if (inputStream == null) {
-                        Log.e(TAG, "Failed to open input stream");
-                        runOnUiThread(() -> {
-                            webView.evaluateJavascript(
-                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('无法打开文件');", 
-                                null
-                            );
-                        });
-                        return;
-                    }
-                    
-                    // 获取文件大小
-                    long fileSize = -1;
-                    android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
-                    if (cursor != null) {
-                        int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
-                        if (sizeIndex >= 0 && cursor.moveToFirst()) {
-                            fileSize = cursor.getLong(sizeIndex);
-                        }
-                        cursor.close();
-                    }
-                    
-                    Log.d(TAG, "File size: " + fileSize);
-                    
-                    // 分块读取
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    byte[] buffer = new byte[64 * 1024]; // 64KB chunks for better progress updates
-                    int bytesRead;
-                    long totalRead = 0;
-                    int lastReportedPercent = startPercent;
-                    
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                        totalRead += bytesRead;
-                        
-                        // 计算并更新进度
-                        if (fileSize > 0) {
-                            int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
-                            
-                            // 每变化至少1%才更新，避免频繁调用
-                            if (currentPercent > lastReportedPercent) {
-                                lastReportedPercent = currentPercent;
-                                final int progress = currentPercent;
-                                final long readBytes = totalRead;
-                                final long totalBytes = fileSize;
-                                
-                                runOnUiThread(() -> {
-                                    String jsCode = String.format(
-                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
-                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " + 
-                                        "%.1fMB / %.1fMB');" +
-                                        "}",
-                                        progress,
-                                        readBytes / (1024.0 * 1024.0),
-                                        totalBytes / (1024.0 * 1024.0)
-                                    );
-                                    webView.evaluateJavascript(jsCode, null);
-                                });
-                            }
-                        }
-                    }
-                    
-                    inputStream.close();
-                    
-                    // 编码为Base64
-                    byte[] fileBytes = outputStream.toByteArray();
-                    final String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
-                    
-                    Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
-                    
-                    // 调用JavaScript回调，传递Base64内容
-                    runOnUiThread(() -> {
-                        // 转义Base64字符串中的特殊字符
-                        String escapedBase64 = base64.replace("\\", "\\\\")
-                                                      .replace("'", "\\'")
-                                                      .replace("\n", "\\n")
-                                                      .replace("\r", "\\r");
-                        
-                        String jsCode = String.format(
-                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s('%s');" +
-                            "}",
-                            callbackJs, callbackJs, escapedBase64
-                        );
-                        webView.evaluateJavascript(jsCode, null);
-                        Log.d(TAG, "Callback executed: " + callbackJs);
-                    });
-                    
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to read file content with progress", e);
-                    runOnUiThread(() -> {
-                        webView.evaluateJavascript(
-                            String.format(
-                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
-                                e.getMessage().replace("'", "\\'")
-                            ),
-                            null
-                        );
-                    });
-                }
-            }).start();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode + ", data=" + (data != null));
-
-        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
-            // 保存callback临时变量
-            ValueCallback<Uri[]> callback = filePathCallback;
-            filePathCallback = null;
-
-            if (callback == null) {
-                Log.w(TAG, "filePathCallback is null");
-                return;
-            }
-
-            Uri[] results = null;
-
-            if (resultCode == Activity.RESULT_OK && data != null) {
-                Uri uri = data.getData();
-                Log.d(TAG, "Selected URI: " + uri);
-
-                if (uri != null) {
-                    // 关键：保留URI权限，确保后续可读取
-                    try {
-                        getContentResolver().takePersistableUriPermission(
-                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        Log.d(TAG, "Persistable URI permission granted");
-                    } catch (Exception e) {
-                        Log.w(TAG, "Could not take persistable permission: " + e.getMessage());
-                    }
-
-                    // 检查文件大小
-                    long fileSize = getFileSizeFromUri(uri);
-                    Log.d(TAG, "File size: " + fileSize + " bytes");
-
-                    if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
-                        // 文件过大，拒绝处理
-                        String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
-                        Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
-                        callback.onReceiveValue(null);
-                        return;
-                    }
-
-                    results = new Uri[]{uri};
-                    String fileName = getFileName(uri);
-                    Log.d(TAG, "File accepted: " + fileName);
-                    Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
-
-                    // 关键修复：通知JavaScript文件已选择
-                    notifyFileSelected(uri.toString(), fileName);
-                } else {
-                    Log.w(TAG, "URI is null");
-                    Toast.makeText(this, "文件选择失败", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Log.d(TAG, "File selection cancelled or failed: resultCode=" + resultCode);
-                if (resultCode == Activity.RESULT_CANCELED) {
-                    Toast.makeText(this, "已取消选择", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            // 关键：必须调用callback的onReceiveValue，否则WebView会挂起
-            callback.onReceiveValue(results);
-        }
+        return fileName != null ? fileName : "unknown";
     }
 
     /**
      * 获取文件大小
-     * @param uri 文件URI
-     * @return 文件大小（字节），-1表示无法获取
      */
     private long getFileSizeFromUri(Uri uri) {
         try {
@@ -754,14 +477,306 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * JavaScript接口类
+     */
+    public class WebAppInterface {
+
+        @JavascriptInterface
+        public void openFilePicker() {
+            Log.d(TAG, "=== JavaScript called openFilePicker ===");
+            runOnUiThread(() -> {
+                // 关键修复：JS触发时也要保留callback
+                // 但因为JS触发没有onShowFileChooser的callback，
+                // 这里创建一个空callback以便文件选择完成后通知JS
+                if (filePathCallback == null) {
+                    Log.w(TAG, "No callback from WebView, using empty callback");
+                    filePathCallback = new ValueCallback<Uri[]>() {
+                        @Override
+                        public void onReceiveValue(Uri[] value) {
+                            // 空callback，避免WebView挂起
+                            Log.d(TAG, "Empty callback received: " + (value != null ? value.length : "null"));
+                        }
+                    };
+                }
+                isPickerFromJs = true;
+                openFileChooser();
+            });
+        }
+
+        @JavascriptInterface
+        public void log(String message) {
+            Log.d(TAG, "JS Log: " + message);
+        }
+
+        @JavascriptInterface
+        public String readFileContent(String uriString) {
+            Log.d(TAG, "JavaScript called readFileContent for: " + uriString);
+            try {
+                Uri uri = Uri.parse(uriString);
+                ContentResolver resolver = getContentResolver();
+                InputStream inputStream = resolver.openInputStream(uri);
+
+                if (inputStream == null) {
+                    Log.e(TAG, "Failed to open input stream");
+                    return null;
+                }
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+
+                inputStream.close();
+                outputStream.close();
+
+                byte[] fileBytes = outputStream.toByteArray();
+                String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+
+                Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
+                return base64;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read file content", e);
+                return null;
+            }
+        }
+
+        @JavascriptInterface
+        public long getFileSize(String uriString) {
+            Log.d(TAG, "JavaScript called getFileSize for: " + uriString);
+            try {
+                Uri uri = Uri.parse(uriString);
+                ContentResolver resolver = getContentResolver();
+                android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                if (cursor != null) {
+                    int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                    if (sizeIndex >= 0 && cursor.moveToFirst()) {
+                        long size = cursor.getLong(sizeIndex);
+                        cursor.close();
+                        Log.d(TAG, "File size from cursor: " + size);
+                        return size;
+                    }
+                    cursor.close();
+                }
+                return -1;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to get file size", e);
+                return -1;
+            }
+        }
+
+        /**
+         * 带进度的文件读取方法
+         */
+        @JavascriptInterface
+        public void readFileContentWithProgress(String uriString, final String callbackJs,
+                                                 final int startPercent, final int endPercent) {
+            Log.d(TAG, "JavaScript called readFileContentWithProgress for: " + uriString);
+
+            new Thread(() -> {
+                try {
+                    Uri uri = Uri.parse(uriString);
+                    ContentResolver resolver = getContentResolver();
+                    InputStream inputStream = resolver.openInputStream(uri);
+
+                    if (inputStream == null) {
+                        Log.e(TAG, "Failed to open input stream");
+                        runOnUiThread(() -> {
+                            webView.evaluateJavascript(
+                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('无法打开文件');",
+                                null
+                            );
+                        });
+                        return;
+                    }
+
+                    // 获取文件大小
+                    long fileSize = -1;
+                    android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                    if (cursor != null) {
+                        int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                        if (sizeIndex >= 0 && cursor.moveToFirst()) {
+                            fileSize = cursor.getLong(sizeIndex);
+                        }
+                        cursor.close();
+                    }
+
+                    Log.d(TAG, "File size: " + fileSize);
+
+                    // 分块读取
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[64 * 1024];
+                    int bytesRead;
+                    long totalRead = 0;
+                    int lastReportedPercent = startPercent;
+
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+
+                        if (fileSize > 0) {
+                            int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
+
+                            if (currentPercent > lastReportedPercent) {
+                                lastReportedPercent = currentPercent;
+                                final int progress = currentPercent;
+                                final long readBytes = totalRead;
+                                final long totalBytes = fileSize;
+
+                                runOnUiThread(() -> {
+                                    String jsCode = String.format(
+                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
+                                        "%.1fMB / %.1fMB');" +
+                                        "}",
+                                        progress,
+                                        readBytes / (1024.0 * 1024.0),
+                                        totalBytes / (1024.0 * 1024.0)
+                                    );
+                                    webView.evaluateJavascript(jsCode, null);
+                                });
+                            }
+                        }
+                    }
+
+                    inputStream.close();
+
+                    byte[] fileBytes = outputStream.toByteArray();
+                    final String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+
+                    Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
+
+                    runOnUiThread(() -> {
+                        String escapedBase64 = base64.replace("\\", "\\\\")
+                                                      .replace("'", "\\'")
+                                                      .replace("\n", "\\n")
+                                                      .replace("\r", "\\r");
+
+                        String jsCode = String.format(
+                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                            "  window.BatteryHealthApp.%s('%s');" +
+                            "}",
+                            callbackJs, callbackJs, escapedBase64
+                        );
+                        webView.evaluateJavascript(jsCode, null);
+                        Log.d(TAG, "Callback executed: " + callbackJs);
+                    });
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to read file content with progress", e);
+                    runOnUiThread(() -> {
+                        webView.evaluateJavascript(
+                            String.format(
+                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
+                                e.getMessage() != null ? e.getMessage().replace("'", "\\'") : "Unknown error"
+                            ),
+                            null
+                        );
+                    });
+                }
+            }).start();
+        }
+
+        /**
+         * 检查文件访问权限
+         */
+        @JavascriptInterface
+        public boolean checkStoragePermission() {
+            if (permissions == null || permissions.length == 0) {
+                return true; // SAF模式无需权限
+            }
+            for (String permission : permissions) {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * 请求存储权限
+         */
+        @JavascriptInterface
+        public void requestStoragePermission() {
+            runOnUiThread(() -> checkAndRequestPermissions());
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "=== onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode + ", data=" + (data != null) + " ===");
+
+        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            ValueCallback<Uri[]> callback = filePathCallback;
+            filePathCallback = null;
+
+            if (callback == null) {
+                Log.w(TAG, "filePathCallback is null - cannot notify WebView");
+                return;
+            }
+
+            Uri[] results = null;
+
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                Uri uri = data.getData();
+                Log.d(TAG, "Selected URI: " + uri);
+
+                if (uri != null) {
+                    // 保留URI权限
+                    try {
+                        getContentResolver().takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        Log.d(TAG, "Persistable URI permission granted");
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not take persistable permission: " + e.getMessage());
+                    }
+
+                    // 检查文件大小
+                    long fileSize = getFileSizeFromUri(uri);
+                    Log.d(TAG, "File size: " + fileSize + " bytes");
+
+                    if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
+                        String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
+                        Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
+                        callback.onReceiveValue(null);
+                        return;
+                    }
+
+                    results = new Uri[]{uri};
+                    String fileName = getFileName(uri);
+                    Log.d(TAG, "File accepted: " + fileName);
+                    Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
+
+                    // 通知JavaScript文件已选择
+                    notifyFileSelected(uri.toString(), fileName);
+                } else {
+                    Log.w(TAG, "URI is null");
+                    Toast.makeText(this, "文件选择失败", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Log.d(TAG, "File selection cancelled: resultCode=" + resultCode);
+                if (resultCode == Activity.RESULT_CANCELED) {
+                    Toast.makeText(this, "已取消选择", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            // 关键：必须调用callback.onReceiveValue，否则WebView会挂起
+            callback.onReceiveValue(results);
+            Log.d(TAG, "Callback notified with results: " + (results != null ? results.length : "null"));
+        }
+    }
+
+    /**
      * 通知JavaScript文件已选择
-     * 关键修复：让JavaScript知道文件已选择并触发处理
      */
     private void notifyFileSelected(String uriString, String fileName) {
-        // 转义URI和文件名中的特殊字符，避免JS注入
+        // 转义URI和文件名中的特殊字符
         String safeUri = uriString.replace("\\", "\\\\").replace("'", "\\'");
         String safeName = fileName.replace("\\", "\\\\").replace("'", "\\'");
-        
+
         String jsCode =
             "(function() {" +
             "   try {" +

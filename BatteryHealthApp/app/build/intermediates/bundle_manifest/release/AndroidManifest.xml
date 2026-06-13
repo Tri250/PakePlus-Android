@@ -1,27 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.batteryhealth.app"
-    android:versionCode="7"
-    android:versionName="1.2.4" >
+    android:versionCode="8"
+    android:versionName="1.2.5" >
 
     <uses-sdk
         android:minSdkVersion="24"
         android:targetSdkVersion="34" />
 
-    <!-- 网络权限（用于加载CDN资源） -->
+    <!-- 网络权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- 读取存储权限（用于读取ZIP文件） -->
+    <!-- 存储权限 -->
+    <!-- Android 13+ (API 33) 使用 SAF，理论上不需要存储权限 -->
+    <!-- 但保留 READ_MEDIA_VIDEO 作为 Android 14+ 部分媒体访问的兼容 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+    <!-- Android 12 及以下需要 -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <!-- Android 13+ 媒体权限 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-
-    <!-- 写入权限（仅用于Android 10及以下） -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -47,8 +46,9 @@
         android:usesCleartextTraffic="false" >
         <activity
             android:name="com.batteryhealth.app.MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
             android:exported="true"
+            android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

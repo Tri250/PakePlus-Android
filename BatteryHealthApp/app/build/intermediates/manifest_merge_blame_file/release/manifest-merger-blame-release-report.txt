@@ -1,14 +1,14 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 3    package="com.batteryhealth.app"
-4    android:versionCode="7"
-5    android:versionName="1.2.4" >
+4    android:versionCode="8"
+5    android:versionName="1.2.5" >
 6
 7    <uses-sdk
 8        android:minSdkVersion="24"
 9        android:targetSdkVersion="34" />
 10
-11    <!-- 网络权限（用于加载CDN资源） -->
+11    <!-- 网络权限 -->
 12    <uses-permission android:name="android.permission.INTERNET" />
 12-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:6:5-67
 12-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:6:22-64
@@ -16,87 +16,84 @@
 13-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:7:5-79
 13-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:7:22-76
 14
-15    <!-- 读取存储权限（用于读取ZIP文件） -->
-16    <uses-permission
-16-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:10:5-11:38
-17        android:name="android.permission.READ_EXTERNAL_STORAGE"
-17-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:10:22-77
-18        android:maxSdkVersion="32" />
-18-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:11:9-35
-19    <!-- Android 13+ 媒体权限 -->
-20    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-20-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:13:5-76
-20-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:13:22-73
-21    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-21-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:14:5-75
-21-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:14:22-72
-22    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-22-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:15:5-75
-22-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:15:22-72
-23
-24    <!-- 写入权限（仅用于Android 10及以下） -->
-25    <uses-permission
-25-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:18:5-19:38
-26        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-26-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:18:22-78
-27        android:maxSdkVersion="28" />
-27-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:19:9-35
-28
-29    <permission
-29-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:22:5-24:47
-30        android:name="com.batteryhealth.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-30-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:23:9-81
-31        android:protectionLevel="signature" />
-31-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:24:9-44
-32
-33    <uses-permission android:name="com.batteryhealth.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-33-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:26:5-97
-33-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:26:22-94
-34
-35    <application
-35-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:21:5-44:19
-36        android:allowBackup="true"
-36-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:22:9-35
-37        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-37-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:28:18-86
-38        android:dataExtractionRules="@xml/data_extraction_rules"
-38-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:23:9-65
-39        android:extractNativeLibs="false"
-40        android:fullBackupContent="@xml/backup_rules"
-40-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:24:9-54
-41        android:icon="@mipmap/ic_launcher"
-41-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:25:9-43
-42        android:label="@string/app_name"
-42-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:26:9-41
-43        android:networkSecurityConfig="@xml/network_security_config"
-43-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:31:9-69
-44        android:roundIcon="@mipmap/ic_launcher_round"
-44-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:27:9-54
-45        android:supportsRtl="true"
-45-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:28:9-35
-46        android:theme="@style/Theme.BatteryHealthApp"
-46-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:29:9-54
-47        android:usesCleartextTraffic="false" >
-47-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:30:9-45
-48        <activity
-48-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:34:9-43:20
-49            android:name="com.batteryhealth.app.MainActivity"
-49-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:35:13-41
-50            android:configChanges="orientation|screenSize|keyboardHidden"
-50-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:37:13-74
-51            android:exported="true"
-51-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:36:13-36
+15    <!-- 存储权限 -->
+16    <!-- Android 13+ (API 33) 使用 SAF，理论上不需要存储权限 -->
+17    <!-- 但保留 READ_MEDIA_VIDEO 作为 Android 14+ 部分媒体访问的兼容 -->
+18    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+18-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:12:5-75
+18-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:12:22-72
+19
+20    <!-- Android 12 及以下需要 -->
+21    <uses-permission
+21-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:15:5-16:38
+22        android:name="android.permission.READ_EXTERNAL_STORAGE"
+22-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:15:22-77
+23        android:maxSdkVersion="32" />
+23-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:16:9-35
+24    <uses-permission
+24-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:17:5-18:38
+25        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+25-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:17:22-78
+26        android:maxSdkVersion="28" />
+26-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:18:9-35
+27
+28    <permission
+28-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:22:5-24:47
+29        android:name="com.batteryhealth.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+29-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:23:9-81
+30        android:protectionLevel="signature" />
+30-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:24:9-44
+31
+32    <uses-permission android:name="com.batteryhealth.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+32-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:26:5-97
+32-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:26:22-94
+33
+34    <application
+34-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:20:5-43:19
+35        android:allowBackup="true"
+35-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:21:9-35
+36        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+36-->[androidx.core:core:1.9.0] /root/.gradle/caches/8.14.4/transforms/3ed76ff3e62233799438ebb935287e4f/transformed/core-1.9.0/AndroidManifest.xml:28:18-86
+37        android:dataExtractionRules="@xml/data_extraction_rules"
+37-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:22:9-65
+38        android:extractNativeLibs="false"
+39        android:fullBackupContent="@xml/backup_rules"
+39-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:23:9-54
+40        android:icon="@mipmap/ic_launcher"
+40-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:24:9-43
+41        android:label="@string/app_name"
+41-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:25:9-41
+42        android:networkSecurityConfig="@xml/network_security_config"
+42-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:30:9-69
+43        android:roundIcon="@mipmap/ic_launcher_round"
+43-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:26:9-54
+44        android:supportsRtl="true"
+44-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:27:9-35
+45        android:theme="@style/Theme.BatteryHealthApp"
+45-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:28:9-54
+46        android:usesCleartextTraffic="false" >
+46-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:29:9-45
+47        <activity
+47-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:32:9-42:20
+48            android:name="com.batteryhealth.app.MainActivity"
+48-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:33:13-41
+49            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+49-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:35:13-81
+50            android:exported="true"
+50-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:34:13-36
+51            android:hardwareAccelerated="true"
+51-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:37:13-47
 52            android:windowSoftInputMode="adjustResize" >
-52-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:38:13-55
+52-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:36:13-55
 53            <intent-filter>
-53-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:39:13-42:29
+53-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:38:13-41:29
 54                <action android:name="android.intent.action.MAIN" />
-54-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:40:17-69
-54-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:40:25-66
+54-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:39:17-69
+54-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:39:25-66
 55
 56                <category android:name="android.intent.category.LAUNCHER" />
-56-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:41:17-77
-56-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:41:27-74
+56-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:40:17-77
+56-->/workspace/BatteryHealthApp/app/src/main/AndroidManifest.xml:40:27-74
 57            </intent-filter>
 58        </activity>
 59

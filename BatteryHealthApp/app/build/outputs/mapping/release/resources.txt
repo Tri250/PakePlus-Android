@@ -381,7 +381,6 @@ surface_container_lowest
 Motion
 getParent
 app:layout_marginTop
-android.permission.READ_MEDIA_IMAGES
 gradient
 checkOpNoThrow
 ro.build.version.oneui
@@ -583,7 +582,6 @@ isImportant
 QuantizeMotionSteps
 CONTENT
 text_secondary_and_tertiary_inverse_d...
-安全连接错误
 dimension
 kotlin.String.Companion
 CircularFlow
@@ -686,7 +684,6 @@ _queue
 android.intent.action.OPEN_DOCUMENT
 InputConnectionCompat
 info
-android.permission.READ_MEDIA_AUDIO
 getRealSize
 app:layout_goneMarginEnd
 parcel
@@ -769,7 +766,6 @@ materialContainerTransition:shapeAppe...
 DrawPath
 primary.prof
 clipPath
-无法打开链接
 KeyAttribute
 bounceStart
 getLayoutAlignment
@@ -1012,7 +1008,6 @@ profileInstalled
 TransitionEasing
 androidx.core:wake:
 STRING_TYPE
-请安装文件管理器
 semanticAction
 _next
 androidx.lifecycle.internal.SavedStat...
@@ -1293,7 +1288,6 @@ android.hiddenConversationTitle
 ClassVerificationFailure
 ACTION_SCROLL_BACKWARD
 androidx.core.view.inputmethod.InputC...
-android.permission.WRITE_EXTERNAL_STO...
 surface_bright
 android.text.TextDirectionHeuristic
 android.messages.historic
@@ -1800,7 +1794,6 @@ StateSet
 BASELINE_TO_BASELINE
 cc
 completion
-android.permission.READ_MEDIA_VIDEO
 ToggleButton
 androidx.view.accessibility.Accessibi...
 set
@@ -2343,7 +2336,6 @@ boolean
 realme
 trimPathOffset
 clazz
-需要存储权限才能选择文件
 app:layout_constraintCircleAngle
 viewTransitionOnCross
 BackgroundColor
