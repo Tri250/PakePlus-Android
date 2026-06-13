@@ -179,32 +179,45 @@ const BatteryHealthApp = {
     
     /**
      * 验证并设置文件
+     * 同时支持File对象和Android URI对象
      */
     validateAndSetFile(file) {
         const errorEl = this.elements.fileValidationError;
         
-        // 验证文件类型
-        if (!file.name.toLowerCase().endsWith('.zip')) {
-            errorEl.textContent = '请选择 ZIP 格式的文件';
-            errorEl.classList.add('show');
+        // 验证文件类型 - 兼容File对象和Android URI对象
+        const fileName = file.name || '';
+        if (!fileName.toLowerCase().endsWith('.zip')) {
+            if (errorEl) {
+                errorEl.textContent = '请选择 ZIP 格式的文件';
+                errorEl.classList.add('show');
+            }
             this.currentFile = null;
             return false;
         }
         
-        // 验证文件大小（最大 100MB）
-        if (file.size > 100 * 1024 * 1024) {
-            errorEl.textContent = '文件过大，请选择小于 100MB 的文件';
-            errorEl.classList.add('show');
+        // 验证文件大小（最大 100MB）- 仅对File对象检查
+        if (file.size && file.size > 100 * 1024 * 1024) {
+            if (errorEl) {
+                errorEl.textContent = '文件过大，请选择小于 100MB 的文件';
+                errorEl.classList.add('show');
+            }
             this.currentFile = null;
             return false;
         }
         
         // 验证通过
-        errorEl.classList.remove('show');
+        if (errorEl) {
+            errorEl.classList.remove('show');
+        }
         this.currentFile = file;
-        this.elements.selectedFileName.textContent = file.name;
-        this.elements.fileNameDisplay.style.display = 'flex';
+        if (this.elements.selectedFileName) {
+            this.elements.selectedFileName.textContent = fileName;
+        }
+        if (this.elements.fileNameDisplay) {
+            this.elements.fileNameDisplay.style.display = 'flex';
+        }
         
+        console.log('File validated and set:', this.currentFile);
         return true;
     },
     
@@ -285,9 +298,21 @@ const BatteryHealthApp = {
     async handleAnalyze() {
         const { calculateBtn, initialCapacityInput, progressContainer } = this.elements;
         
+        console.log('=== handleAnalyze called ===');
+        console.log('currentFile:', this.currentFile);
+        
         // 验证文件
         if (!this.currentFile) {
+            console.warn('No file selected');
             this.showStatus('请选择诊断文件', true);
+            return;
+        }
+        
+        // 验证文件类型 - 兼容File对象和Android URI对象
+        const fileName = this.currentFile.name || '';
+        if (!fileName.toLowerCase().endsWith('.zip')) {
+            console.warn('Invalid file type:', fileName);
+            this.showStatus('请选择 ZIP 格式的文件', true);
             return;
         }
         
@@ -1048,25 +1073,58 @@ const BatteryHealthApp = {
     /**
      * Android文件选择处理方法
      * 关键修复：接收Android传递的文件URI并处理
+     * 同时兼容window.BatteryHealthApp调用方式
      */
     handleAndroidFileSelected(uriString, fileName) {
-        console.log('Android file selected:', uriString, fileName);
+        console.log('=== Android file selected ===');
+        console.log('URI:', uriString);
+        console.log('Name:', fileName);
         
-        // 显示文件名
-        this.elements.selectedFileName.textContent = fileName;
-        this.elements.fileNameDisplay.style.display = 'flex';
-        this.elements.fileValidationError.classList.remove('show');
-        
-        // 创建一个模拟File对象用于后续处理
-        // 注意：Android传递的是content:// URI，需要特殊处理
-        this.currentFile = {
-            name: fileName,
-            uri: uriString,
-            isAndroidUri: true
-        };
-        
-        this.showToast('已选择文件: ' + fileName, 'success');
-        console.log('File ready for analysis');
+        try {
+            // 验证参数
+            if (!uriString || !fileName) {
+                console.error('Invalid file selected: missing URI or name');
+                this.showStatus('文件选择失败：参数错误', true);
+                return;
+            }
+            
+            // 显示文件名
+            if (this.elements.selectedFileName) {
+                this.elements.selectedFileName.textContent = fileName;
+            }
+            if (this.elements.fileNameDisplay) {
+                this.elements.fileNameDisplay.style.display = 'flex';
+            }
+            if (this.elements.fileValidationError) {
+                this.elements.fileValidationError.classList.remove('show');
+            }
+            
+            // 验证文件类型
+            if (!fileName.toLowerCase().endsWith('.zip')) {
+                console.warn('File is not a ZIP file:', fileName);
+                if (this.elements.fileValidationError) {
+                    this.elements.fileValidationError.textContent = '请选择 ZIP 格式的文件';
+                    this.elements.fileValidationError.classList.add('show');
+                }
+                this.currentFile = null;
+                return;
+            }
+            
+            // 创建一个模拟File对象用于后续处理
+            // 关键修复：必须正确设置currentFile，handleAnalyze才能正常分析
+            this.currentFile = {
+                name: fileName,
+                uri: uriString,
+                isAndroidUri: true,
+                size: -1 // 异步获取
+            };
+            
+            this.showToast('已选择文件: ' + fileName, 'success');
+            console.log('currentFile set successfully:', this.currentFile);
+        } catch (error) {
+            console.error('handleAndroidFileSelected error:', error);
+            this.showStatus('文件处理失败: ' + error.message, true);
+        }
     },
     
     /**
@@ -1088,6 +1146,14 @@ const BatteryHealthApp = {
 document.addEventListener('DOMContentLoaded', () => {
     BatteryHealthApp.init();
 });
+
+// 关键修复：将BatteryHealthApp显式附加到window对象
+// 因为const声明的变量不会自动成为window属性
+// Android端JavaScript接口需要通过window.BatteryHealthApp访问
+if (typeof window !== 'undefined') {
+    window.BatteryHealthApp = BatteryHealthApp;
+    console.log('BatteryHealthApp exposed to window successfully');
+}
 
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
