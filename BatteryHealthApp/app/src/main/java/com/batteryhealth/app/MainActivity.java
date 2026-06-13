@@ -19,6 +19,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -29,7 +30,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import androidx.webkit.WebViewAssetLoader;
+
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 
 /**
@@ -243,10 +248,55 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "JavaScript interface added");
 
         // ========== WebViewClient配置 ==========
+
+        // 关键：创建WebViewAssetLoader用于访问临时文件
+        // 使用标准地址https://appassets.androidplatform.net/绕过file://限制
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+            .addPathHandler("/bha/", new WebViewAssetLoader.PathHandler() {
+                @Override
+                public WebResourceResponse handle(String path) {
+                    try {
+                        Log.d(TAG, "AssetLoader request path: " + path);
+                        // path 格式: bha_1234567890_xxx.zip (相对于 /bha/ 前缀)
+                        File cacheFile = new File(getCacheDir(), path);
+                        if (cacheFile.exists() && cacheFile.getName().startsWith("bha_")) {
+                            long size = cacheFile.length();
+                            Log.d(TAG, "Serving file from cache: " + cacheFile.getAbsolutePath() + " size=" + size);
+                            InputStream is = new FileInputStream(cacheFile);
+                            // MIME类型：application/zip
+                            return new WebResourceResponse("application/zip", "UTF-8", is);
+                        }
+                        Log.w(TAG, "Cache file not found: " + path);
+                        return null;
+                    } catch (Exception e) {
+                        Log.e(TAG, "AssetLoader error for path: " + path, e);
+                        return null;
+                    }
+                }
+            })
+            .build();
+        Log.d(TAG, "WebViewAssetLoader initialized");
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                // 关键：拦截https://appassets.androidplatform.net/请求
+                WebResourceResponse response = assetLoader.shouldInterceptRequest(request.getUrl());
+                if (response != null) {
+                    Log.d(TAG, "Intercepted request: " + request.getUrl());
+                    return response;
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
+
+                // WebViewAssetLoader的内部地址，让WebView处理
+                if (url.startsWith("https://appassets.androidplatform.net/")) {
+                    return false;
+                }
 
                 if (url.startsWith("file:///android_asset/")) {
                     return false;
@@ -671,9 +721,11 @@ public class MainActivity extends AppCompatActivity {
 
                     final long finalSize = totalRead;
                     final String finalPath = tempFile.getAbsolutePath();
-                    final String fileUrl = "file://" + finalPath;
+                    // 关键：使用WebViewAssetLoader的https://地址绕过file://访问限制
+                    final String fileUrl = "https://appassets.androidplatform.net/bha/" + tempFile.getName();
 
                     Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
+                    Log.d(TAG, "AssetLoader URL: " + fileUrl);
 
                     // 回调JS，传递file:// URL和文件信息（对象形式，避免大字符串）
                     runOnUiThread(() -> {

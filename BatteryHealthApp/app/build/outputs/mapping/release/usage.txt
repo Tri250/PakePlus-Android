@@ -6344,6 +6344,14 @@ kotlinx.coroutines.sync.SemaphoreImpl
 kotlinx.coroutines.sync.SemaphoreKt$withPermit$1
 kotlinx.coroutines.sync.SemaphoreKt
 kotlinx.coroutines.sync.SemaphoreSegment
+org.chromium.support_lib_boundary.ProcessGlobalConfigConstants:
+    private void <init>()
+org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil:
+    public void <init>()
+    public static boolean containsFeature(java.lang.String[],java.lang.String)
+    public static java.lang.reflect.InvocationHandler[] createInvocationHandlersForArray(java.lang.Object[])
+    public static boolean instanceOfInOwnClassLoader(java.lang.Object,java.lang.String)
+org.chromium.support_lib_boundary.util.Features
 org.intellij.lang.annotations.Flow
 org.intellij.lang.annotations.Identifier
 org.intellij.lang.annotations.JdkConstants$AdjustableOrientation
@@ -6542,6 +6550,7 @@ androidx.transition.ViewUtilsApi23:
     static void <clinit>()
 androidx.viewpager2.widget.ViewPager2:
     static void <clinit>()
+androidx.webkit.ProcessGlobalConfig$$InternalSyntheticBackportWithForwarding$1$6e47baf2111c232e3cbb35c51f9a16151e4acc16e1de68c94156721d400eff93$0
 com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$79d3d718a92c670844829b2b23617445e366caf04cf509578911028d848fa4bb$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$44d80dbb9ad7a590560647b113fd692811d2768ab991e6beaf4fd468a9eccfb4$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$6f21c6832e587cdd5dc7ce4294c0b426b3ff5a5af4f132a680af9e5365a8ecfe$0
@@ -7525,3 +7534,9 @@ kotlinx.coroutines.scheduling.WorkQueue:
     public final kotlinx.coroutines.scheduling.Task poll()
     public static boolean pollTo()
     public static long tryStealFrom()
+org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil$InvocationHandlerWithDelegateGetter:
+    public static java.lang.Object getDelegate()
+org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil:
+    public static final synthetic boolean $assertionsDisabled
+    static void <clinit>()
+    public static org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil$InvocationHandlerWithDelegateGetter createInvocationHandlerFor(java.lang.Object)

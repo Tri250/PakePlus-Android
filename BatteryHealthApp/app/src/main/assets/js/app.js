@@ -530,9 +530,14 @@ const BatteryHealthApp = {
 
         console.log('Fetching file from:', fileUrl, 'size:', fileSize);
 
-        // 关键修复：使用fetch流式读取临时文件
-        // 这样不会在JS内存中同时保留Base64字符串和Uint8Array
-        fetch(fileUrl)
+        // 关键修复：使用WebViewAssetLoader的https://地址
+        // 这个URL会被Android端shouldInterceptRequest拦截并返回本地文件
+        // 绕过了file://无法通过fetch访问的限制
+        fetch(fileUrl, {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'omit'
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('文件读取失败: ' + response.status);
@@ -557,6 +562,7 @@ const BatteryHealthApp = {
             })
             .catch(error => {
                 console.error('Failed to load file:', error);
+                console.error('URL was:', fileUrl);
                 // 清理临时文件
                 if (window.AndroidFilePicker && filePath) {
                     try {
@@ -564,7 +570,7 @@ const BatteryHealthApp = {
                     } catch (e) {}
                 }
                 if (this._fileReadReject) {
-                    this._fileReadReject(new Error('文件加载失败: ' + error.message));
+                    this._fileReadReject(new Error('文件加载失败: ' + error.message + ' (URL: ' + fileUrl + ')'));
                 }
             });
     },

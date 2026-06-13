@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.batteryhealth.app-mergeReleaseResources-29:/values-v26/values-v26.xml",
+            "outputFile": "com.batteryhealth.app-mergeReleaseResources-30:/values-v26/values-v26.xml",
             "map": [
                 {
                     "source": "/root/.gradle/caches/8.14.4/transforms/66e72122a9b7c5e4615926b5a2f90fd2/transformed/appcompat-1.6.1/res/values-v26/values-v26.xml",
