@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小米电池健康度分析工具</title>
+    <title>安卓手机电池健康度分析工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"></script>
     <style>
@@ -559,6 +559,66 @@
             margin-top: 10px;
             font-style: italic;
         }
+        /* 品牌标签样式 */
+        .brand-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 5px;
+            background: #f8fafc;
+            border-radius: 15px;
+        }
+        .brand-tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            border: none;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #5c6b7e;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .brand-tab:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .brand-tab.active {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        .brand-tab i {
+            font-size: 1rem;
+        }
+        .brand-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .brand-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        code {
+            background: #e8f4fd;
+            color: var(--primary-dark);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.2rem;
@@ -627,7 +687,7 @@
 </head>
 <body>
     <div class="header">
-        <h1><i class="fas fa-battery-full"></i> 小米电池健康度分析工具</h1>
+        <h1><i class="fas fa-battery-full"></i> 安卓手机电池健康度分析工具</h1>
         <p>上传设备诊断文件，获取电池健康度详细分析报告</p>
     </div>
 
@@ -638,25 +698,116 @@
                 <h2>使用说明</h2>
             </div>
 
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>生成诊断文件</h3>
-                    <p>在手机的"设置->我的设备->全部参数与信息"中，快速连续点击处理器信息区域生成诊断文件(点击过程中会有提示，没看到提示就是点击的位置不对，点击处理器型号的文字)</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>导出压缩文件</h3>
-                    <p>点击处理器信息后，会自动生成诊断压缩包，保存到您的设备存储，等待即可，通知栏可以看到导出进度，进度完成会自动保存到手机的/MIUI/debug_log目录</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>上传分析</h3>
-                    <p>使用下方文件上传功能上传诊断文件进行分析，点击选择文件注意按顺序选择：文件根目录->选择"MIUI"目录->选择"debug_log"目录->选择"bugreport开头的文件"</p>
+            <!-- 品牌选择标签 -->
+            <div class="brand-tabs">
+                <button class="brand-tab active" data-brand="xiaomi">
+                    <i class="fas fa-mobile-alt"></i> 小米/红米
+                </button>
+                <button class="brand-tab" data-brand="vivo">
+                    <i class="fas fa-mobile-alt"></i> vivo/iQOO
+                </button>
+                <button class="brand-tab" data-brand="oppo">
+                    <i class="fas fa-mobile-alt"></i> OPPO/一加/realme
+                </button>
+                <button class="brand-tab" data-brand="huawei">
+                    <i class="fas fa-mobile-alt"></i> 华为/荣耀
+                </button>
+            </div>
+
+            <!-- 小米/红米说明 -->
+            <div class="brand-content active" id="xiaomi-content">
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>生成诊断文件</h3>
+                        <p>打开【设置】→【我的设备】→【全部参数与信息】，快速连续点击【处理器】信息区域，直到出现"已生成bug报告"提示</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>导出压缩文件</h3>
+                        <p>等待系统生成bug报告压缩包，文件会自动保存到：内部存储/MIUI/debug_log/ 目录下（文件名以bugreport开头）</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>上传分析</h3>
+                        <p>点击下方"选择文件"，找到MIUI/debug_log目录，选择以bugreport开头的ZIP压缩文件进行分析</p>
+                    </div>
                 </div>
             </div>
 
-            <div style="padding: 20px; background: #f8fafc; border-radius: 15px; margin-top: 15px;">
+            <!-- vivo/iQOO说明 -->
+            <div class="brand-content" id="vivo-content">
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>生成诊断文件</h3>
+                        <p>打开拨号界面，输入 <code>*#*#112#*#*</code> 进入日志采集界面，点击【更多】→【生成bug报告】，等待生成完成</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>导出压缩文件</h3>
+                        <p>生成的bug报告会保存在：内部存储/Android/data/com.android.bugreport/ 或 文件管理器根目录下（文件名以bugreport开头）</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>上传分析</h3>
+                        <p>点击下方"选择文件"，找到bugreport开头的ZIP文件进行分析</p>
+                    </div>
+                </div>
+                <div style="padding: 15px; background: #e8f4fd; border-radius: 12px; margin-top: 20px;">
+                    <p><i class="fas fa-info-circle" style="color: var(--primary);"></i> <strong>vivo系统设置查看方法</strong>：部分机型可直接在【设置】→【电池】→【电池健康与充电】中查看最大容量</p>
+                </div>
+            </div>
+
+            <!-- OPPO/一加/realme说明 -->
+            <div class="brand-content" id="oppo-content">
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>生成诊断文件</h3>
+                        <p>打开拨号界面，输入 <code>*#800#</code> 或 <code>*#*#4636#*#*</code> 进入工程模式，选择【生成bug报告】或【提交错误报告】</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>导出压缩文件</h3>
+                        <p>生成的报告会保存在：内部存储/Android/data/com.coloros.bugreport/ 或 文件管理器根目录下</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>上传分析</h3>
+                        <p>点击下方"选择文件"，找到生成的ZIP压缩文件进行分析</p>
+                    </div>
+                </div>
+                <div style="padding: 15px; background: #e8f4fd; border-radius: 12px; margin-top: 20px;">
+                    <p><i class="fas fa-info-circle" style="color: var(--primary);"></i> <strong>ColorOS系统设置查看方法</strong>：ColorOS 7.0及以上版本可在【设置】→【电池】→【电池健康】中直接查看最大容量</p>
+                </div>
+            </div>
+
+            <!-- 华为/荣耀说明 -->
+            <div class="brand-content" id="huawei-content">
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>生成诊断文件</h3>
+                        <p>打开【设置】→【关于手机】，快速连续点击【版本号】7次开启开发者模式，然后进入【系统和更新】→【开发人员选项】→【提交错误报告】</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>导出压缩文件</h3>
+                        <p>生成的报告会保存在通知栏或文件管理器中，通常位于内部存储根目录下（文件名以bugreport开头）</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>上传分析</h3>
+                        <p>点击下方"选择文件"，找到生成的ZIP压缩文件进行分析</p>
+                    </div>
+                </div>
+                <div style="padding: 15px; background: #e8f4fd; border-radius: 12px; margin-top: 20px;">
+                    <p><i class="fas fa-info-circle" style="color: var(--primary);"></i> <strong>华为/荣耀系统设置查看方法</strong>：可在【设置】→【电池】→【电池健康】中查看最大容量，或使用【手机管家】应用获取详细数据</p>
+                </div>
+            </div>
+
+            <div style="padding: 20px; background: #f8fafc; border-radius: 15px; margin-top: 25px;">
                 <p><i class="fas fa-shield-alt" style="color: var(--primary);"></i> <strong>隐私保护声明</strong>：所有分析过程均在您的设备本地完成，数据不会上传至任何服务器，确保您的信息安全</p>
                 <p style="margin-top: 10px;"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> <strong>免责声明</strong>：</p>
                 <ul style="margin-top: 5px; padding-left: 20px;">
@@ -812,7 +963,7 @@
                 <div class="file-upload-area" id="drop-area">
                     <i class="fas fa-file-archive"></i>
                     <p>拖放文件到此处 或 <strong>点击选择文件</strong></p>
-                    <p style="font-size: 0.95rem; color: #95a5a6;">支持小米/HyperOS系统生成的诊断文件</p>
+                    <p style="font-size: 0.95rem; color: #95a5a6;">支持小米、vivo、OPPO、华为等安卓手机生成的诊断文件</p>
                 </div>
                 <div id="file-name-display" class="file-name-display" style="display: none;">
                     <i class="fas fa-file-alt"></i>
@@ -861,6 +1012,20 @@
                         <div class="stat-value" id="health-percentage">-</div>
                         <div class="stat-label">%</div>
                     </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-sync-alt"></i></div>
+                        <div class="stat-label">充电循环次数</div>
+                        <div class="stat-value" id="cycle-count">-</div>
+                        <div class="stat-label">次</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-thermometer-half"></i></div>
+                        <div class="stat-label">电池温度</div>
+                        <div class="stat-value" id="battery-temp">-</div>
+                        <div class="stat-label">°C</div>
+                    </div>
                 </div>
 
                 <div class="battery-section">
@@ -887,7 +1052,7 @@
     </div>
 
     <div class="footer">
-        <p>小米电池健康度分析工具 | 数据仅在本地处理，保护您的隐私</p>
+        <p>安卓手机电池健康度分析工具 | 数据仅在本地处理，保护您的隐私</p>
     </div>
 
     <script>
@@ -1040,7 +1205,7 @@
                                 foundFiles: foundFiles
                             });
                         } else {
-                            reject(new Error('未找到电池健康度信息。请确保上传的是正确的小米诊断文件。'));
+                            reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
                         }
                     } catch (error) {
                         reject(error);
@@ -1052,30 +1217,12 @@
         }
 
         function extractBatteryInfo(content) {
-            // 尝试多种模式匹配电池信息
-            const patterns = [
-                // 小米/MIUI格式
-                /charge\s*counter[:\s]+(\d+)/i,
-                /current\s*now[:\s]+(-?\d+)/i,
-                /capacity[:\s]+(\d+)/i,
-                /battery\s*capacity[:\s]+(\d+)/i,
-                /health[:\s]+(\d+)/i,
-                // 其他可能格式
-                /charge_counter[:\s]+(\d+)/i,
-                /CURRENT_NOW[:\s]+(-?\d+)/i,
-                /CAPACITY[:\s]+(\d+)/i,
-                /BATTERY_CAPACITY[:\s]+(\d+)/i,
-                /HEALTH[:\s]+(\d+)/i,
-                // 微安时格式
-                /(\d+)\s*uAh/i,
-                // 毫安时格式
-                /(\d+)\s*mAh/i
-            ];
-
             let chargeCounter = null;
             let currentNow = null;
             let capacity = null;
             let health = null;
+            let cycleCount = null;
+            let batteryTemp = null;
 
             // 提取 charge_counter (充电计数器，单位微安时)
             const chargeCounterMatch = content.match(/charge[_-]?counter[:\s]+(\d+)/i);
@@ -1101,6 +1248,43 @@
                 health = parseInt(healthMatch[1]);
             }
 
+            // 提取 cycle_count (充电循环次数)
+            const cycleCountPatterns = [
+                /cycle[_-]?count[:\s]+(\d+)/i,
+                /charge[_-]?cycle[:\s]+(\d+)/i,
+                /battery[_-]?cycle[:\s]+(\d+)/i,
+                /cycle[:\s]+(\d+)[\s\w]*次/i,
+                /已充电[:\s]*(\d+)[\s\w]*次/i
+            ];
+            for (const pattern of cycleCountPatterns) {
+                const match = content.match(pattern);
+                if (match) {
+                    cycleCount = parseInt(match[1]);
+                    break;
+                }
+            }
+
+            // 提取电池温度 (多种格式)
+            const tempPatterns = [
+                /temperature[:\s]+(-?\d+\.?\d*)/i,
+                /battery[_-]?temp[:\s]+(-?\d+\.?\d*)/i,
+                /temp[:\s]+(-?\d+\.?\d*)/i,
+                /电池温度[:\s]+(-?\d+\.?\d*)/i,
+                /温度[:\s]+(-?\d+\.?\d*)/i
+            ];
+            for (const pattern of tempPatterns) {
+                const match = content.match(pattern);
+                if (match) {
+                    let temp = parseFloat(match[1]);
+                    // 如果温度大于100，可能是以0.1度为单位
+                    if (temp > 100 && temp < 1000) {
+                        temp = temp / 10;
+                    }
+                    batteryTemp = temp;
+                    break;
+                }
+            }
+
             // 尝试从 dumpstate 中提取更详细的电池信息
             const batterySection = content.match(/Battery\s+Service[\s\S]*?(?=\n\n|\n[A-Z])/i);
             if (batterySection) {
@@ -1110,6 +1294,22 @@
                 if (!chargeCounter) {
                     const match = section.match(/charge[_-]?counter[:\s]+(\d+)/i);
                     if (match) chargeCounter = parseInt(match[1]);
+                }
+                // 在电池服务部分查找循环次数
+                if (!cycleCount) {
+                    const match = section.match(/cycle[_-]?count[:\s]+(\d+)/i);
+                    if (match) cycleCount = parseInt(match[1]);
+                }
+                // 在电池服务部分查找温度
+                if (batteryTemp === null) {
+                    const match = section.match(/temperature[:\s]+(-?\d+\.?\d*)/i);
+                    if (match) {
+                        let temp = parseFloat(match[1]);
+                        if (temp > 100 && temp < 1000) {
+                            temp = temp / 10;
+                        }
+                        batteryTemp = temp;
+                    }
                 }
             }
 
@@ -1123,6 +1323,8 @@
                     currentNow: currentNow,
                     capacity: capacity,
                     health: health,
+                    cycleCount: cycleCount,
+                    batteryTemp: batteryTemp,
                     rawContent: content.substring(0, 5000) // 保存部分原始内容用于显示
                 };
             }
@@ -1137,6 +1339,8 @@
                 }
                 return {
                     currentCapacity: Math.round(cap),
+                    cycleCount: cycleCount,
+                    batteryTemp: batteryTemp,
                     rawContent: content.substring(0, 5000)
                 };
             }
@@ -1150,6 +1354,22 @@
             
             const healthPercentage = ((result.currentCapacity / initialCapacity) * 100).toFixed(1);
             document.getElementById('health-percentage').textContent = healthPercentage;
+
+            // 显示循环次数
+            const cycleCountEl = document.getElementById('cycle-count');
+            if (result.cycleCount !== null && result.cycleCount !== undefined) {
+                cycleCountEl.textContent = result.cycleCount;
+            } else {
+                cycleCountEl.textContent = '未检测到';
+            }
+
+            // 显示电池温度
+            const batteryTempEl = document.getElementById('battery-temp');
+            if (result.batteryTemp !== null && result.batteryTemp !== undefined) {
+                batteryTempEl.textContent = result.batteryTemp.toFixed(1);
+            } else {
+                batteryTempEl.textContent = '未检测到';
+            }
 
             // 更新电池进度条
             const batteryLevel = document.getElementById('battery-level');
@@ -1187,7 +1407,7 @@
         document.getElementById('toggle-text').addEventListener('click', function() {
             const textDiv = document.getElementById('original-text');
             const btn = this;
-            
+
             if (textDiv.style.display === 'none' || textDiv.style.display === '') {
                 textDiv.style.display = 'block';
                 btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏详情';
@@ -1195,6 +1415,20 @@
                 textDiv.style.display = 'none';
                 btn.innerHTML = '<i class="fas fa-eye"></i> 显示详情';
             }
+        });
+
+        // 品牌标签切换功能
+        document.querySelectorAll('.brand-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 移除所有标签的active状态
+                document.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.brand-content').forEach(c => c.classList.remove('active'));
+
+                // 添加当前标签的active状态
+                this.classList.add('active');
+                const brand = this.getAttribute('data-brand');
+                document.getElementById(brand + '-content').classList.add('active');
+            });
         });
     </script>
 </body>
