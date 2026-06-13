@@ -302,11 +302,33 @@ const BatteryHealthApp = {
         console.log('currentFile:', this.currentFile);
         console.log('window.__androidSelectedFile:', window.__androidSelectedFile);
 
-        // 关键修复：如果currentFile为null，检查全局变量兜底
+        // 关键修复：多重兜底机制确保currentFile一定被设置
+        // 优先级：currentFile > window.__androidSelectedFile > AndroidFilePicker.getSelectedFileInfo()
+
+        // 兜底1：检查全局变量
         if (!this.currentFile && window.__androidSelectedFile) {
             console.log('Using global variable fallback for file');
             this.currentFile = window.__androidSelectedFile;
-            // 同时更新DOM
+        }
+
+        // 兜底2：同步从Android接口获取文件信息（最可靠）
+        // 解决evaluateJavascript因pauseTimers未执行的问题
+        if (!this.currentFile && window.AndroidFilePicker && typeof window.AndroidFilePicker.getSelectedFileInfo === 'function') {
+            try {
+                var fileInfoStr = window.AndroidFilePicker.getSelectedFileInfo();
+                if (fileInfoStr) {
+                    console.log('Got file info from Android interface:', fileInfoStr);
+                    var fileInfo = JSON.parse(fileInfoStr);
+                    this.currentFile = fileInfo;
+                    window.__androidSelectedFile = fileInfo;
+                }
+            } catch (e) {
+                console.error('Failed to get file info from Android:', e);
+            }
+        }
+
+        // 更新DOM
+        if (this.currentFile) {
             if (this.elements.selectedFileName) {
                 this.elements.selectedFileName.textContent = this.currentFile.name;
             }
@@ -391,10 +413,22 @@ const BatteryHealthApp = {
      */
     async analyzeZipFile(file, initialCapacity) {
         return new Promise((resolve, reject) => {
-            // 兜底：如果file为null，从全局变量获取
+            // 兜底：如果file为null，从全局变量或Android接口获取
             if (!file && window.__androidSelectedFile) {
                 file = window.__androidSelectedFile;
                 console.log('analyzeZipFile: using global variable fallback');
+            }
+            if (!file && window.AndroidFilePicker && typeof window.AndroidFilePicker.getSelectedFileInfo === 'function') {
+                try {
+                    var fileInfoStr = window.AndroidFilePicker.getSelectedFileInfo();
+                    if (fileInfoStr) {
+                        file = JSON.parse(fileInfoStr);
+                        window.__androidSelectedFile = file;
+                        console.log('analyzeZipFile: got file from Android interface');
+                    }
+                } catch (e) {
+                    console.error('analyzeZipFile: failed to get file info:', e);
+                }
             }
 
             // 检查是否是Android URI文件

@@ -40,15 +40,17 @@ import java.io.InputStream;
 /**
  * 电池健康度分析工具主Activity
  *
- * 核心修复（v1.2.9）：
- * 1. 修复onStop()清空filePathCallback导致"请选择诊断文件"反复出现
- *    - 根因：文件选择器打开时Activity进入后台触发onStop，清空了callback
- *    - onActivityResult发现callback为null直接return，不通知JS
- *    - 修复：添加isFilePickerActive标记，文件选择器活跃期间不清空callback
- * 2. onActivityResult无论callback是否为null都通知JS
- * 3. 三重保障机制：全局变量+函数调用+DOM操作
+ * 核心修复（v1.3.0）：
+ * 1. 移除pauseTimers()调用 - 这是"请选择诊断文件"的直接原因
+ *    pauseTimers()全局暂停WebView JS执行，导致evaluateJavascript无法执行
+ *    onActivityResult中notifyFileSelected的JS代码被暂停，currentFile永远为null
+ * 2. 添加getSelectedFileInfo()同步接口 - JS可直接从Java端同步获取文件信息
+ *    不依赖evaluateJavascript异步执行，彻底解决时序问题
+ * 3. onResume重新通知JS - 兜底机制，防止JS未收到文件信息
+ * 4. onStop保护callback - 文件选择器活跃期间不清空callback
+ * 5. onActivityResult无论callback状态都通知JS
  *
- * @version 1.2.9
+ * @version 1.3.0
  * @author 带娃的小陈工
  */
 public class MainActivity extends AppCompatActivity {
@@ -65,6 +67,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean isMemoryLow = false;
     private boolean isPickerFromJs = false; // 标记是否由JS触发
     private boolean isFilePickerActive = false; // 标记文件选择器是否打开中
+
+    // 关键修复：在Java端保存选中的文件信息，提供同步获取机制
+    // 解决evaluateJavascript异步执行时序问题
+    private volatile String pendingFileUri = null;
+    private volatile String pendingFileName = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -856,6 +863,22 @@ public class MainActivity extends AppCompatActivity {
         public void requestStoragePermission() {
             runOnUiThread(() -> checkAndRequestPermissions());
         }
+
+        /**
+         * 同步获取选中的文件信息
+         * 关键修复：解决evaluateJavascript异步时序问题
+         * 当evaluateJavascript因pauseTimers未执行时，JS可通过此方法同步获取文件信息
+         * @return JSON格式的文件信息，或null
+         */
+        @JavascriptInterface
+        public String getSelectedFileInfo() {
+            if (pendingFileUri != null && pendingFileName != null) {
+                return "{\"uri\":\"" + pendingFileUri.replace("\\", "\\\\").replace("\"", "\\\"")
+                        + "\",\"name\":\"" + pendingFileName.replace("\\", "\\\\").replace("\"", "\\\"")
+                        + "\",\"isAndroidUri\":true,\"size\":-1}";
+            }
+            return null;
+        }
     }
 
     @Override
@@ -901,6 +924,10 @@ public class MainActivity extends AppCompatActivity {
                     String fileName = getFileName(uri);
                     Log.d(TAG, "File accepted: " + fileName);
                     Toast.makeText(this, "已选择: " + fileName, Toast.LENGTH_SHORT).show();
+
+                    // 关键修复：在Java端保存文件信息，提供同步获取机制
+                    pendingFileUri = uri.toString();
+                    pendingFileName = fileName;
 
                     // 关键修复：无论callback是否为null，都必须通知JS
                     // 这是"请选择诊断文件"bug的根本原因：
@@ -1007,7 +1034,10 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if (webView != null && !isWebViewDestroyed) {
             webView.onPause();
-            webView.pauseTimers();
+            // 关键修复：移除pauseTimers()调用
+            // pauseTimers()会全局暂停所有WebView的JS定时器和异步执行
+            // 导致onActivityResult中的evaluateJavascript无法执行
+            // 这是"请选择诊断文件"反复出现的直接原因之一
         }
     }
 
@@ -1016,7 +1046,14 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if (webView != null && !isWebViewDestroyed) {
             webView.onResume();
-            webView.resumeTimers();
+            // 关键修复：移除resumeTimers()，因为不再调用pauseTimers()
+
+            // 兜底机制：如果有待处理的文件信息，重新通知JS
+            // 防止evaluateJavascript因WebView暂停而未执行的情况
+            if (pendingFileUri != null && pendingFileName != null) {
+                Log.d(TAG, "onResume: re-notifying JS about pending file: " + pendingFileName);
+                notifyFileSelected(pendingFileUri, pendingFileName);
+            }
         }
     }
 
