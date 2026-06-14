@@ -608,12 +608,26 @@ const BatteryHealthApp = {
                         this._fileReadResolve(batteryInfo);
                     }
                 } else {
-                    // 调试：检查content中是否有charge_counter相关字符串
+                    // 调试：检查content中是否包含各种电池相关字符串
                     const hasChargeCounter = contentLower.includes('charge_counter') || contentLower.includes('charge counter');
                     const hasCycleCount = contentLower.includes('cycle_count') || contentLower.includes('cycle count');
-                    const debugMsg = `诊断信息: 文件长度=${content.length}, charge_counter=${hasChargeCounter ? '找到' : '未找到'}, cycle_count=${hasCycleCount ? '找到' : '未找到'}`;
+                    // 小米/澎湃OS格式
+                    const hasFc = contentLower.includes('fc=') || contentLower.includes('fc:');
+                    const hasBcc = contentLower.includes('batterycapacity') || contentLower.includes('bcc=');
+                    const hasCc = /(?:^|\s)cc=\d/.test(contentLower);
+                    // 其他可能的关键字
+                    const hasHealthd = contentLower.includes('healthd');
+                    const hasHealth = contentLower.includes('health');
+                    const hasPowerSupply = contentLower.includes('power_supply') || contentLower.includes('power supply');
+                    const hasMF = contentLower.includes('mf_05') || contentLower.includes('mf_06') || contentLower.includes('mf_02');
+                    const hasMah = contentLower.includes('mah') || contentLower.includes('mAh');
+                    const hasUah = contentLower.includes('uah');
+
+                    const debugMsg = `诊断: 文件长度=${content.length}, charge_counter=${hasChargeCounter ? '✓' : '✗'}, cycle_count=${hasCycleCount ? '✓' : '✗'}, fc=${hasFc ? '✓' : '✗'}, batterycapacity=${hasBcc ? '✓' : '✗'}, cc=${hasCc ? '✓' : '✗'}, healthd=${hasHealthd ? '✓' : '✗'}, power_supply=${hasPowerSupply ? '✓' : '✗'}, mf_xx=${hasMF ? '✓' : '✗'}, uah=${hasUah ? '✓' : '✗'}, mah=${hasMah ? '✓' : '✗'}, health=${hasHealth ? '✓' : '✗'}`;
                     console.warn(debugMsg);
-                    console.warn('Content preview:', content.substring(0, 500));
+                    console.warn('Content preview (first 2000 chars):', content.substring(0, 2000));
+                    console.warn('Content preview (last 1000 chars):', content.substring(Math.max(0, content.length - 1000)));
+
                     if (this._fileReadReject) {
                         this._fileReadReject(new Error('未找到电池健康度信息。' + debugMsg));
                     }

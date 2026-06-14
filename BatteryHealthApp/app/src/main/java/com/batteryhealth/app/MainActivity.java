@@ -809,19 +809,34 @@ public class MainActivity extends AppCompatActivity {
                     boolean isGenericTxt = name.endsWith(".txt") && entrySize < 30 * 1024 * 1024;
 
                     if (isTargetFile || isBatteryFile || isDumpstateFile || isGenericTxt) {
-                        // 流式扫描：只提取包含电池信息的关键段落，避免加载整个文件
-                        String batterySection = extractBatterySection(zis, entry.getName());
-                        if (batterySection != null && batterySection.length() > 0) {
-                            Log.d(TAG, "Found battery section in: " + entry.getName() + " size=" + batterySection.length());
-                            // bugreport 文件优先级最高
+                        // 读取txt文件内容
+                        String content = extractBatterySection(zis, entry.getName());
+                        if (content != null && content.length() > 0) {
+                            // 关键修复：bugreport 文件一律直接返回
+                            // 用户的bugreport文件名是 bugreport-...zip，其txt文件一定包含完整电池信息
                             if (isTargetFile) {
+                                Log.d(TAG, "Bugreport file found, returning: " + entry.getName() + " size=" + content.length());
                                 zis.closeEntry();
                                 zis.close();
-                                return batterySection;
+                                return content;
                             }
-                            // 其他电池相关文件作为备选
-                            if (bestContent == null || batterySection.length() > bestContent.length()) {
-                                bestContent = batterySection;
+
+                            // 其他txt文件需要包含电池字样
+                            String contentLower = content.toLowerCase();
+                            boolean hasBatteryInfo = contentLower.contains("battery") ||
+                                                     contentLower.contains("health") ||
+                                                     contentLower.contains("charge") ||
+                                                     contentLower.contains("power_supply") ||
+                                                     contentLower.contains("power supply") ||
+                                                     contentLower.contains("dumpsys") ||
+                                                     contentLower.contains("healthd");
+
+                            if (hasBatteryInfo) {
+                                Log.d(TAG, "Found battery info in: " + entry.getName() + " size=" + content.length());
+                                // 其他电池相关文件作为备选
+                                if (bestContent == null || content.length() > bestContent.length()) {
+                                    bestContent = content;
+                                }
                             }
                         }
                     }
