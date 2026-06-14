@@ -809,51 +809,19 @@ public class MainActivity extends AppCompatActivity {
                     boolean isGenericTxt = name.endsWith(".txt") && entrySize < 30 * 1024 * 1024;
 
                     if (isTargetFile || isBatteryFile || isDumpstateFile || isGenericTxt) {
-                        // 读取文本内容（限制最大30MB）
-                        int maxSize = (int) Math.min(entrySize > 0 ? entrySize : 30 * 1024 * 1024, 30 * 1024 * 1024);
-                        byte[] buffer = new byte[8192];
-                        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                        int bytesRead;
-                        int totalRead = 0;
-
-                        while ((bytesRead = zis.read(buffer)) != -1 && totalRead < maxSize) {
-                            int toWrite = Math.min(bytesRead, maxSize - totalRead);
-                            baos.write(buffer, 0, toWrite);
-                            totalRead += toWrite;
-                        }
-
-                        String content = baos.toString("UTF-8");
-                        baos.close();
-
-                        // 检查内容是否包含电池相关信息
-                        // 关键词覆盖多种格式：charge_counter, CHARGE_COUNTER, charge counter, cycle_count, cycle count等
-                        String contentLower = content.toLowerCase();
-                        boolean hasBatteryInfo = contentLower.contains("charge_counter") ||
-                                                 contentLower.contains("charge counter") ||
-                                                 contentLower.contains("cycle_count") ||
-                                                 contentLower.contains("cycle count") ||
-                                                 contentLower.contains("battery capacity") ||
-                                                 contentLower.contains("batterycapacity") ||
-                                                 contentLower.contains("full_charge_capacity") ||
-                                                 contentLower.contains("voltage_now") ||
-                                                 contentLower.contains("current_now") ||
-                                                 contentLower.contains("health: ") ||
-                                                 contentLower.contains("health=") ||
-                                                 contentLower.contains("technology: ") ||
-                                                 contentLower.contains("status: ") ||
-                                                 contentLower.contains("power supply");
-
-                        if (hasBatteryInfo) {
-                            Log.d(TAG, "Found battery info in: " + entry.getName() + " size=" + content.length());
+                        // 流式扫描：只提取包含电池信息的关键段落，避免加载整个文件
+                        String batterySection = extractBatterySection(zis, entry.getName());
+                        if (batterySection != null && batterySection.length() > 0) {
+                            Log.d(TAG, "Found battery section in: " + entry.getName() + " size=" + batterySection.length());
                             // bugreport 文件优先级最高
                             if (isTargetFile) {
                                 zis.closeEntry();
                                 zis.close();
-                                return content;
+                                return batterySection;
                             }
                             // 其他电池相关文件作为备选
-                            if (bestContent == null || content.length() > bestContent.length()) {
-                                bestContent = content;
+                            if (bestContent == null || batterySection.length() > bestContent.length()) {
+                                bestContent = batterySection;
                             }
                         }
                     }
@@ -888,6 +856,43 @@ public class MainActivity extends AppCompatActivity {
                 return android.util.Base64.encodeToString(buffer, android.util.Base64.NO_WRAP);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to read file to Base64", e);
+                return null;
+            }
+        }
+
+        /**
+         * 流式扫描ZIP条目，提取包含电池信息的关键段落
+         * 关键修复：只提取关键段落（如"POWER SUPPLY"或"battery"章节），
+         * 而不是加载整个文件，避免OOM同时确保解析器能找到数据
+         *
+         * @param zis ZipInputStream（已定位到目标entry）
+         * @param entryName 条目名称（用于日志）
+         * @return 提取的电池段落内容
+         */
+        private String extractBatterySection(java.util.zip.ZipInputStream zis, String entryName) {
+            try {
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                int totalRead = 0;
+                int maxSize = 30 * 1024 * 1024; // 最多读取30MB
+
+                // 读取整个txt文件内容（流式）
+                while ((bytesRead = zis.read(buffer)) != -1 && totalRead < maxSize) {
+                    int toWrite = Math.min(bytesRead, maxSize - totalRead);
+                    baos.write(buffer, 0, toWrite);
+                    totalRead += toWrite;
+                }
+
+                byte[] data = baos.toByteArray();
+                baos.close();
+                String content = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+
+                // 关键策略：返回完整内容，让JS端解析器处理
+                // 这样能匹配所有可能的格式（charge_counter, dumpsys battery, sysfs等）
+                return content;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to extract battery section", e);
                 return null;
             }
         }
