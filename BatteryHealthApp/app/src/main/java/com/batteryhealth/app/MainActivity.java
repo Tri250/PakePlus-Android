@@ -559,17 +559,39 @@ public class MainActivity extends AppCompatActivity {
                     return "{\"error\": \"Native library not loaded\"}";
                 }
                 
-                // 使用 Native 分析
-                BatteryHealthResult healthResult = BatteryAnalyzer.analyzeFile(filePath);
+                // 第一步：解析文件获取原始数据
+                BatteryParseResult parseResult = BatteryAnalyzer.parseFile(filePath);
                 
-                // 构建 JSON 结果
+                if (parseResult == null || !parseResult.hasData) {
+                    Log.w(TAG, "Native parse returned no data");
+                    return "{\"error\": \"未找到电池信息，请确认上传的是正确的诊断文件\", \"hasData\": false}";
+                }
+                
+                // 第二步：计算健康度
+                BatteryHealthResult healthResult = BatteryAnalyzer.calculateHealth(parseResult);
+                
+                // 构建 JSON 结果（包含解析数据 + 健康度数据）
                 StringBuilder json = new StringBuilder();
                 json.append("{");
                 json.append("\"success\": true,");
+                json.append("\"hasData\": true,");
+                
+                // 解析数据
+                json.append("\"brand\": \"").append(escapeJson(parseResult.getBrandText())).append("\",");
+                json.append("\"model\": \"").append(escapeJson(parseResult.getModelText())).append("\",");
+                json.append("\"designCapacityMah\": ").append(parseResult.designCapacityMah).append(",");
+                json.append("\"currentCapacityMah\": ").append(parseResult.currentCapacityMah).append(",");
+                json.append("\"chargeCounterMah\": ").append(parseResult.chargeCounterMah).append(",");
+                json.append("\"cycleCount\": ").append(parseResult.cycleCount).append(",");
+                json.append("\"temperatureCelsius\": ").append(parseResult.temperatureCelsius).append(",");
+                json.append("\"manufacturingDate\": \"").append(escapeJson(parseResult.manufacturingDate != null ? parseResult.manufacturingDate : "")).append("\",");
+                json.append("\"capacityRetention\": \"").append(escapeJson(parseResult.getCapacityRetentionText())).append("\",");
+                
+                // 健康度数据
                 json.append("\"healthPercentage\": ").append(healthResult.healthPercentage).append(",");
                 json.append("\"grade\": \"").append(healthResult.grade).append("\",");
                 json.append("\"gradeColor\": \"").append(healthResult.gradeColor).append("\",");
-                json.append("\"gradeDescription\": \"").append(healthResult.gradeDescription).append("\",");
+                json.append("\"gradeDescription\": \"").append(escapeJson(healthResult.gradeDescription)).append("\",");
                 json.append("\"diagnosisText\": \"").append(escapeJson(healthResult.diagnosisText)).append("\",");
                 json.append("\"confidence\": ").append(healthResult.confidence).append(",");
                 
@@ -603,7 +625,7 @@ public class MainActivity extends AppCompatActivity {
                 json.append("}");
                 
                 String result = json.toString();
-                Log.d(TAG, "Native analysis result: " + result);
+                Log.d(TAG, "Native analysis result length: " + result.length());
                 return result;
                 
             } catch (Exception e) {

@@ -514,25 +514,78 @@ const BatteryHealthApp = {
         }
 
         // 新版本：文件信息对象
-        if (!fileInfo || !fileInfo.url) {
+        if (!fileInfo || !fileInfo.path) {
             if (this._fileReadReject) {
                 this._fileReadReject(new Error('文件信息无效'));
             }
             return;
         }
 
-        this.updateProgress(55, '正在加载文件...');
-
-        const fileUrl = fileInfo.url;
         const filePath = fileInfo.path;
         const fileSize = fileInfo.size;
         const initialCapacity = this._currentInitialCapacity;
 
-        console.log('Fetching file from:', fileUrl, 'size:', fileSize);
+        // 优先使用 Native C++ 库分析（完全绕过 fetch，避免 CORS 问题）
+        if (window.AndroidFilePicker && typeof window.AndroidFilePicker.analyzeBugreportNative === 'function') {
+            console.log('Using Native C++ analysis for:', filePath);
+            this.updateProgress(55, '正在使用Native引擎分析...');
 
-        // 关键修复：使用WebViewAssetLoader的https://地址
-        // 这个URL会被Android端shouldInterceptRequest拦截并返回本地文件
-        // 绕过了file://无法通过fetch访问的限制
+            try {
+                const nativeResult = window.AndroidFilePicker.analyzeBugreportNative(filePath);
+                console.log('Native analysis result:', nativeResult);
+
+                if (nativeResult) {
+                    try {
+                        const result = JSON.parse(nativeResult);
+                        if (result.error) {
+                            console.warn('Native analysis error:', result.error, '- falling back to JS');
+                        } else if (result.success && result.healthPercentage > 0) {
+                            // Native 分析成功，转换格式给 displayResult
+                            this.updateProgress(90, '分析完成');
+                            const displayData = {
+                                brand: result.brand || 'unknown',
+                                currentCapacity: result.currentCapacityMah || Math.round(initialCapacity * result.healthPercentage / 100),
+                                cycleCount: result.cycleCount || null,
+                                batteryTemp: result.temperatureCelsius || null,
+                                healthGrade: result.grade || null,
+                                voltage: null,
+                                technology: null,
+                                rawContent: result.diagnosisText || '',
+                                _nativeResult: result
+                            };
+                            console.log('Native analysis successful:', displayData);
+                            if (this._fileReadResolve) {
+                                this._fileReadResolve(displayData);
+                            }
+                            // 清理临时文件
+                            if (window.AndroidFilePicker && filePath) {
+                                try { window.AndroidFilePicker.deleteTempFile(filePath); } catch(e) {}
+                            }
+                            return;
+                        }
+                    } catch (parseErr) {
+                        console.warn('Failed to parse native result:', parseErr, '- falling back to JS');
+                    }
+                }
+            } catch (nativeErr) {
+                console.warn('Native analysis failed:', nativeErr, '- falling back to JS');
+            }
+        }
+
+        // 回退方案：使用 fetch + JS 解析
+        // 注意：fetch 从 file:// 页面访问 https://appassets.androidplatform.net 可能因 CORS 失败
+        this.updateProgress(55, '正在加载文件...');
+
+        const fileUrl = fileInfo.url;
+        console.log('Falling back to fetch, URL:', fileUrl, 'size:', fileSize);
+
+        if (!fileUrl) {
+            if (this._fileReadReject) {
+                this._fileReadReject(new Error('文件URL无效，且Native分析不可用'));
+            }
+            return;
+        }
+
         fetch(fileUrl, {
             method: 'GET',
             cache: 'no-store',
@@ -548,7 +601,6 @@ const BatteryHealthApp = {
                 console.log('File loaded, size:', blob.size);
                 this.updateProgress(60, '正在解压文件...');
 
-                // 清理临时文件（解析完成后）
                 if (window.AndroidFilePicker && filePath) {
                     try {
                         window.AndroidFilePicker.deleteTempFile(filePath);
@@ -557,17 +609,13 @@ const BatteryHealthApp = {
                     }
                 }
 
-                // 解析ZIP
                 return this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
             })
             .catch(error => {
                 console.error('Failed to load file:', error);
                 console.error('URL was:', fileUrl);
-                // 清理临时文件
                 if (window.AndroidFilePicker && filePath) {
-                    try {
-                        window.AndroidFilePicker.deleteTempFile(filePath);
-                    } catch (e) {}
+                    try { window.AndroidFilePicker.deleteTempFile(filePath); } catch (e) {}
                 }
                 if (this._fileReadReject) {
                     this._fileReadReject(new Error('文件加载失败: ' + error.message + ' (URL: ' + fileUrl + ')'));
