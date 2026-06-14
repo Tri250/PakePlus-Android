@@ -771,11 +771,15 @@ public class MainActivity extends AppCompatActivity {
          * 从ZIP输入流中提取电池相关的文本文件内容
          * 流式解析，避免加载整个ZIP到内存
          *
-         * 关键策略（v1.4.0）：
-         * 单次扫描过程中：
-         * 1. 第一次遇到 bugreport-* 主文件时立即读取
-         * 2. 如果主文件不包含电池信息，扫描所有 dumpstate 文件
-         * 3. 限制单文件读取大小，避免 OOM
+         * 关键策略（v1.5.0）：
+         * 支持多品牌 bugreport 文件命名规范：
+         * - 小米: bugreport-*.txt
+         * - 华为/荣耀/HarmonyOS: bugreport-*.txt 或 BugReport-*.zip
+         * - OPPO/一加/ColorOS: bugreport*.txt
+         * - vivo/iQOO/OriginOS: bugreport*.txt
+         * - 三星: bugreport*.txt
+         * 1. 优先读取主 bugreport 文件
+         * 2. 兜底：扫描所有 dumpstate/board/battery/ 相关的 txt 文件并合并
          */
         private String extractBatteryTextFromZip(InputStream inputStream, long fileSize,
                                                    ProgressCallback progressCallback,
@@ -786,7 +790,7 @@ public class MainActivity extends AppCompatActivity {
                 long totalBytesRead = 0;
                 int lastProgress = startPercent;
 
-                // 第一遍：先找主 bugreport 文件
+                // 第一遍：先找主 bugreport 文件（支持多品牌命名规范）
                 String mainFileName = null;
                 long mainFileMaxSize = 0;
                 while ((entry = zis.getNextEntry()) != null) {
@@ -803,7 +807,13 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (!entry.isDirectory() && name.endsWith(".txt")) {
-                        if ((name.contains("bugreport-") || name.contains("bugreport_"))) {
+                        // 关键修复：识别所有品牌的 bugreport 主文件
+                        boolean isBugreport = (name.contains("bugreport-") ||
+                                                name.contains("bugreport_") ||
+                                                name.contains("bugreport.")) &&
+                                               !name.contains("dumpstate") &&
+                                               !name.contains("board");
+                        if (isBugreport) {
                             if (entrySize > mainFileMaxSize) {
                                 mainFileMaxSize = entrySize;
                                 mainFileName = entry.getName();
@@ -824,6 +834,7 @@ public class MainActivity extends AppCompatActivity {
                             String mainContent = readEntryContent(zis, 100 * 1024 * 1024);
                             zis.close();
                             if (mainContent != null && mainContent.length() > 0) {
+                                // 关键修复：增强多品牌电池关键词匹配
                                 String contentLower = mainContent.toLowerCase();
                                 boolean hasBatteryInfo = contentLower.contains("battery") ||
                                                          contentLower.contains("health") ||
@@ -834,13 +845,26 @@ public class MainActivity extends AppCompatActivity {
                                                          contentLower.contains("healthd") ||
                                                          contentLower.contains("voltage") ||
                                                          contentLower.contains("current") ||
-                                                         contentLower.contains("capacity");
+                                                         contentLower.contains("capacity") ||
+                                                         // 小米/澎湃OS格式
+                                                         contentLower.contains("mf_05") ||
+                                                         contentLower.contains("mf_06") ||
+                                                         contentLower.contains("mf_02") ||
+                                                         contentLower.contains("mb_06") ||
+                                                         contentLower.contains("fc=") ||
+                                                         contentLower.contains("batterycapacity") ||
+                                                         // 华为/荣耀格式
+                                                         contentLower.contains("charge_full") ||
+                                                         contentLower.contains("betteryfull") ||
+                                                         // OPPO/一加/vivo
+                                                         contentLower.contains("designcapacity") ||
+                                                         contentLower.contains("fullchargecapacity");
                                 if (hasBatteryInfo) {
                                     Log.d(TAG, "Main bugreport contains battery info, size=" + mainContent.length());
                                     progressCallback.onProgress(95, "已找到电池信息");
                                     return mainContent;
                                 } else {
-                                    Log.d(TAG, "Main bugreport doesn't contain battery info");
+                                    Log.d(TAG, "Main bugreport doesn't contain battery info, will try dumpstate files");
                                 }
                             }
                             break;
@@ -850,7 +874,7 @@ public class MainActivity extends AppCompatActivity {
                     try { zis.close(); } catch (Exception e) {}
                 }
 
-                // 第三遍：扫描所有 dumpstate 文件
+                // 第三遍：扫描所有相关 txt 文件（dumpstate/battery/board 等）
                 zis = new java.util.zip.ZipInputStream(inputStream);
                 StringBuilder combined = new StringBuilder();
                 int maxTotalSize = 50 * 1024 * 1024;
@@ -860,12 +884,25 @@ public class MainActivity extends AppCompatActivity {
                         continue;
                     }
                     String name = entry.getName().toLowerCase();
-                    if (!entry.isDirectory() && name.contains("dumpstate") && name.endsWith(".txt")) {
-                        progressCallback.onProgress(90, "正在解析: " + entry.getName());
-                        String content = readEntryContent(zis, 30 * 1024 * 1024);
-                        if (content != null && content.length() > 0) {
-                            combined.append("\n\n===== FILE: ").append(entry.getName()).append(" =====\n");
-                            combined.append(content);
+                    // 关键修复：包含更多品牌相关文件名
+                    // dumpstate: dumpsys输出（包含电池信息）
+                    // battery: 电池相关
+                    // board: 主板相关
+                    // tombstones/crash等忽略
+                    if (!entry.isDirectory() && name.endsWith(".txt")) {
+                        boolean isRelevant = name.contains("dumpstate") ||
+                                            name.contains("battery") ||
+                                            name.contains("power_supply") ||
+                                            (name.contains("board") && !name.contains("crash") && !name.contains("tombstone"));
+                        if (isRelevant) {
+                            progressCallback.onProgress(90, "正在解析: " + entry.getName());
+                            String content = readEntryContent(zis, 30 * 1024 * 1024);
+                            if (content != null && content.length() > 0) {
+                                combined.append("\n\n===== FILE: ").append(entry.getName()).append(" =====\n");
+                                combined.append(content);
+                            }
+                        } else {
+                            zis.closeEntry();
                         }
                     } else {
                         zis.closeEntry();
@@ -874,7 +911,7 @@ public class MainActivity extends AppCompatActivity {
                 try { zis.close(); } catch (Exception e) {}
 
                 if (combined.length() > 0) {
-                    Log.d(TAG, "Combined dumpstate files, total size=" + combined.length());
+                    Log.d(TAG, "Combined relevant files, total size=" + combined.length());
                     return combined.toString();
                 }
 

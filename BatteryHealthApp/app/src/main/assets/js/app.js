@@ -576,26 +576,40 @@ const BatteryHealthApp = {
             const initialCapacity = this._currentInitialCapacity;
 
             try {
-                // 检测品牌
+                // 使用 parsers.js 的 detectBrand 进行多品牌识别
                 let detectedBrand = 'generic';
-                const contentLower = content.toLowerCase();
-
-                // 简单品牌检测
-                if (contentLower.includes('xiaomi') || contentLower.includes('miui')) {
-                    detectedBrand = 'xiaomi';
-                } else if (contentLower.includes('oppo') || contentLower.includes('coloros')) {
-                    detectedBrand = 'oppo';
-                } else if (contentLower.includes('vivo') || contentLower.includes('originos')) {
-                    detectedBrand = 'vivo';
-                } else if (contentLower.includes('samsung')) {
-                    detectedBrand = 'samsung';
-                } else if (contentLower.includes('huawei') || contentLower.includes('harmony')) {
-                    detectedBrand = 'huawei';
-                } else if (contentLower.includes('oneplus') || contentLower.includes('oxygen')) {
-                    detectedBrand = 'oneplus';
-                } else if (contentLower.includes('realme')) {
-                    detectedBrand = 'realme';
+                if (window.BatteryParsers && typeof window.BatteryParsers.detectBrand === 'function') {
+                    detectedBrand = window.BatteryParsers.detectBrand([], content);
+                } else {
+                    // 兜底：本地品牌检测
+                    const contentLower = content.toLowerCase();
+                    if (contentLower.includes('xiaomi') || contentLower.includes('miui') ||
+                        contentLower.includes('hyperos') || contentLower.includes('redmi') ||
+                        contentLower.includes('mf_05') || contentLower.includes('mf_06') ||
+                        contentLower.includes('mf_02') || contentLower.includes('mb_06')) {
+                        detectedBrand = 'xiaomi';
+                    } else if (contentLower.includes('huawei') || contentLower.includes('honor') ||
+                               contentLower.includes('harmonyos') || contentLower.includes('emui') ||
+                               contentLower.includes('magicui') || contentLower.includes('hw.battery')) {
+                        detectedBrand = 'huawei';
+                    } else if (contentLower.includes('vivo') || contentLower.includes('originos') ||
+                               contentLower.includes('funtouch') || contentLower.includes('iqoo')) {
+                        detectedBrand = 'vivo';
+                    } else if (contentLower.includes('oppo') || contentLower.includes('coloros') ||
+                               contentLower.includes('oneplus') || contentLower.includes('oxygenos') ||
+                               contentLower.includes('realme') || contentLower.includes('realmeui')) {
+                        detectedBrand = 'oppo';
+                    } else if (contentLower.includes('samsung') || contentLower.includes('oneui') ||
+                               contentLower.includes('one ui')) {
+                        detectedBrand = 'samsung';
+                    } else if (contentLower.includes('meizu') || contentLower.includes('flyme')) {
+                        detectedBrand = 'meizu';
+                    } else if (contentLower.includes('nubia') || contentLower.includes('redmagic')) {
+                        detectedBrand = 'nubia';
+                    }
                 }
+
+                console.log('Detected brand:', detectedBrand);
 
                 // 解析电池信息
                 const batteryInfo = BatteryParsers.parse(content, detectedBrand);
@@ -609,21 +623,30 @@ const BatteryHealthApp = {
                     }
                 } else {
                     // 调试：检查content中是否包含各种电池相关字符串
+                    const contentLower = content.toLowerCase();
                     const hasChargeCounter = contentLower.includes('charge_counter') || contentLower.includes('charge counter');
                     const hasCycleCount = contentLower.includes('cycle_count') || contentLower.includes('cycle count');
                     // 小米/澎湃OS格式
                     const hasFc = contentLower.includes('fc=') || contentLower.includes('fc:');
                     const hasBcc = contentLower.includes('batterycapacity') || contentLower.includes('bcc=');
                     const hasCc = /(?:^|\s)cc=\d/.test(contentLower);
-                    // 其他可能的关键字
+                    // 华为/荣耀
+                    const hasChargeFull = contentLower.includes('charge_full');
+                    const hasBetteryFull = contentLower.includes('betteryfull');
+                    // 小米 MF_xx
+                    const hasMF05 = contentLower.includes('mf_05');
+                    const hasMF06 = contentLower.includes('mf_06');
+                    const hasMF02 = contentLower.includes('mf_02');
+                    // 其他
                     const hasHealthd = contentLower.includes('healthd');
                     const hasHealth = contentLower.includes('health');
                     const hasPowerSupply = contentLower.includes('power_supply') || contentLower.includes('power supply');
                     const hasMF = contentLower.includes('mf_05') || contentLower.includes('mf_06') || contentLower.includes('mf_02');
                     const hasMah = contentLower.includes('mah') || contentLower.includes('mAh');
                     const hasUah = contentLower.includes('uah');
+                    const hasDumpsys = contentLower.includes('dumpsys');
 
-                    const debugMsg = `诊断: 文件长度=${content.length}, charge_counter=${hasChargeCounter ? '✓' : '✗'}, cycle_count=${hasCycleCount ? '✓' : '✗'}, fc=${hasFc ? '✓' : '✗'}, batterycapacity=${hasBcc ? '✓' : '✗'}, cc=${hasCc ? '✓' : '✗'}, healthd=${hasHealthd ? '✓' : '✗'}, power_supply=${hasPowerSupply ? '✓' : '✗'}, mf_xx=${hasMF ? '✓' : '✗'}, uah=${hasUah ? '✓' : '✗'}, mah=${hasMah ? '✓' : '✗'}, health=${hasHealth ? '✓' : '✗'}`;
+                    const debugMsg = `诊断: 文件长度=${content.length}, charge_counter=${hasChargeCounter ? '✓' : '✗'}, cycle_count=${hasCycleCount ? '✓' : '✗'}, fc=${hasFc ? '✓' : '✗'}, batterycapacity=${hasBcc ? '✓' : '✗'}, cc=${hasCc ? '✓' : '✗'}, charge_full=${hasChargeFull ? '✓' : '✗'}, betteryfull=${hasBetteryFull ? '✓' : '✗'}, MF_05=${hasMF05 ? '✓' : '✗'}, MF_06=${hasMF06 ? '✓' : '✗'}, MF_02=${hasMF02 ? '✓' : '✗'}, healthd=${hasHealthd ? '✓' : '✗'}, power_supply=${hasPowerSupply ? '✓' : '✗'}, dumpsys=${hasDumpsys ? '✓' : '✗'}, uah=${hasUah ? '✓' : '✗'}, mah=${hasMah ? '✓' : '✗'}, health=${hasHealth ? '✓' : '✗'}`;
                     console.warn(debugMsg);
                     console.warn('Content preview (first 2000 chars):', content.substring(0, 2000));
                     console.warn('Content preview (last 1000 chars):', content.substring(Math.max(0, content.length - 1000)));
