@@ -805,11 +805,12 @@ public class MainActivity extends AppCompatActivity {
                     boolean isTargetFile = name.contains("bugreport") && name.endsWith(".txt");
                     boolean isBatteryFile = name.contains("battery") && name.endsWith(".txt");
                     boolean isDumpstateFile = name.contains("dumpstate") && name.endsWith(".txt");
-                    boolean isGenericTxt = name.endsWith(".txt") && entrySize < 10 * 1024 * 1024;
+                    // 放宽限制：所有txt文件都尝试读取，但限制单个文件最大30MB
+                    boolean isGenericTxt = name.endsWith(".txt") && entrySize < 30 * 1024 * 1024;
 
                     if (isTargetFile || isBatteryFile || isDumpstateFile || isGenericTxt) {
-                        // 读取文本内容（限制最大20MB）
-                        int maxSize = (int) Math.min(entrySize > 0 ? entrySize : 20 * 1024 * 1024, 20 * 1024 * 1024);
+                        // 读取文本内容（限制最大30MB）
+                        int maxSize = (int) Math.min(entrySize > 0 ? entrySize : 30 * 1024 * 1024, 30 * 1024 * 1024);
                         byte[] buffer = new byte[8192];
                         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
                         int bytesRead;
@@ -825,13 +826,22 @@ public class MainActivity extends AppCompatActivity {
                         baos.close();
 
                         // 检查内容是否包含电池相关信息
+                        // 关键词覆盖多种格式：charge_counter, CHARGE_COUNTER, charge counter, cycle_count, cycle count等
                         String contentLower = content.toLowerCase();
-                        boolean hasBatteryInfo = contentLower.contains("battery capacity") ||
+                        boolean hasBatteryInfo = contentLower.contains("charge_counter") ||
                                                  contentLower.contains("charge counter") ||
                                                  contentLower.contains("cycle_count") ||
-                                                 contentLower.contains("health") ||
+                                                 contentLower.contains("cycle count") ||
+                                                 contentLower.contains("battery capacity") ||
+                                                 contentLower.contains("batterycapacity") ||
+                                                 contentLower.contains("full_charge_capacity") ||
                                                  contentLower.contains("voltage_now") ||
-                                                 contentLower.contains("current_now");
+                                                 contentLower.contains("current_now") ||
+                                                 contentLower.contains("health: ") ||
+                                                 contentLower.contains("health=") ||
+                                                 contentLower.contains("technology: ") ||
+                                                 contentLower.contains("status: ") ||
+                                                 contentLower.contains("power supply");
 
                         if (hasBatteryInfo) {
                             Log.d(TAG, "Found battery info in: " + entry.getName() + " size=" + content.length());
