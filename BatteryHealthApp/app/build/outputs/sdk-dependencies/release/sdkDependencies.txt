@@ -851,8 +851,8 @@ library_dependencies {
 library_dependencies {
   library_index: 18
   library_dep_index: 15
-  library_dep_index: 16
   library_dep_index: 17
+  library_dep_index: 16
 }
 library_dependencies {
   library_index: 19

@@ -531,6 +531,7 @@ strokeLineJoin
 android.view.accessibility.action.ARG...
 beforeTextChanged
 .apk
+fullchargecapacity
 limitboundsto
 displayIntent
 surface_tint
@@ -935,6 +936,7 @@ STARTED
 android:view_registry_state
 STARTUP_FEATURE_SET_DATA_DIRECTORY_SU...
 imageMatrixProperty
+charge_full
 app:layout_constraintHeight_min
 autoComplete
 pivotTarget
@@ -965,6 +967,7 @@ FINISHED
 HORIZONTAL_DIMENSION
 Sv2
 OFF_SCREEN_PRERASTER
+crash
 CENTER
 observer
 int2
@@ -1256,6 +1259,7 @@ android.activity.usage_time
 onTextChanged
 REUSABLE_CLAIMED
 android:visibility:visibility
+batterycapacity
 0x%08x
 BOTTOM_TO_TOP
 resources
@@ -1787,6 +1791,7 @@ android.view.GhostView
 THEME_RES_ID_KEY
 app:layout_constraintVertical_weight
 getChildDrawingOrder
+board
 TIME_PICKER_POSITIVE_BUTTON_TEXT_RES
 kotlinx.coroutines.fast.service.loader
 VISUAL_STATE_CALLBACK
@@ -1915,9 +1920,12 @@ iconScale
 android.speech.extra.LANGUAGE_MODEL
 view.resources
 video/webm
+mf_06
 miscellaneous
 bcc
+mf_05
 ordering
+mf_02
 enabled_notification_listeners
 icon
 %02d
@@ -1936,6 +1944,7 @@ ToggleButton
 androidx.view.accessibility.Accessibi...
 set
 charge
+tombstone
 ACTION_IME_ENTER
 DynamicColors
 TIME_PICKER_OVERRIDE_THEME_RES_ID
@@ -2000,6 +2009,7 @@ android:switcher:
 tertiary_fixed
 END
 ACTION_ACCESSIBILITY_FOCUS
+bugreport.
 EMd
 127.0.0.1
 minimumHorizontalAngle
@@ -2130,6 +2140,7 @@ limit
 android.resource://
 strokeColor
 ogv
+designcapacity
 kotlin.Number
 SHOWING
 waveOffset
@@ -2348,6 +2359,7 @@ android:menu:actionviewstates
 app:layout_wrapBehaviorInParent
 TextAppearance
 constraintRotate
+mb_06
 wt
 text/plain
 android.intent.action.TIMEZONE_CHANGED
@@ -2416,6 +2428,7 @@ TOP_TO_TOP
 telecom
 power
 java.lang.Number
+betteryfull
 app:layout_constrainedHeight
 suggest_intent_data_id
 androidx.lifecycle.LifecycleCoroutine...
