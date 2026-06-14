@@ -92,6 +92,9 @@ const BatteryParsers = {
             batteryTemp: null,
             voltage: null,
             technology: null,
+            // 小米/澎湃OS格式字段
+            fullChargeCapacity: null,    // fc= 满充容量(微安时)
+            designCapacity: null,         // batterycapacity= 设计容量(微安时)
             rawContent: null,
             confidence: 0,
             healthGrade: null,
@@ -122,7 +125,13 @@ const BatteryParsers = {
             // 小米/通用格式：Charge counter: 1234567
             /charge\s+counter[:\s]+(\d+)/i,
             // sysfs格式：/sys/.../charge_counter 后跟数字
-            /\/sys\/class\/power_supply\/[^\/]+\/charge_counter[^\d]{0,50}(\d{4,})/i
+            /\/sys\/class\/power_supply\/[^\/]+\/charge_counter[^\d]{0,50}(\d{4,})/i,
+            // 小米/澎湃OS格式：fc=3612000 (满充容量)
+            /\bfc[:=]+(\d{5,})/i,
+            // 小米/澎湃OS格式：batterycapacity=4000000 (设计容量)
+            /\bbatterycapacity[:=]+(\d{5,})/i,
+            // 小米MIUI格式：CHARGE_FULL
+            /charge[_\s-]?full[:=]+(\d{5,})/i
         ];
         
         for (const pattern of chargeCounterPatterns) {
@@ -130,13 +139,37 @@ const BatteryParsers = {
             if (match) {
                 const value = parseInt(match[1]);
                 if (value > 0 && value < 10000000) { // 合理范围检查
-                    result.chargeCounter = value;
-                    // charge_counter 单位是微安时(uAh)，转换为毫安时(mAh)
-                    result.currentCapacity = Math.round(value / 1000);
-                    result.confidence = 0.95;
-                    break;
+                    // fc= 是满充容量，batterycapacity= 是设计容量
+                    // 这两个值都是微安时，转换为毫安时作为 currentCapacity
+                    if (pattern.source.includes('fc') || pattern.source.includes('batterycapacity') || pattern.source.includes('charge_full')) {
+                        // 满充容量或设计容量，作为 currentCapacity 候选
+                        if (pattern.source.includes('fc=') || pattern.source.includes('fc[:=]')) {
+                            result.fullChargeCapacity = value;
+                        }
+                        if (pattern.source.includes('batterycapacity')) {
+                            result.designCapacity = value;
+                        }
+                        // 如果还没有 currentCapacity，使用 fc 作为当前容量
+                        if (!result.currentCapacity && result.fullChargeCapacity) {
+                            result.currentCapacity = Math.round(result.fullChargeCapacity / 1000);
+                            result.confidence = 0.85;
+                        }
+                    } else {
+                        // 标准 charge_counter
+                        result.chargeCounter = value;
+                        // charge_counter 单位是微安时(uAh)，转换为毫安时(mAh)
+                        result.currentCapacity = Math.round(value / 1000);
+                        result.confidence = 0.95;
+                        break;
+                    }
                 }
             }
+        }
+
+        // 如果有 fc 和 batterycapacity 但没设置 currentCapacity，用 fc
+        if (!result.currentCapacity && result.fullChargeCapacity) {
+            result.currentCapacity = Math.round(result.fullChargeCapacity / 1000);
+            result.confidence = 0.85;
         }
 
         // ========== 2. 解析 current_now (当前电流，单位微安 uA) ==========
@@ -209,7 +242,10 @@ const BatteryParsers = {
             /cycle_count[^\d]{0,30}(\d{1,4})/i,
             /cycle\s+count[:\s]+(\d+)/i,
             // sysfs格式
-            /\/sys\/class\/power_supply\/[^\/]+\/cycle_count[^\d]{0,50}(\d{1,4})/i
+            /\/sys\/class\/power_supply\/[^\/]+\/cycle_count[^\d]{0,50}(\d{1,4})/i,
+            // 小米/澎湃OS格式：cc=842 (循环次数)
+            // 必须排除 fc=, bcc, pcc 等其他以cc结尾的字段
+            /(?:^|\s)cc[:=]+(\d{1,4})(?=\s|$)/im
         ];
         
         for (const pattern of cycleCountPatterns) {
