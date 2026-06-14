@@ -560,6 +560,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 进度回调接口
+     */
+    private interface ProgressCallback {
+        void onProgress(int percent, String message);
+    }
+
+    /**
      * JavaScript接口类
      */
     public class WebAppInterface {
@@ -663,10 +670,9 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void readFileContentWithProgress(String uriString, final String callbackJs,
                                                  final int startPercent, final int endPercent) {
-            Log.d(TAG, "=== readFileContentWithProgress (copy to cache) for: " + uriString + " ===");
+            Log.d(TAG, "=== readFileContentWithProgress (stream parse ZIP) for: " + uriString + " ===");
 
             new Thread(() -> {
-                java.io.File tempFile = null;
                 try {
                     Uri uri = Uri.parse(uriString);
                     ContentResolver resolver = getContentResolver();
@@ -696,112 +702,57 @@ public class MainActivity extends AppCompatActivity {
 
                     Log.d(TAG, "File size: " + fileSize + " bytes");
 
-                    // 创建临时文件
-                    String originalName = getFileName(uri);
-                    if (originalName == null || originalName.isEmpty()) {
-                        originalName = "upload_" + System.currentTimeMillis() + ".zip";
-                    }
-                    // 安全文件名
-                    String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
-
-                    java.io.File cacheDir = getCacheDir();
-                    // 清理旧的临时文件
-                    cleanOldTempFiles(cacheDir);
-
-                    tempFile = new java.io.File(cacheDir, "bha_" + System.currentTimeMillis() + "_" + safeName);
-
-                    // 关键修复：使用FileOutputStream流式写入，避免内存爆炸
-                    java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
-                    byte[] buffer = new byte[64 * 1024];
-                    int bytesRead;
-                    long totalRead = 0;
-                    int lastReportedPercent = startPercent;
-
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        fos.write(buffer, 0, bytesRead);
-                        totalRead += bytesRead;
-
-                        // 实时更新进度
-                        if (fileSize > 0) {
-                            int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
-
-                            if (currentPercent > lastReportedPercent) {
-                                lastReportedPercent = currentPercent;
-                                final int progress = currentPercent;
-                                final long readBytes = totalRead;
-                                final long totalBytes = fileSize;
-
+                    // 关键修复：在Java端流式解析ZIP，只提取目标文本文件内容
+                    // 避免把整个ZIP加载到JS内存导致OOM
+                    final String extractedContent = extractBatteryTextFromZip(inputStream, fileSize,
+                        new ProgressCallback() {
+                            @Override
+                            public void onProgress(int percent, String message) {
+                                final int p = percent;
+                                final String m = message;
                                 runOnUiThread(() -> {
                                     String jsCode = String.format(
                                         "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
-                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
-                                        "%.1fMB / %.1fMB');" +
+                                        "  window.BatteryHealthApp.updateProgress(%d, '%s');" +
                                         "}",
-                                        progress,
-                                        readBytes / (1024.0 * 1024.0),
-                                        totalBytes / (1024.0 * 1024.0)
+                                        p, m.replace("'", "\\'")
                                     );
                                     webView.evaluateJavascript(jsCode, null);
                                 });
                             }
-                        }
-                    }
+                        }, startPercent, endPercent);
 
-                    fos.flush();
-                    fos.close();
                     inputStream.close();
 
-                    final long finalSize = totalRead;
-                    final String finalPath = tempFile.getAbsolutePath();
-                    // 关键：使用WebViewAssetLoader的https://地址绕过file://访问限制
-                    // URL编码文件名：防止空格等特殊字符导致fetch失败
-                    final String encodedName = Uri.encode(tempFile.getName());
-                    final String fileUrl = "https://appassets.androidplatform.net/bha/" + encodedName;
-
-                    Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
-
-                    // 关键修复：直接读取文件内容为Base64传给JS，完全绕过WebViewAssetLoader+fetch
-                    // 避免fetch失败、URL编码、路径匹配等各种问题
-                    final String base64Content = readFileToBase64(tempFile);
-                    if (base64Content == null) {
-                        throw new Exception("无法读取临时文件内容");
+                    if (extractedContent == null) {
+                        runOnUiThread(() -> {
+                            webView.evaluateJavascript(
+                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('未找到电池信息文件，请确认上传的是正确的诊断文件');",
+                                null
+                            );
+                        });
+                        return;
                     }
-                    Log.d(TAG, "File read to Base64, length: " + base64Content.length());
 
-                    // 回调JS，传递Base64内容（字符串形式，兼容旧版_processBase64Content）
+                    Log.d(TAG, "Extracted content length: " + extractedContent.length());
+
+                    // 回调JS，传递提取的文本内容
+                    // 使用新的回调格式：对象包含content字段
                     runOnUiThread(() -> {
                         String jsCode = String.format(
                             "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s('%s');" +
+                            "  window.BatteryHealthApp.%s({content: '%s', size: %d});" +
                             "}",
                             callbackJs, callbackJs,
-                            base64Content.replace("'", "\\'")
+                            extractedContent.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n"),
+                            extractedContent.length()
                         );
                         webView.evaluateJavascript(jsCode, null);
-                        Log.d(TAG, "Callback executed with Base64: " + callbackJs);
+                        Log.d(TAG, "Callback executed with extracted content: " + callbackJs);
                     });
 
-                    // 清理临时文件
-                    if (tempFile != null && tempFile.exists()) {
-                        tempFile.delete();
-                    }
-
-                } catch (OutOfMemoryError oom) {
-                    Log.e(TAG, "Out of memory while copying file", oom);
-                    if (tempFile != null && tempFile.exists()) {
-                        tempFile.delete();
-                    }
-                    runOnUiThread(() -> {
-                        webView.evaluateJavascript(
-                            "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('内存不足，请尝试较小的文件');",
-                            null
-                        );
-                    });
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to copy file with progress", e);
-                    if (tempFile != null && tempFile.exists()) {
-                        tempFile.delete();
-                    }
+                    Log.e(TAG, "Failed to process file", e);
                     final String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
                     runOnUiThread(() -> {
                         webView.evaluateJavascript(
@@ -814,6 +765,99 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
             }).start();
+        }
+
+        /**
+         * 从ZIP输入流中提取电池相关的文本文件内容
+         * 流式解析，避免加载整个ZIP到内存
+         */
+        private String extractBatteryTextFromZip(InputStream inputStream, long fileSize,
+                                                   ProgressCallback progressCallback,
+                                                   int startPercent, int endPercent) {
+            try {
+                java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(inputStream);
+                java.util.zip.ZipEntry entry;
+                String bestContent = null;
+                long totalBytesRead = 0;
+                int lastProgress = startPercent;
+
+                while ((entry = zis.getNextEntry()) != null) {
+                    String name = entry.getName().toLowerCase();
+                    long entrySize = entry.getSize();
+
+                    // 更新进度
+                    if (fileSize > 0) {
+                        totalBytesRead += entry.getCompressedSize();
+                        int currentProgress = startPercent + (int) ((totalBytesRead * (endPercent - startPercent)) / fileSize);
+                        if (currentProgress > lastProgress) {
+                            lastProgress = currentProgress;
+                            progressCallback.onProgress(currentProgress, "正在扫描: " + entry.getName());
+                        }
+                    }
+
+                    // 跳过目录和过大的文件（>50MB的单个文件）
+                    if (entry.isDirectory() || entrySize > 50 * 1024 * 1024) {
+                        zis.closeEntry();
+                        continue;
+                    }
+
+                    // 优先查找 bugreport 或 dumpstate 相关的 txt 文件
+                    boolean isTargetFile = name.contains("bugreport") && name.endsWith(".txt");
+                    boolean isBatteryFile = name.contains("battery") && name.endsWith(".txt");
+                    boolean isDumpstateFile = name.contains("dumpstate") && name.endsWith(".txt");
+                    boolean isGenericTxt = name.endsWith(".txt") && entrySize < 10 * 1024 * 1024;
+
+                    if (isTargetFile || isBatteryFile || isDumpstateFile || isGenericTxt) {
+                        // 读取文本内容（限制最大20MB）
+                        int maxSize = (int) Math.min(entrySize > 0 ? entrySize : 20 * 1024 * 1024, 20 * 1024 * 1024);
+                        byte[] buffer = new byte[8192];
+                        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                        int bytesRead;
+                        int totalRead = 0;
+
+                        while ((bytesRead = zis.read(buffer)) != -1 && totalRead < maxSize) {
+                            int toWrite = Math.min(bytesRead, maxSize - totalRead);
+                            baos.write(buffer, 0, toWrite);
+                            totalRead += toWrite;
+                        }
+
+                        String content = baos.toString("UTF-8");
+                        baos.close();
+
+                        // 检查内容是否包含电池相关信息
+                        String contentLower = content.toLowerCase();
+                        boolean hasBatteryInfo = contentLower.contains("battery capacity") ||
+                                                 contentLower.contains("charge counter") ||
+                                                 contentLower.contains("cycle_count") ||
+                                                 contentLower.contains("health") ||
+                                                 contentLower.contains("voltage_now") ||
+                                                 contentLower.contains("current_now");
+
+                        if (hasBatteryInfo) {
+                            Log.d(TAG, "Found battery info in: " + entry.getName() + " size=" + content.length());
+                            // bugreport 文件优先级最高
+                            if (isTargetFile) {
+                                zis.closeEntry();
+                                zis.close();
+                                return content;
+                            }
+                            // 其他电池相关文件作为备选
+                            if (bestContent == null || content.length() > bestContent.length()) {
+                                bestContent = content;
+                            }
+                        }
+                    }
+
+                    zis.closeEntry();
+                }
+
+                zis.close();
+                return bestContent;
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to extract from ZIP", e);
+                return null;
+            }
         }
 
         /**
