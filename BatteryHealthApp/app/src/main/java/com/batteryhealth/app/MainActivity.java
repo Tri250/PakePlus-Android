@@ -252,17 +252,30 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public WebResourceResponse handle(String path) {
                     try {
-                        Log.d(TAG, "AssetLoader request path: " + path);
+                        Log.d(TAG, "AssetLoader request raw path: '" + path + "'");
+                        // path 可能以 / 开头，需要去除
+                        String safePath = path;
+                        if (safePath.startsWith("/")) {
+                            safePath = safePath.substring(1);
+                        }
                         // path 格式: bha_1234567890_xxx.zip (相对于 /bha/ 前缀)
-                        File cacheFile = new File(getCacheDir(), path);
+                        File cacheFile = new File(getCacheDir(), safePath);
+                        Log.d(TAG, "AssetLoader looking for: " + cacheFile.getAbsolutePath() + " exists=" + cacheFile.exists());
                         if (cacheFile.exists() && cacheFile.getName().startsWith("bha_")) {
                             long size = cacheFile.length();
                             Log.d(TAG, "Serving file from cache: " + cacheFile.getAbsolutePath() + " size=" + size);
                             InputStream is = new FileInputStream(cacheFile);
                             // MIME类型：application/zip
-                            return new WebResourceResponse("application/zip", "UTF-8", is);
+                            return new WebResourceResponse("application/zip", null, is);
                         }
-                        Log.w(TAG, "Cache file not found: " + path);
+                        Log.w(TAG, "Cache file not found: " + safePath + " in " + getCacheDir().getAbsolutePath());
+                        // 列出 cacheDir 中的文件帮助调试
+                        File[] files = getCacheDir().listFiles((dir, name) -> name.startsWith("bha_"));
+                        if (files != null) {
+                            for (File f : files) {
+                                Log.d(TAG, "Available cache file: " + f.getName());
+                            }
+                        }
                         return null;
                     } catch (Exception e) {
                         Log.e(TAG, "AssetLoader error for path: " + path, e);
