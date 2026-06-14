@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <cstdint>
 
 namespace digiguide::core {
 
@@ -42,6 +43,11 @@ public:
         const std::vector<std::pair<std::string, std::string>>& files);
 
 private:
+    // ZIP 解压实现（使用 zlib）
+    static std::string decompressDeflate(const uint8_t* compressed_data,
+                                          uint32_t compressed_size,
+                                          uint32_t uncompressed_size);
+
     // libzip封装实现
     static bool extractZip(const std::string& path,
                            std::vector<std::pair<std::string, std::string>>& output);

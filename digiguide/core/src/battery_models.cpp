@@ -1,4 +1,5 @@
 #include "battery_models.h"
+#include "result_types.h"
 #include <cmath>
 
 namespace digiguide::core {
@@ -54,30 +55,6 @@ float resistanceGrowthModel(int cycles, float initial_resistance) {
 }
 
 } // anonymous namespace
-
-// ========== 电池状态评估 ==========
-
-struct BatteryStateEvaluator {
-    // 评估电池是否需要更换
-    static bool needsReplacement(const BatteryHealthResult& result) {
-        return result.health_percentage < 60.0f;
-    }
-
-    // 评估电池是否处于警告状态
-    static bool isWarningState(const BatteryHealthResult& result) {
-        return result.health_percentage < 80.0f;
-    }
-
-    // 评估电池是否处于良好状态
-    static bool isGoodState(const BatteryHealthResult& result) {
-        return result.health_percentage >= 90.0f;
-    }
-
-    // 评估电池是否处于极佳状态
-    static bool isExcellentState(const BatteryHealthResult& result) {
-        return result.health_percentage >= 95.0f;
-    }
-};
 
 // ========== 电池寿命预测 ==========
 

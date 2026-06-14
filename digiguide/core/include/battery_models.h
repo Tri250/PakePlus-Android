@@ -3,8 +3,13 @@
 #include "result_types.h"
 #include <optional>
 #include <vector>
+#include <cmath>
 
 namespace digiguide::core {
+
+// 前向声明
+struct BatteryRawData;
+struct BatteryHealthResult;
 
 // 电池物理模型参数
 struct BatteryPhysicsModel {
@@ -205,53 +210,58 @@ public:
         return decay;
     }
 
-    // 充电损伤模型
+    // 充电损伤模型（简化版本，不依赖 BatteryRawData）
     // 高功率充电、过充、深度放电都会造成损伤
-    static float calcChargingDamage(
-        const std::vector<BatteryRawData::ChargingEvent>& events) {
-
+    static std::optional<float> calcChargingDamage(
+        const std::vector<std::tuple<int64_t, int, int, float>>& events) {
+        
         if (events.empty()) {
             return std::nullopt;
         }
-
+        
         float damage_score = 0.0f;
         int analyzed_events = 0;
-
+        
         for (const auto& event : events) {
+            // event: (timestamp, start_level, end_level, avg_power)
+            float avg_power_w = std::get<3>(event);
+            int start_level = std::get<1>(event);
+            int end_level = std::get<2>(event);
+            
             // 高功率充电损伤（>1C）
             float capacity_mah = 5000.0f;  // 默认容量
-            float power_rate = event.avg_power_w / (capacity_mah / 1000.0f);
-
+            float power_rate = avg_power_w / (capacity_mah / 1000.0f);
+            
             if (power_rate > 1.0f) {
                 damage_score += 0.01f;  // 快充损伤
             }
-
+            
             // 深度放电损伤（<20%开始充电）
-            if (event.start_level < 20) {
+            if (start_level < 20) {
                 damage_score += 0.02f;
             }
-
+            
             // 过充损伤（>95%结束充电）
-            if (event.end_level > 95) {
+            if (end_level > 95) {
                 damage_score += 0.01f;
             }
-
+            
             analyzed_events++;
         }
-
+        
         if (analyzed_events == 0) {
             return 1.0f;  // 无损伤数据，假设无损伤
         }
-
+        
         // 平均损伤
         float avg_damage = damage_score / analyzed_events;
-
+        
         // 转换为健康因子
         float health_factor = 1.0f - avg_damage;
-
+        
         if (health_factor < 0.0f) health_factor = 0.0f;
         if (health_factor > 1.0f) health_factor = 1.0f;
-
+        
         return health_factor;
     }
 };

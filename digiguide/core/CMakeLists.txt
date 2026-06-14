@@ -26,6 +26,16 @@ add_library(digiguide_core STATIC ${CORE_SOURCES})
 find_package(ZLIB QUIET)
 if(ZLIB_FOUND)
     target_link_libraries(digiguide_core ZLIB::ZLIB)
+    message(STATUS "Found ZLIB: ${ZLIB_LIBRARIES}")
+else()
+    # 尝试直接链接 zlib
+    find_library(ZLIB_LIBRARY NAMES z zlib)
+    if(ZLIB_LIBRARY)
+        target_link_libraries(digiguide_core ${ZLIB_LIBRARY})
+        message(STATUS "Found ZLIB library: ${ZLIB_LIBRARY}")
+    else()
+        message(WARNING "ZLIB not found, ZIP decompression may not work")
+    endif()
 endif()
 
 # 测试

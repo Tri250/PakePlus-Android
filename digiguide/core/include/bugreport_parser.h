@@ -1,6 +1,7 @@
 #pragma once
 
 #include "result_types.h"
+#include "regex_patterns.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -100,6 +101,12 @@ public:
     static std::string getParseSummary(const BatteryRawData& data);
 
 private:
+    // healthd 格式一次性提取（荣耀/华为/小米核心格式）
+    static bool tryExtractHealthd(const std::string& text, BatteryRawData& data);
+    
+    // 使用品牌专属配置提取
+    static void extractWithBrandConfig(const std::string& text, BatteryRawData& data, BrandType brand_type);
+    
     // 各子解析器
     static void extractBrandModel(const std::string& text, BatteryRawData& data);
     static void extractCapacity(const std::string& text, BatteryRawData& data);

@@ -148,10 +148,19 @@ std::optional<float> BatteryHealthCalculator::calcChargingDamage(
         return std::nullopt;
     }
 
-    // 使用充电损伤模型
-    float damage = AgingModelCalculator::calcChargingDamage(events);
+    // 转换为简化格式
+    std::vector<std::tuple<int64_t, int, int, float>> simplified_events;
+    for (const auto& event : events) {
+        simplified_events.emplace_back(
+            event.timestamp,
+            event.start_level,
+            event.end_level,
+            event.avg_power_w
+        );
+    }
 
-    return damage;
+    // 使用充电损伤模型
+    return AgingModelCalculator::calcChargingDamage(simplified_events);
 }
 
 // ========== 综合评分 ==========
