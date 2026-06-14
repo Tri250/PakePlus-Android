@@ -3,8 +3,8 @@
 # min_api: 24
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: ac097f0
-# pg_map_hash: SHA-256 ac097f0f0d40b18f3709f1c043d28cb48970b7d278e1d2f97b882c33ad9d6827
+# pg_map_id: 7fb5d36
+# pg_map_hash: SHA-256 7fb5d36205433f3e23ed2f2b82191ae62ad82810cca102597310e21b0fc723f2
 android.app.AppComponentFactory -> android.app.AppComponentFactory:
 # {"id":"com.android.tools.r8.synthesized"}
 android.app.UiModeManager$ContrastChangeListener -> android.app.UiModeManager$ContrastChangeListener:
@@ -752,7 +752,7 @@ androidx.activity.OnBackPressedDispatcher$Api33Impl -> androidx.activity.OnBackP
     11:12:void unregisterOnBackInvokedCallback(java.lang.Object,java.lang.Object):362:362 -> unregisterOnBackInvokedCallback
     13:14:void unregisterOnBackInvokedCallback(java.lang.Object,java.lang.Object):363:363 -> unregisterOnBackInvokedCallback
     15:18:void unregisterOnBackInvokedCallback(java.lang.Object,java.lang.Object):364:364 -> unregisterOnBackInvokedCallback
-androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0 -> g8:
+androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0 -> f8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     kotlin.jvm.functions.Function0 androidx.activity.OnBackPressedDispatcher$Api33Impl$$InternalSyntheticLambda$1$5dea06066ea46437e84a2264f31c2ea84a3652ee19c7688a4a1451cf132e3013$0.f$0 -> a
@@ -35209,7 +35209,7 @@ androidx.core.app.NotificationChannelCompat -> androidx.core.app.NotificationCha
     56:61:androidx.core.app.NotificationChannelCompat$Builder toBuilder():348:348 -> toBuilder
     62:69:androidx.core.app.NotificationChannelCompat$Builder toBuilder():349:349 -> toBuilder
     70:74:androidx.core.app.NotificationChannelCompat$Builder toBuilder():350:350 -> toBuilder
-androidx.core.app.NotificationChannelCompat$$ExternalSyntheticApiModelOutline17 -> d8:
+androidx.core.app.NotificationChannelCompat$$ExternalSyntheticApiModelOutline17 -> c8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:void androidx.core.app.NotificationChannelCompat$$InternalSyntheticApiModelOutline$1$343dee8e62145b0e3dd25911babec377082de83fd5d09e4f51bdeadf55d21593$4.m(android.app.NotificationChannel,boolean):0:0 -> A
@@ -35311,7 +35311,7 @@ androidx.core.app.NotificationChannelGroupCompat -> androidx.core.app.Notificati
     1:9:androidx.core.app.NotificationChannelGroupCompat$Builder toBuilder():164:164 -> toBuilder
     10:15:androidx.core.app.NotificationChannelGroupCompat$Builder toBuilder():165:165 -> toBuilder
     16:20:androidx.core.app.NotificationChannelGroupCompat$Builder toBuilder():166:166 -> toBuilder
-androidx.core.app.NotificationChannelGroupCompat$$ExternalSyntheticApiModelOutline5 -> e8:
+androidx.core.app.NotificationChannelGroupCompat$$ExternalSyntheticApiModelOutline5 -> d8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object[] androidx.core.text.PrecomputedTextCompat$$InternalSyntheticApiModelOutline$1$b2227b576a5912a8b3729db0d9a803dee38970036ea540a0cb29dd39ad54251c$0.m(android.text.PrecomputedText,int,int,java.lang.Class):0:0 -> A
@@ -36498,7 +36498,7 @@ androidx.core.app.NotificationCompatBuilder -> androidx.core.app.NotificationCom
     4:5:void removeSoundAndVibration(android.app.Notification):537:537 -> removeSoundAndVibration
     6:9:void removeSoundAndVibration(android.app.Notification):538:538 -> removeSoundAndVibration
     10:12:void removeSoundAndVibration(android.app.Notification):539:539 -> removeSoundAndVibration
-androidx.core.app.NotificationCompatBuilder$$ExternalSyntheticApiModelOutline2 -> f8:
+androidx.core.app.NotificationCompatBuilder$$ExternalSyntheticApiModelOutline2 -> e8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:android.app.Notification$Builder androidx.core.app.NotificationCompatBuilder$$InternalSyntheticApiModelOutline$1$73cb8751ab51b21ad35dca8bb429f18dd92b113dd98fb852fe30e6efdb45c21f$0.m(android.app.Notification$Builder,int):0:0 -> a
@@ -37519,7 +37519,7 @@ androidx.core.content.ContentResolverCompat$Api16Impl -> androidx.core.content.C
 androidx.core.content.ContentValuesKt -> androidx.core.content.ContentValuesKt:
 # {"id":"sourceFile","fileName":"ContentValues.kt"}
     6:11:android.content.ContentValues contentValuesOf(kotlin.Pair[]):28:28 -> contentValuesOf
-      # {"id":"com.android.tools.r8.residualsignature","signature":"([Lj8;)Landroid/content/ContentValues;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"([Li8;)Landroid/content/ContentValues;"}
     12:29:android.content.ContentValues contentValuesOf(kotlin.Pair[]):29:29 -> contentValuesOf
     30:33:android.content.ContentValues contentValuesOf(kotlin.Pair[]):31:31 -> contentValuesOf
     34:43:android.content.ContentValues contentValuesOf(kotlin.Pair[]):32:32 -> contentValuesOf
@@ -38559,7 +38559,7 @@ androidx.core.content.pm.ShortcutInfoCompat$Builder -> androidx.core.content.pm.
     3:5:androidx.core.content.pm.ShortcutInfoCompat$Builder setRank(int):863:863 -> setRank
     3:5:androidx.core.content.pm.ShortcutInfoCompat$Builder setShortLabel(java.lang.CharSequence):649:649 -> setShortLabel
     3:11:androidx.core.content.pm.ShortcutInfoCompat$Builder setTransientExtras(android.os.Bundle):887:887 -> setTransientExtras
-androidx.core.content.pm.ShortcutInfoCompat$Builder$$ExternalSyntheticApiModelOutline6 -> ca:
+androidx.core.content.pm.ShortcutInfoCompat$Builder$$ExternalSyntheticApiModelOutline6 -> ba:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:int androidx.core.content.pm.ShortcutManagerCompat$$InternalSyntheticApiModelOutline$1$ab4224cf228103f483be120382963a7180014aabecaca2e1fcad4c24021a55b9$2.m(android.content.pm.ShortcutManager):0:0 -> a
@@ -39327,7 +39327,7 @@ androidx.core.content.res.ResourcesCompat$FontCallback -> androidx.core.content.
     3:12:android.os.Handler getHandler(android.os.Handler):497:497 -> getHandler
     1:4:void lambda$callbackFailAsync$1(int):490:490 -> lambda$callbackFailAsync$1
     1:4:void lambda$callbackSuccessAsync$0(android.graphics.Typeface):478:478 -> lambda$callbackSuccessAsync$0
-androidx.core.content.res.ResourcesCompat$FontCallback$$ExternalSyntheticLambda0 -> f9:
+androidx.core.content.res.ResourcesCompat$FontCallback$$ExternalSyntheticLambda0 -> e9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.core.content.res.ResourcesCompat$FontCallback$$InternalSyntheticLambda$1$eb024717ed4c535c671b8ebfdb6d8b6605f4b7bfdc73b1f041999a70ce54ed62$0.$r8$classId -> b
@@ -42476,7 +42476,7 @@ androidx.core.os.BundleApi21ImplKt -> androidx.core.os.BundleApi21ImplKt:
 androidx.core.os.BundleKt -> androidx.core.os.BundleKt:
 # {"id":"sourceFile","fileName":"Bundle.kt"}
     1:2:android.os.Bundle bundleOf(kotlin.Pair[]):34:35 -> bundleOf
-      # {"id":"com.android.tools.r8.residualsignature","signature":"([Lj8;)Landroid/os/Bundle;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"([Li8;)Landroid/os/Bundle;"}
     3:3:android.os.Bundle bundleOf(kotlin.Pair[]):37:37 -> bundleOf
     4:11:android.os.Bundle bundleOf(kotlin.Pair[]):40:47 -> bundleOf
     12:14:android.os.Bundle bundleOf(kotlin.Pair[]):50:52 -> bundleOf
@@ -42935,7 +42935,7 @@ androidx.core.os.PersistableBundleApi22ImplKt -> androidx.core.os.PersistableBun
 androidx.core.os.PersistableBundleKt -> androidx.core.os.PersistableBundleKt:
 # {"id":"sourceFile","fileName":"PersistableBundle.kt"}
     1:1:android.os.PersistableBundle persistableBundleOf(kotlin.Pair[]):34:34 -> persistableBundleOf
-      # {"id":"com.android.tools.r8.residualsignature","signature":"([Lj8;)Landroid/os/PersistableBundle;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"([Li8;)Landroid/os/PersistableBundle;"}
     2:2:android.os.PersistableBundle persistableBundleOf(kotlin.Pair[]):156:156 -> persistableBundleOf
     3:4:android.os.PersistableBundle persistableBundleOf(kotlin.Pair[]):35:36 -> persistableBundleOf
     5:5:android.os.PersistableBundle persistableBundleOf():46:46 -> persistableBundleOf
@@ -44411,13 +44411,13 @@ androidx.core.util.PairKt -> androidx.core.util.PairKt:
     1:1:java.lang.Object component2(androidx.core.util.Pair):47:47 -> component2
     2:2:java.lang.Object component2(android.util.Pair):78:78 -> component2
     6:19:android.util.Pair toAndroidPair(kotlin.Pair):87:87 -> toAndroidPair
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lj8;)Landroid/util/Pair;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Li8;)Landroid/util/Pair;"}
     6:19:androidx.core.util.Pair toAndroidXPair(kotlin.Pair):54:54 -> toAndroidXPair
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lj8;)Landroidx/core/util/Pair;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Li8;)Landroidx/core/util/Pair;"}
     1:1:kotlin.Pair toKotlinPair(androidx.core.util.Pair):50:50 -> toKotlinPair
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroidx/core/util/Pair;)Lj8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroidx/core/util/Pair;)Li8;"}
     2:2:kotlin.Pair toKotlinPair(android.util.Pair):82:82 -> toKotlinPair
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/util/Pair;)Lj8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/util/Pair;)Li8;"}
 androidx.core.util.PatternsCompat -> androidx.core.util.PatternsCompat:
 # {"id":"sourceFile","fileName":"PatternsCompat.java"}
     3:8:void <clinit>():154:154 -> <clinit>
@@ -44553,7 +44553,7 @@ androidx.core.util.Predicate -> androidx.core.util.Predicate:
     4:8:androidx.core.util.Predicate not(androidx.core.util.Predicate):130:130 -> not
     1:3:androidx.core.util.Predicate or(androidx.core.util.Predicate):93:93 -> or
     4:10:androidx.core.util.Predicate or(androidx.core.util.Predicate):94:94 -> or
-androidx.core.util.Predicate$$ExternalSyntheticLambda0 -> p8:
+androidx.core.util.Predicate$$ExternalSyntheticLambda0 -> o8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.core.util.Predicate$$InternalSyntheticLambda$1$10311a921db29db4980593dc16c4a372247ca771a1a2724db76f3df6ba1da32a$0.$r8$classId -> a
@@ -44570,7 +44570,7 @@ androidx.core.util.Predicate$$ExternalSyntheticLambda0 -> p8:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:boolean androidx.core.util.Predicate$$InternalSyntheticLambda$1$10311a921db29db4980593dc16c4a372247ca771a1a2724db76f3df6ba1da32a$0.test$bridge(java.lang.Object):0:0 -> test
       # {"id":"com.android.tools.r8.synthesized"}
-androidx.core.util.Predicate$$ExternalSyntheticLambda1 -> q8:
+androidx.core.util.Predicate$$ExternalSyntheticLambda1 -> p8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.core.util.Predicate$$InternalSyntheticLambda$1$55683e14d6b27789ec9f301c95fe6a7a23b82c2acead0969f64d0458cd705860$1.$r8$classId -> a
@@ -45458,7 +45458,7 @@ androidx.core.view.MenuHostHelper -> androidx.core.view.MenuHostHelper:
     8:15:void removeMenuProvider(androidx.core.view.MenuProvider):200:200 -> removeMenuProvider
     16:20:void removeMenuProvider(androidx.core.view.MenuProvider):202:202 -> removeMenuProvider
     21:24:void removeMenuProvider(androidx.core.view.MenuProvider):204:204 -> removeMenuProvider
-androidx.core.view.MenuHostHelper$$ExternalSyntheticLambda0 -> w7:
+androidx.core.view.MenuHostHelper$$ExternalSyntheticLambda0 -> v7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     androidx.core.view.MenuHostHelper androidx.core.view.MenuHostHelper$$InternalSyntheticLambda$1$6a92f7f5d37ff5956e7ee4bbcd590239f6514935218ddf0fada9719f887c4804$0.f$0 -> b
@@ -45469,7 +45469,7 @@ androidx.core.view.MenuHostHelper$$ExternalSyntheticLambda0 -> w7:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void androidx.core.view.MenuHostHelper$$InternalSyntheticLambda$1$6a92f7f5d37ff5956e7ee4bbcd590239f6514935218ddf0fada9719f887c4804$0.onStateChanged(androidx.lifecycle.LifecycleOwner,androidx.lifecycle.Lifecycle$Event):0:0 -> onStateChanged
       # {"id":"com.android.tools.r8.synthesized"}
-androidx.core.view.MenuHostHelper$$ExternalSyntheticLambda1 -> x7:
+androidx.core.view.MenuHostHelper$$ExternalSyntheticLambda1 -> w7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     androidx.core.view.MenuHostHelper androidx.core.view.MenuHostHelper$$InternalSyntheticLambda$1$d2c8f256a0c209ab12b9a1dce38b11febc3c4a164c132fa1b1a214513d41b81a$0.f$0 -> b
@@ -45575,7 +45575,7 @@ androidx.core.view.MenuKt -> androidx.core.view.MenuKt:
     18:37:void forEachIndexed(android.view.Menu,kotlin.jvm.functions.Function2):64:64 -> forEachIndexed
     6:15:android.view.MenuItem get(android.view.Menu,int):29:29 -> get
     6:11:kotlin.sequences.Sequence getChildren(android.view.Menu):87:87 -> getChildren
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/Menu;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/Menu;)Lu9;"}
     6:10:int getSize(android.view.Menu):46:46 -> getSize
     6:15:boolean isEmpty(android.view.Menu):49:49 -> isEmpty
     6:15:boolean isNotEmpty(android.view.Menu):52:52 -> isNotEmpty
@@ -46486,9 +46486,9 @@ androidx.core.view.ViewGroupKt -> androidx.core.view.ViewGroupKt:
     18:37:void forEachIndexed(android.view.ViewGroup,kotlin.jvm.functions.Function2):63:63 -> forEachIndexed
     6:44:android.view.View get(android.view.ViewGroup,int):33:33 -> get
     6:11:kotlin.sequences.Sequence getChildren(android.view.ViewGroup):103:103 -> getChildren
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/ViewGroup;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/ViewGroup;)Lu9;"}
     6:11:kotlin.sequences.Sequence getDescendants(android.view.ViewGroup):117:117 -> getDescendants
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/ViewGroup;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/ViewGroup;)Lu9;"}
     12:18:kotlin.sequences.Sequence kotlin.sequences.SequencesKt__SequenceBuilderKt.sequence(kotlin.jvm.functions.Function2):26:26 -> getDescendants
     12:18:kotlin.sequences.Sequence getDescendants(android.view.ViewGroup):117 -> getDescendants
     6:13:kotlin.ranges.IntRange getIndices(android.view.ViewGroup):86:86 -> getIndices
@@ -46540,7 +46540,7 @@ androidx.core.view.ViewGroupKt$descendants$1 -> androidx.core.view.ViewGroupKt$d
     1:1:kotlin.coroutines.Continuation create(java.lang.Object,kotlin.coroutines.Continuation):0:0 -> create
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;Lr1;)Lr1;"}
     1:1:java.lang.Object invoke(kotlin.sequences.SequenceScope,kotlin.coroutines.Continuation):0:0 -> invoke
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lx9;Lr1;)Ljava/lang/Object;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lw9;Lr1;)Ljava/lang/Object;"}
     2:2:java.lang.Object invoke(java.lang.Object,java.lang.Object):0:0 -> invoke
     19:31:java.lang.Object invokeSuspend(java.lang.Object):117:117 -> invokeSuspend
     32:45:java.lang.Object invokeSuspend(java.lang.Object):124:124 -> invokeSuspend
@@ -46596,11 +46596,11 @@ androidx.core.view.ViewKt -> androidx.core.view.ViewKt:
     58:65:android.graphics.Bitmap drawToBitmap(android.view.View,android.graphics.Bitmap$Config):236:236 -> drawToBitmap
     5:11:android.graphics.Bitmap drawToBitmap$default(android.view.View,android.graphics.Bitmap$Config,int,java.lang.Object):234:234 -> drawToBitmap$default
     6:11:kotlin.sequences.Sequence getAllViews(android.view.View):413:413 -> getAllViews
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;)Lu9;"}
     12:18:kotlin.sequences.Sequence kotlin.sequences.SequencesKt__SequenceBuilderKt.sequence(kotlin.jvm.functions.Function2):26:26 -> getAllViews
     12:18:kotlin.sequences.Sequence getAllViews(android.view.View):413 -> getAllViews
     6:16:kotlin.sequences.Sequence getAncestors(android.view.View):403:403 -> getAncestors
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;)Lu9;"}
     6:24:int getMarginBottom(android.view.View):368:368 -> getMarginBottom
     6:9:int getMarginEnd(android.view.View):392:392 -> getMarginEnd
     10:22:int getMarginEnd(android.view.View):393:393 -> getMarginEnd
@@ -46659,7 +46659,7 @@ androidx.core.view.ViewKt$allViews$1 -> androidx.core.view.ViewKt$allViews$1:
     1:1:kotlin.coroutines.Continuation create(java.lang.Object,kotlin.coroutines.Continuation):0:0 -> create
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;Lr1;)Lr1;"}
     1:1:java.lang.Object invoke(kotlin.sequences.SequenceScope,kotlin.coroutines.Continuation):0:0 -> invoke
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lx9;Lr1;)Ljava/lang/Object;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lw9;Lr1;)Ljava/lang/Object;"}
     2:2:java.lang.Object invoke(java.lang.Object,java.lang.Object):0:0 -> invoke
     13:16:java.lang.Object invokeSuspend(java.lang.Object):413:413 -> invokeSuspend
     17:26:java.lang.Object invokeSuspend(java.lang.Object):418:418 -> invokeSuspend
@@ -60153,7 +60153,7 @@ androidx.lifecycle.SavedStateHandle -> androidx.lifecycle.SavedStateHandle:
     58:61:androidx.lifecycle.MutableLiveData getLiveDataInternal(java.lang.String,boolean,java.lang.Object):172:172 -> getLiveDataInternal
     8:15:java.lang.Object kotlin.collections.MapsKt__MapsKt.getOrPut(java.util.Map,java.lang.Object,kotlin.jvm.functions.Function0):361:361 -> getStateFlow
     8:15:kotlinx.coroutines.flow.StateFlow getStateFlow(java.lang.String,java.lang.Object):198 -> getStateFlow
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/String;Ljava/lang/Object;)Lha;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/String;Ljava/lang/Object;)Lga;"}
     16:23:kotlinx.coroutines.flow.StateFlow getStateFlow(java.lang.String,java.lang.Object):201:201 -> getStateFlow
     24:28:kotlinx.coroutines.flow.StateFlow getStateFlow(java.lang.String,java.lang.Object):202:202 -> getStateFlow
     29:32:kotlinx.coroutines.flow.StateFlow getStateFlow(java.lang.String,java.lang.Object):204:204 -> getStateFlow
@@ -60207,7 +60207,7 @@ androidx.lifecycle.SavedStateHandle -> androidx.lifecycle.SavedStateHandle:
     56:81:void set(java.lang.String,java.lang.Object):250:250 -> set
     82:85:void set(java.lang.String,java.lang.Object):249:249 -> set
     13:16:void setSavedStateProvider(java.lang.String,androidx.savedstate.SavedStateRegistry$SavedStateProvider):314:314 -> setSavedStateProvider
-androidx.lifecycle.SavedStateHandle$$ExternalSyntheticLambda0 -> k9:
+androidx.lifecycle.SavedStateHandle$$ExternalSyntheticLambda0 -> j9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.lifecycle.SavedStateHandle$$InternalSyntheticLambda$1$a8b529ef495d505773bb6e25f48ff9fab5d276dd0a453ddf87dfec867ba402d2$0.$r8$classId -> a
@@ -60436,9 +60436,9 @@ androidx.lifecycle.Transformations -> androidx.lifecycle.Transformations:
 androidx.lifecycle.Transformations$distinctUntilChanged$1 -> androidx.lifecycle.Transformations$distinctUntilChanged$1:
 # {"id":"sourceFile","fileName":"Transformations.kt"}
     kotlin.jvm.internal.Ref$BooleanRef $firstTime -> $firstTime
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lx8;"}
     1:1:void <init>(androidx.lifecycle.MediatorLiveData,kotlin.jvm.internal.Ref$BooleanRef):0:0 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroidx/lifecycle/MediatorLiveData;Ly8;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroidx/lifecycle/MediatorLiveData;Lx8;)V"}
     1:1:java.lang.Object invoke(java.lang.Object):185:185 -> invoke
     2:3:void invoke(java.lang.Object):186:187 -> invoke
     4:4:void invoke(java.lang.Object):189:189 -> invoke
@@ -61665,7 +61665,7 @@ androidx.profileinstaller.ProfileInstaller -> androidx.profileinstaller.ProfileI
     22:27:void writeSkipFile(android.content.Context,java.util.concurrent.Executor,androidx.profileinstaller.ProfileInstaller$DiagnosticsCallback):612:612 -> writeSkipFile
     28:33:void writeSkipFile(android.content.Context,java.util.concurrent.Executor,androidx.profileinstaller.ProfileInstaller$DiagnosticsCallback):613:613 -> writeSkipFile
     34:37:void writeSkipFile(android.content.Context,java.util.concurrent.Executor,androidx.profileinstaller.ProfileInstaller$DiagnosticsCallback):608:608 -> writeSkipFile
-androidx.profileinstaller.ProfileInstaller$$ExternalSyntheticLambda0 -> r8:
+androidx.profileinstaller.ProfileInstaller$$ExternalSyntheticLambda0 -> q8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.profileinstaller.ProfileInstaller$$InternalSyntheticLambda$1$65490b9c13bc944dbb73adee505080a4d07beef482bc93a2158a7f2f0fd1d69f$0.$r8$classId -> b
@@ -61715,7 +61715,7 @@ androidx.profileinstaller.ProfileInstallerInitializer -> androidx.profileinstall
     1:4:void lambda$writeInBackground$2(android.content.Context):145:145 -> lambda$writeInBackground$2
     1:17:void writeInBackground(android.content.Context):138:138 -> writeInBackground
     18:27:void writeInBackground(android.content.Context):145:145 -> writeInBackground
-androidx.profileinstaller.ProfileInstallerInitializer$$ExternalSyntheticLambda0 -> s8:
+androidx.profileinstaller.ProfileInstallerInitializer$$ExternalSyntheticLambda0 -> r8:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int androidx.profileinstaller.ProfileInstallerInitializer$$InternalSyntheticLambda$1$03a6ae1fad12ddf91cb6ffc3c686c10ad059d5325c1df7cdae6dc2cb5a8d8b96$0.$r8$classId -> b
@@ -69120,7 +69120,7 @@ androidx.savedstate.SavedStateRegistry -> androidx.savedstate.SavedStateRegistry
     65:68:void runOnNextRecreation(java.lang.Class):185:185 -> runOnNextRecreation
     69:80:void runOnNextRecreation(java.lang.Class):180:180 -> runOnNextRecreation
     8:11:void unregisterSavedStateProvider(java.lang.String):144:144 -> unregisterSavedStateProvider
-androidx.savedstate.SavedStateRegistry$$ExternalSyntheticLambda0 -> l9:
+androidx.savedstate.SavedStateRegistry$$ExternalSyntheticLambda0 -> k9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     androidx.savedstate.SavedStateRegistry androidx.savedstate.SavedStateRegistry$$InternalSyntheticLambda$1$719ab437d0ecac5a4dba8ec5006130a48f9c8392d4682d57a4ee7203b99f6266$0.f$0 -> b
@@ -76735,12 +76735,12 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
     1:3:android.webkit.ValueCallback access$102(com.batteryhealth.app.MainActivity,android.webkit.ValueCallback):56:56 -> access$102
     1:3:boolean access$202(com.batteryhealth.app.MainActivity,boolean):56:56 -> access$202
     1:4:void access$300(com.batteryhealth.app.MainActivity):56:56 -> access$300
-    1:3:android.webkit.WebView access$400(com.batteryhealth.app.MainActivity):56:56 -> access$400
-    1:5:java.lang.String access$500(com.batteryhealth.app.MainActivity,android.net.Uri):56:56 -> access$500
-    1:3:java.lang.String[] access$600(com.batteryhealth.app.MainActivity):56:56 -> access$600
+    1:3:java.lang.String[] access$400(com.batteryhealth.app.MainActivity):56:56 -> access$400
+    1:3:java.lang.String access$500(com.batteryhealth.app.MainActivity):56:56 -> access$500
+    1:3:java.lang.String access$600(com.batteryhealth.app.MainActivity):56:56 -> access$600
     1:4:void access$700(com.batteryhealth.app.MainActivity):56:56 -> access$700
-    1:3:java.lang.String access$800(com.batteryhealth.app.MainActivity):56:56 -> access$800
-    1:3:java.lang.String access$900(com.batteryhealth.app.MainActivity):56:56 -> access$900
+    1:5:java.lang.String access$800(com.batteryhealth.app.MainActivity,android.net.Uri):56:56 -> access$800
+    1:3:android.webkit.WebView access$900(com.batteryhealth.app.MainActivity):56:56 -> access$900
     5:8:void checkAndRequestPermissions():167:167 -> checkAndRequestPermissions
     9:14:void checkAndRequestPermissions():173:173 -> checkAndRequestPermissions
     15:22:void checkAndRequestPermissions():174:174 -> checkAndRequestPermissions
@@ -76750,23 +76750,23 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:boolean $r8$lambda$wcsGt37brfNtRi3khtSEv9HWrTM(java.io.File,java.lang.String):0:0 -> e
       # {"id":"com.android.tools.r8.synthesized"}
-    1:4:java.lang.String getFileName(android.net.Uri):495:495 -> getFileName
-    5:28:java.lang.String getFileName(android.net.Uri):497:497 -> getFileName
-    29:34:java.lang.String getFileName(android.net.Uri):498:498 -> getFileName
-    35:42:java.lang.String getFileName(android.net.Uri):499:499 -> getFileName
-    43:48:java.lang.String getFileName(android.net.Uri):500:500 -> getFileName
-    49:52:java.lang.String getFileName(android.net.Uri):502:502 -> getFileName
-    53:57:java.lang.String getFileName(android.net.Uri):504:504 -> getFileName
-    58:65:java.lang.String getFileName(android.net.Uri):509:509 -> getFileName
-    66:71:java.lang.String getFileName(android.net.Uri):510:510 -> getFileName
-    72:87:java.lang.String getFileName(android.net.Uri):511:511 -> getFileName
-    3:11:long getFileSizeFromUri(android.net.Uri):523:523 -> getFileSizeFromUri
-    12:17:long getFileSizeFromUri(android.net.Uri):524:524 -> getFileSizeFromUri
-    18:25:long getFileSizeFromUri(android.net.Uri):525:525 -> getFileSizeFromUri
-    26:31:long getFileSizeFromUri(android.net.Uri):526:526 -> getFileSizeFromUri
-    32:35:long getFileSizeFromUri(android.net.Uri):528:528 -> getFileSizeFromUri
-    36:39:long getFileSizeFromUri(android.net.Uri):529:529 -> getFileSizeFromUri
-    40:43:long getFileSizeFromUri(android.net.Uri):532:532 -> getFileSizeFromUri
+    1:4:java.lang.String getFileName(android.net.Uri):516:516 -> getFileName
+    5:28:java.lang.String getFileName(android.net.Uri):518:518 -> getFileName
+    29:34:java.lang.String getFileName(android.net.Uri):519:519 -> getFileName
+    35:42:java.lang.String getFileName(android.net.Uri):520:520 -> getFileName
+    43:48:java.lang.String getFileName(android.net.Uri):521:521 -> getFileName
+    49:52:java.lang.String getFileName(android.net.Uri):523:523 -> getFileName
+    53:57:java.lang.String getFileName(android.net.Uri):525:525 -> getFileName
+    58:65:java.lang.String getFileName(android.net.Uri):530:530 -> getFileName
+    66:71:java.lang.String getFileName(android.net.Uri):531:531 -> getFileName
+    72:87:java.lang.String getFileName(android.net.Uri):532:532 -> getFileName
+    3:11:long getFileSizeFromUri(android.net.Uri):544:544 -> getFileSizeFromUri
+    12:17:long getFileSizeFromUri(android.net.Uri):545:545 -> getFileSizeFromUri
+    18:25:long getFileSizeFromUri(android.net.Uri):546:546 -> getFileSizeFromUri
+    26:31:long getFileSizeFromUri(android.net.Uri):547:547 -> getFileSizeFromUri
+    32:35:long getFileSizeFromUri(android.net.Uri):549:549 -> getFileSizeFromUri
+    36:39:long getFileSizeFromUri(android.net.Uri):550:550 -> getFileSizeFromUri
+    40:43:long getFileSizeFromUri(android.net.Uri):553:553 -> getFileSizeFromUri
     32:33:void initPermissions():159:159 -> initPermissions
     3:15:void initWebView():213:213 -> initWebView
     16:23:void initWebView():217:217 -> initWebView
@@ -76794,278 +76794,293 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
     98:107:void initWebView():257:257 -> initWebView
     108:119:void initWebView():264:264 -> initWebView
     120:123:void initWebView():265:265 -> initWebView
-    124:129:void initWebView():287:287 -> initWebView
-    130:139:void initWebView():290:290 -> initWebView
-    140:151:void initWebView():357:357 -> initWebView
-    152:157:void initWebView():379:379 -> initWebView
-    158:165:void initWebView():383:383 -> initWebView
-    12:15:void injectFilePickerScript():431:431 -> injectFilePickerScript
-    3:7:boolean lambda$onDestroy$0(java.io.File,java.lang.String):1081:1081 -> lambda$onDestroy$0
-    5:24:void notifyFileSelected(java.lang.String,java.lang.String):973:973 -> notifyFileSelected
-    25:36:void notifyFileSelected(java.lang.String,java.lang.String):974:974 -> notifyFileSelected
-    37:51:void notifyFileSelected(java.lang.String,java.lang.String):980:980 -> notifyFileSelected
-    52:116:void notifyFileSelected(java.lang.String,java.lang.String):985:985 -> notifyFileSelected
-    117:120:void notifyFileSelected(java.lang.String,java.lang.String):1020:1020 -> notifyFileSelected
-    1:20:void onActivityResult(int,int,android.content.Intent):888:888 -> onActivityResult
-    21:24:void onActivityResult(int,int,android.content.Intent):900:900 -> onActivityResult
-    25:30:void onActivityResult(int,int,android.content.Intent):901:901 -> onActivityResult
-    31:39:void onActivityResult(int,int,android.content.Intent):906:906 -> onActivityResult
-    40:42:void onActivityResult(int,int,android.content.Intent):910:910 -> onActivityResult
-    43:63:void onActivityResult(int,int,android.content.Intent):914:914 -> onActivityResult
-    64:77:void onActivityResult(int,int,android.content.Intent):918:918 -> onActivityResult
-    78:105:void onActivityResult(int,int,android.content.Intent):919:919 -> onActivityResult
-    106:109:void onActivityResult(int,int,android.content.Intent):921:921 -> onActivityResult
-    110:113:void onActivityResult(int,int,android.content.Intent):926:926 -> onActivityResult
-    114:134:void onActivityResult(int,int,android.content.Intent):928:928 -> onActivityResult
-    135:142:void onActivityResult(int,int,android.content.Intent):931:931 -> onActivityResult
-    143:155:void onActivityResult(int,int,android.content.Intent):938:938 -> onActivityResult
-    156:161:void onActivityResult(int,int,android.content.Intent):943:943 -> onActivityResult
-    162:170:void onActivityResult(int,int,android.content.Intent):950:950 -> onActivityResult
-    171:178:void onActivityResult(int,int,android.content.Intent):952:952 -> onActivityResult
-    179:187:void onActivityResult(int,int,android.content.Intent):958:958 -> onActivityResult
-    188:191:void onActivityResult(int,int,android.content.Intent):961:961 -> onActivityResult
-    9:16:void onBackPressed():1027:1027 -> onBackPressed
-    17:20:void onBackPressed():1028:1028 -> onBackPressed
-    21:24:void onBackPressed():1030:1030 -> onBackPressed
+    124:129:void initWebView():308:308 -> initWebView
+    130:139:void initWebView():311:311 -> initWebView
+    140:151:void initWebView():378:378 -> initWebView
+    152:157:void initWebView():400:400 -> initWebView
+    158:165:void initWebView():404:404 -> initWebView
+    12:15:void injectFilePickerScript():452:452 -> injectFilePickerScript
+    3:7:boolean lambda$onDestroy$0(java.io.File,java.lang.String):1102:1102 -> lambda$onDestroy$0
+    5:24:void notifyFileSelected(java.lang.String,java.lang.String):994:994 -> notifyFileSelected
+    25:36:void notifyFileSelected(java.lang.String,java.lang.String):995:995 -> notifyFileSelected
+    37:51:void notifyFileSelected(java.lang.String,java.lang.String):1001:1001 -> notifyFileSelected
+    52:116:void notifyFileSelected(java.lang.String,java.lang.String):1006:1006 -> notifyFileSelected
+    117:120:void notifyFileSelected(java.lang.String,java.lang.String):1041:1041 -> notifyFileSelected
+    1:20:void onActivityResult(int,int,android.content.Intent):909:909 -> onActivityResult
+    21:24:void onActivityResult(int,int,android.content.Intent):921:921 -> onActivityResult
+    25:30:void onActivityResult(int,int,android.content.Intent):922:922 -> onActivityResult
+    31:39:void onActivityResult(int,int,android.content.Intent):927:927 -> onActivityResult
+    40:42:void onActivityResult(int,int,android.content.Intent):931:931 -> onActivityResult
+    43:63:void onActivityResult(int,int,android.content.Intent):935:935 -> onActivityResult
+    64:77:void onActivityResult(int,int,android.content.Intent):939:939 -> onActivityResult
+    78:105:void onActivityResult(int,int,android.content.Intent):940:940 -> onActivityResult
+    106:109:void onActivityResult(int,int,android.content.Intent):942:942 -> onActivityResult
+    110:113:void onActivityResult(int,int,android.content.Intent):947:947 -> onActivityResult
+    114:134:void onActivityResult(int,int,android.content.Intent):949:949 -> onActivityResult
+    135:142:void onActivityResult(int,int,android.content.Intent):952:952 -> onActivityResult
+    143:155:void onActivityResult(int,int,android.content.Intent):959:959 -> onActivityResult
+    156:161:void onActivityResult(int,int,android.content.Intent):964:964 -> onActivityResult
+    162:170:void onActivityResult(int,int,android.content.Intent):971:971 -> onActivityResult
+    171:178:void onActivityResult(int,int,android.content.Intent):973:973 -> onActivityResult
+    179:187:void onActivityResult(int,int,android.content.Intent):979:979 -> onActivityResult
+    188:191:void onActivityResult(int,int,android.content.Intent):982:982 -> onActivityResult
+    9:16:void onBackPressed():1048:1048 -> onBackPressed
+    17:20:void onBackPressed():1049:1049 -> onBackPressed
+    21:24:void onBackPressed():1051:1051 -> onBackPressed
     1:3:void onCreate(android.os.Bundle):78:78 -> onCreate
     4:14:void onCreate(android.os.Bundle):81:81 -> onCreate
     15:17:void onCreate(android.os.Bundle):86:86 -> onCreate
     18:20:void onCreate(android.os.Bundle):89:89 -> onCreate
     21:27:void onCreate(android.os.Bundle):92:92 -> onCreate
     28:39:void onCreate(android.os.Bundle):96:96 -> onCreate
-    4:7:void onDestroy():1080:1080 -> onDestroy
-    8:19:void onDestroy():1081:1081 -> onDestroy
-    20:24:void onDestroy():1083:1083 -> onDestroy
-    25:27:void onDestroy():1084:1084 -> onDestroy
-    28:37:void onDestroy():1085:1085 -> onDestroy
-    38:44:void onDestroy():1093:1093 -> onDestroy
-    45:50:void onDestroy():1094:1094 -> onDestroy
-    51:55:void onDestroy():1095:1095 -> onDestroy
-    56:62:void onDestroy():1096:1096 -> onDestroy
-    63:67:void onDestroy():1097:1097 -> onDestroy
-    68:72:void onDestroy():1098:1098 -> onDestroy
-    73:77:void onDestroy():1099:1099 -> onDestroy
-    78:82:void onDestroy():1100:1100 -> onDestroy
-    83:87:void onDestroy():1101:1101 -> onDestroy
-    88:91:void onDestroy():1105:1105 -> onDestroy
+    4:7:void onDestroy():1101:1101 -> onDestroy
+    8:18:void onDestroy():1102:1102 -> onDestroy
+    19:24:void onDestroy():1104:1104 -> onDestroy
+    25:27:void onDestroy():1105:1105 -> onDestroy
+    28:37:void onDestroy():1106:1106 -> onDestroy
+    38:44:void onDestroy():1114:1114 -> onDestroy
+    45:50:void onDestroy():1115:1115 -> onDestroy
+    51:55:void onDestroy():1116:1116 -> onDestroy
+    56:62:void onDestroy():1117:1117 -> onDestroy
+    63:67:void onDestroy():1118:1118 -> onDestroy
+    68:72:void onDestroy():1119:1119 -> onDestroy
+    73:77:void onDestroy():1120:1120 -> onDestroy
+    78:82:void onDestroy():1121:1121 -> onDestroy
+    83:87:void onDestroy():1122:1122 -> onDestroy
+    88:91:void onDestroy():1126:1126 -> onDestroy
     1:14:void onLowMemory():132:132 -> onLowMemory
     15:18:void onLowMemory():137:137 -> onLowMemory
-    1:11:void onPause():1036:1036 -> onPause
-    12:15:void onPause():1038:1038 -> onPause
+    1:11:void onPause():1057:1057 -> onPause
+    12:15:void onPause():1059:1059 -> onPause
     1:10:void onRequestPermissionsResult(int,java.lang.String[],int[]):190:190 -> onRequestPermissionsResult
     11:13:void onRequestPermissionsResult(int,java.lang.String[],int[]):193:193 -> onRequestPermissionsResult
     14:17:void onRequestPermissionsResult(int,java.lang.String[],int[]):194:194 -> onRequestPermissionsResult
     18:28:void onRequestPermissionsResult(int,java.lang.String[],int[]):196:196 -> onRequestPermissionsResult
     29:36:void onRequestPermissionsResult(int,java.lang.String[],int[]):204:204 -> onRequestPermissionsResult
-    1:11:void onResume():1048:1048 -> onResume
-    12:26:void onResume():1050:1050 -> onResume
-    27:30:void onResume():1057:1057 -> onResume
-    1:12:void onStop():1064:1064 -> onStop
-    13:18:void onStop():1069:1069 -> onStop
+    1:11:void onResume():1069:1069 -> onResume
+    12:26:void onResume():1071:1071 -> onResume
+    27:30:void onResume():1078:1078 -> onResume
+    1:12:void onStop():1085:1085 -> onStop
+    13:18:void onStop():1090:1090 -> onStop
     1:18:void onTrimMemory(int):105:105 -> onTrimMemory
     19:23:void onTrimMemory(int):112:112 -> onTrimMemory
     24:33:void onTrimMemory(int):113:113 -> onTrimMemory
     34:43:void onTrimMemory(int):118:118 -> onTrimMemory
     44:51:void onTrimMemory(int):126:126 -> onTrimMemory
-    15:21:void openFileChooser():445:445 -> openFileChooser
-    22:24:void openFileChooser():446:446 -> openFileChooser
-    25:46:void openFileChooser():447:447 -> openFileChooser
-    47:49:void openFileChooser():455:455 -> openFileChooser
-    50:52:void openFileChooser():456:456 -> openFileChooser
-    53:56:void openFileChooser():458:458 -> openFileChooser
-    57:59:void openFileChooser():460:460 -> openFileChooser
-    60:63:void openFileChooser():462:462 -> openFileChooser
-    64:70:void openFileChooser():468:468 -> openFileChooser
-    71:73:void openFileChooser():469:469 -> openFileChooser
-    74:80:void openFileChooser():470:470 -> openFileChooser
-    81:83:void openFileChooser():471:471 -> openFileChooser
-    84:86:void openFileChooser():472:472 -> openFileChooser
-    87:90:void openFileChooser():474:474 -> openFileChooser
-    91:99:void openFileChooser():473:473 -> openFileChooser
-    100:106:void openFileChooser():482:482 -> openFileChooser
-    107:114:void openFileChooser():485:485 -> openFileChooser
-com.batteryhealth.app.MainActivity$$ExternalSyntheticLambda0 -> d7:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    int com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$4c4dc9c47d544d7a555b51d1f21a0eb1a2d05643f569e5252276882f0c70444f$0.$r8$classId -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:6:void com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$4c4dc9c47d544d7a555b51d1f21a0eb1a2d05643f569e5252276882f0c70444f$0.<init>():0:0 -> <init>
-    1:6:void com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$4c4dc9c47d544d7a555b51d1f21a0eb1a2d05643f569e5252276882f0c70444f$0.$r8$init$synthetic(int):0 -> <init>
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$4c4dc9c47d544d7a555b51d1f21a0eb1a2d05643f569e5252276882f0c70444f$0.accept$bridge(java.io.File,java.lang.String):0:0 -> accept
-      # {"id":"com.android.tools.r8.synthesized"}
+    15:21:void openFileChooser():466:466 -> openFileChooser
+    22:24:void openFileChooser():467:467 -> openFileChooser
+    25:46:void openFileChooser():468:468 -> openFileChooser
+    47:49:void openFileChooser():476:476 -> openFileChooser
+    50:52:void openFileChooser():477:477 -> openFileChooser
+    53:56:void openFileChooser():479:479 -> openFileChooser
+    57:59:void openFileChooser():481:481 -> openFileChooser
+    60:63:void openFileChooser():483:483 -> openFileChooser
+    64:70:void openFileChooser():489:489 -> openFileChooser
+    71:73:void openFileChooser():490:490 -> openFileChooser
+    74:80:void openFileChooser():491:491 -> openFileChooser
+    81:83:void openFileChooser():492:492 -> openFileChooser
+    84:86:void openFileChooser():493:493 -> openFileChooser
+    87:90:void openFileChooser():495:495 -> openFileChooser
+    91:99:void openFileChooser():494:494 -> openFileChooser
+    100:106:void openFileChooser():503:503 -> openFileChooser
+    107:114:void openFileChooser():506:506 -> openFileChooser
 com.batteryhealth.app.MainActivity$1 -> com.batteryhealth.app.MainActivity$1:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
     3:6:void <init>(com.batteryhealth.app.MainActivity):265:265 -> <init>
-    2:12:android.webkit.WebResourceResponse handle(java.lang.String):271:271 -> handle
-    13:30:android.webkit.WebResourceResponse handle(java.lang.String):272:272 -> handle
-    31:33:android.webkit.WebResourceResponse handle(java.lang.String):273:273 -> handle
-    34:36:android.webkit.WebResourceResponse handle(java.lang.String):274:274 -> handle
-    37:41:android.webkit.WebResourceResponse handle(java.lang.String):275:275 -> handle
-    42:52:android.webkit.WebResourceResponse handle(java.lang.String):277:277 -> handle
+    1:1:boolean $r8$lambda$uXeINHZFcvWDHJaIp4WVFsY1258(java.io.File,java.lang.String):0:0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    4:19:android.webkit.WebResourceResponse handle(java.lang.String):271:271 -> handle
+    20:30:android.webkit.WebResourceResponse handle(java.lang.String):277:277 -> handle
+    31:52:android.webkit.WebResourceResponse handle(java.lang.String):278:278 -> handle
+    53:55:android.webkit.WebResourceResponse handle(java.lang.String):279:279 -> handle
+    56:58:android.webkit.WebResourceResponse handle(java.lang.String):280:280 -> handle
+    59:63:android.webkit.WebResourceResponse handle(java.lang.String):281:281 -> handle
+    64:71:android.webkit.WebResourceResponse handle(java.lang.String):282:282 -> handle
+    72:75:android.webkit.WebResourceResponse handle(java.lang.String):286:286 -> handle
+    76:87:android.webkit.WebResourceResponse handle(java.lang.String):287:287 -> handle
+    88:92:android.webkit.WebResourceResponse handle(java.lang.String):290:290 -> handle
+    93:96:android.webkit.WebResourceResponse handle(java.lang.String):292:292 -> handle
+    97:120:android.webkit.WebResourceResponse handle(java.lang.String):293:293 -> handle
+    121:123:android.webkit.WebResourceResponse handle(java.lang.String):294:294 -> handle
+    124:128:android.webkit.WebResourceResponse handle(java.lang.String):295:295 -> handle
+    129:135:android.webkit.WebResourceResponse handle(java.lang.String):296:296 -> handle
+    3:20:boolean lambda$handle$0(java.io.File,java.lang.String):288:288 -> lambda$handle$0
+com.batteryhealth.app.MainActivity$1$$ExternalSyntheticLambda0 -> com.batteryhealth.app.a:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    int com.batteryhealth.app.MainActivity$1$$InternalSyntheticLambda$1$893fdc935ddf65028cba209baa7b2f489ed1f3d2efb87e2c41d3288c6f4e008f$0.$r8$classId -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:6:void com.batteryhealth.app.MainActivity$1$$InternalSyntheticLambda$1$893fdc935ddf65028cba209baa7b2f489ed1f3d2efb87e2c41d3288c6f4e008f$0.<init>():0:0 -> <init>
+    1:6:void com.batteryhealth.app.MainActivity$1$$InternalSyntheticLambda$1$893fdc935ddf65028cba209baa7b2f489ed1f3d2efb87e2c41d3288c6f4e008f$0.$r8$init$synthetic(int):0 -> <init>
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean com.batteryhealth.app.MainActivity$1$$InternalSyntheticLambda$1$893fdc935ddf65028cba209baa7b2f489ed1f3d2efb87e2c41d3288c6f4e008f$0.accept$bridge(java.io.File,java.lang.String):0:0 -> accept
+      # {"id":"com.android.tools.r8.synthesized"}
 com.batteryhealth.app.MainActivity$2 -> com.batteryhealth.app.MainActivity$2:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    5:8:void <init>(com.batteryhealth.app.MainActivity,androidx.webkit.WebViewAssetLoader):290:290 -> <init>
-    1:5:void onPageFinished(android.webkit.WebView,java.lang.String):349:349 -> onPageFinished
-    6:9:void onPageFinished(android.webkit.WebView,java.lang.String):352:352 -> onPageFinished
-    1:3:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):334:334 -> onReceivedError
-    4:9:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):335:335 -> onReceivedError
-    10:21:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):336:336 -> onReceivedError
-    22:29:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):337:337 -> onReceivedError
-    1:3:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):343:343 -> onReceivedSslError
-    4:7:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):344:344 -> onReceivedSslError
-    3:12:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):294:294 -> shouldInterceptRequest
-    13:20:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):296:296 -> shouldInterceptRequest
-    21:25:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):299:299 -> shouldInterceptRequest
-    1:10:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):304:304 -> shouldOverrideUrlLoading
-    11:20:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):307:307 -> shouldOverrideUrlLoading
-    21:29:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):311:311 -> shouldOverrideUrlLoading
-    30:38:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):315:315 -> shouldOverrideUrlLoading
-    39:55:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):319:319 -> shouldOverrideUrlLoading
-    56:68:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):321:321 -> shouldOverrideUrlLoading
-    69:72:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):322:322 -> shouldOverrideUrlLoading
+    5:8:void <init>(com.batteryhealth.app.MainActivity,androidx.webkit.WebViewAssetLoader):311:311 -> <init>
+    1:5:void onPageFinished(android.webkit.WebView,java.lang.String):370:370 -> onPageFinished
+    6:9:void onPageFinished(android.webkit.WebView,java.lang.String):373:373 -> onPageFinished
+    1:3:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):355:355 -> onReceivedError
+    4:9:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):356:356 -> onReceivedError
+    10:21:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):357:357 -> onReceivedError
+    22:29:void onReceivedError(android.webkit.WebView,android.webkit.WebResourceRequest,android.webkit.WebResourceError):358:358 -> onReceivedError
+    1:3:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):364:364 -> onReceivedSslError
+    4:7:void onReceivedSslError(android.webkit.WebView,android.webkit.SslErrorHandler,android.net.http.SslError):365:365 -> onReceivedSslError
+    3:12:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):315:315 -> shouldInterceptRequest
+    13:20:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):317:317 -> shouldInterceptRequest
+    21:25:android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView,android.webkit.WebResourceRequest):320:320 -> shouldInterceptRequest
+    1:10:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):325:325 -> shouldOverrideUrlLoading
+    11:20:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):328:328 -> shouldOverrideUrlLoading
+    21:29:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):332:332 -> shouldOverrideUrlLoading
+    30:38:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):336:336 -> shouldOverrideUrlLoading
+    39:55:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):340:340 -> shouldOverrideUrlLoading
+    56:68:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):342:342 -> shouldOverrideUrlLoading
+    69:72:boolean shouldOverrideUrlLoading(android.webkit.WebView,android.webkit.WebResourceRequest):343:343 -> shouldOverrideUrlLoading
 com.batteryhealth.app.MainActivity$3 -> com.batteryhealth.app.MainActivity$3:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    3:6:void <init>(com.batteryhealth.app.MainActivity):357:357 -> <init>
-    3:10:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):363:363 -> onShowFileChooser
-    11:20:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):365:365 -> onShowFileChooser
-    21:25:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):366:366 -> onShowFileChooser
-    26:31:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):369:369 -> onShowFileChooser
-    32:36:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):370:370 -> onShowFileChooser
-    37:41:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):372:372 -> onShowFileChooser
+    3:6:void <init>(com.batteryhealth.app.MainActivity):378:378 -> <init>
+    3:10:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):384:384 -> onShowFileChooser
+    11:20:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):386:386 -> onShowFileChooser
+    21:25:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):387:387 -> onShowFileChooser
+    26:31:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):390:390 -> onShowFileChooser
+    32:36:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):391:391 -> onShowFileChooser
+    37:41:boolean onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback,android.webkit.WebChromeClient$FileChooserParams):393:393 -> onShowFileChooser
 com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.MainActivity$WebAppInterface:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    3:6:void <init>(com.batteryhealth.app.MainActivity):544:544 -> <init>
+    3:6:void <init>(com.batteryhealth.app.MainActivity):565:565 -> <init>
     1:1:void $r8$lambda$AnKQyjXVkpa2L0bHqGML1xH69c0(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void $r8$lambda$F2M7RgPbTllyuvxbvn0qjIUQ-Co(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> b
+    1:1:boolean $r8$lambda$DcEzTHSo5X_8SfLh2F3S1YyWWwE(java.io.File,java.lang.String):0:0 -> b
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void $r8$lambda$PXVmTCXuDmPE6aRKuAuWO8VoQMo(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> c
+    1:1:void $r8$lambda$DfanEUj1XqiZcnm2GGCg1MtlcNo(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> c
       # {"id":"com.android.tools.r8.synthesized"}
-    3:21:boolean checkStoragePermission():850:850 -> checkStoragePermission
-    22:34:boolean checkStoragePermission():853:853 -> checkStoragePermission
-    35:45:boolean checkStoragePermission():854:854 -> checkStoragePermission
-    3:6:void cleanAllTempFiles():817:817 -> cleanAllTempFiles
-    7:18:void cleanAllTempFiles():818:818 -> cleanAllTempFiles
-    19:24:void cleanAllTempFiles():820:820 -> cleanAllTempFiles
-    25:31:void cleanAllTempFiles():821:821 -> cleanAllTempFiles
-    1:12:void cleanOldTempFiles(java.io.File):795:795 -> cleanOldTempFiles
-    13:16:void cleanOldTempFiles(java.io.File):796:796 -> cleanOldTempFiles
-    17:25:void cleanOldTempFiles(java.io.File):798:798 -> cleanOldTempFiles
-    26:29:void cleanOldTempFiles(java.io.File):799:799 -> cleanOldTempFiles
-    30:37:void cleanOldTempFiles(java.io.File):801:801 -> cleanOldTempFiles
-    38:46:void cleanOldTempFiles(java.io.File):802:802 -> cleanOldTempFiles
-    1:1:int $r8$lambda$TvTuJUTmueaV4TA-0mB-sRVzJUM(java.io.File,java.io.File):0:0 -> d
+    3:21:boolean checkStoragePermission():871:871 -> checkStoragePermission
+    22:34:boolean checkStoragePermission():874:874 -> checkStoragePermission
+    35:45:boolean checkStoragePermission():875:875 -> checkStoragePermission
+    3:6:void cleanAllTempFiles():838:838 -> cleanAllTempFiles
+    7:18:void cleanAllTempFiles():839:839 -> cleanAllTempFiles
+    19:24:void cleanAllTempFiles():841:841 -> cleanAllTempFiles
+    25:31:void cleanAllTempFiles():842:842 -> cleanAllTempFiles
+    1:12:void cleanOldTempFiles(java.io.File):816:816 -> cleanOldTempFiles
+    13:16:void cleanOldTempFiles(java.io.File):817:817 -> cleanOldTempFiles
+    17:18:void cleanOldTempFiles(java.io.File):819:819 -> cleanOldTempFiles
+    19:21:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.<init>():0:0 -> cleanOldTempFiles
+    19:21:void cleanOldTempFiles(java.io.File):819 -> cleanOldTempFiles
+    22:24:void cleanOldTempFiles(java.io.File):819:819 -> cleanOldTempFiles
+    25:29:void cleanOldTempFiles(java.io.File):820:820 -> cleanOldTempFiles
+    30:37:void cleanOldTempFiles(java.io.File):822:822 -> cleanOldTempFiles
+    38:46:void cleanOldTempFiles(java.io.File):823:823 -> cleanOldTempFiles
+    1:1:boolean $r8$lambda$GvMsRWUcWbmjK-0S4e1daEwet3o(java.io.File,java.lang.String):0:0 -> d
       # {"id":"com.android.tools.r8.synthesized"}
-    1:5:void deleteTempFile(java.lang.String):835:835 -> deleteTempFile
-    6:23:void deleteTempFile(java.lang.String):836:836 -> deleteTempFile
-    24:27:void deleteTempFile(java.lang.String):837:837 -> deleteTempFile
-    1:1:void $r8$lambda$UkS7GkC-ydzxJOjaudgLzh7IgNU(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> e
+    1:5:void deleteTempFile(java.lang.String):856:856 -> deleteTempFile
+    6:23:void deleteTempFile(java.lang.String):857:857 -> deleteTempFile
+    24:27:void deleteTempFile(java.lang.String):858:858 -> deleteTempFile
+    1:1:void $r8$lambda$PXVmTCXuDmPE6aRKuAuWO8VoQMo(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> e
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void $r8$lambda$Uw9yUNqb6T_1mefIQuVFwsxS7jg(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String):0:0 -> f
+    1:1:void $r8$lambda$UkS7GkC-ydzxJOjaudgLzh7IgNU(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> f
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void $r8$lambda$hhtlaSV9Or-uLykxFuRHIfGaSMQ(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String,int,int,java.lang.String):0:0 -> g
+    1:1:void $r8$lambda$Uw9yUNqb6T_1mefIQuVFwsxS7jg(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String):0:0 -> g
       # {"id":"com.android.tools.r8.synthesized"}
-    3:8:long getFileSize(java.lang.String):612:612 -> getFileSize
-    9:16:long getFileSize(java.lang.String):613:613 -> getFileSize
-    17:24:long getFileSize(java.lang.String):614:614 -> getFileSize
-    25:30:long getFileSize(java.lang.String):616:616 -> getFileSize
-    31:36:long getFileSize(java.lang.String):617:617 -> getFileSize
-    37:40:long getFileSize(java.lang.String):618:618 -> getFileSize
-    41:44:long getFileSize(java.lang.String):619:619 -> getFileSize
-    45:48:long getFileSize(java.lang.String):623:623 -> getFileSize
-    3:16:java.lang.String getSelectedFileInfo():877:877 -> getSelectedFileInfo
-    17:55:java.lang.String getSelectedFileInfo():878:878 -> getSelectedFileInfo
-    56:69:java.lang.String getSelectedFileInfo():879:879 -> getSelectedFileInfo
+    3:8:long getFileSize(java.lang.String):633:633 -> getFileSize
+    9:16:long getFileSize(java.lang.String):634:634 -> getFileSize
+    17:24:long getFileSize(java.lang.String):635:635 -> getFileSize
+    25:30:long getFileSize(java.lang.String):637:637 -> getFileSize
+    31:36:long getFileSize(java.lang.String):638:638 -> getFileSize
+    37:40:long getFileSize(java.lang.String):639:639 -> getFileSize
+    41:44:long getFileSize(java.lang.String):640:640 -> getFileSize
+    45:48:long getFileSize(java.lang.String):644:644 -> getFileSize
+    3:16:java.lang.String getSelectedFileInfo():898:898 -> getSelectedFileInfo
+    17:55:java.lang.String getSelectedFileInfo():899:899 -> getSelectedFileInfo
+    56:69:java.lang.String getSelectedFileInfo():900:900 -> getSelectedFileInfo
     70:76:java.lang.String getSelectedFileInfo():0:0 -> getSelectedFileInfo
       # {"id":"com.android.tools.r8.outlineCallsite","positions":{"1":77,"4":79,"7":82},"outline":"Lk2;g(Ljava/lang/StringBuilder;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"}
-    77:77:java.lang.String getSelectedFileInfo():879:879 -> getSelectedFileInfo
-    79:79:java.lang.String getSelectedFileInfo():879:879 -> getSelectedFileInfo
-    82:82:java.lang.String getSelectedFileInfo():879:879 -> getSelectedFileInfo
+    77:77:java.lang.String getSelectedFileInfo():900:900 -> getSelectedFileInfo
+    79:79:java.lang.String getSelectedFileInfo():900:900 -> getSelectedFileInfo
+    82:82:java.lang.String getSelectedFileInfo():900:900 -> getSelectedFileInfo
     1:1:void $r8$lambda$lWa3ImhWhj_TBJ54WbXh7ekq9l4(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):0:0 -> h
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean $r8$lambda$nvt_9XSR-0t36AiwLnwEez9t61g(java.io.File,java.lang.String):0:0 -> i
+    1:1:void $r8$lambda$osW1_OjzduPmBgqIlP-Wcm2a608(com.batteryhealth.app.MainActivity$WebAppInterface,int,long,long):0:0 -> i
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void $r8$lambda$osW1_OjzduPmBgqIlP-Wcm2a608(com.batteryhealth.app.MainActivity$WebAppInterface,int,long,long):0:0 -> j
+    1:1:void $r8$lambda$st8XbXbtMvFFv3QxZOgP-EBbHHE(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String,int,int,java.lang.String):0:0 -> j
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean $r8$lambda$wJul8einuX6wec-pO6NT3s4tWEY(java.io.File,java.lang.String):0:0 -> k
+    1:1:int $r8$lambda$xlD2FpGIhRs5pdsf38gVfHBdVUs(java.io.File,java.io.File):0:0 -> k
       # {"id":"com.android.tools.r8.synthesized"}
-    3:7:boolean lambda$cleanAllTempFiles$0(java.io.File,java.lang.String):818:818 -> lambda$cleanAllTempFiles$0
-    3:7:boolean lambda$cleanOldTempFiles$0(java.io.File,java.lang.String):795:795 -> lambda$cleanOldTempFiles$0
-    1:13:int lambda$cleanOldTempFiles$1(java.io.File,java.io.File):798:798 -> lambda$cleanOldTempFiles$1
-    3:10:void lambda$openFilePicker$0():553:553 -> lambda$openFilePicker$0
-    11:21:void lambda$openFilePicker$0():555:555 -> lambda$openFilePicker$0
-    22:26:void lambda$openFilePicker$0():563:563 -> lambda$openFilePicker$0
-    27:30:void lambda$openFilePicker$0():564:564 -> lambda$openFilePicker$0
-    12:17:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):650:650 -> lambda$readFileContentWithProgress$0
-    18:21:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):651:651 -> lambda$readFileContentWithProgress$0
-    22:29:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):652:652 -> lambda$readFileContentWithProgress$0
-    30:47:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):656:656 -> lambda$readFileContentWithProgress$0
-    48:57:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):667:667 -> lambda$readFileContentWithProgress$0
-    58:63:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):669:669 -> lambda$readFileContentWithProgress$0
-    64:69:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):670:670 -> lambda$readFileContentWithProgress$0
-    70:73:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):671:671 -> lambda$readFileContentWithProgress$0
-    74:78:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):673:673 -> lambda$readFileContentWithProgress$0
-    79:84:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):679:679 -> lambda$readFileContentWithProgress$0
-    85:90:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):680:680 -> lambda$readFileContentWithProgress$0
-    91:113:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):681:681 -> lambda$readFileContentWithProgress$0
-    114:119:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):684:684 -> lambda$readFileContentWithProgress$0
-    120:123:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):686:686 -> lambda$readFileContentWithProgress$0
-    124:126:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):688:688 -> lambda$readFileContentWithProgress$0
-    127:153:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):690:690 -> lambda$readFileContentWithProgress$0
-    154:167:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):693:693 -> lambda$readFileContentWithProgress$0
-    168:175:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):699:699 -> lambda$readFileContentWithProgress$0
-    176:191:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):700:700 -> lambda$readFileContentWithProgress$0
-    192:198:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):705:705 -> lambda$readFileContentWithProgress$0
-    199:236:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):713:713 -> lambda$readFileContentWithProgress$0
-    237:239:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):729:729 -> lambda$readFileContentWithProgress$0
-    240:242:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):730:730 -> lambda$readFileContentWithProgress$0
-    243:245:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):731:731 -> lambda$readFileContentWithProgress$0
-    246:249:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):734:734 -> lambda$readFileContentWithProgress$0
-    250:257:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):737:737 -> lambda$readFileContentWithProgress$0
-    258:276:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):738:738 -> lambda$readFileContentWithProgress$0
-    277:293:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):744:744 -> lambda$readFileContentWithProgress$0
-    294:299:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):772:772 -> lambda$readFileContentWithProgress$0
-    300:302:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):773:773 -> lambda$readFileContentWithProgress$0
-    303:317:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):775:775 -> lambda$readFileContentWithProgress$0
-    318:329:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):776:776 -> lambda$readFileContentWithProgress$0
-    330:335:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):761:761 -> lambda$readFileContentWithProgress$0
-    336:340:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):762:762 -> lambda$readFileContentWithProgress$0
-    341:350:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):764:764 -> lambda$readFileContentWithProgress$0
-    3:13:void lambda$readFileContentWithProgress$1():657:657 -> lambda$readFileContentWithProgress$1
-    1:8:void lambda$readFileContentWithProgress$2(int,long,long):719:719 -> lambda$readFileContentWithProgress$2
-    9:14:void lambda$readFileContentWithProgress$2(int,long,long):720:720 -> lambda$readFileContentWithProgress$2
-    15:24:void lambda$readFileContentWithProgress$2(int,long,long):721:721 -> lambda$readFileContentWithProgress$2
-    25:30:void lambda$readFileContentWithProgress$2(int,long,long):714:714 -> lambda$readFileContentWithProgress$2
-    31:39:void lambda$readFileContentWithProgress$2(int,long,long):723:723 -> lambda$readFileContentWithProgress$2
-    5:8:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):750:750 -> lambda$readFileContentWithProgress$3
-    9:12:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):751:751 -> lambda$readFileContentWithProgress$3
-    13:16:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):752:752 -> lambda$readFileContentWithProgress$3
-    17:28:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):753:753 -> lambda$readFileContentWithProgress$3
-    29:34:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):745:745 -> lambda$readFileContentWithProgress$3
-    35:43:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):755:755 -> lambda$readFileContentWithProgress$3
-    3:13:void lambda$readFileContentWithProgress$4():765:765 -> lambda$readFileContentWithProgress$4
-    3:10:void lambda$readFileContentWithProgress$5(java.lang.String):777:777 -> lambda$readFileContentWithProgress$5
-    11:20:void lambda$readFileContentWithProgress$5(java.lang.String):780:780 -> lambda$readFileContentWithProgress$5
-    21:25:void lambda$readFileContentWithProgress$5(java.lang.String):778:778 -> lambda$readFileContentWithProgress$5
-    26:29:void lambda$readFileContentWithProgress$5(java.lang.String):777:777 -> lambda$readFileContentWithProgress$5
-    3:6:void lambda$requestStoragePermission$0():866:866 -> lambda$requestStoragePermission$0
-    3:12:void openFilePicker():549:549 -> openFilePicker
-    2:7:java.lang.String readFileContent(java.lang.String):577:577 -> readFileContent
-    8:11:java.lang.String readFileContent(java.lang.String):578:578 -> readFileContent
-    12:18:java.lang.String readFileContent(java.lang.String):579:579 -> readFileContent
-    19:27:java.lang.String readFileContent(java.lang.String):586:586 -> readFileContent
-    28:35:java.lang.String readFileContent(java.lang.String):590:590 -> readFileContent
-    36:39:java.lang.String readFileContent(java.lang.String):591:591 -> readFileContent
-    40:42:java.lang.String readFileContent(java.lang.String):594:594 -> readFileContent
-    43:45:java.lang.String readFileContent(java.lang.String):595:595 -> readFileContent
-    46:49:java.lang.String readFileContent(java.lang.String):597:597 -> readFileContent
-    50:53:java.lang.String readFileContent(java.lang.String):598:598 -> readFileContent
-    54:56:java.lang.String readFileContent(java.lang.String):600:600 -> readFileContent
-    1:16:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):647:647 -> readFileContentWithProgress
-    17:20:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):786:786 -> readFileContentWithProgress
-    3:12:void requestStoragePermission():866:866 -> requestStoragePermission
-com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda0 -> e7:
+    3:7:boolean lambda$cleanAllTempFiles$9(java.io.File,java.lang.String):839:839 -> lambda$cleanAllTempFiles$9
+    3:7:boolean lambda$cleanOldTempFiles$7(java.io.File,java.lang.String):816:816 -> lambda$cleanOldTempFiles$7
+    1:13:int lambda$cleanOldTempFiles$8(java.io.File,java.io.File):819:819 -> lambda$cleanOldTempFiles$8
+    3:10:void lambda$openFilePicker$0():574:574 -> lambda$openFilePicker$0
+    11:21:void lambda$openFilePicker$0():576:576 -> lambda$openFilePicker$0
+    22:26:void lambda$openFilePicker$0():584:584 -> lambda$openFilePicker$0
+    27:30:void lambda$openFilePicker$0():585:585 -> lambda$openFilePicker$0
+    3:13:void lambda$readFileContentWithProgress$1():678:678 -> lambda$readFileContentWithProgress$1
+    1:8:void lambda$readFileContentWithProgress$2(int,long,long):740:740 -> lambda$readFileContentWithProgress$2
+    9:14:void lambda$readFileContentWithProgress$2(int,long,long):741:741 -> lambda$readFileContentWithProgress$2
+    15:24:void lambda$readFileContentWithProgress$2(int,long,long):742:742 -> lambda$readFileContentWithProgress$2
+    25:30:void lambda$readFileContentWithProgress$2(int,long,long):735:735 -> lambda$readFileContentWithProgress$2
+    31:39:void lambda$readFileContentWithProgress$2(int,long,long):744:744 -> lambda$readFileContentWithProgress$2
+    5:8:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):771:771 -> lambda$readFileContentWithProgress$3
+    9:12:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):772:772 -> lambda$readFileContentWithProgress$3
+    13:16:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):773:773 -> lambda$readFileContentWithProgress$3
+    17:28:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):774:774 -> lambda$readFileContentWithProgress$3
+    29:34:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):766:766 -> lambda$readFileContentWithProgress$3
+    35:43:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):776:776 -> lambda$readFileContentWithProgress$3
+    3:13:void lambda$readFileContentWithProgress$4():786:786 -> lambda$readFileContentWithProgress$4
+    3:10:void lambda$readFileContentWithProgress$5(java.lang.String):798:798 -> lambda$readFileContentWithProgress$5
+    11:20:void lambda$readFileContentWithProgress$5(java.lang.String):801:801 -> lambda$readFileContentWithProgress$5
+    21:25:void lambda$readFileContentWithProgress$5(java.lang.String):799:799 -> lambda$readFileContentWithProgress$5
+    26:29:void lambda$readFileContentWithProgress$5(java.lang.String):798:798 -> lambda$readFileContentWithProgress$5
+    12:17:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):671:671 -> lambda$readFileContentWithProgress$6
+    18:21:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):672:672 -> lambda$readFileContentWithProgress$6
+    22:29:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):673:673 -> lambda$readFileContentWithProgress$6
+    30:47:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):677:677 -> lambda$readFileContentWithProgress$6
+    48:57:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):688:688 -> lambda$readFileContentWithProgress$6
+    58:63:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):690:690 -> lambda$readFileContentWithProgress$6
+    64:69:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):691:691 -> lambda$readFileContentWithProgress$6
+    70:73:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):692:692 -> lambda$readFileContentWithProgress$6
+    74:78:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):694:694 -> lambda$readFileContentWithProgress$6
+    79:84:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):700:700 -> lambda$readFileContentWithProgress$6
+    85:90:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):701:701 -> lambda$readFileContentWithProgress$6
+    91:113:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):702:702 -> lambda$readFileContentWithProgress$6
+    114:119:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):705:705 -> lambda$readFileContentWithProgress$6
+    120:123:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):707:707 -> lambda$readFileContentWithProgress$6
+    124:126:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):709:709 -> lambda$readFileContentWithProgress$6
+    127:153:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):711:711 -> lambda$readFileContentWithProgress$6
+    154:167:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):714:714 -> lambda$readFileContentWithProgress$6
+    168:175:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):720:720 -> lambda$readFileContentWithProgress$6
+    176:191:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):721:721 -> lambda$readFileContentWithProgress$6
+    192:198:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):726:726 -> lambda$readFileContentWithProgress$6
+    199:236:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):734:734 -> lambda$readFileContentWithProgress$6
+    237:239:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):750:750 -> lambda$readFileContentWithProgress$6
+    240:242:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):751:751 -> lambda$readFileContentWithProgress$6
+    243:245:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):752:752 -> lambda$readFileContentWithProgress$6
+    246:249:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):755:755 -> lambda$readFileContentWithProgress$6
+    250:257:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):758:758 -> lambda$readFileContentWithProgress$6
+    258:276:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):759:759 -> lambda$readFileContentWithProgress$6
+    277:293:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):765:765 -> lambda$readFileContentWithProgress$6
+    294:299:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):793:793 -> lambda$readFileContentWithProgress$6
+    300:302:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):794:794 -> lambda$readFileContentWithProgress$6
+    303:317:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):796:796 -> lambda$readFileContentWithProgress$6
+    318:329:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):797:797 -> lambda$readFileContentWithProgress$6
+    330:335:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):782:782 -> lambda$readFileContentWithProgress$6
+    336:340:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):783:783 -> lambda$readFileContentWithProgress$6
+    341:350:void lambda$readFileContentWithProgress$6(java.lang.String,int,int,java.lang.String):785:785 -> lambda$readFileContentWithProgress$6
+    3:6:void lambda$requestStoragePermission$10():887:887 -> lambda$requestStoragePermission$10
+    3:12:void openFilePicker():570:570 -> openFilePicker
+    2:7:java.lang.String readFileContent(java.lang.String):598:598 -> readFileContent
+    8:11:java.lang.String readFileContent(java.lang.String):599:599 -> readFileContent
+    12:18:java.lang.String readFileContent(java.lang.String):600:600 -> readFileContent
+    19:27:java.lang.String readFileContent(java.lang.String):607:607 -> readFileContent
+    28:35:java.lang.String readFileContent(java.lang.String):611:611 -> readFileContent
+    36:39:java.lang.String readFileContent(java.lang.String):612:612 -> readFileContent
+    40:42:java.lang.String readFileContent(java.lang.String):615:615 -> readFileContent
+    43:45:java.lang.String readFileContent(java.lang.String):616:616 -> readFileContent
+    46:49:java.lang.String readFileContent(java.lang.String):618:618 -> readFileContent
+    50:53:java.lang.String readFileContent(java.lang.String):619:619 -> readFileContent
+    54:56:java.lang.String readFileContent(java.lang.String):621:621 -> readFileContent
+    1:16:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):668:668 -> readFileContentWithProgress
+    17:20:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):807:807 -> readFileContentWithProgress
+    3:12:void requestStoragePermission():887:887 -> requestStoragePermission
+com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda0 -> d7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$21bea831fe06635bff68cc6504def148658f919550ffbf64fa72c739d3ecea13$0.$r8$classId -> b
@@ -77077,7 +77092,7 @@ com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda0 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$21bea831fe06635bff68cc6504def148658f919550ffbf64fa72c739d3ecea13$0.run$bridge():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda1 -> f7:
+com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda1 -> e7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.batteryhealth.app.MainActivity$WebAppInterface com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$67b66d60881a2f9e26c6c7fdbdfbfa7ee1d0bcc1608f70c842f7e324a04151c0$0.f$0 -> b
@@ -77094,55 +77109,50 @@ com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda1 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$67b66d60881a2f9e26c6c7fdbdfbfa7ee1d0bcc1608f70c842f7e324a04151c0$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda2 -> g7:
+com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda2 -> f7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.$r8$classId -> a
+    com.batteryhealth.app.MainActivity$WebAppInterface com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.f$0 -> b
       # {"id":"com.android.tools.r8.synthesized"}
-    1:6:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.<init>():0:0 -> <init>
-    1:6:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.$r8$init$synthetic(int):0 -> <init>
+    int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.f$1 -> c
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.compare$bridge(java.lang.Object,java.lang.Object):0:0 -> compare
+    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.f$2 -> d
       # {"id":"com.android.tools.r8.synthesized"}
-com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda3 -> h7:
+    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.f$3 -> e
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.<init>(com.batteryhealth.app.MainActivity$WebAppInterface,int,long,long):0:0 -> <init>
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$1.run():0:0 -> run
+      # {"id":"com.android.tools.r8.synthesized"}
+com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda3 -> g7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    com.batteryhealth.app.MainActivity$WebAppInterface com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.f$0 -> b
+    com.batteryhealth.app.MainActivity$WebAppInterface com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$0 -> b
       # {"id":"com.android.tools.r8.synthesized"}
-    int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.f$1 -> c
+    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$1 -> c
       # {"id":"com.android.tools.r8.synthesized"}
-    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.f$2 -> d
+    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$2 -> d
       # {"id":"com.android.tools.r8.synthesized"}
-    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.f$3 -> e
+    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$3 -> e
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.<init>(com.batteryhealth.app.MainActivity$WebAppInterface,int,long,long):0:0 -> <init>
+    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$4 -> f
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$1.run():0:0 -> run
+    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.f$5 -> g
       # {"id":"com.android.tools.r8.synthesized"}
-com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda4 -> i7:
+    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.<init>(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):0:0 -> <init>
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$695b130ec76e2f25a94a6cdc107925b1c70f845b48ea967724ddc0e0443540f2$2.run():0:0 -> run
+      # {"id":"com.android.tools.r8.synthesized"}
+com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda4 -> h7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    com.batteryhealth.app.MainActivity$WebAppInterface com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$0 -> b
-      # {"id":"com.android.tools.r8.synthesized"}
-    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$1 -> c
-      # {"id":"com.android.tools.r8.synthesized"}
-    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$2 -> d
-      # {"id":"com.android.tools.r8.synthesized"}
-    long com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$3 -> e
-      # {"id":"com.android.tools.r8.synthesized"}
-    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$4 -> f
-      # {"id":"com.android.tools.r8.synthesized"}
-    java.lang.String com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.f$5 -> g
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.<init>(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):0:0 -> <init>
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$fbeee6644229923de7ab087d25448e9b27cba54053781a85480e3a737950ae8f$2.run():0:0 -> run
+    1:1:int com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$1.compare(java.lang.Object,java.lang.Object):0:0 -> compare
       # {"id":"com.android.tools.r8.synthesized"}
 com.batteryhealth.app.MainActivity$WebAppInterface$1 -> com.batteryhealth.app.MainActivity$WebAppInterface$1:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    3:6:void <init>(com.batteryhealth.app.MainActivity$WebAppInterface):555:555 -> <init>
-    1:1:void onReceiveValue(java.lang.Object):555:555 -> onReceiveValue
-    2:2:void onReceiveValue(android.net.Uri[]):559:559 -> onReceiveValue
+    3:6:void <init>(com.batteryhealth.app.MainActivity$WebAppInterface):576:576 -> <init>
+    1:1:void onReceiveValue(java.lang.Object):576:576 -> onReceiveValue
+    2:2:void onReceiveValue(android.net.Uri[]):580:580 -> onReceiveValue
 com.google.android.material.animation.AnimatableView -> com.google.android.material.animation.AnimatableView:
 # {"id":"sourceFile","fileName":"AnimatableView.java"}
 com.google.android.material.animation.AnimatableView$Listener -> com.google.android.material.animation.AnimatableView$Listener:
@@ -84159,7 +84169,7 @@ com.google.android.material.color.ColorContrast$$ExternalSyntheticApiModelOutlin
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/widget/EditText;)V"}
     1:1:void com.google.android.material.search.SearchView$$InternalSyntheticApiModelOutline$1$af79fbd4ce5fe3e5e4a0f6d3df8c2bbbfbad0b5e03b9e486382a21e33f1675e7$2.m(com.google.android.material.search.SearchBar,java.lang.Runnable):0:0 -> e
       # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/google/android/material/search/SearchBar;Lu9;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/google/android/material/search/SearchBar;Lt9;)V"}
 com.google.android.material.color.ColorContrast$ColorContrastActivityLifecycleCallbacks -> com.google.android.material.color.ColorContrast$ColorContrastActivityLifecycleCallbacks:
 # {"id":"sourceFile","fileName":"ColorContrast.java"}
     1:3:void <init>(com.google.android.material.color.ColorContrastOptions):173:173 -> <init>
@@ -85823,7 +85833,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors -> com.google.
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:com.google.android.material.color.utilities.TonalPalette $r8$lambda$nVCqSuuzK7pE0ZPtOWN3ZAxFql8(com.google.android.material.color.utilities.DynamicScheme):0:0 -> z1
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda0 -> o7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda0 -> n7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$03d641f09e0ca38d53369ec276cf66e8a08dccb249ad2f601458d389a76ea9f6$0.$r8$classId -> a
@@ -85833,7 +85843,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$03d641f09e0ca38d53369ec276cf66e8a08dccb249ad2f601458d389a76ea9f6$0.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda1 -> p7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda1 -> o7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$03d641f09e0ca38d53369ec276cf66e8a08dccb249ad2f601458d389a76ea9f6$2.$r8$classId -> a
@@ -85845,7 +85855,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$03d641f09e0ca38d53369ec276cf66e8a08dccb249ad2f601458d389a76ea9f6$2.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda2 -> q7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda2 -> p7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$46cc20baee6f180fbdfb5414cd87227c91829989e6dd35f8b11f2620943e6f40$0.$r8$classId -> a
@@ -85855,7 +85865,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$46cc20baee6f180fbdfb5414cd87227c91829989e6dd35f8b11f2620943e6f40$0.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda3 -> r7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda3 -> q7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$79235509ee343cf2016d03132aca7e832cda0368d0f7a313a113e3fed5308af5$0.$r8$classId -> a
@@ -85865,7 +85875,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$79235509ee343cf2016d03132aca7e832cda0368d0f7a313a113e3fed5308af5$0.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda4 -> s7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda4 -> r7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$7e60c8d111f79e8013a30703d5b30ef528927b21d4132b6e7ca983a10c640f4d$2.$r8$classId -> a
@@ -85877,7 +85887,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$7e60c8d111f79e8013a30703d5b30ef528927b21d4132b6e7ca983a10c640f4d$2.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda5 -> t7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda5 -> s7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$b2420e9b4b83af3ab7bffe256ec1924c1a4f119eac5930439059ddf074a28f8f$0.$r8$classId -> a
@@ -85887,7 +85897,7 @@ com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSynth
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$b2420e9b4b83af3ab7bffe256ec1924c1a4f119eac5930439059ddf074a28f8f$0.apply$bridge(java.lang.Object):0:0 -> apply
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda6 -> u7:
+com.google.android.material.color.utilities.MaterialDynamicColors$$ExternalSyntheticLambda6 -> t7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.color.utilities.MaterialDynamicColors$$InternalSyntheticLambda$1$f4cdc66c094a922bfaf54bf1447e69d644e7742e366564f02109d0680bf5bb1d$1.$r8$classId -> a
@@ -86457,9 +86467,11 @@ com.google.android.material.color.utilities.TemperatureCache -> com.google.andro
     46:52:java.util.List getHctsByHue():273:273 -> getHctsByHue
     6:16:java.util.List getHctsByTemp():293:293 -> getHctsByTemp
     17:19:java.util.List getHctsByTemp():294:294 -> getHctsByTemp
-    20:31:java.util.List getHctsByTemp():295:295 -> getHctsByTemp
-    32:35:java.util.List getHctsByTemp():296:296 -> getHctsByTemp
-    36:41:java.util.List getHctsByTemp():297:297 -> getHctsByTemp
+    20:27:java.util.List getHctsByTemp():295:295 -> getHctsByTemp
+    28:30:void com.google.android.material.color.utilities.TemperatureCache$$InternalSyntheticLambda$1$06266c4d9f2d3454de0d971435007909b76cc1f073dc9ecd9f783614adbc78dd$1.<init>():0:0 -> getHctsByTemp
+    28:30:java.util.List getHctsByTemp():295 -> getHctsByTemp
+    31:34:java.util.List getHctsByTemp():296:296 -> getHctsByTemp
+    35:40:java.util.List getHctsByTemp():297:297 -> getHctsByTemp
     1:37:double getRelativeTemperature(com.google.android.material.color.utilities.Hct):220:220 -> getRelativeTemperature
     38:81:double getRelativeTemperature(com.google.android.material.color.utilities.Hct):221:221 -> getRelativeTemperature
     6:16:java.util.Map getTempsByHct():308:308 -> getTempsByHct
@@ -86474,6 +86486,11 @@ com.google.android.material.color.utilities.TemperatureCache -> com.google.andro
     27:39:double rawTemperature(com.google.android.material.color.utilities.Hct):247:247 -> rawTemperature
     40:52:double rawTemperature(com.google.android.material.color.utilities.Hct):250:250 -> rawTemperature
     53:69:double rawTemperature(com.google.android.material.color.utilities.Hct):251:251 -> rawTemperature
+com.google.android.material.color.utilities.TemperatureCache$$ExternalSyntheticLambda0 -> va:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    1:1:int com.google.android.material.color.utilities.TemperatureCache$$InternalSyntheticLambda$1$06266c4d9f2d3454de0d971435007909b76cc1f073dc9ecd9f783614adbc78dd$1.compare(java.lang.Object,java.lang.Object):0:0 -> compare
+      # {"id":"com.android.tools.r8.synthesized"}
 com.google.android.material.color.utilities.TonalPalette -> com.google.android.material.color.utilities.TonalPalette:
 # {"id":"sourceFile","fileName":"TonalPalette.java"}
     1:3:void <init>(double,double,com.google.android.material.color.utilities.Hct):69:69 -> <init>
@@ -87401,7 +87418,7 @@ com.google.android.material.datepicker.MaterialDatePicker -> com.google.android.
     6:16:void updateToggleContentDescription(com.google.android.material.internal.CheckableImageButton):552:552 -> updateToggleContentDescription
     17:28:void updateToggleContentDescription(com.google.android.material.internal.CheckableImageButton):553:553 -> updateToggleContentDescription
     29:32:void updateToggleContentDescription(com.google.android.material.internal.CheckableImageButton):554:554 -> updateToggleContentDescription
-com.google.android.material.datepicker.MaterialDatePicker$$ExternalSyntheticLambda0 -> n7:
+com.google.android.material.datepicker.MaterialDatePicker$$ExternalSyntheticLambda0 -> m7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.datepicker.MaterialDatePicker com.google.android.material.datepicker.MaterialDatePicker$$InternalSyntheticLambda$1$5d7d61df5671d9c5914af281608967666a8890f83906d8383d8c7804e3fbcd27$0.f$0 -> a
@@ -91299,7 +91316,7 @@ com.google.android.material.motion.MaterialBackOrchestrator$Api33BackCallbackDel
     26:29:void startListeningForBackCallbacks(com.google.android.material.motion.MaterialBackHandler,android.view.View,boolean):183:183 -> startListeningForBackCallbacks
     1:9:void stopListeningForBackCallbacks(android.view.View):189:189 -> stopListeningForBackCallbacks
     10:16:void stopListeningForBackCallbacks(android.view.View):193:193 -> stopListeningForBackCallbacks
-com.google.android.material.motion.MaterialBackOrchestrator$Api33BackCallbackDelegate$$ExternalSyntheticLambda2 -> m7:
+com.google.android.material.motion.MaterialBackOrchestrator$Api33BackCallbackDelegate$$ExternalSyntheticLambda2 -> l7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.motion.MaterialBackHandler com.google.android.material.motion.MaterialBackOrchestrator$Api33BackCallbackDelegate$$InternalSyntheticLambda$1$5b69594c674a6efcd3503a8490b8c2db4e411bb7713ad29601b619d929e9bcb1$0.f$0 -> a
@@ -91433,7 +91450,7 @@ com.google.android.material.motion.MaterialMainContainerBackHelper -> com.google
     13:14:void updateBackProgress(float,boolean,float,float):131:132 -> updateBackProgress
     15:17:void updateBackProgress(float,boolean,float,float):134:136 -> updateBackProgress
     18:24:void updateBackProgress(float,boolean,float,float):138:144 -> updateBackProgress
-com.google.android.material.motion.MaterialMainContainerBackHelper$$ExternalSyntheticLambda1 -> v7:
+com.google.android.material.motion.MaterialMainContainerBackHelper$$ExternalSyntheticLambda1 -> u7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.motion.MaterialMainContainerBackHelper$$InternalSyntheticLambda$1$505cfa1a57be11b826a20ff3c76defa7c1664ef375b8cdf01e5c29cd268f24e5$0.$r8$classId -> a
@@ -93856,7 +93873,7 @@ com.google.android.material.search.SearchBar -> com.google.android.material.sear
     16:22:void validateAttributes(android.util.AttributeSet):254:254 -> validateAttributes
     23:30:void validateAttributes(android.util.AttributeSet):255:255 -> validateAttributes
     31:38:void validateAttributes(android.util.AttributeSet):251:251 -> validateAttributes
-com.google.android.material.search.SearchBar$$ExternalSyntheticLambda0 -> o9:
+com.google.android.material.search.SearchBar$$ExternalSyntheticLambda0 -> n9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.search.SearchBar com.google.android.material.search.SearchBar$$InternalSyntheticLambda$1$a02787dccba7994b0a065deab84748e07a161a6fd05ca596998ccde1b9e1254a$0.f$0 -> a
@@ -94344,7 +94361,7 @@ com.google.android.material.search.SearchView -> com.google.android.material.sea
     44:50:void updateNavigationIconProgressIfNeeded():889:889 -> updateNavigationIconProgressIfNeeded
     1:6:void updateSoftInputMode():763:763 -> updateSoftInputMode
     7:15:void updateSoftInputMode():765:765 -> updateSoftInputMode
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda2 -> p9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda2 -> o9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.search.SearchView com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$2968bb8605fa897f5a2eb3a8e925f694c838347b1857f197aea988a67e758c65$0.f$0 -> a
@@ -94353,12 +94370,12 @@ com.google.android.material.search.SearchView$$ExternalSyntheticLambda2 -> p9:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:boolean com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$2968bb8605fa897f5a2eb3a8e925f694c838347b1857f197aea988a67e758c65$0.onTouch(android.view.View,android.view.MotionEvent):0:0 -> onTouch
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda3 -> q9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda3 -> p9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:boolean com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$36e64d7372b921eee84d36e881434d93baae07b036d9cf7c6ecc4384f0117c71$0.onTouch(android.view.View,android.view.MotionEvent):0:0 -> onTouch
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda4 -> r9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda4 -> q9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$373270df27ef5972210997592ecbb06fe75a45248e194a1918ecea6f0f66b273$0.$r8$classId -> a
@@ -94370,7 +94387,7 @@ com.google.android.material.search.SearchView$$ExternalSyntheticLambda4 -> r9:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$373270df27ef5972210997592ecbb06fe75a45248e194a1918ecea6f0f66b273$0.onClick$bridge(android.view.View):0:0 -> onClick
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda5 -> s9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda5 -> r9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     android.view.ViewGroup$MarginLayoutParams com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$39cc1f895c4fbfea2136752ba98aeaf5227d7bbe367a3ea500308bf89e9a1998$0.f$0 -> a
@@ -94383,7 +94400,7 @@ com.google.android.material.search.SearchView$$ExternalSyntheticLambda5 -> s9:
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:androidx.core.view.WindowInsetsCompat com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$39cc1f895c4fbfea2136752ba98aeaf5227d7bbe367a3ea500308bf89e9a1998$0.onApplyWindowInsets(android.view.View,androidx.core.view.WindowInsetsCompat):0:0 -> onApplyWindowInsets
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda6 -> t9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda6 -> s9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.search.SearchView com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$422c1daa4f655774d8b39ae1a6b64995669de6f5c0f2b92e3faf778123a6477c$0.f$0 -> a
@@ -94395,7 +94412,7 @@ com.google.android.material.search.SearchView$$ExternalSyntheticLambda6 -> t9:
       # {"id":"com.android.tools.r8.synthesized"}
     2:2:androidx.core.view.WindowInsetsCompat com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$d7cb9741575eb4cde9063330ed922248f211eb969215efa1c31f0f47996762fd$0.onApplyWindowInsets(android.view.View,androidx.core.view.WindowInsetsCompat,com.google.android.material.internal.ViewUtils$RelativePadding):0:0 -> onApplyWindowInsets
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.search.SearchView$$ExternalSyntheticLambda7 -> u9:
+com.google.android.material.search.SearchView$$ExternalSyntheticLambda7 -> t9:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int com.google.android.material.search.SearchView$$InternalSyntheticLambda$1$ad67c18bab5c92e127ddc78b73397727b570c8c800c5fa307ee4011b48055e2e$0.$r8$classId -> b
@@ -96283,7 +96300,7 @@ com.google.android.material.sidesheet.SideSheetBehavior -> com.google.android.ma
     5:8:void updateMaterialShapeDrawable(com.google.android.material.shape.ShapeAppearanceModel):241:241 -> updateMaterialShapeDrawable
     9:14:void updateSheetVisibility(android.view.View):419:419 -> updateSheetVisibility
     15:18:void updateSheetVisibility(android.view.View):420:420 -> updateSheetVisibility
-com.google.android.material.sidesheet.SideSheetBehavior$$ExternalSyntheticLambda0 -> da:
+com.google.android.material.sidesheet.SideSheetBehavior$$ExternalSyntheticLambda0 -> ca:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.sidesheet.SideSheetBehavior com.google.android.material.sidesheet.SideSheetBehavior$$InternalSyntheticLambda$1$5bd2241e5212809234333330d8ae0d91372597a95c7cc2979a4d505bd0903725$0.f$0 -> a
@@ -96298,7 +96315,7 @@ com.google.android.material.sidesheet.SideSheetBehavior$$ExternalSyntheticLambda
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.google.android.material.sidesheet.SideSheetBehavior$$InternalSyntheticLambda$1$5bd2241e5212809234333330d8ae0d91372597a95c7cc2979a4d505bd0903725$0.onAnimationUpdate(android.animation.ValueAnimator):0:0 -> onAnimationUpdate
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.android.material.sidesheet.SideSheetBehavior$$ExternalSyntheticLambda1 -> ea:
+com.google.android.material.sidesheet.SideSheetBehavior$$ExternalSyntheticLambda1 -> da:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.sidesheet.SideSheetBehavior com.google.android.material.sidesheet.SideSheetBehavior$$InternalSyntheticLambda$1$fa1244d46eae0795a60b9fc62a1245804a9f64a9fac94559c274504bbca5d4b6$0.f$0 -> a
@@ -97758,7 +97775,7 @@ com.google.android.material.snackbar.Snackbar -> com.google.android.material.sna
     2:2:com.google.android.material.snackbar.Snackbar setTextColor(int):403:403 -> setTextColor
     1:8:com.google.android.material.snackbar.Snackbar setTextMaxLines(int):414:414 -> setTextMaxLines
     1:4:void show():127:127 -> show
-com.google.android.material.snackbar.Snackbar$$ExternalSyntheticLambda1 -> fa:
+com.google.android.material.snackbar.Snackbar$$ExternalSyntheticLambda1 -> ea:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.google.android.material.snackbar.Snackbar com.google.android.material.snackbar.Snackbar$$InternalSyntheticLambda$1$0059d5e9bd78c3e923b90faa59d2598fb1cd6694576bd3798766f3bde1e5a11f$0.f$0 -> a
@@ -103726,7 +103743,7 @@ kotlin.Lazy -> r6:
     java.lang.Object getValue() -> getValue
 kotlin.LazyKt__LazyJVMKt -> R8$$REMOVED$$CLASS$$2:
 # {"id":"sourceFile","fileName":"LazyJVM.kt"}
-kotlin.Pair -> j8:
+kotlin.Pair -> i8:
 # {"id":"sourceFile","fileName":"Tuples.kt"}
     1:8:void <init>(java.lang.Object,java.lang.Object):26:26 -> <init>
     1:1:java.lang.Object component1():0:0 -> a
@@ -103736,10 +103753,10 @@ kotlin.Pair -> j8:
     1:1:boolean equals(java.lang.Object):0:0 -> equals
     1:1:int hashCode():0:0 -> hashCode
     1:32:java.lang.String toString():34:34 -> toString
-kotlin.Result -> j9:
+kotlin.Result -> i9:
 # {"id":"sourceFile","fileName":"Result.kt"}
     1:11:java.lang.Throwable exceptionOrNull-impl(java.lang.Object):64:64 -> a
-kotlin.Result$Failure -> i9:
+kotlin.Result$Failure -> h9:
 # {"id":"sourceFile","fileName":"Result.kt"}
     6:11:void <init>(java.lang.Throwable):105:105 -> <init>
     1:20:boolean equals(java.lang.Object):109:109 -> equals
@@ -103747,7 +103764,7 @@ kotlin.Result$Failure -> i9:
     1:22:java.lang.String toString():111:111 -> toString
 kotlin.ResultKt -> R8$$REMOVED$$CLASS$$3:
 # {"id":"sourceFile","fileName":"Result.kt"}
-kotlin.SynchronizedLazyImpl -> qa:
+kotlin.SynchronizedLazyImpl -> pa:
 # {"id":"sourceFile","fileName":"LazyJVM.kt"}
     kotlin.jvm.functions.Function0 initializer -> initializer
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lu3;"}
@@ -104079,7 +104096,7 @@ kotlin.collections.ArraysKt___ArraysKt -> z:
     16:20:java.lang.Object[] kotlin.collections.ArraysKt___ArraysJvmKt.copyInto$default(java.lang.Object[],java.lang.Object[],int,int,int,int,java.lang.Object):1246:1246 -> A
       # {"id":"com.android.tools.r8.residualsignature","signature":"([Ljava/lang/Object;[Ljava/lang/Object;IIII)V"}
     11:22:kotlin.sequences.Sequence kotlin.sequences.SequencesKt__SequencesKt.generateSequence(java.lang.Object,kotlin.jvm.functions.Function1):662:662 -> B
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;Lf4;)Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;Lf4;)Lu9;"}
     11:20:java.lang.Integer kotlin.collections.CollectionsKt__IterablesKt.collectionSizeOrNull(java.lang.Iterable):33:33 -> C
     11:20:java.util.Set kotlin.collections.SetsKt___SetsKt.plus(java.util.Set,java.lang.Iterable):110 -> C
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/util/Set;Ljava/util/Set;)Ljava/util/LinkedHashSet;"}
@@ -104393,9 +104410,9 @@ kotlin.coroutines.CombinedContext$writeReplace$1 -> d1:
     kotlin.coroutines.CoroutineContext[] $elements -> $elements
       # {"id":"com.android.tools.r8.residualsignature","signature":"[Lx1;"}
     kotlin.jvm.internal.Ref$IntRef $index -> $index
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly8;"}
     1:1:void <init>(kotlin.coroutines.CoroutineContext[],kotlin.jvm.internal.Ref$IntRef):0:0 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"([Lx1;Lz8;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"([Lx1;Ly8;)V"}
     1:6:java.lang.Object invoke(java.lang.Object,java.lang.Object):182:182 -> invoke
     7:18:void kotlin.coroutines.CombinedContext$writeReplace$1.invoke(kotlin.Unit,kotlin.coroutines.CoroutineContext$Element):0:0 -> invoke
     7:18:java.lang.Object invoke(java.lang.Object,java.lang.Object):182 -> invoke
@@ -104652,20 +104669,20 @@ kotlin.coroutines.jvm.internal.DebugMetadataKt -> R8$$REMOVED$$CLASS$$24:
 # {"id":"sourceFile","fileName":"DebugMetadata.kt"}
 kotlin.coroutines.jvm.internal.DebugProbesKt -> R8$$REMOVED$$CLASS$$25:
 # {"id":"sourceFile","fileName":"DebugProbes.kt"}
-kotlin.coroutines.jvm.internal.ModuleNameRetriever$Cache -> y7:
+kotlin.coroutines.jvm.internal.ModuleNameRetriever$Cache -> x7:
 # {"id":"sourceFile","fileName":"DebugMetadata.kt"}
     java.lang.reflect.Method getModuleMethod -> a
     java.lang.reflect.Method getDescriptorMethod -> b
     java.lang.reflect.Method nameMethod -> c
     1:10:void <init>(java.lang.reflect.Method,java.lang.reflect.Method,java.lang.reflect.Method):52:52 -> <init>
-kotlin.coroutines.jvm.internal.RestrictedContinuationImpl -> g9:
+kotlin.coroutines.jvm.internal.RestrictedContinuationImpl -> f9:
 # {"id":"sourceFile","fileName":"ContinuationImpl.kt"}
     1:5:void <init>(kotlin.coroutines.Continuation):83:83 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lr1;)V"}
     6:27:void <init>(kotlin.coroutines.Continuation):86:86 -> <init>
     1:1:kotlin.coroutines.CoroutineContext getContext():0:0 -> getContext
       # {"id":"com.android.tools.r8.residualsignature","signature":"()Lx1;"}
-kotlin.coroutines.jvm.internal.RestrictedSuspendLambda -> h9:
+kotlin.coroutines.jvm.internal.RestrictedSuspendLambda -> g9:
 # {"id":"sourceFile","fileName":"ContinuationImpl.kt"}
     1:7:void <init>(int,kotlin.coroutines.Continuation):144:144 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lr1;)V"}
@@ -104675,7 +104692,7 @@ kotlin.coroutines.jvm.internal.RestrictedSuspendLambda -> h9:
     7:17:java.lang.String toString():149 -> toString
     18:21:java.lang.String toString():149:149 -> toString
     22:26:java.lang.String toString():151:151 -> toString
-kotlin.coroutines.jvm.internal.SuspendLambda -> oa:
+kotlin.coroutines.jvm.internal.SuspendLambda -> na:
 # {"id":"sourceFile","fileName":"ContinuationImpl.kt"}
     1:7:void <init>(int,kotlin.coroutines.Continuation):159:159 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lr1;)V"}
@@ -104685,12 +104702,12 @@ kotlin.coroutines.jvm.internal.SuspendLambda -> oa:
     7:17:java.lang.String toString():164 -> toString
     18:21:java.lang.String toString():164:164 -> toString
     22:26:java.lang.String toString():166:166 -> toString
-kotlin.internal.PlatformImplementations -> m8:
+kotlin.internal.PlatformImplementations -> l8:
 # {"id":"sourceFile","fileName":"PlatformImplementations.kt"}
     11:22:void addSuppressed(java.lang.Throwable,java.lang.Throwable):32:32 -> a
     1:6:kotlin.random.Random defaultPlatformRandom():45:45 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lx8;"}
-kotlin.internal.PlatformImplementations$ReflectThrowable -> l8:
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lw8;"}
+kotlin.internal.PlatformImplementations$ReflectThrowable -> k8:
 # {"id":"sourceFile","fileName":"PlatformImplementations.kt"}
     java.lang.reflect.Method addSuppressed -> a
     3:8:void <clinit>():23:23 -> <clinit>
@@ -104700,10 +104717,10 @@ kotlin.internal.PlatformImplementations$ReflectThrowable -> l8:
     41:46:void <clinit>():25 -> <clinit>
     47:59:void <clinit>():25:25 -> <clinit>
     60:81:void <clinit>():27:27 -> <clinit>
-kotlin.internal.PlatformImplementationsKt -> n8:
+kotlin.internal.PlatformImplementationsKt -> m8:
 # {"id":"sourceFile","fileName":"PlatformImplementations.kt"}
     kotlin.internal.PlatformImplementations IMPLEMENTATIONS -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lm8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Ll8;"}
     11:67:void <clinit>():52:52 -> <clinit>
     68:128:void <clinit>():55:55 -> <clinit>
     129:184:void <clinit>():58:58 -> <clinit>
@@ -104728,7 +104745,7 @@ kotlin.internal.jdk8.JDK8PlatformImplementations -> x5:
     1:4:void <init>():27:27 -> <init>
     1:13:boolean kotlin.internal.jdk8.JDK8PlatformImplementations.sdkIsNullOrAtLeast(int):40:40 -> b
     1:13:kotlin.random.Random defaultPlatformRandom():58 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lx8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lw8;"}
     14:19:kotlin.random.Random kotlin.internal.PlatformImplementations.defaultPlatformRandom():45:45 -> b
     14:19:kotlin.random.Random defaultPlatformRandom():58 -> b
     20:21:kotlin.random.Random defaultPlatformRandom():58:58 -> b
@@ -105004,7 +105021,7 @@ kotlin.jvm.internal.Lambda -> q6:
     6:11:java.lang.String kotlin.jvm.internal.Reflection.renderLambdaToString(kotlin.jvm.internal.Lambda):79 -> toString
     6:11:java.lang.String toString():11 -> toString
     12:15:java.lang.String toString():11:11 -> toString
-kotlin.jvm.internal.PackageReference -> i8:
+kotlin.jvm.internal.PackageReference -> h8:
 # {"id":"sourceFile","fileName":"PackageReference.kt"}
     java.lang.Class jClass -> b
     6:11:void <init>(java.lang.Class,java.lang.String):10:10 -> <init>
@@ -105017,7 +105034,7 @@ kotlin.jvm.internal.PackageReference -> i8:
     11:20:boolean equals(java.lang.Object):19:19 -> equals
     3:7:int hashCode():22:22 -> hashCode
     1:24:java.lang.String toString():25:25 -> toString
-kotlin.jvm.internal.PropertyReference -> u8:
+kotlin.jvm.internal.PropertyReference -> t8:
 # {"id":"sourceFile","fileName":"PropertyReference.java"}
     10:16:void <init>(java.lang.Object,java.lang.Class,java.lang.String,java.lang.String,int):31:31 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;)V"}
@@ -105055,7 +105072,7 @@ kotlin.jvm.internal.PropertyReference -> u8:
     12:35:java.lang.String toString():90:90 -> toString
 kotlin.jvm.internal.PropertyReference0 -> R8$$REMOVED$$CLASS$$30:
 # {"id":"sourceFile","fileName":"PropertyReference0.java"}
-kotlin.jvm.internal.PropertyReference0Impl -> t8:
+kotlin.jvm.internal.PropertyReference0Impl -> s8:
 # {"id":"sourceFile","fileName":"PropertyReference0Impl.java"}
     1:6:kotlin.reflect.KProperty0 kotlin.jvm.internal.Reflection.property0(kotlin.jvm.internal.PropertyReference0):96:96 -> computeReflected
     1:6:kotlin.reflect.KCallable kotlin.jvm.internal.PropertyReference0.computeReflected():30 -> computeReflected
@@ -105065,25 +105082,25 @@ kotlin.jvm.internal.PropertyReference0Impl -> t8:
     4:8:java.lang.Object kotlin.jvm.internal.PropertyReference0.invoke():35:35 -> invoke
     4:8:java.lang.Object invoke():0 -> invoke
       # {"id":"com.android.tools.r8.synthesized"}
-kotlin.jvm.internal.Ref$BooleanRef -> y8:
+kotlin.jvm.internal.Ref$BooleanRef -> x8:
 # {"id":"sourceFile","fileName":"Ref.java"}
     3:7:java.lang.String toString():90:90 -> toString
-kotlin.jvm.internal.Ref$IntRef -> z8:
+kotlin.jvm.internal.Ref$IntRef -> y8:
 # {"id":"sourceFile","fileName":"Ref.java"}
     3:7:java.lang.String toString():45:45 -> toString
-kotlin.jvm.internal.Ref$ObjectRef -> a9:
+kotlin.jvm.internal.Ref$ObjectRef -> z8:
 # {"id":"sourceFile","fileName":"Ref.java"}
     3:7:java.lang.String toString():18:18 -> toString
-kotlin.jvm.internal.Reflection -> b9:
+kotlin.jvm.internal.Reflection -> a9:
 # {"id":"sourceFile","fileName":"Reflection.java"}
     kotlin.jvm.internal.ReflectionFactory factory -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lc9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lb9;"}
     4:7:void <clinit>():26:26 -> <clinit>
     8:17:void <clinit>():27:27 -> <clinit>
     18:19:void <clinit>():34:34 -> <clinit>
     20:25:void kotlin.jvm.internal.ReflectionFactory.<init>():0:0 -> <clinit>
     20:25:void <clinit>():34 -> <clinit>
-kotlin.jvm.internal.ReflectionFactory -> c9:
+kotlin.jvm.internal.ReflectionFactory -> b9:
 # {"id":"sourceFile","fileName":"ReflectionFactory.java"}
     1:17:java.lang.String renderLambdaToString(kotlin.jvm.internal.FunctionBase):44:44 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lt4;)Ljava/lang/String;"}
@@ -105110,12 +105127,12 @@ kotlin.random.FallbackThreadLocalRandom$implStorage$1 -> q3:
 # {"id":"sourceFile","fileName":"PlatformRandom.kt"}
     1:6:java.util.Random kotlin.random.FallbackThreadLocalRandom$implStorage$1.initialValue():52:52 -> initialValue
     1:6:java.lang.Object initialValue():51 -> initialValue
-kotlin.random.Random -> x8:
+kotlin.random.Random -> w8:
 # {"id":"sourceFile","fileName":"Random.kt"}
     kotlin.random.Random$Default Default -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lw8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv8;"}
     kotlin.random.Random defaultRandom -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lx8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lw8;"}
     3:7:void kotlin.random.Random$Default.<init>():270:270 -> <clinit>
     3:7:void kotlin.random.Random$Default.<init>(kotlin.jvm.internal.DefaultConstructorMarker):0 -> <clinit>
     3:7:void <clinit>():0 -> <clinit>
@@ -105124,20 +105141,20 @@ kotlin.random.Random -> x8:
     int nextInt() -> a
     int nextInt(int) -> b
       # {"id":"com.android.tools.r8.residualsignature","signature":"()I"}
-kotlin.random.Random$Default -> w8:
+kotlin.random.Random$Default -> v8:
 # {"id":"sourceFile","fileName":"Random.kt"}
     3:7:int nextInt():282:282 -> a
     3:7:int nextInt(int):283:283 -> b
       # {"id":"com.android.tools.r8.residualsignature","signature":"()I"}
     1:1:java.lang.Object writeReplace():0:0 -> writeReplace
-kotlin.random.Random$Default$Serialized -> v8:
+kotlin.random.Random$Default$Serialized -> u8:
 # {"id":"sourceFile","fileName":"Random.kt"}
     kotlin.random.Random$Default$Serialized INSTANCE -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lu8;"}
     3:8:void kotlin.random.Random$Default$Serialized.<init>():0:0 -> <clinit>
     3:8:void <clinit>():0 -> <clinit>
     1:3:java.lang.Object readResolve():276:276 -> readResolve
-kotlin.random.jdk8.PlatformThreadLocalRandom -> o8:
+kotlin.random.jdk8.PlatformThreadLocalRandom -> n8:
 # {"id":"sourceFile","fileName":"PlatformThreadLocalRandom.kt"}
     1:10:java.util.Random getImpl():13:13 -> c
 kotlin.ranges.ClosedRange -> y0:
@@ -105256,7 +105273,7 @@ kotlin.sequences.ConstrainedOnceSequence -> o1:
 # {"id":"sourceFile","fileName":"SequencesJVM.kt"}
     java.util.concurrent.atomic.AtomicReference sequenceRef -> a
     1:3:void <init>(kotlin.sequences.Sequence):19:19 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz9;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ly9;)V"}
     4:11:void <init>(kotlin.sequences.Sequence):20:20 -> <init>
     4:11:java.util.Iterator iterator():23:23 -> iterator
     12:16:java.util.Iterator iterator():24:24 -> iterator
@@ -105271,7 +105288,7 @@ kotlin.sequences.EmptySequence -> k3:
 kotlin.sequences.FilteringSequence -> t3:
 # {"id":"sourceFile","fileName":"Sequences.kt"}
     kotlin.sequences.Sequence sequence -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lu9;"}
     boolean sendWhen -> b
     kotlin.jvm.functions.Function1 predicate -> c
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lf4;"}
@@ -105312,13 +105329,13 @@ kotlin.sequences.GeneratorSequence -> x4:
     1:1:void kotlin.sequences.TransformingSequence.<init>(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):205:205 -> <init>
     1:1:void $r8$init$synthetic(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv9;Lf4;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lu9;Lf4;)V"}
     2:2:void kotlin.sequences.TransformingSequence.<init>(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):0:0 -> <init>
     2:2:void $r8$init$synthetic(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):0 -> <init>
     3:3:void kotlin.sequences.GeneratorSequence.<init>(kotlin.jvm.functions.Function0,kotlin.jvm.functions.Function1):585:585 -> <init>
     3:3:void $r8$init$synthetic(kotlin.jvm.functions.Function0,kotlin.jvm.functions.Function1):0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Laa;Lf4;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz9;Lf4;)V"}
     4:4:void kotlin.sequences.GeneratorSequence.<init>(kotlin.jvm.functions.Function0,kotlin.jvm.functions.Function1):0:0 -> <init>
     4:4:void $r8$init$synthetic(kotlin.jvm.functions.Function0,kotlin.jvm.functions.Function1):0 -> <init>
     6:11:java.util.Iterator kotlin.sequences.TransformingSequence.iterator():207:207 -> iterator
@@ -105345,10 +105362,10 @@ kotlin.sequences.GeneratorSequence$iterator$1 -> w4:
     16:22:java.lang.Object next():601:601 -> next
     23:28:java.lang.Object next():600:600 -> next
     1:1:void remove():0:0 -> remove
-kotlin.sequences.Sequence -> v9:
+kotlin.sequences.Sequence -> u9:
 # {"id":"sourceFile","fileName":"Sequence.kt"}
     java.util.Iterator iterator() -> iterator
-kotlin.sequences.SequenceBuilderIterator -> w9:
+kotlin.sequences.SequenceBuilderIterator -> v9:
 # {"id":"sourceFile","fileName":"SequenceBuilder.kt"}
     int state -> b
     java.lang.Object nextValue -> c
@@ -105371,29 +105388,29 @@ kotlin.sequences.SequenceBuilderIterator -> w9:
     40:56:java.lang.Object next():135 -> next
     1:1:void remove():0:0 -> remove
     1:7:void resumeWith(java.lang.Object):183:183 -> resumeWith
-kotlin.sequences.SequenceScope -> x9:
+kotlin.sequences.SequenceScope -> w9:
 # {"id":"sourceFile","fileName":"SequenceBuilder.kt"}
     1:7:java.lang.Object yieldAll(kotlin.sequences.Sequence,kotlin.coroutines.Continuation):92:92 -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv9;Lr1;)Ljava/lang/Object;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lu9;Lr1;)Ljava/lang/Object;"}
     8:28:java.lang.Object kotlin.sequences.SequenceBuilderIterator.yieldAll(java.util.Iterator,kotlin.coroutines.Continuation):172:172 -> a
     8:28:java.lang.Object yieldAll(kotlin.sequences.Sequence,kotlin.coroutines.Continuation):92 -> a
     29:36:void kotlin.coroutines.jvm.internal.DebugProbesKt.probeCoroutineSuspended(kotlin.coroutines.Continuation):0:0 -> a
     29:36:java.lang.Object kotlin.sequences.SequenceBuilderIterator.yieldAll(java.util.Iterator,kotlin.coroutines.Continuation):175 -> a
     29:36:java.lang.Object yieldAll(kotlin.sequences.Sequence,kotlin.coroutines.Continuation):92 -> a
-kotlin.sequences.SequencesKt -> y9:
+kotlin.sequences.SequencesKt -> x9:
     1:5:java.util.Iterator kotlin.sequences.FilteringSequence.iterator():163:163 -> F
     1:5:java.lang.Object kotlin.sequences.SequencesKt___SequencesKt.firstOrNull(kotlin.sequences.Sequence):167 -> F
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lt3;)Ljava/lang/Object;"}
     6:13:java.lang.Object kotlin.sequences.SequencesKt___SequencesKt.firstOrNull(kotlin.sequences.Sequence):168:168 -> F
     14:18:java.lang.Object kotlin.sequences.SequencesKt___SequencesKt.firstOrNull(kotlin.sequences.Sequence):170:170 -> F
     6:10:kotlin.sequences.Sequence kotlin.sequences.SequencesKt___SequencesKt.mapNotNull(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):1116:1116 -> G
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv9;Lf4;)Lt3;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lu9;Lf4;)Lt3;"}
     11:16:kotlin.sequences.Sequence kotlin.sequences.SequencesKt___SequencesKt.filterNot(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):496:496 -> G
     11:16:kotlin.sequences.Sequence kotlin.sequences.SequencesKt___SequencesKt.filterNotNull(kotlin.sequences.Sequence):508 -> G
     11:16:kotlin.sequences.Sequence kotlin.sequences.SequencesKt___SequencesKt.mapNotNull(kotlin.sequences.Sequence,kotlin.jvm.functions.Function1):1116 -> G
     1:5:java.util.List kotlin.sequences.SequencesKt___SequencesKt.toMutableList(kotlin.sequences.Sequence):817:817 -> H
     1:5:java.util.List kotlin.sequences.SequencesKt___SequencesKt.toList(kotlin.sequences.Sequence):808 -> H
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv9;)Ljava/util/List;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lu9;)Ljava/util/List;"}
     6:19:java.util.Collection kotlin.sequences.SequencesKt___SequencesKt.toCollection(kotlin.sequences.Sequence,java.util.Collection):787:787 -> H
     6:19:java.util.List kotlin.sequences.SequencesKt___SequencesKt.toMutableList(kotlin.sequences.Sequence):817 -> H
     6:19:java.util.List kotlin.sequences.SequencesKt___SequencesKt.toList(kotlin.sequences.Sequence):808 -> H
@@ -105409,7 +105426,7 @@ kotlin.sequences.SequencesKt -> y9:
     39:51:java.util.List kotlin.sequences.SequencesKt___SequencesKt.toList(kotlin.sequences.Sequence):808 -> H
 kotlin.sequences.SequencesKt__SequenceBuilderKt -> R8$$REMOVED$$CLASS$$35:
 # {"id":"sourceFile","fileName":"SequenceBuilder.kt"}
-kotlin.sequences.SequencesKt__SequenceBuilderKt$sequence$$inlined$Sequence$1 -> z9:
+kotlin.sequences.SequencesKt__SequenceBuilderKt$sequence$$inlined$Sequence$1 -> y9:
 # {"id":"sourceFile","fileName":"Sequences.kt"}
     int $r8$classId -> a
       # {"id":"com.android.tools.r8.synthesized"}
@@ -105436,16 +105453,16 @@ kotlin.sequences.SequencesKt__SequenceBuilderKt$sequence$$inlined$Sequence$1 -> 
     23:30:java.util.Iterator iterator$bridge():0 -> iterator
 kotlin.sequences.SequencesKt__SequencesKt -> R8$$REMOVED$$CLASS$$36:
 # {"id":"sourceFile","fileName":"Sequences.kt"}
-kotlin.sequences.SequencesKt__SequencesKt$generateSequence$2 -> aa:
+kotlin.sequences.SequencesKt__SequencesKt$generateSequence$2 -> z9:
 # {"id":"sourceFile","fileName":"Sequences.kt"}
     1:1:void <init>(java.lang.Object):0:0 -> <init>
     1:1:java.lang.Object invoke():0:0 -> invoke
 kotlin.sequences.SequencesKt___SequencesKt -> R8$$REMOVED$$CLASS$$37:
 # {"id":"sourceFile","fileName":"_Sequences.kt"}
-kotlin.sequences.SequencesKt___SequencesKt$filterNotNull$1 -> ba:
+kotlin.sequences.SequencesKt___SequencesKt$filterNotNull$1 -> aa:
 # {"id":"sourceFile","fileName":"_Sequences.kt"}
     kotlin.sequences.SequencesKt___SequencesKt$filterNotNull$1 INSTANCE -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lba;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Laa;"}
     4:9:void kotlin.sequences.SequencesKt___SequencesKt$filterNotNull$1.<init>():0:0 -> <clinit>
     4:9:void <clinit>():0 -> <clinit>
     6:10:java.lang.Boolean kotlin.sequences.SequencesKt___SequencesKt$filterNotNull$1.invoke(java.lang.Object):508:508 -> invoke
@@ -105480,15 +105497,15 @@ kotlin.text.Charsets -> q0:
     38:48:void <clinit>():48:48 -> <clinit>
     49:59:void <clinit>():55:55 -> <clinit>
     60:69:void <clinit>():61:61 -> <clinit>
-kotlin.text.StringsKt__RegexExtensionsKt -> ja:
+kotlin.text.StringsKt__RegexExtensionsKt -> ia:
 # {"id":"sourceFile","fileName":"RegexExtensions.kt"}
-kotlin.text.StringsKt__StringBuilderKt -> ka:
+kotlin.text.StringsKt__StringBuilderKt -> ja:
 # {"id":"sourceFile","fileName":"StringBuilder.kt"}
-kotlin.text.StringsKt__StringNumberConversionsKt -> la:
+kotlin.text.StringsKt__StringNumberConversionsKt -> ka:
 # {"id":"sourceFile","fileName":"StringNumberConversions.kt"}
 kotlin.text.StringsKt__StringsJVMKt -> R8$$REMOVED$$CLASS$$41:
 # {"id":"sourceFile","fileName":"StringsJVM.kt"}
-kotlin.text.StringsKt__StringsKt -> ma:
+kotlin.text.StringsKt__StringsKt -> la:
 # {"id":"sourceFile","fileName":"Strings.kt"}
     8:12:int indexOf(java.lang.CharSequence,java.lang.String,int,boolean):1102:1102 -> t
     13:20:int indexOf(java.lang.CharSequence,java.lang.String,int,boolean):1105:1105 -> t
@@ -106015,9 +106032,9 @@ kotlinx.coroutines.CoroutineContextKt$foldCopies$1 -> y1:
 kotlinx.coroutines.CoroutineContextKt$foldCopies$folded$1 -> z1:
 # {"id":"sourceFile","fileName":"CoroutineContext.kt"}
     kotlin.jvm.internal.Ref$ObjectRef $leftoverContext -> $leftoverContext
-      # {"id":"com.android.tools.r8.residualsignature","signature":"La9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz8;"}
     1:1:void <init>(kotlin.jvm.internal.Ref$ObjectRef,boolean):0:0 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(La9;Z)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz8;Z)V"}
     1:4:java.lang.Object invoke(java.lang.Object,java.lang.Object):63:63 -> invoke
     5:9:kotlin.coroutines.CoroutineContext kotlinx.coroutines.CoroutineContextKt$foldCopies$folded$1.invoke(kotlin.coroutines.CoroutineContext,kotlin.coroutines.CoroutineContext$Element):64:64 -> invoke
     5:9:java.lang.Object invoke(java.lang.Object,java.lang.Object):63 -> invoke
@@ -106222,11 +106239,11 @@ kotlinx.coroutines.DebugStringsKt -> n2:
 # {"id":"sourceFile","fileName":"DebugStrings.kt"}
     java.lang.Object[] kotlin.jvm.internal.CollectionToArray.EMPTY -> a
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.EventLoop_commonKt.CLOSED_EMPTY -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     java.lang.Object kotlinx.coroutines.internal.LockFreeLinkedListKt.CONDITION_FALSE -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.flow.internal.NullSurrogateKt.NULL -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     4:5:void kotlin.jvm.internal.CollectionToArray.<clinit>():0:0 -> <clinit>
     4:5:void DebugStringsKt.$r8$clinit$synthetic():0 -> <clinit>
       # {"id":"com.android.tools.r8.synthesized"}
@@ -106333,7 +106350,7 @@ kotlinx.coroutines.DebugStringsKt -> n2:
     30:36:kotlin.coroutines.Continuation kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(kotlin.jvm.functions.Function2,java.lang.Object,kotlin.coroutines.Continuation):213:213 -> h
     37:43:kotlin.coroutines.Continuation kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(kotlin.jvm.functions.Function2,java.lang.Object,kotlin.coroutines.Continuation):214:214 -> h
     6:11:java.lang.Object kotlin.ResultKt.createFailure(java.lang.Throwable):122:122 -> i
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Throwable;)Li9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Throwable;)Lh9;"}
     6:18:kotlin.coroutines.CoroutineContext$Element kotlin.coroutines.CoroutineContext$Element$DefaultImpls.get(kotlin.coroutines.CoroutineContext$Element,kotlin.coroutines.CoroutineContext$Key):67:67 -> j
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1;Lw1;)Lv1;"}
     1:9:java.lang.String getHexAddress(java.lang.Object):13:13 -> k
@@ -106575,7 +106592,7 @@ kotlinx.coroutines.Empty -> f3:
     1:6:void <init>(boolean):1310:1310 -> <init>
     1:1:boolean isActive():0:0 -> a
     1:1:kotlinx.coroutines.NodeList getList():0:0 -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
     1:29:java.lang.String toString():1312:1312 -> toString
 kotlinx.coroutines.EventLoop -> R8$$REMOVED$$CLASS$$54:
 # {"id":"sourceFile","fileName":"EventLoop.common.kt"}
@@ -106770,18 +106787,18 @@ kotlinx.coroutines.ExecutorCoroutineDispatcher$Key$1 -> R8$$REMOVED$$CLASS$$56:
 kotlinx.coroutines.InactiveNodeList -> e5:
 # {"id":"sourceFile","fileName":"JobSupport.kt"}
     kotlinx.coroutines.NodeList list -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz7;"}
     1:6:void <init>(kotlinx.coroutines.NodeList):1382:1382 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(La8;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz7;)V"}
     1:1:boolean isActive():0:0 -> a
     1:1:kotlinx.coroutines.NodeList getList():0:0 -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
     1:5:java.lang.String toString():1386:1386 -> toString
 kotlinx.coroutines.Incomplete -> f5:
 # {"id":"sourceFile","fileName":"JobSupport.kt"}
     boolean isActive() -> a
     kotlinx.coroutines.NodeList getList() -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
 kotlinx.coroutines.IncompleteStateBox -> g5:
 # {"id":"sourceFile","fileName":"JobSupport.kt"}
     kotlinx.coroutines.Incomplete state -> a
@@ -106855,7 +106872,7 @@ kotlinx.coroutines.JobNode -> b6:
     38:49:void kotlinx.coroutines.JobSupport.removeNode$kotlinx_coroutines_core(kotlinx.coroutines.JobNode):599:599 -> b
     38:49:void dispose():1358 -> b
     1:1:kotlinx.coroutines.NodeList getList():0:0 -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
     6:9:void kotlin.jvm.internal.Intrinsics.throwUninitializedProperty(java.lang.String):54:54 -> l
     6:9:void kotlin.jvm.internal.Intrinsics.throwUninitializedPropertyAccessException(java.lang.String):58 -> l
     6:9:kotlinx.coroutines.JobSupport getJob():1355 -> l
@@ -106963,7 +106980,7 @@ kotlinx.coroutines.JobSupport -> f6:
     1:4:boolean isActive():182:182 -> a
     5:20:boolean isActive():183:183 -> a
     1:5:boolean addLastAtomic(java.lang.Object,kotlinx.coroutines.NodeList,kotlinx.coroutines.JobNode):1551:1551 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;La8;Lb6;)Z"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;Lz7;Lb6;)Z"}
     6:9:boolean addLastAtomic(java.lang.Object,kotlinx.coroutines.NodeList,kotlinx.coroutines.JobNode):1555:1555 -> b
     10:14:int kotlinx.coroutines.internal.LockFreeLinkedListNode.tryCondAddNext(kotlinx.coroutines.internal.LockFreeLinkedListNode,kotlinx.coroutines.internal.LockFreeLinkedListNode,kotlinx.coroutines.internal.LockFreeLinkedListNode$CondAddOp):226:226 -> b
     10:14:boolean addLastAtomic(java.lang.Object,kotlinx.coroutines.NodeList,kotlinx.coroutines.JobNode):1556 -> b
@@ -107198,7 +107215,7 @@ kotlinx.coroutines.JobSupport -> f6:
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lw1;)Lx1;"}
     1:1:boolean getOnCancelComplete$kotlinx_coroutines_core():0:0 -> n
     1:6:kotlinx.coroutines.NodeList getOrPromoteCancellingList(kotlinx.coroutines.Incomplete):773:773 -> o
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lf5;)La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lf5;)Lz7;"}
     7:12:kotlinx.coroutines.NodeList getOrPromoteCancellingList(kotlinx.coroutines.Incomplete):775:775 -> o
     13:16:void kotlinx.coroutines.internal.LockFreeLinkedListHead.<init>():638:638 -> o
     13:16:void kotlinx.coroutines.NodeList.<init>():1362 -> o
@@ -107290,7 +107307,7 @@ kotlinx.coroutines.JobSupport -> f6:
     22:28:kotlinx.coroutines.ChildHandleNode nextChild(kotlinx.coroutines.internal.LockFreeLinkedListNode):945:945 -> x
     29:34:kotlinx.coroutines.ChildHandleNode nextChild(kotlinx.coroutines.internal.LockFreeLinkedListNode):946:946 -> x
     1:7:void notifyCancelling(kotlinx.coroutines.NodeList,java.lang.Throwable):1496:1496 -> y
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(La8;Ljava/lang/Throwable;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz7;Ljava/lang/Throwable;)V"}
     8:13:void notifyCancelling(kotlinx.coroutines.NodeList,java.lang.Throwable):1497:1497 -> y
     14:20:void notifyCancelling(kotlinx.coroutines.NodeList,java.lang.Throwable):1498:1498 -> y
     21:27:void notifyCancelling(kotlinx.coroutines.NodeList,java.lang.Throwable):1500:1500 -> y
@@ -107342,9 +107359,9 @@ kotlinx.coroutines.JobSupport$ChildCompletion -> c6:
 kotlinx.coroutines.JobSupport$Finishing -> d6:
 # {"id":"sourceFile","fileName":"JobSupport.kt"}
     kotlinx.coroutines.NodeList list -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz7;"}
     1:14:void <init>(kotlinx.coroutines.NodeList,boolean,java.lang.Throwable):1078:1078 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(La8;Ljava/lang/Throwable;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lz7;Ljava/lang/Throwable;)V"}
     3:10:java.lang.Throwable kotlinx.coroutines.JobSupport$Finishing.getRootCause():1086:1086 -> a
     3:10:boolean isActive():1097 -> a
     3:19:java.lang.Throwable kotlinx.coroutines.JobSupport$Finishing.getRootCause():1086:1086 -> b
@@ -107358,7 +107375,7 @@ kotlinx.coroutines.JobSupport$Finishing -> d6:
     54:75:void addExceptionLocked(java.lang.Throwable):1134:1134 -> b
     3:5:java.lang.Throwable getRootCause():1086:1086 -> c
     1:1:kotlinx.coroutines.NodeList getList():0:0 -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
     3:10:java.lang.Throwable kotlinx.coroutines.JobSupport$Finishing.getRootCause():1086:1086 -> e
     3:10:boolean isCancelling():1096 -> e
     1:1:boolean isCompleting():0:0 -> f
@@ -107412,7 +107429,7 @@ kotlinx.coroutines.JobSupport$addLastAtomic$$inlined$addLastIf$1 -> e6:
     37:43:void kotlinx.coroutines.internal.LockFreeLinkedListNode$CondAddOp.complete(java.lang.Object,java.lang.Object):73 -> b
     37:43:void complete(java.lang.Object,java.lang.Object):0 -> b
     1:4:java.lang.Object prepare(java.lang.Object):91:91 -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;)Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;)Loa;"}
     5:17:java.lang.Object kotlinx.coroutines.JobSupport$addLastAtomic$$inlined$addLastIf$1.prepare(kotlinx.coroutines.internal.LockFreeLinkedListNode):672:672 -> c
     5:17:java.lang.Object prepare(java.lang.Object):91 -> c
 kotlinx.coroutines.LazyStandaloneCoroutine -> s6:
@@ -107434,35 +107451,35 @@ kotlinx.coroutines.LazyStandaloneCoroutine -> s6:
     22:22:void kotlinx.coroutines.intrinsics.CancellableKt.dispatcherFailure(kotlin.coroutines.Continuation,java.lang.Throwable):66:66 -> A
     22:22:void kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(kotlin.coroutines.Continuation,kotlin.coroutines.Continuation):84 -> A
     22:22:void onStart():208 -> A
-kotlinx.coroutines.MainCoroutineDispatcher -> j7:
+kotlinx.coroutines.MainCoroutineDispatcher -> i7:
 # {"id":"sourceFile","fileName":"MainCoroutineDispatcher.kt"}
     1:4:kotlinx.coroutines.CoroutineDispatcher limitedParallelism(int):57:57 -> limitedParallelism
       # {"id":"com.android.tools.r8.residualsignature","signature":"(I)Lc2;"}
-kotlinx.coroutines.NodeList -> a8:
+kotlinx.coroutines.NodeList -> z7:
 # {"id":"sourceFile","fileName":"JobSupport.kt"}
     1:1:boolean isActive():0:0 -> a
     1:1:kotlinx.coroutines.NodeList getList():0:0 -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()La8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lz7;"}
     1:1:boolean isRemoved():0:0 -> j
       # {"id":"com.android.tools.r8.synthesized"}
     1:5:java.lang.String toString():1379:1379 -> toString
-kotlinx.coroutines.NonDisposableHandle -> b8:
+kotlinx.coroutines.NonDisposableHandle -> a8:
 # {"id":"sourceFile","fileName":"Job.kt"}
     kotlinx.coroutines.NonDisposableHandle INSTANCE -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lb8;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"La8;"}
     3:8:void kotlinx.coroutines.NonDisposableHandle.<init>():0:0 -> <clinit>
     3:8:void <clinit>():0 -> <clinit>
     1:1:void dispose():0:0 -> b
     1:1:boolean childCancelled(java.lang.Throwable):0:0 -> c
     1:1:java.lang.String toString():0:0 -> toString
-kotlinx.coroutines.NotCompleted -> c8:
+kotlinx.coroutines.NotCompleted -> b8:
 # {"id":"sourceFile","fileName":"CancellableContinuationImpl.kt"}
-kotlinx.coroutines.ParentJob -> k8:
+kotlinx.coroutines.ParentJob -> j8:
 # {"id":"sourceFile","fileName":"Job.kt"}
-kotlinx.coroutines.StandaloneCoroutine -> ga:
+kotlinx.coroutines.StandaloneCoroutine -> fa:
 # {"id":"sourceFile","fileName":"Builders.common.kt"}
     3:7:boolean handleJobException(java.lang.Throwable):196:196 -> r
-kotlinx.coroutines.SupervisorJobImpl -> na:
+kotlinx.coroutines.SupervisorJobImpl -> ma:
 # {"id":"sourceFile","fileName":"Supervisor.kt"}
     boolean kotlinx.coroutines.JobImpl.handlesException -> c
     2:4:void kotlinx.coroutines.JobImpl.<init>(kotlinx.coroutines.Job):1316:1316 -> <init>
@@ -107558,7 +107575,7 @@ kotlinx.coroutines.android.AndroidDispatcherFactory -> n:
     void <init>() -> <init>
     1:1:java.lang.String hintOnError():0:0 -> a
     1:6:kotlinx.coroutines.MainCoroutineDispatcher createDispatcher(java.util.List):55:55 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/util/List;)Lj7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/util/List;)Li7;"}
     7:16:kotlinx.coroutines.MainCoroutineDispatcher createDispatcher(java.util.List):56:56 -> b
     17:24:kotlinx.coroutines.MainCoroutineDispatcher createDispatcher(java.util.List):55:55 -> b
     1:1:int getLoadPriority():0:0 -> c
@@ -107647,9 +107664,9 @@ kotlinx.coroutines.android.HandlerDispatcherKt -> a5:
     76:81:android.os.Handler asHandler(android.os.Looper,boolean):102:102 -> a
 kotlinx.coroutines.flow.FlowKt__ShareKt -> R8$$REMOVED$$CLASS$$63:
 # {"id":"sourceFile","fileName":"Share.kt"}
-kotlinx.coroutines.flow.StateFlow -> ha:
+kotlinx.coroutines.flow.StateFlow -> ga:
 # {"id":"sourceFile","fileName":"StateFlow.kt"}
-kotlinx.coroutines.flow.StateFlowImpl -> ia:
+kotlinx.coroutines.flow.StateFlowImpl -> ha:
 # {"id":"sourceFile","fileName":"StateFlow.kt"}
     int sequence -> b
     1:6:void kotlinx.coroutines.flow.internal.AbstractSharedFlow.<init>():0:0 -> <init>
@@ -107691,7 +107708,7 @@ kotlinx.coroutines.internal.AtomicOp -> a0:
     34:37:java.lang.Object perform(java.lang.Object):99:99 -> a
     void complete(java.lang.Object,java.lang.Object) -> b
     java.lang.Object prepare(java.lang.Object) -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;)Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Object;)Loa;"}
 kotlinx.coroutines.internal.DispatchedContinuation -> v2:
 # {"id":"sourceFile","fileName":"DispatchedContinuation.kt"}
     kotlinx.coroutines.CoroutineDispatcher dispatcher -> e
@@ -107910,7 +107927,7 @@ kotlinx.coroutines.internal.LockFreeTaskQueueCore -> b7:
     java.util.concurrent.atomic.AtomicReferenceFieldUpdater _next$FU -> e
     java.util.concurrent.atomic.AtomicLongFieldUpdater _state$FU -> f
     kotlinx.coroutines.internal.Symbol REMOVE_FROZEN -> g
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     1:30:void <clinit>():288:288 -> <clinit>
     1:18:void <init>(int,boolean):76:76 -> <init>
     19:36:void <init>(int,boolean):83:83 -> <init>
@@ -107962,16 +107979,16 @@ kotlinx.coroutines.internal.LockFreeTaskQueueCore$Placeholder -> a7:
 # {"id":"sourceFile","fileName":"LockFreeTaskQueue.kt"}
     int index -> a
     1:6:void <init>(int):268:268 -> <init>
-kotlinx.coroutines.internal.MainDispatcherFactory -> k7:
+kotlinx.coroutines.internal.MainDispatcherFactory -> j7:
 # {"id":"sourceFile","fileName":"MainDispatcherFactory.kt"}
     java.lang.String hintOnError() -> a
     kotlinx.coroutines.MainCoroutineDispatcher createDispatcher(java.util.List) -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/util/List;)Lj7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/util/List;)Li7;"}
     int getLoadPriority() -> c
-kotlinx.coroutines.internal.MainDispatcherLoader -> l7:
+kotlinx.coroutines.internal.MainDispatcherLoader -> k7:
 # {"id":"sourceFile","fileName":"MainDispatchers.kt"}
     kotlinx.coroutines.MainCoroutineDispatcher dispatcher -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lj7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Li7;"}
     3:5:java.lang.String kotlinx.coroutines.internal.SystemPropsKt.systemProp(java.lang.String):1:1 -> <clinit>
     3:5:boolean kotlinx.coroutines.internal.SystemPropsKt__SystemProps_commonKt.systemProp(java.lang.String,boolean):21 -> <clinit>
     3:5:boolean kotlinx.coroutines.internal.SystemPropsKt.systemProp(java.lang.String,boolean):1 -> <clinit>
@@ -108033,21 +108050,21 @@ kotlinx.coroutines.internal.MainDispatcherLoader -> l7:
     115:122:void <clinit>():22 -> <clinit>
 kotlinx.coroutines.internal.MainDispatchersKt -> R8$$REMOVED$$CLASS$$69:
 # {"id":"sourceFile","fileName":"MainDispatchers.kt"}
-kotlinx.coroutines.internal.OpDescriptor -> h8:
+kotlinx.coroutines.internal.OpDescriptor -> g8:
 # {"id":"sourceFile","fileName":"Atomic.kt"}
     java.lang.Object perform(java.lang.Object) -> a
     1:5:java.lang.String toString():32:32 -> toString
     6:13:java.lang.String kotlinx.coroutines.DebugStringsKt.getClassSimpleName(java.lang.Object):21:21 -> toString
     6:13:java.lang.String toString():32 -> toString
     14:33:java.lang.String toString():32:32 -> toString
-kotlinx.coroutines.internal.Removed -> d9:
+kotlinx.coroutines.internal.Removed -> c9:
 # {"id":"sourceFile","fileName":"LockFreeLinkedList.kt"}
     kotlinx.coroutines.internal.LockFreeLinkedListNode ref -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"Ly6;"}
     1:6:void <init>(kotlinx.coroutines.internal.LockFreeLinkedListNode):626:626 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ly6;)V"}
     1:22:java.lang.String toString():627:627 -> toString
-kotlinx.coroutines.internal.ResizableAtomicArray -> e9:
+kotlinx.coroutines.internal.ResizableAtomicArray -> d9:
 # {"id":"sourceFile","fileName":"ResizableAtomicArray.kt"}
     1:3:void <init>(int):13:13 -> <init>
     4:11:void <init>(int):15:15 -> <init>
@@ -108059,7 +108076,7 @@ kotlinx.coroutines.internal.ResizableAtomicArray -> e9:
     13:27:void setSynchronized(int,java.lang.Object):32:32 -> c
     28:37:void setSynchronized(int,java.lang.Object):33:33 -> c
     38:43:void setSynchronized(int,java.lang.Object):34:34 -> c
-kotlinx.coroutines.internal.ScopeCoroutine -> n9:
+kotlinx.coroutines.internal.ScopeCoroutine -> m9:
 # {"id":"sourceFile","fileName":"Scopes.kt"}
     kotlin.coroutines.Continuation uCont -> d
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lr1;"}
@@ -108072,12 +108089,12 @@ kotlinx.coroutines.internal.ScopeCoroutine -> n9:
     3:11:kotlin.coroutines.jvm.internal.CoroutineStackFrame getCallerFrame():20:20 -> getCallerFrame
       # {"id":"com.android.tools.r8.residualsignature","signature":"()Lj2;"}
     1:1:boolean isScopedCoroutine():0:0 -> u
-kotlinx.coroutines.internal.Symbol -> pa:
+kotlinx.coroutines.internal.Symbol -> oa:
 # {"id":"sourceFile","fileName":"Symbol.kt"}
     java.lang.String symbol -> a
     1:6:void <init>(java.lang.String):14:14 -> <init>
     1:22:java.lang.String toString():15:15 -> toString
-kotlinx.coroutines.internal.SystemPropsKt__SystemPropsKt -> ra:
+kotlinx.coroutines.internal.SystemPropsKt__SystemPropsKt -> qa:
 # {"id":"sourceFile","fileName":"SystemProps.kt"}
     int AVAILABLE_PROCESSORS -> a
     1:11:void <clinit>():11:11 -> <clinit>
@@ -108133,12 +108150,12 @@ kotlinx.coroutines.scheduling.CoroutineScheduler -> g2:
     kotlinx.coroutines.scheduling.GlobalQueue globalBlockingQueue -> g
       # {"id":"com.android.tools.r8.residualsignature","signature":"Ly4;"}
     kotlinx.coroutines.internal.ResizableAtomicArray workers -> h
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Le9;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Ld9;"}
     java.util.concurrent.atomic.AtomicLongFieldUpdater parkedWorkersStack$FU -> i
     java.util.concurrent.atomic.AtomicLongFieldUpdater controlState$FU -> j
     java.util.concurrent.atomic.AtomicIntegerFieldUpdater _isTerminated$FU -> k
     kotlinx.coroutines.internal.Symbol NOT_IN_STACK -> l
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     1:36:void <clinit>():303:303 -> <clinit>
     1:29:void <init>(int,int,long,java.lang.String):90:90 -> <init>
     30:31:void <init>(int,int,long,java.lang.String):113:113 -> <init>
@@ -108171,7 +108188,7 @@ kotlinx.coroutines.scheduling.CoroutineScheduler -> g2:
     116:117:int createNewWorker():485:485 -> a
     1:5:kotlinx.coroutines.scheduling.Task kotlinx.coroutines.scheduling.CoroutineScheduler.createTask(java.lang.Runnable,kotlinx.coroutines.scheduling.TaskContext):406:406 -> b
     1:5:void dispatch(java.lang.Runnable,kotlinx.coroutines.scheduling.TaskContext,boolean):384 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Runnable;Lta;Z)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Runnable;Lsa;Z)V"}
     6:9:long kotlinx.coroutines.scheduling.NanoTimeSource.nanoTime():114:114 -> b
     6:9:kotlinx.coroutines.scheduling.Task kotlinx.coroutines.scheduling.CoroutineScheduler.createTask(java.lang.Runnable,kotlinx.coroutines.scheduling.TaskContext):406 -> b
     6:9:void dispatch(java.lang.Runnable,kotlinx.coroutines.scheduling.TaskContext,boolean):384 -> b
@@ -108383,7 +108400,7 @@ kotlinx.coroutines.scheduling.CoroutineScheduler$Worker -> f2:
     40:43:void <init>(kotlinx.coroutines.scheduling.CoroutineScheduler,int):593:593 -> <init>
     10:27:boolean kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.tryAcquireCpuPermit():984:984 -> a
     10:27:kotlinx.coroutines.scheduling.Task findTask(boolean):870 -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Z)Lsa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Z)Lra;"}
     28:30:kotlinx.coroutines.scheduling.Task findTask(boolean):873:873 -> a
     31:48:kotlinx.coroutines.scheduling.Task kotlinx.coroutines.scheduling.WorkQueue.poll():66:66 -> a
     31:48:kotlinx.coroutines.scheduling.Task findTask(boolean):873 -> a
@@ -108411,7 +108428,7 @@ kotlinx.coroutines.scheduling.CoroutineScheduler$Worker -> f2:
     1:1:java.lang.Object getNextParkedWorker():0:0 -> c
     27:28:int nextInt(int):788:788 -> d
     2:9:kotlinx.coroutines.scheduling.Task pollGlobalQueues():897:897 -> e
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lsa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lra;"}
     10:20:kotlinx.coroutines.scheduling.Task pollGlobalQueues():898:898 -> e
     21:29:kotlinx.coroutines.scheduling.Task pollGlobalQueues():899:899 -> e
     30:40:kotlinx.coroutines.scheduling.Task pollGlobalQueues():901:901 -> e
@@ -108421,7 +108438,7 @@ kotlinx.coroutines.scheduling.CoroutineScheduler$Worker -> f2:
     10:26:boolean tryReleaseCpu(kotlinx.coroutines.scheduling.CoroutineScheduler$WorkerState):991:991 -> h
       # {"id":"com.android.tools.r8.residualsignature","signature":"(I)Z"}
     5:16:kotlinx.coroutines.scheduling.Task trySteal(boolean):1000:1000 -> i
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Z)Lsa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Z)Lra;"}
     17:38:kotlinx.coroutines.scheduling.Task trySteal(boolean):914:914 -> i
     39:56:kotlinx.coroutines.scheduling.Task trySteal(boolean):919:919 -> i
     57:65:kotlinx.coroutines.scheduling.Task trySteal(boolean):923:923 -> i
@@ -108647,14 +108664,14 @@ kotlinx.coroutines.scheduling.DefaultScheduler -> s2:
     1:1:java.lang.String toString():0:0 -> toString
 kotlinx.coroutines.scheduling.GlobalQueue -> y4:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
-kotlinx.coroutines.scheduling.NanoTimeSource -> z7:
+kotlinx.coroutines.scheduling.NanoTimeSource -> y7:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
     kotlinx.coroutines.scheduling.NanoTimeSource INSTANCE -> e
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly7;"}
     3:8:void kotlinx.coroutines.scheduling.SchedulerTimeSource.<init>():0:0 -> <clinit>
     3:8:void kotlinx.coroutines.scheduling.NanoTimeSource.<init>():113 -> <clinit>
     3:8:void <clinit>():0 -> <clinit>
-kotlinx.coroutines.scheduling.SchedulerCoroutineDispatcher -> m9:
+kotlinx.coroutines.scheduling.SchedulerCoroutineDispatcher -> l9:
 # {"id":"sourceFile","fileName":"Dispatcher.kt"}
     kotlinx.coroutines.scheduling.CoroutineScheduler coroutineScheduler -> b
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lg2;"}
@@ -108667,40 +108684,40 @@ kotlinx.coroutines.scheduling.SchedulerCoroutineDispatcher -> m9:
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lx1;Ljava/lang/Runnable;)V"}
     5:8:void dispatchYield(kotlin.coroutines.CoroutineContext,java.lang.Runnable):100:100 -> dispatchYield
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lx1;Ljava/lang/Runnable;)V"}
-kotlinx.coroutines.scheduling.Task -> sa:
+kotlinx.coroutines.scheduling.Task -> ra:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
     long submissionTime -> b
     kotlinx.coroutines.scheduling.TaskContext taskContext -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lta;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lsa;"}
     1:8:void <init>(long,kotlinx.coroutines.scheduling.TaskContext):77:77 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(JLta;)V"}
-kotlinx.coroutines.scheduling.TaskContextImpl -> ta:
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(JLsa;)V"}
+kotlinx.coroutines.scheduling.TaskContextImpl -> sa:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
     int taskMode -> a
     1:6:void <init>(int):65:65 -> <init>
-kotlinx.coroutines.scheduling.TaskImpl -> ua:
+kotlinx.coroutines.scheduling.TaskImpl -> ta:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
     java.lang.Runnable block -> d
     1:6:void <init>(java.lang.Runnable,long,kotlinx.coroutines.scheduling.TaskContext):92:92 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Runnable;JLta;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljava/lang/Runnable;JLsa;)V"}
     3:7:void run():95:95 -> run
     8:18:void run():97:97 -> run
     1:9:java.lang.String toString():102:102 -> toString
     10:17:java.lang.String kotlinx.coroutines.DebugStringsKt.getClassSimpleName(java.lang.Object):21:21 -> toString
     10:17:java.lang.String toString():102 -> toString
     18:60:java.lang.String toString():102:102 -> toString
-kotlinx.coroutines.scheduling.TasksKt -> va:
+kotlinx.coroutines.scheduling.TasksKt -> ua:
 # {"id":"sourceFile","fileName":"Tasks.kt"}
     long WORK_STEALING_TIME_RESOLUTION_NS -> a
     int CORE_POOL_SIZE -> b
     int MAX_POOL_SIZE -> c
     long IDLE_WORKER_KEEP_ALIVE_NS -> d
     kotlinx.coroutines.scheduling.SchedulerTimeSource schedulerTimeSource -> e
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lz7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly7;"}
     kotlinx.coroutines.scheduling.TaskContext NonBlockingContext -> f
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lta;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lsa;"}
     kotlinx.coroutines.scheduling.TaskContext BlockingContext -> g
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lta;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lsa;"}
     13:18:long kotlinx.coroutines.internal.SystemPropsKt__SystemProps_commonKt.systemProp$default(java.lang.String,long,long,long,int,java.lang.Object):44:44 -> <clinit>
     13:18:long kotlinx.coroutines.internal.SystemPropsKt.systemProp$default(java.lang.String,long,long,long,int,java.lang.Object):1 -> <clinit>
     13:18:void <clinit>():17 -> <clinit>
@@ -108747,7 +108764,7 @@ kotlinx.coroutines.scheduling.WorkQueue -> vb:
     1:3:void <init>():37:37 -> <init>
     4:23:void <init>():54:54 -> <init>
     1:2:kotlinx.coroutines.scheduling.Task addLast(kotlinx.coroutines.scheduling.Task):202:202 -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lsa;)Lsa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lra;)Lra;"}
     3:9:int kotlinx.coroutines.scheduling.TaskContextImpl.getTaskMode():65:65 -> a
     3:9:kotlinx.coroutines.scheduling.Task addLast(kotlinx.coroutines.scheduling.Task):202 -> a
       # {"id":"com.android.tools.r8.rewriteFrame","conditions":["throws(Ljava/lang/NullPointerException;)"],"actions":["removeInnerFrames(1)"]}
@@ -108758,7 +108775,7 @@ kotlinx.coroutines.scheduling.WorkQueue -> vb:
     45:49:kotlinx.coroutines.scheduling.Task addLast(kotlinx.coroutines.scheduling.Task):98:98 -> a
     1:1:int getSize$kotlinx_coroutines_core():0:0 -> b
     17:24:kotlinx.coroutines.scheduling.Task pollBuffer():185:185 -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lsa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lra;"}
     25:33:kotlinx.coroutines.scheduling.Task pollBuffer():187:187 -> c
     34:35:void kotlinx.coroutines.scheduling.WorkQueue.decrementIfBlocking(kotlinx.coroutines.scheduling.Task):206:206 -> c
     34:35:kotlinx.coroutines.scheduling.Task pollBuffer():188 -> c
@@ -108878,31 +108895,31 @@ org.chromium.support_lib_boundary.WebkitToCompatConverterBoundaryInterface -> or
 org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil -> h0:
 # {"id":"sourceFile","fileName":"BoundaryInterfaceReflectionUtil.java"}
     java.lang.Object kotlinx.coroutines.internal.AtomicKt.NO_DECISION -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.internal.DispatchedContinuationKt.UNDEFINED -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.internal.DispatchedContinuationKt.REUSABLE_CLAIMED -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.JobSupportKt.COMPLETING_ALREADY -> d
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.JobSupportKt.COMPLETING_WAITING_CHILDREN -> e
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.JobSupportKt.COMPLETING_RETRY -> f
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.JobSupportKt.TOO_LATE_TO_CANCEL -> g
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.JobSupportKt.SEALED -> h
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     kotlinx.coroutines.Empty kotlinx.coroutines.JobSupportKt.EMPTY_NEW -> i
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lf3;"}
     kotlinx.coroutines.Empty kotlinx.coroutines.JobSupportKt.EMPTY_ACTIVE -> j
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lf3;"}
     kotlin.coroutines.jvm.internal.ModuleNameRetriever$Cache kotlin.coroutines.jvm.internal.ModuleNameRetriever.notOnJava9 -> k
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lx7;"}
     kotlin.coroutines.jvm.internal.ModuleNameRetriever$Cache kotlin.coroutines.jvm.internal.ModuleNameRetriever.cache -> l
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Ly7;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lx7;"}
     kotlinx.coroutines.internal.Symbol kotlinx.coroutines.internal.ThreadContextKt.NO_THREAD_ELEMENTS -> m
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lpa;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Loa;"}
     1:9:void kotlinx.coroutines.internal.AtomicKt.<clinit>():43:43 -> <clinit>
     1:9:void BoundaryInterfaceReflectionUtil.$r8$clinit$synthetic():0 -> <clinit>
       # {"id":"com.android.tools.r8.synthesized"}
@@ -109048,7 +109065,7 @@ org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil -> h0:
     15:22:kotlinx.coroutines.Job kotlinx.coroutines.BuildersKt.launch(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.CoroutineContext,kotlinx.coroutines.CoroutineStart,kotlin.jvm.functions.Function2):1 -> h
     15:22:kotlinx.coroutines.Job kotlinx.coroutines.BuildersKt__Builders_commonKt.launch$default(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.CoroutineContext,kotlinx.coroutines.CoroutineStart,kotlin.jvm.functions.Function2,int,java.lang.Object):47 -> h
     15:22:kotlinx.coroutines.Job kotlinx.coroutines.BuildersKt.launch$default(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.CoroutineContext,kotlinx.coroutines.CoroutineStart,kotlin.jvm.functions.Function2,int,java.lang.Object):1 -> h
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh2;Lz4;Lj4;I)Lga;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh2;Lz4;Lj4;I)Lfa;"}
     23:28:kotlinx.coroutines.CoroutineDispatcher kotlinx.coroutines.Dispatchers.getDefault():32:32 -> h
     23:28:kotlin.coroutines.CoroutineContext kotlinx.coroutines.CoroutineContextKt.newCoroutineContext(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.CoroutineContext):21 -> h
     23:28:kotlinx.coroutines.Job kotlinx.coroutines.BuildersKt__Builders_commonKt.launch(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.CoroutineContext,kotlinx.coroutines.CoroutineStart,kotlin.jvm.functions.Function2):52 -> h
@@ -109251,7 +109268,7 @@ org.chromium.support_lib_boundary.util.BoundaryInterfaceReflectionUtil -> h0:
     24:24:void kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(kotlin.jvm.functions.Function2,java.lang.Object,kotlin.coroutines.Continuation,kotlin.jvm.functions.Function1):78 -> m
     24:24:void kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable$default(kotlin.jvm.functions.Function2,java.lang.Object,kotlin.coroutines.Continuation,kotlin.jvm.functions.Function1,int,java.lang.Object):25 -> m
     1:9:java.lang.Object kotlinx.coroutines.intrinsics.UndispatchedKt.startUndispatchedOrReturn(kotlinx.coroutines.internal.ScopeCoroutine,java.lang.Object,kotlin.jvm.functions.Function2):89:89 -> n
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Ln9;Ln9;Lj4;)Ljava/lang/Object;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lm9;Lm9;Lj4;)Ljava/lang/Object;"}
     10:12:java.lang.Object kotlinx.coroutines.intrinsics.UndispatchedKt.startUndispatchedOrReturn(kotlinx.coroutines.internal.ScopeCoroutine,java.lang.Object,kotlin.jvm.functions.Function2):205:205 -> n
     13:21:void kotlinx.coroutines.CompletedExceptionally.<init>(java.lang.Throwable,boolean,int,kotlin.jvm.internal.DefaultConstructorMarker):42:42 -> n
     13:21:java.lang.Object kotlinx.coroutines.intrinsics.UndispatchedKt.startUndispatchedOrReturn(kotlinx.coroutines.internal.ScopeCoroutine,java.lang.Object,kotlin.jvm.functions.Function2):205 -> n
