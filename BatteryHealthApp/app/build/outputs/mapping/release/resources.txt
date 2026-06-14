@@ -716,6 +716,7 @@ missingDelimiterValue
 controlX1
 android.backgroundImageUri
 listener
+full_charge_capacity
 android.intent.extra.CC
 NotificationManagerCompat
 BanParcelableUsage
@@ -861,7 +862,6 @@ controlY2
 max
 ACTION_PAGE_RIGHT
 controlY1
-health
 surface_container_highest
 menu
 uri
@@ -1256,6 +1256,7 @@ android.activity.usage_time
 onTextChanged
 REUSABLE_CLAIMED
 android:visibility:visibility
+batterycapacity
 0x%08x
 BOTTOM_TO_TOP
 resources
@@ -2387,6 +2388,7 @@ config_showMenuShortcutsWhenKeyboardP...
 android.provider.extra.INITIAL_URI
 CONSUMED
 android.remoteinput.dataTypeResultsData
+charge_counter
 baseline
 mCheckMarkDrawable
 ACTION_ARGUMENT_SELECTION_START_INT
