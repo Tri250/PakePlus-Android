@@ -62,7 +62,8 @@ struct RegexPatterns {
                 {
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(MF_05[=:\s]+(\d+))",                    // 小米 MF 格式
-                    R"(fc[=:\s]+(\d+))",                       // healthd 格式
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))", // healthd 格式
+                    R"(\bfc[=:\s]+(\d+))",                       // healthd 格式兜底
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
                     R"(full charge capacity:\s*(\d+)\s*mAh)",
@@ -82,7 +83,8 @@ struct RegexPatterns {
                 // 循环次数模式
                 {
                     R"(MF_06[=:\s]+(\d+))",                    // 小米 MF 格式
-                    R"(cc[=:\s]+(\d+))",                       // healthd 格式
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))", // healthd 格式
+                    R"(\bcc[=:\s]+(\d+))",                       // healthd 格式兜底
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))",
@@ -95,20 +97,21 @@ struct RegexPatterns {
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",                  // healthd 格式
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))", // healthd 格式
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))",
                     R"(temp[=:\s]+(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",                        // healthd 格式
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))", // healthd 格式
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)",
                     R"(voltage[=:\s]+(\d+))"
                 },
                 // 健康度代码
                 {
-                    R"(h[=:\s]+(\d+))"                         // healthd 格式
+                    R"(healthd:\s*battery\s+.*?h[=:\s]+(\d+))", // healthd 格式
+                    R"(\bh[=:\s]+(\d+))"
                 }
             }},
             
@@ -117,7 +120,8 @@ struct RegexPatterns {
                 BrandType::HUAWEI, "Huawei", "华为",
                 // 容量模式 - healthd 格式为主
                 {
-                    R"(fc[=:\s]+(\d+))",                       // healthd: fc=4562
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -133,7 +137,8 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",                       // healthd: cc=1200
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))",
@@ -141,18 +146,18 @@ struct RegexPatterns {
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",                  // healthd: t=27.0
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",                        // healthd: v=4356
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 // 健康度代码
                 {
-                    R"(h[=:\s]+(\d+))"                         // healthd: h=2
+                    R"(healthd:\s*battery\s+.*?h[=:\s]+(\d+))"
                 }
             }},
             
@@ -161,7 +166,8 @@ struct RegexPatterns {
                 BrandType::HONOR, "Honor", "荣耀",
                 // 容量模式 - 与华为相同，healthd 格式为主
                 {
-                    R"(fc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -177,7 +183,8 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))",
@@ -185,18 +192,18 @@ struct RegexPatterns {
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 // 健康度代码
                 {
-                    R"(h[=:\s]+(\d+))"
+                    R"(healthd:\s*battery\s+.*?h[=:\s]+(\d+))"
                 }
             }},
             
@@ -205,7 +212,8 @@ struct RegexPatterns {
                 BrandType::OPPO, "OPPO", "OPPO",
                 // 容量模式
                 {
-                    R"(fc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(QG_01[=:\s]+(\d+))",                    // OPPO QG 格式
                     R"(charge_capacity[=:\s]+(\d+))",
@@ -222,7 +230,8 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(QG_03[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
@@ -230,13 +239,13 @@ struct RegexPatterns {
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 {}
@@ -247,7 +256,8 @@ struct RegexPatterns {
                 BrandType::VIVO, "vivo", "vivo",
                 // 容量模式
                 {
-                    R"(fc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -264,7 +274,8 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))",
@@ -272,13 +283,13 @@ struct RegexPatterns {
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 {}
@@ -289,7 +300,8 @@ struct RegexPatterns {
                 BrandType::ONEPLUS, "OnePlus", "一加",
                 // 容量模式
                 {
-                    R"(fc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -304,20 +316,21 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))"
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 {}
@@ -328,7 +341,8 @@ struct RegexPatterns {
                 BrandType::SAMSUNG, "Samsung", "三星",
                 // 容量模式
                 {
-                    R"(fc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -343,20 +357,21 @@ struct RegexPatterns {
                 },
                 // 循环次数模式
                 {
-                    R"(cc[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+                    R"(\bcc[=:\s]+(\d+))",
                     R"(battery cycle count:\s*(\d+))",
                     R"(cycle count:\s*(\d+))",
                     R"(charge cycles:\s*(\d+))"
                 },
                 // 温度模式
                 {
-                    R"(t[=:\s]+(\d+\.?\d*))",
+                    R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
                     R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
                     R"(BatteryTemp:\s*(\d+\.?\d*))"
                 },
                 // 电压模式
                 {
-                    R"(v[=:\s]+(\d+))",
+                    R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
                     R"(battery voltage:\s*(\d+\.?\d*)\s*mV)"
                 },
                 {}
@@ -368,8 +383,9 @@ struct RegexPatterns {
     // ========== 通用容量提取模式（所有品牌兜底）==========
     static const std::vector<std::string>& getCapacityPatterns() {
         static const std::vector<std::string> patterns = {
-            // healthd 格式（荣耀/华为/小米等）
-            R"(fc[=:\s]+(\d+))",
+            // healthd 格式（荣耀/华为/小米等）- 必须在 healthd 行内
+            R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
+            R"(\bfc[=:\s]+(\d+))",
             // 小米 MF 格式
             R"(MF_05[=:\s]+(\d+))",
             // 通用格式
@@ -393,8 +409,9 @@ struct RegexPatterns {
     // ========== 通用循环次数提取模式（所有品牌兜底）==========
     static const std::vector<std::string>& getCycleCountPatterns() {
         static const std::vector<std::string> patterns = {
-            // healthd 格式（荣耀/华为）
-            R"(cc[=:\s]+(\d+))",
+            // healthd 格式（荣耀/华为）- 必须在 healthd 行内
+            R"(healthd:\s*battery\s+.*?cc[=:\s]+(\d+))",
+            R"(\bcc[=:\s]+(\d+))",
             // 小米 MF 格式
             R"(MF_06[=:\s]+(\d+))",
             // QG 格式（OPPO）
@@ -431,8 +448,8 @@ struct RegexPatterns {
     // ========== 通用温度提取模式 ==========
     static const std::vector<std::string>& getTemperaturePatterns() {
         static const std::vector<std::string> patterns = {
-            // healthd 格式
-            R"(t[=:\s]+(\d+\.?\d*))",
+            // healthd 格式 - 必须在 healthd 行内
+            R"(healthd:\s*battery\s+.*?t[=:\s]+(\d+\.?\d*))",
             // 通用格式
             R"(battery temperature:\s*(\d+\.?\d*)\s*°?C)",
             R"(BatteryTemp:\s*(\d+\.?\d*))",
@@ -446,8 +463,8 @@ struct RegexPatterns {
     // ========== 通用电压提取模式 ==========
     static const std::vector<std::string>& getVoltagePatterns() {
         static const std::vector<std::string> patterns = {
-            // healthd 格式
-            R"(v[=:\s]+(\d+))",
+            // healthd 格式 - 必须在 healthd 行内
+            R"(healthd:\s*battery\s+.*?v[=:\s]+(\d+))",
             // 通用格式
             R"(battery voltage:\s*(\d+\.?\d*)\s*mV)",
             R"(voltage[=:\s]+(\d+))",

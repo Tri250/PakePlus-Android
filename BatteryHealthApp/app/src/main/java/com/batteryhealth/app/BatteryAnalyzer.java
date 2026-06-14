@@ -332,18 +332,20 @@ public class BatteryAnalyzer {
                 result.model = modelMatcher.group(1).trim();
             }
 
-            // 提取当前容量 - healthd 格式
+            // 提取当前容量 - healthd 格式 (fc= 必须在 healthd 行或独立行)
             java.util.regex.Matcher fcMatcher = java.util.regex.Pattern.compile(
-                "fc[=:\\s]+(\\d+)").matcher(text);
+                "(?:healthd:.*?fc[=:\\s]+(\\d+)|\\bfc[=:\\s]+(\\d+))").matcher(text);
             if (fcMatcher.find()) {
-                result.currentCapacityMah = Integer.parseInt(fcMatcher.group(1));
+                String fcVal = fcMatcher.group(1) != null ? fcMatcher.group(1) : fcMatcher.group(2);
+                result.currentCapacityMah = Integer.parseInt(fcVal);
             }
 
-            // 提取循环次数 - healthd 格式
+            // 提取循环次数 - healthd 格式 (cc= 必须在 healthd 行或独立行)
             java.util.regex.Matcher ccMatcher = java.util.regex.Pattern.compile(
-                "cc[=:\\s]+(\\d+)").matcher(text);
+                "(?:healthd:.*?cc[=:\\s]+(\\d+)|\\bcc[=:\\s]+(\\d+))").matcher(text);
             if (ccMatcher.find()) {
-                result.cycleCount = Integer.parseInt(ccMatcher.group(1));
+                String ccVal = ccMatcher.group(1) != null ? ccMatcher.group(1) : ccMatcher.group(2);
+                result.cycleCount = Integer.parseInt(ccVal);
             }
 
             // 小米 MF 格式
@@ -408,15 +410,23 @@ public class BatteryAnalyzer {
                 }
             }
 
-            // 温度 - healthd 格式中的 t=
+            // 温度 - healthd 格式中的 t= (必须在 healthd 行内)
             java.util.regex.Matcher tempMatcher = java.util.regex.Pattern.compile(
-                "healthd:.*?t[=:\\s]+(\\d+\\.?\\d*)").matcher(text);
+                "healthd:\\s*battery\\s+.*?t[=:\\s]+(\\d+\\.?\\d*)").matcher(text);
             if (tempMatcher.find()) {
                 result.temperatureCelsius = Float.parseFloat(tempMatcher.group(1));
             }
+            // 温度 - 通用格式
+            if (result.temperatureCelsius == 0) {
+                java.util.regex.Matcher tempMatcher2 = java.util.regex.Pattern.compile(
+                    "battery[_ ]?temperature[:\\s]+(\\d+\\.?\\d*)\\s*°?C").matcher(text);
+                if (tempMatcher2.find()) {
+                    result.temperatureCelsius = Float.parseFloat(tempMatcher2.group(1));
+                }
+            }
 
             // 更新 hasData
-            result.hasData = result.currentCapacityMah > 0 || result.cycleCount > 0;
+            result.hasData = result.currentCapacityMah > 0 || result.cycleCount > 0 || result.designCapacityMah > 0;
 
             Log.d(TAG, "Java fallback parse: hasData=" + result.hasData +
                   " brand=" + result.brand + " model=" + result.model +

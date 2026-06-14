@@ -755,7 +755,7 @@ public class MainActivity extends AppCompatActivity {
                             "  window.BatteryHealthApp.%s(%s);" +
                             "}",
                             callbackJs, callbackJs,
-                            resultJson.replace("\\", "\\\\").replace("'", "\\'")
+                            resultJson
                         );
                         webView.evaluateJavascript(jsCode, null);
                     });
