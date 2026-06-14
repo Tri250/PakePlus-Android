@@ -107,7 +107,13 @@ const BatteryParsers = {
             /last[_\s-]?full[_\s-]?charge[_\s-]?counter[:\s]+(\d+)/i,
             /full[_\s-]?charge[_\s-]?capacity[:\s]+(\d+)\s*uah/i,
             /fcc[:\s]+(\d+)/i,
-            /\bcharge_counter\b[\s:=]+(\d+)/i
+            /\bcharge_counter\b[\s:=]+(\d+)/i,
+            // 宽松模式：charge_counter后面最近的数字（支持多行）
+            /charge_counter[^\d]{0,30}(\d{4,})/i,
+            // 小米/通用格式：Charge counter: 1234567
+            /charge\s+counter[:\s]+(\d+)/i,
+            // sysfs格式：/sys/.../charge_counter 后跟数字
+            /\/sys\/class\/power_supply\/[^\/]+\/charge_counter[^\d]{0,50}(\d{4,})/i
         ];
         
         for (const pattern of chargeCounterPatterns) {
@@ -189,7 +195,12 @@ const BatteryParsers = {
             /循环次数[:\s]+(\d+)/i,
             /累计循环[:\s]+(\d+)/i,
             /\bcycle_count\b[\s:=]+(\d+)/i,
-            /\bcycle\b[\s:=]+(\d+)/i
+            /\bcycle\b[\s:=]+(\d+)/i,
+            // 宽松模式：cycle_count后面最近的数字
+            /cycle_count[^\d]{0,30}(\d{1,4})/i,
+            /cycle\s+count[:\s]+(\d+)/i,
+            // sysfs格式
+            /\/sys\/class\/power_supply\/[^\/]+\/cycle_count[^\d]{0,50}(\d{1,4})/i
         ];
         
         for (const pattern of cycleCountPatterns) {
