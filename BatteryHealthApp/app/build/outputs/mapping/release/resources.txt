@@ -287,7 +287,6 @@ setEpicenterBounds
 android.progressIndeterminate
 yMMMd
 repeatCount
-bugreport
 void
 tertiary
 statusBarStyle
@@ -859,6 +858,7 @@ controlY2
 max
 ACTION_PAGE_RIGHT
 controlY1
+health
 surface_container_highest
 menu
 uri
@@ -947,6 +947,7 @@ ResourceManagerInternal
 Trace
 wrap_content
 ACTVAutoSizeHelper
+power_supply
 Completed
 callback
 mOnKeyListener
@@ -1105,6 +1106,7 @@ android.support.AppLaunchChecker
 on_tertiary_fixed_variant
 registry
 WrappedDrawableApi21
+healthd
 cubic
 dispatchStartTemporaryDetach
 MULTI_PROCESS
@@ -1196,6 +1198,7 @@ isProjected
 OP_SET_MAX_LIFECYCLE
 float
 FloatValueHolder
+dumpsys
 java.lang.Enum
 oppo
 MultiAutoCompleteTextView
@@ -1932,6 +1935,7 @@ completion
 ToggleButton
 androidx.view.accessibility.Accessibi...
 set
+charge
 ACTION_IME_ENTER
 DynamicColors
 TIME_PICKER_OVERRIDE_THEME_RES_ID
@@ -1965,6 +1969,7 @@ ADD
 setTouchModal
 android:changeTransform:intermediateM...
 DST_ATOP
+bugreport_
 /NULL
 observe
 ACTION_DRAG_CANCEL
@@ -2252,6 +2257,7 @@ viewModelClass
 android:visibility:screenLocation
 ToolbarWidgetWrapper
 BASELINE
+current
 animationFraction
 vector
 ACTION_SCROLL_TO_POSITION
@@ -2317,6 +2323,7 @@ HIDDEN
 temp.arsc
 action_key
 app:layout_marginRight
+已找到电池信息
 android.icon
 $parentJob
 fragment_
@@ -2352,6 +2359,7 @@ MenuPopupWindow
 Dispatchers.Main.immediate
 android.core.view.accessibility.extra...
 valueFrom
+voltage
 .xml:
 topLeft
 location
@@ -2400,6 +2408,7 @@ android.support.action.semanticAction
 java.lang.Double
 flac
 range
+capacity
 promo
 com.sony.dtv.hardware.panel.qfhd
 get
@@ -3803,6 +3812,8 @@ Marking layout:activity_main:2131427356 used because it matches string pool cons
 Marking attr:scrimAnimationDuration:2130903971 used because it matches string pool constant scrim
 Marking attr:scrimBackground:2130903972 used because it matches string pool constant scrim
 Marking attr:scrimVisibleHeightTrigger:2130903973 used because it matches string pool constant scrim
+Marking attr:currentState:2130903390 used because it matches string pool constant current
+Marking id:currentState:2131230853 used because it matches string pool constant current
 Marking attr:keyPositionType:2130903648 used because it matches string pool constant key
 Marking attr:keyboardIcon:2130903649 used because it matches string pool constant key
 Marking attr:keylines:2130903650 used because it matches string pool constant key
@@ -4623,7 +4634,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @attr/counterTextAppearance : reachable=false
 @attr/counterTextColor : reachable=false
 @attr/crossfade : reachable=false
-@attr/currentState : reachable=false
+@attr/currentState : reachable=true
 @attr/cursorColor : reachable=false
 @attr/cursorErrorColor : reachable=false
 @attr/curveFit : reachable=true
@@ -8740,7 +8751,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @id/cos : reachable=false
 @id/counterclockwise : reachable=false
 @id/cradle : reachable=false
-@id/currentState : reachable=false
+@id/currentState : reachable=true
 @id/custom : reachable=true
 @id/customPanel : reachable=true
 @id/cut : reachable=false
@@ -18819,6 +18830,7 @@ The root reachable resources are:
  attr:contentPaddingTop:2130903366
  attr:contentScrim:2130903367
  attr:coordinatorLayoutStyle:2130903370
+ attr:currentState:2130903390
  attr:curveFit:2130903393
  attr:customBoolean:2130903394
  attr:customColorDrawableValue:2130903395
@@ -19762,6 +19774,7 @@ The root reachable resources are:
  id:contentPanel:2131230846
  id:continuousVelocity:2131230848
  id:coordinator:2131230849
+ id:currentState:2131230853
  id:custom:2131230854
  id:customPanel:2131230855
  id:decelerate:2131230858
@@ -20823,7 +20836,6 @@ Unused resources are:
  id:cos:2131230850
  id:counterclockwise:2131230851
  id:cradle:2131230852
- id:currentState:2131230853
  id:cut:2131230856
  id:date_picker_actions:2131230857
  id:deltaRelative:2131230862
