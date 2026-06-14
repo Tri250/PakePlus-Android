@@ -267,14 +267,35 @@ public class MainActivity extends AppCompatActivity {
                 public WebResourceResponse handle(String path) {
                     try {
                         Log.d(TAG, "AssetLoader request path: " + path);
-                        // path 格式: bha_1234567890_xxx.zip (相对于 /bha/ 前缀)
+                        // 安全检查：防止路径遍历
+                        if (path.contains("..") || path.contains("/")) {
+                            Log.w(TAG, "Invalid path rejected: " + path);
+                            return null;
+                        }
+                        // WebViewAssetLoader传入的path已经是URL解码后的
+                        // 但为了健壮性，也尝试URL解码匹配
                         File cacheFile = new File(getCacheDir(), path);
                         if (cacheFile.exists() && cacheFile.getName().startsWith("bha_")) {
                             long size = cacheFile.length();
                             Log.d(TAG, "Serving file from cache: " + cacheFile.getAbsolutePath() + " size=" + size);
                             InputStream is = new FileInputStream(cacheFile);
-                            // MIME类型：application/zip
                             return new WebResourceResponse("application/zip", "UTF-8", is);
+                        }
+                        // 如果直接匹配失败，尝试在缓存目录中查找相似文件名
+                        // 处理URL编码/解码不一致的情况
+                        File cacheDir = getCacheDir();
+                        File[] bhaFiles = cacheDir.listFiles((dir, name) ->
+                            name.startsWith("bha_") && name.endsWith(".zip"));
+                        if (bhaFiles != null) {
+                            for (File f : bhaFiles) {
+                                // 比较URL解码后的路径和文件名
+                                String decodedPath = Uri.decode(path);
+                                if (f.getName().equals(path) || f.getName().equals(decodedPath)) {
+                                    Log.d(TAG, "Found file via fallback match: " + f.getName());
+                                    InputStream is = new FileInputStream(f);
+                                    return new WebResourceResponse("application/zip", "UTF-8", is);
+                                }
+                            }
                         }
                         Log.w(TAG, "Cache file not found: " + path);
                         return null;
