@@ -64,6 +64,9 @@ CMAKE_BINARY_DIR = /workspace/digiguide/core/build
 
 # The main recursive "all" target.
 all: CMakeFiles/digiguide_core.dir/all
+all: CMakeFiles/test_sn_decoder.dir/all
+all: CMakeFiles/test_bugreport.dir/all
+all: CMakeFiles/test_health.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -72,6 +75,9 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/digiguide_core.dir/clean
+clean: CMakeFiles/test_sn_decoder.dir/clean
+clean: CMakeFiles/test_bugreport.dir/clean
+clean: CMakeFiles/test_health.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -99,6 +105,84 @@ digiguide_core: CMakeFiles/digiguide_core.dir/rule
 CMakeFiles/digiguide_core.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/digiguide_core.dir/build.make CMakeFiles/digiguide_core.dir/clean
 .PHONY : CMakeFiles/digiguide_core.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_sn_decoder.dir
+
+# All Build rule for target.
+CMakeFiles/test_sn_decoder.dir/all: CMakeFiles/digiguide_core.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/digiguide/core/build/CMakeFiles --progress-num=11,12 "Built target test_sn_decoder"
+.PHONY : CMakeFiles/test_sn_decoder.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_sn_decoder.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_sn_decoder.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_sn_decoder.dir/rule
+
+# Convenience name for target.
+test_sn_decoder: CMakeFiles/test_sn_decoder.dir/rule
+.PHONY : test_sn_decoder
+
+# clean rule for target.
+CMakeFiles/test_sn_decoder.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/clean
+.PHONY : CMakeFiles/test_sn_decoder.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_bugreport.dir
+
+# All Build rule for target.
+CMakeFiles/test_bugreport.dir/all: CMakeFiles/digiguide_core.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/digiguide/core/build/CMakeFiles --progress-num=7,8 "Built target test_bugreport"
+.PHONY : CMakeFiles/test_bugreport.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_bugreport.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_bugreport.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_bugreport.dir/rule
+
+# Convenience name for target.
+test_bugreport: CMakeFiles/test_bugreport.dir/rule
+.PHONY : test_bugreport
+
+# clean rule for target.
+CMakeFiles/test_bugreport.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/clean
+.PHONY : CMakeFiles/test_bugreport.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_health.dir
+
+# All Build rule for target.
+CMakeFiles/test_health.dir/all: CMakeFiles/digiguide_core.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/digiguide/core/build/CMakeFiles --progress-num=9,10 "Built target test_health"
+.PHONY : CMakeFiles/test_health.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_health.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_health.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/digiguide/core/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_health.dir/rule
+
+# Convenience name for target.
+test_health: CMakeFiles/test_health.dir/rule
+.PHONY : test_health
+
+# clean rule for target.
+CMakeFiles/test_health.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/clean
+.PHONY : CMakeFiles/test_health.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

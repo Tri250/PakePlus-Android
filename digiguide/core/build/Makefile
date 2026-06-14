@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /workspace/digiguide/core/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "No interactive CMake dialog available..."
@@ -173,6 +183,45 @@ digiguide_core: cmake_check_build_system
 digiguide_core/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/digiguide_core.dir/build.make CMakeFiles/digiguide_core.dir/build
 .PHONY : digiguide_core/fast
+
+#=============================================================================
+# Target rules for targets named test_sn_decoder
+
+# Build rule for target.
+test_sn_decoder: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_sn_decoder
+.PHONY : test_sn_decoder
+
+# fast build rule for target.
+test_sn_decoder/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/build
+.PHONY : test_sn_decoder/fast
+
+#=============================================================================
+# Target rules for targets named test_bugreport
+
+# Build rule for target.
+test_bugreport: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_bugreport
+.PHONY : test_bugreport
+
+# fast build rule for target.
+test_bugreport/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/build
+.PHONY : test_bugreport/fast
+
+#=============================================================================
+# Target rules for targets named test_health
+
+# Build rule for target.
+test_health: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_health
+.PHONY : test_health
+
+# fast build rule for target.
+test_health/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/build
+.PHONY : test_health/fast
 
 src/battery_health.o: src/battery_health.cpp.o
 .PHONY : src/battery_health.o
@@ -294,6 +343,78 @@ src/zip_parser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/digiguide_core.dir/build.make CMakeFiles/digiguide_core.dir/src/zip_parser.cpp.s
 .PHONY : src/zip_parser.cpp.s
 
+tests/test_bugreport.o: tests/test_bugreport.cpp.o
+.PHONY : tests/test_bugreport.o
+
+# target to build an object file
+tests/test_bugreport.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/tests/test_bugreport.cpp.o
+.PHONY : tests/test_bugreport.cpp.o
+
+tests/test_bugreport.i: tests/test_bugreport.cpp.i
+.PHONY : tests/test_bugreport.i
+
+# target to preprocess a source file
+tests/test_bugreport.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/tests/test_bugreport.cpp.i
+.PHONY : tests/test_bugreport.cpp.i
+
+tests/test_bugreport.s: tests/test_bugreport.cpp.s
+.PHONY : tests/test_bugreport.s
+
+# target to generate assembly for a file
+tests/test_bugreport.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_bugreport.dir/build.make CMakeFiles/test_bugreport.dir/tests/test_bugreport.cpp.s
+.PHONY : tests/test_bugreport.cpp.s
+
+tests/test_health.o: tests/test_health.cpp.o
+.PHONY : tests/test_health.o
+
+# target to build an object file
+tests/test_health.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/tests/test_health.cpp.o
+.PHONY : tests/test_health.cpp.o
+
+tests/test_health.i: tests/test_health.cpp.i
+.PHONY : tests/test_health.i
+
+# target to preprocess a source file
+tests/test_health.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/tests/test_health.cpp.i
+.PHONY : tests/test_health.cpp.i
+
+tests/test_health.s: tests/test_health.cpp.s
+.PHONY : tests/test_health.s
+
+# target to generate assembly for a file
+tests/test_health.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_health.dir/build.make CMakeFiles/test_health.dir/tests/test_health.cpp.s
+.PHONY : tests/test_health.cpp.s
+
+tests/test_sn_decoder.o: tests/test_sn_decoder.cpp.o
+.PHONY : tests/test_sn_decoder.o
+
+# target to build an object file
+tests/test_sn_decoder.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/tests/test_sn_decoder.cpp.o
+.PHONY : tests/test_sn_decoder.cpp.o
+
+tests/test_sn_decoder.i: tests/test_sn_decoder.cpp.i
+.PHONY : tests/test_sn_decoder.i
+
+# target to preprocess a source file
+tests/test_sn_decoder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/tests/test_sn_decoder.cpp.i
+.PHONY : tests/test_sn_decoder.cpp.i
+
+tests/test_sn_decoder.s: tests/test_sn_decoder.cpp.s
+.PHONY : tests/test_sn_decoder.s
+
+# target to generate assembly for a file
+tests/test_sn_decoder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sn_decoder.dir/build.make CMakeFiles/test_sn_decoder.dir/tests/test_sn_decoder.cpp.s
+.PHONY : tests/test_sn_decoder.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -306,7 +427,11 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... digiguide_core"
+	@echo "... test_bugreport"
+	@echo "... test_health"
+	@echo "... test_sn_decoder"
 	@echo "... src/battery_health.o"
 	@echo "... src/battery_health.i"
 	@echo "... src/battery_health.s"
@@ -322,6 +447,15 @@ help:
 	@echo "... src/zip_parser.o"
 	@echo "... src/zip_parser.i"
 	@echo "... src/zip_parser.s"
+	@echo "... tests/test_bugreport.o"
+	@echo "... tests/test_bugreport.i"
+	@echo "... tests/test_bugreport.s"
+	@echo "... tests/test_health.o"
+	@echo "... tests/test_health.i"
+	@echo "... tests/test_health.s"
+	@echo "... tests/test_sn_decoder.o"
+	@echo "... tests/test_sn_decoder.i"
+	@echo "... tests/test_sn_decoder.s"
 .PHONY : help
 
 

@@ -107,4 +107,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/digiguide_core.dir/DependInfo.cmake"
+  "CMakeFiles/test_sn_decoder.dir/DependInfo.cmake"
+  "CMakeFiles/test_bugreport.dir/DependInfo.cmake"
+  "CMakeFiles/test_health.dir/DependInfo.cmake"
   )
