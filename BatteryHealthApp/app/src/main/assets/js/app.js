@@ -337,7 +337,20 @@ const BatteryHealthApp = {
         
         try {
             this.updateProgress(10, '正在读取文件...');
-            const result = await this.analyzeZipFile(this.currentFile, initialCapacity);
+            let result = null;
+
+            // Android 环境：优先使用 Native 全流程分析（Java读文件 + C++解析）
+            if (this.currentFile.isAndroidUri && this.currentFile.uri && window.AndroidFilePicker) {
+                console.log('Using Android native full analysis path');
+                this.updateProgress(20, '正在复制文件...');
+                result = await this.analyzeWithAndroidNative(this.currentFile.uri, initialCapacity);
+            }
+
+            // 回退：浏览器环境或 Native 分析失败
+            if (!result) {
+                console.log('Falling back to JS analysis');
+                result = await this.analyzeZipFile(this.currentFile, initialCapacity);
+            }
             
             this.updateProgress(100, '分析完成');
             this.displayResult(result, initialCapacity);
@@ -366,6 +379,87 @@ const BatteryHealthApp = {
             setTimeout(() => {
                 progressContainer.classList.remove('show');
             }, 1000);
+        }
+    },
+    
+    /**
+     * Android Native 全流程分析
+     * Java端完成：文件复制 → Native C++ 解析 → 健康度计算
+     * JS端只负责：调用 → 接收结果 → 显示
+     * 完全绕过 fetch/CORS 问题
+     */
+    async analyzeWithAndroidNative(uri, initialCapacity) {
+        return new Promise((resolve, reject) => {
+            this._nativeAnalysisResolve = resolve;
+            this._nativeAnalysisReject = reject;
+            this._currentInitialCapacity = initialCapacity;
+            
+            // 调用 Java 端方法：复制文件 + Native 分析，一步到位
+            if (typeof window.AndroidFilePicker.analyzeFileFullNative === 'function') {
+                console.log('Calling analyzeFileFullNative for:', uri);
+                window.AndroidFilePicker.analyzeFileFullNative(uri, 'onNativeAnalysisComplete');
+            } else {
+                console.warn('analyzeFileFullNative not available');
+                resolve(null);
+            }
+        });
+    },
+    
+    /**
+     * Native 全流程分析完成回调
+     * @param {string|Object} resultJson - 分析结果 JSON
+     */
+    onNativeAnalysisComplete(resultJson) {
+        console.log('=== Native analysis complete ===');
+        
+        try {
+            const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
+            console.log('Parsed result:', result);
+            
+            if (result.error) {
+                console.warn('Native analysis error:', result.error);
+                if (this._nativeAnalysisReject) {
+                    this._nativeAnalysisReject(new Error(result.error));
+                }
+                return;
+            }
+            
+            if (!result.hasData && !result.success) {
+                console.warn('No data in native result');
+                if (this._nativeAnalysisResolve) {
+                    this._nativeAnalysisResolve(null);
+                }
+                return;
+            }
+            
+            // 转换为 displayResult 需要的格式
+            const initialCapacity = this._currentInitialCapacity;
+            const currentCapacity = result.currentCapacityMah || 
+                (result.healthPercentage > 0 ? Math.round(initialCapacity * result.healthPercentage / 100) : 0);
+            
+            const displayData = {
+                brand: result.brand || 'unknown',
+                currentCapacity: currentCapacity,
+                cycleCount: result.cycleCount || null,
+                batteryTemp: result.temperatureCelsius || null,
+                healthGrade: result.grade || null,
+                voltage: null,
+                technology: null,
+                rawContent: result.diagnosisText || '',
+                _nativeResult: result
+            };
+            
+            console.log('Display data:', displayData);
+            this.updateProgress(90, '分析完成');
+            
+            if (this._nativeAnalysisResolve) {
+                this._nativeAnalysisResolve(displayData);
+            }
+        } catch (e) {
+            console.error('Failed to process native result:', e);
+            if (this._nativeAnalysisResolve) {
+                this._nativeAnalysisResolve(null);
+            }
         }
     },
     

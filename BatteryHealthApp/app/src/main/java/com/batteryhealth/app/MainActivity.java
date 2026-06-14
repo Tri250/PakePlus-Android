@@ -635,6 +635,162 @@ public class MainActivity extends AppCompatActivity {
         }
         
         /**
+         * 全流程 Native 分析：复制文件 + 解析 + 健康度计算
+         * 完全在 Java/Native 端完成，不经过 fetch/CORS
+         * @param uriString 文件 URI
+         * @param callbackJs JS 回调函数名
+         */
+        @JavascriptInterface
+        public void analyzeFileFullNative(String uriString, final String callbackJs) {
+            Log.d(TAG, "=== analyzeFileFullNative called for: " + uriString + " ===");
+            
+            new Thread(() -> {
+                java.io.File tempFile = null;
+                try {
+                    // 第一步：复制文件到缓存
+                    Uri uri = Uri.parse(uriString);
+                    ContentResolver resolver = getContentResolver();
+                    InputStream inputStream = resolver.openInputStream(uri);
+                    
+                    if (inputStream == null) {
+                        callbackError(callbackJs, "无法打开文件");
+                        return;
+                    }
+                    
+                    String originalName = getFileName(uri);
+                    if (originalName == null || originalName.isEmpty()) {
+                        originalName = "upload_" + System.currentTimeMillis() + ".zip";
+                    }
+                    String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                    java.io.File cacheDir = getCacheDir();
+                    cleanOldTempFiles(cacheDir);
+                    tempFile = new java.io.File(cacheDir, "bha_" + System.currentTimeMillis() + "_" + safeName);
+                    
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
+                    byte[] buffer = new byte[64 * 1024];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                    }
+                    fos.flush();
+                    fos.close();
+                    inputStream.close();
+                    
+                    Log.d(TAG, "File copied to: " + tempFile.getAbsolutePath() + " size=" + tempFile.length());
+                    
+                    // 第二步：初始化 Native 库
+                    BatteryAnalyzer.init();
+                    if (!BatteryAnalyzer.isNativeAvailable()) {
+                        callbackError(callbackJs, "Native库未加载");
+                        return;
+                    }
+                    
+                    // 第三步：解析文件
+                    BatteryParseResult parseResult = BatteryAnalyzer.parseFile(tempFile.getAbsolutePath());
+                    
+                    if (parseResult == null || !parseResult.hasData) {
+                        Log.w(TAG, "Native parse returned no data");
+                        callbackError(callbackJs, "未找到电池信息，请确认上传的是正确的诊断文件");
+                        return;
+                    }
+                    
+                    // 第四步：计算健康度
+                    BatteryHealthResult healthResult = BatteryAnalyzer.calculateHealth(parseResult);
+                    
+                    // 第五步：构建 JSON 结果
+                    StringBuilder json = new StringBuilder();
+                    json.append("{");
+                    json.append("\"success\": true,");
+                    json.append("\"hasData\": true,");
+                    json.append("\"brand\": \"").append(escapeJson(parseResult.getBrandText())).append("\",");
+                    json.append("\"model\": \"").append(escapeJson(parseResult.getModelText())).append("\",");
+                    json.append("\"designCapacityMah\": ").append(parseResult.designCapacityMah).append(",");
+                    json.append("\"currentCapacityMah\": ").append(parseResult.currentCapacityMah).append(",");
+                    json.append("\"chargeCounterMah\": ").append(parseResult.chargeCounterMah).append(",");
+                    json.append("\"cycleCount\": ").append(parseResult.cycleCount).append(",");
+                    json.append("\"temperatureCelsius\": ").append(parseResult.temperatureCelsius).append(",");
+                    json.append("\"manufacturingDate\": \"").append(escapeJson(parseResult.manufacturingDate != null ? parseResult.manufacturingDate : "")).append("\",");
+                    json.append("\"capacityRetention\": \"").append(escapeJson(parseResult.getCapacityRetentionText())).append("\",");
+                    json.append("\"healthPercentage\": ").append(healthResult.healthPercentage).append(",");
+                    json.append("\"grade\": \"").append(healthResult.grade).append("\",");
+                    json.append("\"gradeColor\": \"").append(healthResult.gradeColor).append("\",");
+                    json.append("\"gradeDescription\": \"").append(escapeJson(healthResult.gradeDescription)).append("\",");
+                    json.append("\"diagnosisText\": \"").append(escapeJson(healthResult.diagnosisText)).append("\",");
+                    json.append("\"confidence\": ").append(healthResult.confidence).append(",");
+                    
+                    json.append("\"suggestions\": [");
+                    if (healthResult.suggestions != null && !healthResult.suggestions.isEmpty()) {
+                        for (int i = 0; i < healthResult.suggestions.size(); i++) {
+                            if (i > 0) json.append(",");
+                            json.append("\"").append(escapeJson(healthResult.suggestions.get(i))).append("\"");
+                        }
+                    }
+                    json.append("],");
+                    
+                    if (healthResult.factors != null) {
+                        json.append("\"factors\": {");
+                        json.append("\"capacityRetention\": ").append(healthResult.factors.capacityRetention).append(",");
+                        json.append("\"cycleDecay\": ").append(healthResult.factors.cycleDecay).append(",");
+                        json.append("\"resistanceGrowth\": ").append(healthResult.factors.resistanceGrowth).append(",");
+                        json.append("\"thermalAging\": ").append(healthResult.factors.thermalAging).append(",");
+                        json.append("\"chargingDamage\": ").append(healthResult.factors.chargingDamage).append(",");
+                        json.append("\"availableFactors\": ").append(healthResult.factors.availableFactors);
+                        json.append("},");
+                    } else {
+                        json.append("\"factors\": null,");
+                    }
+                    
+                    json.append("\"estimatedResistanceMohm\": ").append(healthResult.estimatedResistanceMohm).append(",");
+                    json.append("\"remainingLifespanMonths\": ").append(healthResult.remainingLifespanMonths);
+                    json.append("}");
+                    
+                    final String resultJson = json.toString();
+                    Log.d(TAG, "Native full analysis complete, result length: " + resultJson.length());
+                    
+                    // 第六步：回调 JS
+                    runOnUiThread(() -> {
+                        String jsCode = String.format(
+                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                            "  window.BatteryHealthApp.%s(%s);" +
+                            "}",
+                            callbackJs, callbackJs,
+                            resultJson.replace("\\", "\\\\").replace("'", "\\'")
+                        );
+                        webView.evaluateJavascript(jsCode, null);
+                    });
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "analyzeFileFullNative failed", e);
+                    callbackError(callbackJs, "分析失败: " + e.getMessage());
+                } finally {
+                    // 清理临时文件
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                        Log.d(TAG, "Cleaned temp file: " + tempFile.getName());
+                    }
+                }
+            }).start();
+        }
+        
+        /**
+         * 回调 JS 错误
+         */
+        private void callbackError(String callbackJs, String errorMsg) {
+            runOnUiThread(() -> {
+                String jsCode = String.format(
+                    "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                    "  window.BatteryHealthApp.%s({error: '%s'});" +
+                    "}",
+                    callbackJs, callbackJs,
+                    escapeJson(errorMsg)
+                );
+                if (webView != null) {
+                    webView.evaluateJavascript(jsCode, null);
+                }
+            });
+        }
+        
+        /**
          * 获取解析摘要
          */
         @JavascriptInterface
