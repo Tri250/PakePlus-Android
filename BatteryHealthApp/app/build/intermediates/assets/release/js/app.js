@@ -608,8 +608,14 @@ const BatteryHealthApp = {
                         this._fileReadResolve(batteryInfo);
                     }
                 } else {
+                    // 调试：检查content中是否有charge_counter相关字符串
+                    const hasChargeCounter = contentLower.includes('charge_counter') || contentLower.includes('charge counter');
+                    const hasCycleCount = contentLower.includes('cycle_count') || contentLower.includes('cycle count');
+                    const debugMsg = `诊断信息: 文件长度=${content.length}, charge_counter=${hasChargeCounter ? '找到' : '未找到'}, cycle_count=${hasCycleCount ? '找到' : '未找到'}`;
+                    console.warn(debugMsg);
+                    console.warn('Content preview:', content.substring(0, 500));
                     if (this._fileReadReject) {
-                        this._fileReadReject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
+                        this._fileReadReject(new Error('未找到电池健康度信息。' + debugMsg));
                     }
                 }
             } catch (error) {

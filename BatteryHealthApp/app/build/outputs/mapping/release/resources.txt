@@ -153,7 +153,6 @@ DEEP_COPY_VALIDATOR_KEY
 sColorStateCacheLock
 _invoked
 BatteryHealthApp
-current_now
 locale
 android:layout_constrainedHeight
 SDK_INT
@@ -538,7 +537,6 @@ displayIntent
 surface_tint
 android:explode:screenBounds
 primary
-cycle_count
 LUMINOSITY
 java.lang.Throwable
 targetName
@@ -716,7 +714,6 @@ missingDelimiterValue
 controlX1
 android.backgroundImageUri
 listener
-full_charge_capacity
 android.intent.extra.CC
 NotificationManagerCompat
 BanParcelableUsage
@@ -1256,7 +1253,6 @@ android.activity.usage_time
 onTextChanged
 REUSABLE_CLAIMED
 android:visibility:visibility
-batterycapacity
 0x%08x
 BOTTOM_TO_TOP
 resources
@@ -1648,7 +1644,6 @@ androidx.core.content.pm.shortcut_lis...
 kotlin.Double
 AppCompatDelegate
 lifecycle
-voltage_now
 ContextCompat
 addGhost
 view
@@ -2388,7 +2383,6 @@ config_showMenuShortcutsWhenKeyboardP...
 android.provider.extra.INITIAL_URI
 CONSUMED
 android.remoteinput.dataTypeResultsData
-charge_counter
 baseline
 mCheckMarkDrawable
 ACTION_ARGUMENT_SELECTION_START_INT

@@ -94,7 +94,16 @@ const BatteryParsers = {
             technology: null,
             rawContent: null,
             confidence: 0,
-            healthGrade: null
+            healthGrade: null,
+            debugInfo: null
+        };
+
+        // 调试：记录文件大小和电池相关关键词的出现位置
+        const debugInfo = {
+            fileLength: content.length,
+            chargeCounterMatches: [],
+            cycleCountMatches: [],
+            batterySectionFound: false
         };
 
         // ========== 1. 解析 charge_counter (充电计数器，单位微安时 uAh) ==========
