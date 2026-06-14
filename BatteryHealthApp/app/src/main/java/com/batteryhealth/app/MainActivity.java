@@ -528,6 +528,128 @@ public class MainActivity extends AppCompatActivity {
      */
     public class WebAppInterface {
 
+        /**
+         * 使用 Native 库分析 Bugreport 文件
+         * @param filePath 临时文件路径
+         * @return JSON 格式的分析结果
+         */
+        @JavascriptInterface
+        public String analyzeBugreportNative(String filePath) {
+            Log.d(TAG, "=== analyzeBugreportNative called for: " + filePath + " ===");
+            
+            try {
+                // 初始化 Native 库
+                BatteryAnalyzer.init();
+                
+                if (!BatteryAnalyzer.isNativeAvailable()) {
+                    Log.w(TAG, "Native library not available");
+                    return "{\"error\": \"Native library not loaded\"}";
+                }
+                
+                // 使用 Native 分析
+                BatteryHealthResult healthResult = BatteryAnalyzer.analyzeFile(filePath);
+                
+                // 构建 JSON 结果
+                StringBuilder json = new StringBuilder();
+                json.append("{");
+                json.append("\"success\": true,");
+                json.append("\"healthPercentage\": ").append(healthResult.healthPercentage).append(",");
+                json.append("\"grade\": \"").append(healthResult.grade).append("\",");
+                json.append("\"gradeColor\": \"").append(healthResult.gradeColor).append("\",");
+                json.append("\"gradeDescription\": \"").append(healthResult.gradeDescription).append("\",");
+                json.append("\"diagnosisText\": \"").append(escapeJson(healthResult.diagnosisText)).append("\",");
+                json.append("\"confidence\": ").append(healthResult.confidence).append(",");
+                
+                // 建议列表
+                json.append("\"suggestions\": [");
+                if (healthResult.suggestions != null && !healthResult.suggestions.isEmpty()) {
+                    for (int i = 0; i < healthResult.suggestions.size(); i++) {
+                        if (i > 0) json.append(",");
+                        json.append("\"").append(escapeJson(healthResult.suggestions.get(i))).append("\"");
+                    }
+                }
+                json.append("],");
+                
+                // 因子数据
+                if (healthResult.factors != null) {
+                    json.append("\"factors\": {");
+                    json.append("\"capacityRetention\": ").append(healthResult.factors.capacityRetention).append(",");
+                    json.append("\"cycleDecay\": ").append(healthResult.factors.cycleDecay).append(",");
+                    json.append("\"resistanceGrowth\": ").append(healthResult.factors.resistanceGrowth).append(",");
+                    json.append("\"thermalAging\": ").append(healthResult.factors.thermalAging).append(",");
+                    json.append("\"chargingDamage\": ").append(healthResult.factors.chargingDamage).append(",");
+                    json.append("\"availableFactors\": ").append(healthResult.factors.availableFactors);
+                    json.append("},");
+                } else {
+                    json.append("\"factors\": null,");
+                }
+                
+                // 辅助数据
+                json.append("\"estimatedResistanceMohm\": ").append(healthResult.estimatedResistanceMohm).append(",");
+                json.append("\"remainingLifespanMonths\": ").append(healthResult.remainingLifespanMonths);
+                json.append("}");
+                
+                String result = json.toString();
+                Log.d(TAG, "Native analysis result: " + result);
+                return result;
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Native analysis failed", e);
+                return "{\"error\": \"" + escapeJson(e.getMessage()) + "\"}";
+            }
+        }
+        
+        /**
+         * 获取解析摘要
+         */
+        @JavascriptInterface
+        public String getParseSummaryNative(String filePath) {
+            Log.d(TAG, "getParseSummaryNative called for: " + filePath);
+            
+            try {
+                BatteryAnalyzer.init();
+                if (!BatteryAnalyzer.isNativeAvailable()) {
+                    return "Native库未加载";
+                }
+                
+                BatteryParseResult parseResult = BatteryAnalyzer.parseFile(filePath);
+                return BatteryAnalyzer.getParseSummary(parseResult);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Get summary failed", e);
+                return "解析失败: " + e.getMessage();
+            }
+        }
+        
+        /**
+         * 检查 Native 库是否可用
+         */
+        @JavascriptInterface
+        public boolean isNativeLibraryAvailable() {
+            BatteryAnalyzer.init();
+            return BatteryAnalyzer.isNativeAvailable();
+        }
+        
+        /**
+         * 获取 Native 库版本信息
+         */
+        @JavascriptInterface
+        public String getNativeLibraryVersion() {
+            return "1.3.0-native";
+        }
+        
+        /**
+         * JSON 字符串转义
+         */
+        private String escapeJson(String str) {
+            if (str == null) return "";
+            return str.replace("\\", "\\\\")
+                      .replace("\"", "\\\"")
+                      .replace("\n", "\\n")
+                      .replace("\r", "\\r")
+                      .replace("\t", "\\t");
+        }
+
         @JavascriptInterface
         public void openFilePicker() {
             Log.d(TAG, "=== JavaScript called openFilePicker ===");
