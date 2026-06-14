@@ -770,6 +770,12 @@ public class MainActivity extends AppCompatActivity {
         /**
          * 从ZIP输入流中提取电池相关的文本文件内容
          * 流式解析，避免加载整个ZIP到内存
+         *
+         * 关键策略（v1.4.0）：
+         * 单次扫描过程中：
+         * 1. 第一次遇到 bugreport-* 主文件时立即读取
+         * 2. 如果主文件不包含电池信息，扫描所有 dumpstate 文件
+         * 3. 限制单文件读取大小，避免 OOM
          */
         private String extractBatteryTextFromZip(InputStream inputStream, long fileSize,
                                                    ProgressCallback progressCallback,
@@ -777,78 +783,126 @@ public class MainActivity extends AppCompatActivity {
             try {
                 java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(inputStream);
                 java.util.zip.ZipEntry entry;
-                String bestContent = null;
                 long totalBytesRead = 0;
                 int lastProgress = startPercent;
 
+                // 第一遍：先找主 bugreport 文件
+                String mainFileName = null;
+                long mainFileMaxSize = 0;
                 while ((entry = zis.getNextEntry()) != null) {
                     String name = entry.getName().toLowerCase();
                     long entrySize = entry.getSize();
 
-                    // 更新进度
                     if (fileSize > 0) {
                         totalBytesRead += entry.getCompressedSize();
-                        int currentProgress = startPercent + (int) ((totalBytesRead * (endPercent - startPercent)) / fileSize);
+                        int currentProgress = startPercent + (int) ((totalBytesRead * (endPercent - startPercent)) / (fileSize * 2));
                         if (currentProgress > lastProgress) {
                             lastProgress = currentProgress;
                             progressCallback.onProgress(currentProgress, "正在扫描: " + entry.getName());
                         }
                     }
 
-                    // 跳过目录和过大的文件（>50MB的单个文件）
-                    if (entry.isDirectory() || entrySize > 50 * 1024 * 1024) {
-                        zis.closeEntry();
-                        continue;
-                    }
-
-                    // 优先查找 bugreport 或 dumpstate 相关的 txt 文件
-                    boolean isTargetFile = name.contains("bugreport") && name.endsWith(".txt");
-                    boolean isBatteryFile = name.contains("battery") && name.endsWith(".txt");
-                    boolean isDumpstateFile = name.contains("dumpstate") && name.endsWith(".txt");
-                    // 放宽限制：所有txt文件都尝试读取，但限制单个文件最大30MB
-                    boolean isGenericTxt = name.endsWith(".txt") && entrySize < 30 * 1024 * 1024;
-
-                    if (isTargetFile || isBatteryFile || isDumpstateFile || isGenericTxt) {
-                        // 读取txt文件内容
-                        String content = extractBatterySection(zis, entry.getName());
-                        if (content != null && content.length() > 0) {
-                            // 关键修复：bugreport 文件一律直接返回
-                            // 用户的bugreport文件名是 bugreport-...zip，其txt文件一定包含完整电池信息
-                            if (isTargetFile) {
-                                Log.d(TAG, "Bugreport file found, returning: " + entry.getName() + " size=" + content.length());
-                                zis.closeEntry();
-                                zis.close();
-                                return content;
-                            }
-
-                            // 其他txt文件需要包含电池字样
-                            String contentLower = content.toLowerCase();
-                            boolean hasBatteryInfo = contentLower.contains("battery") ||
-                                                     contentLower.contains("health") ||
-                                                     contentLower.contains("charge") ||
-                                                     contentLower.contains("power_supply") ||
-                                                     contentLower.contains("power supply") ||
-                                                     contentLower.contains("dumpsys") ||
-                                                     contentLower.contains("healthd");
-
-                            if (hasBatteryInfo) {
-                                Log.d(TAG, "Found battery info in: " + entry.getName() + " size=" + content.length());
-                                // 其他电池相关文件作为备选
-                                if (bestContent == null || content.length() > bestContent.length()) {
-                                    bestContent = content;
-                                }
+                    if (!entry.isDirectory() && name.endsWith(".txt")) {
+                        if ((name.contains("bugreport-") || name.contains("bugreport_"))) {
+                            if (entrySize > mainFileMaxSize) {
+                                mainFileMaxSize = entrySize;
+                                mainFileName = entry.getName();
                             }
                         }
                     }
-
                     zis.closeEntry();
                 }
-
                 zis.close();
-                return bestContent;
+                Log.d(TAG, "Main bugreport file: " + mainFileName + " size=" + mainFileMaxSize);
+
+                // 第二遍：优先读取主 bugreport 文件
+                if (mainFileName != null) {
+                    zis = new java.util.zip.ZipInputStream(inputStream);
+                    while ((entry = zis.getNextEntry()) != null) {
+                        if (entry.getName().equals(mainFileName)) {
+                            progressCallback.onProgress(85, "正在解析: " + entry.getName());
+                            String mainContent = readEntryContent(zis, 100 * 1024 * 1024);
+                            zis.close();
+                            if (mainContent != null && mainContent.length() > 0) {
+                                String contentLower = mainContent.toLowerCase();
+                                boolean hasBatteryInfo = contentLower.contains("battery") ||
+                                                         contentLower.contains("health") ||
+                                                         contentLower.contains("charge") ||
+                                                         contentLower.contains("power_supply") ||
+                                                         contentLower.contains("power supply") ||
+                                                         contentLower.contains("dumpsys") ||
+                                                         contentLower.contains("healthd") ||
+                                                         contentLower.contains("voltage") ||
+                                                         contentLower.contains("current") ||
+                                                         contentLower.contains("capacity");
+                                if (hasBatteryInfo) {
+                                    Log.d(TAG, "Main bugreport contains battery info, size=" + mainContent.length());
+                                    progressCallback.onProgress(95, "已找到电池信息");
+                                    return mainContent;
+                                } else {
+                                    Log.d(TAG, "Main bugreport doesn't contain battery info");
+                                }
+                            }
+                            break;
+                        }
+                        zis.closeEntry();
+                    }
+                    try { zis.close(); } catch (Exception e) {}
+                }
+
+                // 第三遍：扫描所有 dumpstate 文件
+                zis = new java.util.zip.ZipInputStream(inputStream);
+                StringBuilder combined = new StringBuilder();
+                int maxTotalSize = 50 * 1024 * 1024;
+                while ((entry = zis.getNextEntry()) != null) {
+                    if (combined.length() >= maxTotalSize) {
+                        zis.closeEntry();
+                        continue;
+                    }
+                    String name = entry.getName().toLowerCase();
+                    if (!entry.isDirectory() && name.contains("dumpstate") && name.endsWith(".txt")) {
+                        progressCallback.onProgress(90, "正在解析: " + entry.getName());
+                        String content = readEntryContent(zis, 30 * 1024 * 1024);
+                        if (content != null && content.length() > 0) {
+                            combined.append("\n\n===== FILE: ").append(entry.getName()).append(" =====\n");
+                            combined.append(content);
+                        }
+                    } else {
+                        zis.closeEntry();
+                    }
+                }
+                try { zis.close(); } catch (Exception e) {}
+
+                if (combined.length() > 0) {
+                    Log.d(TAG, "Combined dumpstate files, total size=" + combined.length());
+                    return combined.toString();
+                }
+
+                return null;
 
             } catch (Exception e) {
                 Log.e(TAG, "Failed to extract from ZIP", e);
+                return null;
+            }
+        }
+
+        /**
+         * 从已定位的 ZipInputStream 读取 entry 内容（流式，限制大小）
+         */
+        private String readEntryContent(java.util.zip.ZipInputStream zis, int maxSize) {
+            try {
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                int totalRead = 0;
+                while ((bytesRead = zis.read(buffer)) != -1 && totalRead < maxSize) {
+                    int toWrite = Math.min(bytesRead, maxSize - totalRead);
+                    baos.write(buffer, 0, toWrite);
+                    totalRead += toWrite;
+                }
+                return baos.toString("UTF-8");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read ZIP entry content", e);
                 return null;
             }
         }
@@ -871,43 +925,6 @@ public class MainActivity extends AppCompatActivity {
                 return android.util.Base64.encodeToString(buffer, android.util.Base64.NO_WRAP);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to read file to Base64", e);
-                return null;
-            }
-        }
-
-        /**
-         * 流式扫描ZIP条目，提取包含电池信息的关键段落
-         * 关键修复：只提取关键段落（如"POWER SUPPLY"或"battery"章节），
-         * 而不是加载整个文件，避免OOM同时确保解析器能找到数据
-         *
-         * @param zis ZipInputStream（已定位到目标entry）
-         * @param entryName 条目名称（用于日志）
-         * @return 提取的电池段落内容
-         */
-        private String extractBatterySection(java.util.zip.ZipInputStream zis, String entryName) {
-            try {
-                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                int totalRead = 0;
-                int maxSize = 30 * 1024 * 1024; // 最多读取30MB
-
-                // 读取整个txt文件内容（流式）
-                while ((bytesRead = zis.read(buffer)) != -1 && totalRead < maxSize) {
-                    int toWrite = Math.min(bytesRead, maxSize - totalRead);
-                    baos.write(buffer, 0, toWrite);
-                    totalRead += toWrite;
-                }
-
-                byte[] data = baos.toByteArray();
-                baos.close();
-                String content = new String(data, java.nio.charset.StandardCharsets.UTF_8);
-
-                // 关键策略：返回完整内容，让JS端解析器处理
-                // 这样能匹配所有可能的格式（charge_counter, dumpsys battery, sysfs等）
-                return content;
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to extract battery section", e);
                 return null;
             }
         }
