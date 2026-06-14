@@ -133,12 +133,8 @@ public class MainActivity extends AppCompatActivity {
      * 关键修复：使用SAF框架，Android 11+无需任何存储权限
      */
     private void initPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ - 使用SAF无需传统存储权限
-            // READ_MEDIA_VIDEO仅用于Android 14+的部分媒体访问兼容
-            permissions = new String[]{};
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11-12 - 使用SAF无需权限
+        if (Build.VERSION.SDK_INT >= 30) {  // Android 11 (R) 及以上
+            // Android 11+ - 使用SAF无需权限
             permissions = new String[]{};
         } else {
             // Android 10及以下 - 旧权限模型
