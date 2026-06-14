@@ -567,7 +567,61 @@ const BatteryHealthApp = {
             return;
         }
 
-        // 新版本：文件信息对象
+        // 新版本：Java端已解析ZIP，直接返回文本内容
+        if (fileInfo && fileInfo.content) {
+            console.log('Received pre-parsed content from Java, length:', fileInfo.content.length);
+            this.updateProgress(60, '正在解析电池信息...');
+
+            const content = fileInfo.content;
+            const initialCapacity = this._currentInitialCapacity;
+
+            try {
+                // 检测品牌
+                let detectedBrand = 'generic';
+                const contentLower = content.toLowerCase();
+
+                // 简单品牌检测
+                if (contentLower.includes('xiaomi') || contentLower.includes('miui')) {
+                    detectedBrand = 'xiaomi';
+                } else if (contentLower.includes('oppo') || contentLower.includes('coloros')) {
+                    detectedBrand = 'oppo';
+                } else if (contentLower.includes('vivo') || contentLower.includes('originos')) {
+                    detectedBrand = 'vivo';
+                } else if (contentLower.includes('samsung')) {
+                    detectedBrand = 'samsung';
+                } else if (contentLower.includes('huawei') || contentLower.includes('harmony')) {
+                    detectedBrand = 'huawei';
+                } else if (contentLower.includes('oneplus') || contentLower.includes('oxygen')) {
+                    detectedBrand = 'oneplus';
+                } else if (contentLower.includes('realme')) {
+                    detectedBrand = 'realme';
+                }
+
+                // 解析电池信息
+                const batteryInfo = BatteryParsers.parse(content, detectedBrand);
+
+                this.updateProgress(85, '正在计算健康度...');
+
+                if (batteryInfo && batteryInfo.currentCapacity) {
+                    batteryInfo.brand = detectedBrand;
+                    if (this._fileReadResolve) {
+                        this._fileReadResolve(batteryInfo);
+                    }
+                } else {
+                    if (this._fileReadReject) {
+                        this._fileReadReject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to parse battery info:', error);
+                if (this._fileReadReject) {
+                    this._fileReadReject(new Error('解析失败: ' + error.message));
+                }
+            }
+            return;
+        }
+
+        // 旧版本：文件信息对象（带url字段）- 保留兼容
         if (!fileInfo || !fileInfo.url) {
             if (this._fileReadReject) {
                 this._fileReadReject(new Error('文件信息无效'));
@@ -584,9 +638,6 @@ const BatteryHealthApp = {
 
         console.log('Fetching file from:', fileUrl, 'size:', fileSize);
 
-        // 关键修复：使用WebViewAssetLoader的https://地址
-        // 这个URL会被Android端shouldInterceptRequest拦截并返回本地文件
-        // 绕过了file://无法通过fetch访问的限制
         fetch(fileUrl, {
             method: 'GET',
             cache: 'no-store',
@@ -602,7 +653,6 @@ const BatteryHealthApp = {
                 console.log('File loaded, size:', blob.size);
                 this.updateProgress(60, '正在解压文件...');
 
-                // 清理临时文件（解析完成后）
                 if (window.AndroidFilePicker && filePath) {
                     try {
                         window.AndroidFilePicker.deleteTempFile(filePath);
@@ -611,13 +661,11 @@ const BatteryHealthApp = {
                     }
                 }
 
-                // 解析ZIP
                 return this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
             })
             .catch(error => {
                 console.error('Failed to load file:', error);
                 console.error('URL was:', fileUrl);
-                // 清理临时文件
                 if (window.AndroidFilePicker && filePath) {
                     try {
                         window.AndroidFilePicker.deleteTempFile(filePath);
