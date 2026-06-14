@@ -759,23 +759,32 @@ public class MainActivity extends AppCompatActivity {
                     final String fileUrl = "https://appassets.androidplatform.net/bha/" + encodedName;
 
                     Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
-                    Log.d(TAG, "AssetLoader URL: " + fileUrl);
 
-                    // 回调JS，传递file:// URL和文件信息（对象形式，避免大字符串）
+                    // 关键修复：直接读取文件内容为Base64传给JS，完全绕过WebViewAssetLoader+fetch
+                    // 避免fetch失败、URL编码、路径匹配等各种问题
+                    final String base64Content = readFileToBase64(tempFile);
+                    if (base64Content == null) {
+                        throw new Exception("无法读取临时文件内容");
+                    }
+                    Log.d(TAG, "File read to Base64, length: " + base64Content.length());
+
+                    // 回调JS，传递Base64内容（字符串形式，兼容旧版_processBase64Content）
                     runOnUiThread(() -> {
                         String jsCode = String.format(
                             "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s({url: '%s', size: %d, name: '%s', path: '%s'});" +
+                            "  window.BatteryHealthApp.%s('%s');" +
                             "}",
                             callbackJs, callbackJs,
-                            fileUrl.replace("'", "\\'"),
-                            finalSize,
-                            safeName.replace("'", "\\'"),
-                            finalPath.replace("'", "\\'")
+                            base64Content.replace("'", "\\'")
                         );
                         webView.evaluateJavascript(jsCode, null);
-                        Log.d(TAG, "Callback executed: " + callbackJs);
+                        Log.d(TAG, "Callback executed with Base64: " + callbackJs);
                     });
+
+                    // 清理临时文件
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
 
                 } catch (OutOfMemoryError oom) {
                     Log.e(TAG, "Out of memory while copying file", oom);
@@ -805,6 +814,28 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
             }).start();
+        }
+
+        /**
+         * 将文件读取为Base64字符串
+         * 用于直接传给JS，绕过WebViewAssetLoader
+         */
+        private String readFileToBase64(java.io.File file) {
+            try {
+                java.io.FileInputStream fis = new java.io.FileInputStream(file);
+                byte[] buffer = new byte[(int) file.length()];
+                int totalRead = 0;
+                int bytesRead;
+                while (totalRead < buffer.length &&
+                       (bytesRead = fis.read(buffer, totalRead, buffer.length - totalRead)) != -1) {
+                    totalRead += bytesRead;
+                }
+                fis.close();
+                return android.util.Base64.encodeToString(buffer, android.util.Base64.NO_WRAP);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read file to Base64", e);
+                return null;
+            }
         }
 
         /**
