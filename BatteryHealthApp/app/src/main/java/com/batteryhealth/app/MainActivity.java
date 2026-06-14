@@ -733,7 +733,9 @@ public class MainActivity extends AppCompatActivity {
                     final long finalSize = totalRead;
                     final String finalPath = tempFile.getAbsolutePath();
                     // 关键：使用WebViewAssetLoader的https://地址绕过file://访问限制
-                    final String fileUrl = "https://appassets.androidplatform.net/bha/" + tempFile.getName();
+                    // URL编码文件名：防止空格等特殊字符导致fetch失败
+                    final String encodedName = Uri.encode(tempFile.getName());
+                    final String fileUrl = "https://appassets.androidplatform.net/bha/" + encodedName;
 
                     Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
                     Log.d(TAG, "AssetLoader URL: " + fileUrl);
