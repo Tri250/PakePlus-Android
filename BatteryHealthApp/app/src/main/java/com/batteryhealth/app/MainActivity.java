@@ -690,7 +690,8 @@ public class MainActivity extends AppCompatActivity {
                     
                     if (parseResult == null || !parseResult.hasData) {
                         Log.w(TAG, "Native parse returned no data");
-                        callbackError(callbackJs, "未找到电池信息，请确认上传的是正确的诊断文件");
+                        String diagInfo = parseResult != null ? parseResult.parseLog : "null result";
+                        callbackError(callbackJs, "未找到电池信息，请确认上传的是正确的诊断文件 [" + diagInfo + "]");
                         return;
                     }
                     

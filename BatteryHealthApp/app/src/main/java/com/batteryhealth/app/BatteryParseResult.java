@@ -27,6 +27,7 @@ public class BatteryParseResult {
 
     // 状态
     public boolean hasData;            // 是否有有效数据
+    public String parseLog;            // 解析日志（诊断信息）
 
     // 默认构造函数
     public BatteryParseResult() {
