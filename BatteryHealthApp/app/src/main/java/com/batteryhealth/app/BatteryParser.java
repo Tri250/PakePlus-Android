@@ -29,8 +29,8 @@ public class BatteryParser {
 
     private static final String TAG = "BatteryParser";
 
-    /** 单个 entry 最大读取字节数：10MB（电池段通常在前 5MB） */
-    private static final long MAX_ENTRY_SIZE = 10L * 1024L * 1024L;
+    /** 单个 entry 最大读取字节数：50MB（部分 bugreport 主体可能很大） */
+    private static final long MAX_ENTRY_SIZE = 50L * 1024L * 1024L;
 
     /** 结果数据 */
     public static class BatteryInfo {
@@ -113,6 +113,7 @@ public class BatteryParser {
 
                     // 过滤：太大的文件跳过
                     if (size > MAX_ENTRY_SIZE && size > 0) {
+                        Log.d(TAG, "Skip large file: " + name + " (" + size + " bytes)");
                         continue;
                     }
 
@@ -140,6 +141,11 @@ public class BatteryParser {
 
                         if (bestInfo == null || info.confidence > bestInfo.confidence) {
                             bestInfo = info;
+                            Log.d(TAG, "Found battery info in " + name
+                                + " (confidence=" + String.format("%.2f", info.confidence)
+                                + ", cap=" + info.currentCapacity
+                                + ", cyc=" + info.cycleCount
+                                + ", temp=" + info.batteryTemp + ")");
                         }
                     }
 
@@ -149,7 +155,7 @@ public class BatteryParser {
                     }
 
                     // 早退：高置信度匹配后立即停止
-                    if (bestInfo != null && bestInfo.confidence >= 0.8
+                    if (bestInfo != null && bestInfo.confidence >= 0.7
                             && bestInfo.cycleCount > 0 && bestInfo.hasCapacity()) {
                         break;
                     }
@@ -162,6 +168,9 @@ public class BatteryParser {
             Log.e(TAG, "processZipStream error", e);
         }
 
+        if (bestInfo == null) {
+            Log.w(TAG, "No battery info found after scanning " + scanned + " entries");
+        }
         return bestInfo;
     }
 
@@ -171,44 +180,63 @@ public class BatteryParser {
         if (name == null) return false;
         String low = name.toLowerCase();
 
-        // 跳过二进制文件
+        // 跳过明显的二进制文件
         if (low.endsWith(".bin") || low.endsWith(".png") || low.endsWith(".jpg")
+                || low.endsWith(".jpeg") || low.endsWith(".gif") || low.endsWith(".webp")
                 || low.endsWith(".so") || low.endsWith(".dex") || low.endsWith(".apk")
                 || low.endsWith(".jar") || low.endsWith(".oat") || low.endsWith(".vdex")
                 || low.endsWith(".zip") || low.endsWith(".dat") || low.endsWith(".db")
-                || low.endsWith(".proto") || low.endsWith(".prof") || low.endsWith(".profm")) {
-            return false;
-        }
-
-        // 跳过 FS 目录下的文件（通常不包含电池数据，且数量巨大拖慢速度）
-        if (low.contains("/fs/") || low.startsWith("fs/")) {
-            return false;
-        }
-
-        // 跳过明显的非电池文件
-        if (low.contains("/proc/") || low.contains("/dev/") || low.contains("anr/")
-                || low.contains("tombstone") || low.contains("kernel_log")
-                || low.contains("system_log") || low.contains("event_log")) {
+                || low.endsWith(".proto") || low.endsWith(".prof") || low.endsWith(".profm")
+                || low.endsWith(".mp4") || low.endsWith(".mp3") || low.endsWith(".wav")
+                || low.endsWith(".pdf") || low.endsWith(".ttf") || low.endsWith(".otf")
+                || low.endsWith(".ogg") || low.endsWith(".flac") || low.endsWith(".mid")) {
             return false;
         }
 
         // dumpstate 主体（必含电池段）
-        if (low.contains("dumpstate") && (low.endsWith(".txt") || low.endsWith(".log") || !low.contains("."))) {
+        if (low.contains("dumpstate")) {
             return true;
         }
 
         // bugreport 主体
-        if (low.contains("bugreport") && (low.endsWith(".txt") || low.endsWith(".log"))) {
+        if (low.contains("bugreport")) {
             return true;
         }
 
         // 电池相关文件名
-        if (low.contains("battery") || low.contains("power_supply")) {
+        if (low.contains("battery") || low.contains("power_supply")
+                || low.contains("healthd") || low.contains("health")
+                || low.contains("batteryservice") || low.contains("batterystats")) {
             return true;
         }
 
-        // 其他 txt/log 文件（兜底，但只处理较小的）
-        if ((low.endsWith(".txt") || low.endsWith(".log")) && !low.contains("/")) {
+        // battery-history 或 dumpsys
+        if (low.contains("history") || low.contains("dumpsys")) {
+            return true;
+        }
+
+        // FS/ 目录下的电池属性文件
+        if (low.contains("/fs/") || low.startsWith("fs/")) {
+            // 只处理电池相关的子文件
+            return low.contains("battery") || low.contains("power_supply")
+                    || low.contains("health") || low.contains("charge");
+        }
+
+        // txt/log 文件（兜底，但限制大小）
+        if (low.endsWith(".txt") || low.endsWith(".log") || low.endsWith(".out")
+                || low.endsWith(".info") || low.endsWith(".trace")) {
+            // 只处理前 3 层目录内的（避免过深的系统日志）
+            int slashCount = 0;
+            for (int i = 0; i < low.length(); i++) {
+                if (low.charAt(i) == '/') slashCount++;
+            }
+            if (slashCount <= 3) {
+                return true;
+            }
+        }
+
+        // 顶层没有扩展名的文件（如 bugreport zip 顶层可能有 main.txt, header.txt）
+        if (!low.contains("/") && !low.contains(".")) {
             return true;
         }
 
@@ -305,8 +333,14 @@ public class BatteryParser {
         // ==== 第3步：映射到 BatteryInfo ====
         mapToBatteryInfo(r, kvMap, content, brand);
 
-        // ==== 至少要有容量或循环次数 ====
-        if (!r.hasCapacity() && r.cycleCount == 0) {
+        // ==== 第4步：低置信度兜底 — 即使没找到段落，也尝试提取 ====
+        if (!r.hasCapacity() && r.cycleCount == 0 && r.batteryTemp == 0) {
+            // 直接用全文搜电池相关数字
+            fallbackExtractFromText(r, content);
+        }
+
+        // ==== 至少要有容量、循环次数或温度中的一项 ====
+        if (!r.hasCapacity() && r.cycleCount == 0 && r.batteryTemp == 0) {
             return null;
         }
         return r;
@@ -1057,5 +1091,141 @@ public class BatteryParser {
             return content.substring(start, end);
         }
         return content.length() > 1500 ? content.substring(0, 1500) : content;
+    }
+
+    // ============= 兜底提取 =============
+
+    /**
+     * 当 key-value 解析失败时，最后一次兜底扫描
+     * 用最宽松的正则从全文中提取任何可能的电池数据
+     */
+    private static void fallbackExtractFromText(BatteryInfo r, String content) {
+        if (content == null || content.isEmpty()) return;
+
+        String lowContent = content.toLowerCase();
+
+        // ==== 容量兜底 ====
+        if (r.currentCapacity == 0) {
+            // 查找任何 charge_counter 数字（uAh → mAh）
+            int ccIdx = lowContent.indexOf("charge_counter");
+            if (ccIdx >= 0) {
+                int colonIdx = content.indexOf(':', ccIdx);
+                if (colonIdx < 0) colonIdx = content.indexOf('=', ccIdx);
+                if (colonIdx >= 0) {
+                    int endIdx = Math.min(content.length(), colonIdx + 30);
+                    String numStr = content.substring(colonIdx + 1, endIdx).replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        long val = Long.parseLong(numStr);
+                        int mah = convertToMah(val);
+                        if (mah > 500 && mah < 30000) {
+                            r.currentCapacity = mah;
+                            r.chargeCounter = (int) val;
+                            r.confidence = Math.max(r.confidence, 0.65);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==== 循环次数兜底 ====
+        if (r.cycleCount == 0) {
+            // 查找 cycle_count / cycle count
+            int cycIdx = -1;
+            String[] cycKeywords = {"cycle_count", "cycle count", "充电循环次数", "循环次数"};
+            for (String kw : cycKeywords) {
+                cycIdx = lowContent.indexOf(kw.toLowerCase());
+                if (cycIdx >= 0) break;
+            }
+            if (cycIdx >= 0) {
+                int colonIdx = content.indexOf(':', cycIdx);
+                if (colonIdx < 0) colonIdx = content.indexOf('=', cycIdx);
+                if (colonIdx >= 0) {
+                    int endIdx = Math.min(content.length(), colonIdx + 20);
+                    String numStr = content.substring(colonIdx + 1, endIdx).replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        int val = Integer.parseInt(numStr);
+                        if (val > 0 && val < 100000) {
+                            r.cycleCount = val;
+                            r.confidence = Math.max(r.confidence, 0.65);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==== 温度兜底 ====
+        if (r.batteryTemp == 0) {
+            int tempIdx = -1;
+            String[] tempKeywords = {"temperature", "battery_temp", "电池温度"};
+            for (String kw : tempKeywords) {
+                tempIdx = lowContent.indexOf(kw.toLowerCase());
+                if (tempIdx >= 0) break;
+            }
+            if (tempIdx >= 0) {
+                int colonIdx = content.indexOf(':', tempIdx);
+                if (colonIdx < 0) colonIdx = content.indexOf('=', tempIdx);
+                if (colonIdx >= 0) {
+                    int endIdx = Math.min(content.length(), colonIdx + 15);
+                    String numStr = content.substring(colonIdx + 1, endIdx).replaceAll("[^0-9.]", "");
+                    if (!numStr.isEmpty()) {
+                        try {
+                            double val = Double.parseDouble(numStr);
+                            int intVal = (int) Math.round(val);
+                            if (intVal > 800 && intVal < 5000) r.batteryTemp = intVal / 100.0;
+                            else if (intVal > 100 && intVal <= 800) r.batteryTemp = intVal / 10.0;
+                            else if (val >= -30 && val <= 80) r.batteryTemp = val;
+                            if (r.batteryTemp >= -20 && r.batteryTemp <= 80) {
+                                r.confidence = Math.max(r.confidence, 0.5);
+                            } else {
+                                r.batteryTemp = 0;
+                            }
+                        } catch (NumberFormatException ignore) {}
+                    }
+                }
+            }
+        }
+
+        // ==== 电压兜底 ====
+        if (r.voltage == 0) {
+            int voltIdx = lowContent.indexOf("voltage");
+            if (voltIdx >= 0) {
+                int colonIdx = content.indexOf(':', voltIdx);
+                if (colonIdx < 0) colonIdx = content.indexOf('=', voltIdx);
+                if (colonIdx >= 0) {
+                    int endIdx = Math.min(content.length(), colonIdx + 15);
+                    String numStr = content.substring(colonIdx + 1, endIdx).replaceAll("[^0-9.]", "");
+                    if (!numStr.isEmpty()) {
+                        try {
+                            double val = Double.parseDouble(numStr);
+                            if (val > 10000) val = val / 1000.0;
+                            else if (val >= 3 && val <= 5) val = val * 1000.0;
+                            if (val >= 2500 && val <= 5000) {
+                                r.voltage = (int) val;
+                                r.confidence = Math.max(r.confidence, 0.4);
+                            }
+                        } catch (NumberFormatException ignore) {}
+                    }
+                }
+            }
+        }
+
+        // ==== 设计容量兜底 ====
+        if (r.designCapacity == 0) {
+            int dcIdx = lowContent.indexOf("design_capacity");
+            if (dcIdx >= 0) {
+                int colonIdx = content.indexOf(':', dcIdx);
+                if (colonIdx < 0) colonIdx = content.indexOf('=', dcIdx);
+                if (colonIdx >= 0) {
+                    int endIdx = Math.min(content.length(), colonIdx + 20);
+                    String numStr = content.substring(colonIdx + 1, endIdx).replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        int val = Integer.parseInt(numStr);
+                        if (val >= 500 && val <= 30000) {
+                            r.designCapacity = val;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
