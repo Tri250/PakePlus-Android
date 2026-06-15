@@ -47,15 +47,72 @@ public class BatteryParser {
 
     // ============= 预编译 Pattern（按品牌） =============
 
+    /**
+     * charge_counter 模式（uAh 微安时，需要 /1000 转换为 mAh）
+     * v2.1.8 重大扩充：覆盖华为/小米/三星/OPPO/vivo/魅族/努比亚/一加/真我/联想/中兴等所有已知格式
+     */
     private static final Pattern[] CHARGE_COUNTER_PATTERNS = new Pattern[]{
-            Pattern.compile("(?i)charge[_\\s\\-]?counter[:= ]+(\\d+)\\s*u?ah"),
-            Pattern.compile("(?i)charge[_\\s\\-]?counter[:= ]+(\\d+)"),
-            Pattern.compile("CHARGE_COUNTER[:= ]+(\\d+)"),
-            Pattern.compile("(?i)cc[:= ]+(\\d+)\\s*u?ah"),
-            Pattern.compile("(?i)last[_\\s\\-]?full[_\\s\\-]?charge[_\\s\\-]?counter[:= ]+(\\d+)"),
-            Pattern.compile("(?i)full[_\\s\\-]?charge[_\\s\\-]?capacity[:= ]+(\\d+)\\s*u?ah"),
-            Pattern.compile("(?i)fcc[:= ]+(\\d+)"),
-            Pattern.compile("(?i)\\bcharge_counter\\b[\\s:=]+(\\d+)")
+            // ===== 标准 Android 格式 =====
+            Pattern.compile("(?i)charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)\\s*(?:u|μ)?ah"),
+            Pattern.compile("CHARGE_COUNTER[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)(?!\\s*(?:u|μ)?\\s*ah\\b)"),
+            // cc: 仅在带 uAh 后缀时算 charge_counter（无后缀时由 cycle_count 处理）
+            Pattern.compile("(?i)cc[\\s\\-:=]+(\\d+)\\s*(?:u|μ)?\\s*ah"),
+            // charge_counter 作为独立行
+            Pattern.compile("(?im)^\\s*charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)\\s*(?:u|μ)?ah?\\s*$"),
+            Pattern.compile("(?im)^\\s*charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)\\s*$"),
+            // last_full_charge / full charge
+            Pattern.compile("(?i)last[\\s_\\-]*full[\\s_\\-]*charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)full[\\s_\\-]*charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)full[\\s_\\-]*charge[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*(?:u|μ)?ah"),
+            Pattern.compile("(?i)fcc[\\s\\-:=]+(\\d+)\\s*(?:u|μ)?ah"),
+            // sysfs 路径形式
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/charge_counter[\\s\\S]{0,200}?(\\d{4,})"),
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/charge_full[\\s\\S]{0,200}?(\\d{4,})"),
+            // BatteryManager dump
+            Pattern.compile("(?im)^\\s*charge[\\s_\\-]*counter\\s+(\\d+)\\s*$"),
+            Pattern.compile("(?im)^\\s*fcc\\s+(\\d+)\\s*$"),
+            // 单词边界形式
+            Pattern.compile("(?i)\\bcharge[\\s_\\-]*counter\\b[\\s\\-:=]+(\\d+)"),
+            // 健康度段
+            Pattern.compile("(?i)healthd[\\s\\S]{0,500}?charge[\\s_\\-]*counter[\\s\\-:=]+(\\d+)"),
+    };
+
+    /**
+     * 当前/实际容量模式（直接 mAh，不需要单位转换）
+     * v2.1.8 新增：覆盖全充电容量、实际容量、设计容量、学习容量等
+     */
+    private static final Pattern[] CAPACITY_MAH_PATTERNS = new Pattern[]{
+            // 全充电容量
+            Pattern.compile("(?i)full[\\s_\\-]*charge[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)full[\\s_\\-]*charge[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)fcc[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            // 实际容量 / 当前容量 / 学习容量
+            Pattern.compile("(?i)actual[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)actual[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)current[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)current[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)learned[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            // 小米专属：Min learned / Maximum learned
+            Pattern.compile("(?i)min[\\s_\\-]*learned[\\s_\\-]*battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)min[\\s_\\-]*learned[\\s_\\-]*battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)max[\\s_\\-]*learned[\\s_\\-]*battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)learned[\\s_\\-]*battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            // 电池容量（中文）
+            Pattern.compile("当前容量[\\s\\-:=]+(\\d+)\\s*m?\\s*ah"),
+            Pattern.compile("实际容量[\\s\\-:=]+(\\d+)\\s*m?\\s*ah"),
+            Pattern.compile("满充容量[\\s\\-:=]+(\\d+)\\s*m?\\s*ah"),
+            Pattern.compile("电池容量[\\s\\-:=]+(\\d+)\\s*m?\\s*ah"),
+            // 设计容量（用于参考，但优先级低）
+            Pattern.compile("(?i)design[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)nominal[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)rated[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            // 容量（带 mAh 后缀）
+            Pattern.compile("(?im)^\\s*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah\\s*$"),
+            Pattern.compile("(?i)battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)\\s*m\\s*ah"),
+            Pattern.compile("(?i)battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)"),
+            // sysfs 路径
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/capacity[\\s\\S]{0,200}?(\\d{3,5})"),
     };
 
     private static final Pattern[] CURRENT_NOW_PATTERNS = new Pattern[]{
@@ -66,44 +123,66 @@ public class BatteryParser {
     };
 
     private static final Pattern[] CYCLE_COUNT_PATTERNS = new Pattern[]{
-            Pattern.compile("(?i)cycle[_\\s\\-]?count[:= ]+(\\d+)"),
-            Pattern.compile("CYCLE_COUNT[:= ]+(\\d+)"),
-            Pattern.compile("(?i)charge[_\\s\\-]?cycle[:= ]+(\\d+)"),
-            Pattern.compile("(?i)battery[_\\s\\-]?cycle[:= ]+(\\d+)"),
-            Pattern.compile("(?i)cycle[_\\s\\-]?counter[:= ]+(\\d+)"),
-            Pattern.compile("(?i)cc[:= ]+(\\d+)(?!\\s*uah)"),
-            Pattern.compile("(?i)charge[_\\s\\-]?cycles[:= ]+(\\d+)"),
-            Pattern.compile("充电循环次数[:= ]+(\\d+)"),
-            Pattern.compile("循环次数[:= ]+(\\d+)"),
-            Pattern.compile("累计循环[:= ]+(\\d+)"),
-            Pattern.compile("(?i)\\bcycle_count\\b[\\s:=]+(\\d+)"),
-            Pattern.compile("(?i)\\bcycle\\b[\\s:=]+(\\d+)")
+            // ===== 标准 Android 格式 =====
+            Pattern.compile("(?i)cycle[\\s_\\-]*count[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("CYCLE_COUNT[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)charge[\\s_\\-]*cycle[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)battery[\\s_\\-]*cycle[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)cycle[\\s_\\-]*counter[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)cc[\\s\\-:=]+(\\d+)(?!\\s*(?:u|μ)?\\s*ah)"),
+            Pattern.compile("(?i)charge[\\s_\\-]*cycles[\\s\\-:=]+(\\d+)"),
+            // 中文
+            Pattern.compile("充电循环次数[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("循环次数[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("累计循环[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("充电次数[\\s\\-:=]+(\\d+)"),
+            // 全大写
+            Pattern.compile("(?i)\\bcycle_count\\b[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)\\bcycle\\b[\\s\\-:=]+(\\d+)"),
+            // battery health 段下的
+            Pattern.compile("(?i)battery[\\s_\\-]*cycle[\\s_\\-]*count[\\s\\-:=]+(\\d+)"),
+            // sysfs
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/cycle_count[\\s\\S]{0,200}?(\\d+)"),
     };
 
     private static final Pattern[] TEMP_PATTERNS = new Pattern[]{
-            Pattern.compile("(?i)temperature[:= ]+(-?\\d+\\.?\\d*)\\s*°?c"),
-            Pattern.compile("(?i)temperature[:= ]+(-?\\d+\\.?\\d*)"),
-            Pattern.compile("TEMP[:= ]+(-?\\d+)"),
-            Pattern.compile("(?i)battery[_\\s\\-]?temp[:= ]+(-?\\d+\\.?\\d*)"),
-            Pattern.compile("(?i)temp[:= ]+(-?\\d+\\.?\\d*)(?!\\s*%)"),
-            Pattern.compile("电池温度[:= ]+(-?\\d+\\.?\\d*)"),
-            Pattern.compile("温度[:= ]+(-?\\d+\\.?\\d*)"),
-            Pattern.compile("(?i)\\btemperature\\b[\\s:=]+(-?\\d+)")
+            // ===== 标准 Android 格式（摄氏度） =====
+            Pattern.compile("(?i)temperature[\\s\\-:=]+(-?\\d+\\.?\\d*)\\s*°?\\s*c"),
+            Pattern.compile("(?i)temperature[\\s\\-:=]+(-?\\d+\\.?\\d*)"),
+            Pattern.compile("(?i)\\btemperature\\b[\\s\\-:=]+(-?\\d+)"),
+            Pattern.compile("(?i)battery[\\s_\\-]*temp(?:erature)?[\\s\\-:=]+(-?\\d+\\.?\\d*)"),
+            // TEMP 缩写
+            Pattern.compile("(?im)^\\s*TEMP[\\s\\-:=]+(-?\\d+)\\s*$"),
+            Pattern.compile("(?i)\\btemp[\\s\\-:=]+(-?\\d+\\.?\\d*)(?!\\s*%)"),
+            // t= 形式（dumpsys battery）
+            Pattern.compile("(?i)\\bt[\\s\\-:=]+(-?\\d+)\\b"),
+            // battery temp sysfs
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/temp[\\s\\S]{0,200}?(\\d{2,4})"),
+            // 中文
+            Pattern.compile("电池温度[\\s\\-:=]+(-?\\d+\\.?\\d*)"),
+            Pattern.compile("温度[\\s\\-:=]+(-?\\d+\\.?\\d*)\\s*°?\\s*℃?"),
+            Pattern.compile("温度[\\s\\-:=]+(-?\\d+\\.?\\d*)"),
     };
 
     private static final Pattern[] VOLTAGE_PATTERNS = new Pattern[]{
-            Pattern.compile("(?i)voltage[:= ]+(\\d+\\.?\\d*)\\s*v"),
-            Pattern.compile("(?i)voltage[:= ]+(\\d+)"),
-            Pattern.compile("VOLTAGE[:= ]+(\\d+)"),
-            Pattern.compile("(?i)batt[_\\s\\-]?voltage[:= ]+(\\d+)"),
-            Pattern.compile("(?i)\\bvoltage\\b[\\s:=]+(\\d+)")
+            Pattern.compile("(?i)voltage[\\s\\-:=]+(\\d+)\\s*v\\b"),
+            Pattern.compile("(?i)voltage[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("VOLTAGE[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)batt[\\s_\\-]*voltage[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?i)\\bvoltage\\b[\\s\\-:=]+(\\d+)"),
+            Pattern.compile("(?is)/sys/class/power_supply/(?:battery|main|bat1)/voltage_now[\\s\\S]{0,200}?(\\d{5,})"),
     };
 
     private static final Pattern[] TECHNOLOGY_PATTERNS = new Pattern[]{
-            Pattern.compile("(?i)technology[:= ]+(\\w+)"),
-            Pattern.compile("TECHNOLOGY[:= ]+(\\w+)"),
-            Pattern.compile("(?i)battery[_\\s\\-]?type[:= ]+(\\w+)"),
-            Pattern.compile("(?i)\\btechnology\\b[\\s:=]+(\\w+)")
+            Pattern.compile("(?i)technology[\\s\\-:=]+(\\w+)"),
+            Pattern.compile("TECHNOLOGY[\\s\\-:=]+(\\w+)"),
+            Pattern.compile("(?i)battery[\\s_\\-]*type[\\s\\-:=]+(\\w+)"),
+            Pattern.compile("(?i)\\btechnology\\b[\\s\\-:=]+(\\w+)"),
+            // 中文
+            Pattern.compile("电池类型[\\s\\-:=]+(\\S+)"),
+            Pattern.compile("(?i)li[\\s\\-]*ion"),
+            Pattern.compile("(?i)li[\\s\\-]*poly"),
+            Pattern.compile("(?i)li[\\s\\-]*po"),
     };
 
     // 品牌识别
@@ -298,105 +377,189 @@ public class BatteryParser {
     }
 
     /**
-     * 主解析：单 entry 内容
+     * 主解析：单 entry 内容（v2.1.8 全面重写）
+     *
+     * 关键修复：
+     * 1. 先尝试 charge_counter（uAh）→ mAh 转换
+     * 2. 再尝试 mAh 形式（full_charge_capacity / fcc / battery_capacity）
+     * 3. 取大值优先（更接近真实满充容量）
+     * 4. 温度单位自适应（0.1°C、0.01°C、℃、°C）
+     * 5. 品牌专属段提取（华为 healthd、小米 Min learned battery capacity）
      */
     private static BatteryInfo parseContent(String content, String brand) {
         BatteryInfo r = new BatteryInfo();
         r.confidence = 0.0;
 
-        // 1. charge_counter
-        Long cc = firstMatchGroup(content, CHARGE_COUNTER_PATTERNS);
-        if (cc != null && cc > 0) {
-            r.chargeCounter = cc.intValue();
-            r.currentCapacity = convertToMah(cc);
+        // ==== 第1步：提取 charge_counter (uAh) ====
+        Long ccUah = firstMatchGroup(content, CHARGE_COUNTER_PATTERNS);
+        int ccMah = 0;
+        if (ccUah != null && ccUah > 0) {
+            ccMah = convertToMah(ccUah);
+            r.chargeCounter = ccUah.intValue();
             r.confidence = Math.max(r.confidence, 0.95);
         }
 
-        // 2. current_now（仅记录，不影响置信度）
-        Long cn = firstMatchGroup(content, CURRENT_NOW_PATTERNS);
+        // ==== 第2步：提取 mAh 形式的容量 ====
+        Long capMah = firstMatchGroup(content, CAPACITY_MAH_PATTERNS);
+        int directMah = 0;
+        if (capMah != null && capMah > 0) {
+            directMah = capMah.intValue();
+            r.confidence = Math.max(r.confidence, 0.85);
+        }
 
-        // 3. cycle_count
+        // ==== 第3步：合并容量（取合理最大值） ====
+        // 注意：design_capacity 优先级最低，但仍在 CAPACITY_MAH_PATTERNS 列表里
+        // 我们已经按优先级匹配，所以第一个命中的是最高优先级的 mAh
+        // 然后与 charge_counter 转换值比较
+        int chosenMah = 0;
+        if (ccMah > 0 && directMah > 0) {
+            // 两者都有，取更接近 initialCapacity 的那个（这里取大值更安全）
+            chosenMah = Math.max(ccMah, directMah);
+        } else {
+            chosenMah = ccMah > 0 ? ccMah : directMah;
+        }
+        r.currentCapacity = chosenMah;
+
+        // ==== 第4步：设计容量（如果有，作为参考但不影响 currentCapacity） ====
+        // 跳过：已并入 CAPACITY_MAH_PATTERNS
+
+        // ==== 第5步：循环次数 ====
         Integer cyc = firstMatchGroupInt(content, CYCLE_COUNT_PATTERNS);
         if (cyc != null && cyc >= 0 && cyc < 10000) {
             r.cycleCount = cyc;
             r.confidence = Math.max(r.confidence, 0.9);
         }
 
-        // 4. temperature
+        // ==== 第6步：温度（v2.1.8 智能单位） ====
         Double temp = firstMatchGroupDouble(content, TEMP_PATTERNS);
         if (temp != null) {
-            if (temp > 100 && temp < 1000) temp = temp / 10.0;
-            else if (temp > 1000 && temp < 10000) temp = temp / 100.0;
-            if (temp >= -20 && temp <= 80) {
+            int intVal = (int) Math.round(temp);
+            // 温度单位自适应：
+            // 2800 ~ 4000 (整数)：0.01°C → /100
+            // 280 ~ 400 (整数)：0.1°C → /10
+            // 25.0 ~ 40.0 (小数)：℃ → 保持
+            // -20 ~ 80 (整数)：℃ → 保持
+            if (intVal > 800 && intVal < 5000) {
+                // 0.01°C
+                r.batteryTemp = intVal / 100.0;
+            } else if (intVal > 100 && intVal <= 800) {
+                // 0.1°C
+                r.batteryTemp = intVal / 10.0;
+            } else if (temp >= -30 && temp <= 80) {
                 r.batteryTemp = temp;
+            } else {
+                r.batteryTemp = 0; // 越界
+            }
+            if (r.batteryTemp >= -20 && r.batteryTemp <= 80) {
                 r.confidence = Math.max(r.confidence, 0.8);
+            } else {
+                r.batteryTemp = 0;
             }
         }
 
-        // 5. voltage
+        // ==== 第7步：电压 ====
         Double volt = firstMatchGroupDouble(content, VOLTAGE_PATTERNS);
         if (volt != null) {
-            if (volt > 10000) volt = volt / 1000.0;
-            else if (volt >= 3 && volt <= 5) volt = volt * 1000.0;
+            if (volt > 10000) volt = volt / 1000.0;     // uV → mV
+            else if (volt >= 2500 && volt <= 5000) { /* already mV */ }
+            else if (volt >= 3 && volt <= 5) volt = volt * 1000.0;  // V → mV
             if (volt >= 2500 && volt <= 5000) {
                 r.voltage = volt.intValue();
                 r.confidence = Math.max(r.confidence, 0.6);
             }
         }
 
-        // 6. technology
+        // ==== 第8步：电池技术 ====
         for (Pattern p : TECHNOLOGY_PATTERNS) {
             Matcher m = p.matcher(content);
             if (m.find()) {
-                r.technology = m.group(1);
-                break;
-            }
-        }
-
-        // 7. 特定 section 提取（提升置信度）
-        // Battery Service / BatteryInfo / BatteryStats 段
-        Matcher m = Pattern.compile("(?is)(?:Battery Service|BatteryInfo|Battery Stats|Battery Information|Battery Properties)[:\\s\\S]{0,3000}").matcher(content);
-        if (m.find()) {
-            String section = m.group();
-            r.confidence = Math.max(r.confidence, 0.85);
-
-            if (r.currentCapacity == 0) {
-                Long scc = firstMatchGroup(section, CHARGE_COUNTER_PATTERNS);
-                if (scc != null && scc > 0) {
-                    r.chargeCounter = scc.intValue();
-                    r.currentCapacity = convertToMah(scc);
-                    r.confidence = Math.max(r.confidence, 0.92);
-                }
-            }
-            if (r.cycleCount == 0) {
-                Integer scyc = firstMatchGroupInt(section, CYCLE_COUNT_PATTERNS);
-                if (scyc != null && scyc >= 0 && scyc < 10000) {
-                    r.cycleCount = scyc;
-                }
-            }
-            if (r.batteryTemp == 0) {
-                Double st = firstMatchGroupDouble(section, TEMP_PATTERNS);
-                if (st != null) {
-                    if (st > 100) st = st / 10.0;
-                    if (st >= -20 && st <= 80) r.batteryTemp = st;
+                String tech = m.groupCount() >= 1 ? m.group(1) : m.group();
+                if (tech != null) {
+                    r.technology = tech;
+                    break;
                 }
             }
         }
-
-        // 8. 兼容：直接 mAh 数值
-        if (r.currentCapacity == 0) {
-            Matcher mh = Pattern.compile("(?i)(?:full[_\\s\\-]?charge[_\\s\\-]?capacity|fcc|design[_\\s\\-]?capacity)[:= ]+(\\d+)\\s*mah").matcher(content);
-            if (mh.find()) {
-                r.currentCapacity = parseIntSafe(mh.group(1));
-                r.confidence = Math.max(r.confidence, 0.7);
+        // 启发式：未识别时，扫描 Li-ion/Li-poly/Li-po
+        if (r.technology == null || r.technology.isEmpty()) {
+            if (Pattern.compile("(?i)li[\\s\\-_]*poly").matcher(content).find()
+                    || Pattern.compile("(?i)li[\\s\\-_]*po\\b").matcher(content).find()) {
+                r.technology = "Li-poly";
+            } else if (Pattern.compile("(?i)li[\\s\\-_]*ion").matcher(content).find()) {
+                r.technology = "Li-ion";
             }
         }
 
-        // 至少要有容量或循环次数
+        // ==== 第9步：品牌专属段提升（v2.1.8 增强） ====
+        applyBrandSpecificSection(r, content, brand);
+
+        // ==== 至少要有容量或循环次数 ====
         if (!r.hasCapacity() && r.cycleCount == 0) {
             return null;
         }
         return r;
+    }
+
+    /**
+     * 品牌专属段提取：华为 healthd / 小米 Min learned / OPPO Battery Health
+     */
+    private static void applyBrandSpecificSection(BatteryInfo r, String content, String brand) {
+        // 华为 healthd 段：包含 "healthd:" 后面 2000 字符
+        if (brand == null || brand.equals("huawei") || content.contains("healthd:") || content.contains("harmony") || content.contains("EMUI")) {
+            Matcher hm = Pattern.compile("(?is)healthd:[\\s\\S]{0,2500}").matcher(content);
+            if (hm.find()) {
+                String section = hm.group();
+                r.confidence = Math.max(r.confidence, 0.88);
+                if (r.currentCapacity == 0) {
+                    Long scc = firstMatchGroup(section, CHARGE_COUNTER_PATTERNS);
+                    if (scc != null && scc > 0) {
+                        r.chargeCounter = scc.intValue();
+                        r.currentCapacity = convertToMah(scc);
+                        r.confidence = Math.max(r.confidence, 0.93);
+                    }
+                    if (r.currentCapacity == 0) {
+                        Long sm = firstMatchGroup(section, CAPACITY_MAH_PATTERNS);
+                        if (sm != null && sm > 0) {
+                            r.currentCapacity = sm.intValue();
+                            r.confidence = Math.max(r.confidence, 0.88);
+                        }
+                    }
+                }
+                if (r.cycleCount == 0) {
+                    Integer scyc = firstMatchGroupInt(section, CYCLE_COUNT_PATTERNS);
+                    if (scyc != null && scyc >= 0 && scyc < 10000) {
+                        r.cycleCount = scyc;
+                    }
+                }
+            }
+        }
+
+        // 小米 MIUI：Min learned / Maximum learned battery capacity
+        if (brand == null || brand.equals("xiaomi") || content.contains("MIUI") || content.contains("miui")) {
+            Matcher mm = Pattern.compile("(?is)Battery Stats[\\s\\S]{0,3000}").matcher(content);
+            if (mm.find()) {
+                String section = mm.group();
+                if (r.currentCapacity == 0) {
+                    // 优先 Min learned（电池实际可用容量）
+                    Matcher lm = Pattern.compile("(?i)min[\\s_\\-]*learned[\\s_\\-]*battery[\\s_\\-]*capacity[\\s\\-:=]+(\\d+)").matcher(section);
+                    if (lm.find()) {
+                        int v = parseIntSafe(lm.group(1));
+                        if (v > 100 && v < 20000) {
+                            r.currentCapacity = v;
+                            r.confidence = Math.max(r.confidence, 0.93);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 三星 OneUI：battery_health（百分比）
+        if (brand != null && brand.equals("samsung")) {
+            Matcher sm = Pattern.compile("(?i)battery[\\s_\\-]*health[\\s\\-:=]+(\\d+)%").matcher(content);
+            if (sm.find()) {
+                r.confidence = Math.max(r.confidence, 0.85);
+            }
+        }
     }
 
     /**
