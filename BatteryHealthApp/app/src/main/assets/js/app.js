@@ -357,12 +357,20 @@ const BatteryHealthApp = {
         // 设置加载状态 - 显示旋转图标
         calculateBtn.disabled = true;
         calculateBtn.classList.add('loading');
+        // 关键修复：变量声明必须在 try 块外部，否则 finally 中无法访问
         const btnIcon = calculateBtn.querySelector('i');
-        const originalIcon = btnIcon.className;
-        btnIcon.className = 'fas fa-spinner';
-        calculateBtn.querySelector('span').textContent = '正在分析...';
+        const originalIcon = btnIcon ? btnIcon.className : 'fas fa-calculator';
+        if (btnIcon) {
+            btnIcon.className = 'fas fa-spinner';
+        }
+        const btnSpan = calculateBtn.querySelector('span');
+        if (btnSpan) {
+            btnSpan.textContent = '正在分析...';
+        }
         
-        progressContainer.classList.add('show');
+        if (progressContainer) {
+            progressContainer.classList.add('show');
+        }
         this.hideStatus();
         
         try {
@@ -400,12 +408,13 @@ const BatteryHealthApp = {
             if (btnIcon) {
                 btnIcon.className = originalIcon || 'fas fa-calculator';
             }
-            const btnSpan = calculateBtn.querySelector('span');
             if (btnSpan) {
                 btnSpan.textContent = '分析电池健康度';
             }
             setTimeout(() => {
-                progressContainer.classList.remove('show');
+                if (progressContainer) {
+                    progressContainer.classList.remove('show');
+                }
             }, 1000);
         }
     },
