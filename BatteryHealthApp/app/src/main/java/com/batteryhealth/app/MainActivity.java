@@ -697,6 +697,11 @@ public class MainActivity extends AppCompatActivity {
                     
                     // 第四步：计算健康度
                     BatteryHealthResult healthResult = BatteryAnalyzer.calculateHealth(parseResult);
+                    if (healthResult == null) {
+                        Log.e(TAG, "calculateHealth returned null");
+                        callbackError(callbackJs, "健康度计算失败");
+                        return;
+                    }
                     
                     // 第五步：构建 JSON 结果
                     // 安全序列化 float：NaN/Infinity 转为 0

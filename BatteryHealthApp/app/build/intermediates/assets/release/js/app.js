@@ -423,9 +423,27 @@ const BatteryHealthApp = {
     onNativeAnalysisComplete(resultJson) {
         console.log('=== Native analysis complete ===');
         
+        // 安全检查：resultJson不能为null/undefined
+        if (!resultJson) {
+            console.error('Native result is null or undefined');
+            if (this._nativeAnalysisReject) {
+                this._nativeAnalysisReject(new Error('分析结果为空'));
+            }
+            return;
+        }
+        
         try {
             const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
             console.log('Parsed result:', result);
+            
+            // 检查结果是否为有效对象
+            if (!result || typeof result !== 'object') {
+                console.error('Parsed result is not a valid object:', result);
+                if (this._nativeAnalysisReject) {
+                    this._nativeAnalysisReject(new Error('分析结果格式错误'));
+                }
+                return;
+            }
             
             if (result.error) {
                 console.warn('Native analysis error:', result.error);

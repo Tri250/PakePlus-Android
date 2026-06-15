@@ -464,7 +464,9 @@ public class BatteryAnalyzer {
             return new BatteryParseResult();
         }
         try {
-            return nativeParseBugreport(content, content.length);
+            BatteryParseResult result = nativeParseBugreport(content, content.length);
+            // JNI可能返回null（C++异常或OOM），确保返回非null对象
+            return result != null ? result : new BatteryParseResult();
         } catch (Exception e) {
             Log.e(TAG, "Native parse error: " + e.getMessage());
             return new BatteryParseResult();
@@ -483,7 +485,9 @@ public class BatteryAnalyzer {
             return new BatteryHealthResult();
         }
         try {
-            return nativeCalculateHealth(parseResult);
+            BatteryHealthResult result = nativeCalculateHealth(parseResult);
+            // JNI可能返回null（C++异常），确保返回非null对象
+            return result != null ? result : new BatteryHealthResult();
         } catch (Exception e) {
             Log.e(TAG, "Error calculating health: " + e.getMessage());
             return new BatteryHealthResult();
@@ -509,8 +513,9 @@ public class BatteryAnalyzer {
      */
     public static BatteryHealthResult analyzeFile(String filePath) {
         BatteryParseResult parseResult = parseFile(filePath);
-        if (parseResult.hasData) {
-            return calculateHealth(parseResult);
+        if (parseResult != null && parseResult.hasData) {
+            BatteryHealthResult healthResult = calculateHealth(parseResult);
+            return healthResult != null ? healthResult : new BatteryHealthResult();
         }
         return new BatteryHealthResult();
     }
