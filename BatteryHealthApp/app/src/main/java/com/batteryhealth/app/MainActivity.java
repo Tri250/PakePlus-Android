@@ -685,31 +685,42 @@ public class MainActivity extends AppCompatActivity {
                     long totalRead = 0;
                     int lastReportedPercent = startPercent;
 
+                    long lastUiUpdateTime = System.currentTimeMillis();
+                    long bytesSinceLastUpdate = 0;
+
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
                         fos.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
+                        bytesSinceLastUpdate += bytesRead;
 
-                        // 实时更新进度
+                        // 实时更新进度 - 限制UI更新频率，避免卡顿
+                        // 每300ms或每读取512KB更新一次
+                        long currentTime = System.currentTimeMillis();
                         if (fileSize > 0) {
                             int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
 
-                            if (currentPercent > lastReportedPercent) {
+                            if (currentPercent > lastReportedPercent && 
+                                (currentTime - lastUiUpdateTime > 300 || bytesSinceLastUpdate > 512 * 1024)) {
                                 lastReportedPercent = currentPercent;
+                                lastUiUpdateTime = currentTime;
+                                bytesSinceLastUpdate = 0;
                                 final int progress = currentPercent;
                                 final long readBytes = totalRead;
                                 final long totalBytes = fileSize;
 
                                 runOnUiThread(() -> {
-                                    String jsCode = String.format(
-                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
-                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
-                                        "%.1fMB / %.1fMB');" +
-                                        "}",
-                                        progress,
-                                        readBytes / (1024.0 * 1024.0),
-                                        totalBytes / (1024.0 * 1024.0)
-                                    );
-                                    webView.evaluateJavascript(jsCode, null);
+                                    if (webView != null && !isWebViewDestroyed) {
+                                        String jsCode = String.format(
+                                            "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                                            "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
+                                            "%.1fMB / %.1fMB');" +
+                                            "}",
+                                            progress,
+                                            readBytes / (1024.0 * 1024.0),
+                                            totalBytes / (1024.0 * 1024.0)
+                                        );
+                                        webView.evaluateJavascript(jsCode, null);
+                                    }
                                 });
                             }
                         }
@@ -994,6 +1005,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         isWebViewDestroyed = true;
 
+        // 清理callback防止内存泄漏
+        if (filePathCallback != null) {
+            filePathCallback.onReceiveValue(null);
+            filePathCallback = null;
+        }
+
         // 清理所有临时文件
         try {
             java.io.File cacheDir = getCacheDir();
@@ -1013,10 +1030,11 @@ public class MainActivity extends AppCompatActivity {
             webView.removeJavascriptInterface("AndroidFilePicker");
             webView.setWebViewClient(null);
             webView.setWebChromeClient(null);
+            // 先移除所有视图再loadUrl，避免某些Android版本的崩溃
+            webView.removeAllViews();
             webView.loadUrl("about:blank");
             webView.clearCache(true);
             webView.clearHistory();
-            webView.removeAllViews();
             webView.destroy();
             webView = null;
         }

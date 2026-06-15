@@ -94,7 +94,7 @@ const HistoryManager = {
     getTrend() {
         const history = this.getAll();
         return history
-            .filter(item => item.healthPercentage)
+            .filter(item => item.healthPercentage && !isNaN(parseFloat(item.healthPercentage)))
             .map(item => ({
                 date: new Date(item.timestamp).toLocaleDateString('zh-CN'),
                 health: parseFloat(item.healthPercentage)
@@ -108,34 +108,42 @@ const HistoryManager = {
      * @returns {string} - 格式化后的日期
      */
     formatDate(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        // 小于1小时
-        if (diff < 3600000) {
-            const minutes = Math.floor(diff / 60000);
-            return minutes < 1 ? '刚刚' : `${minutes}分钟前`;
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                return '未知时间';
+            }
+            const now = new Date();
+            const diff = now - date;
+            
+            // 小于1小时
+            if (diff < 3600000 && diff >= 0) {
+                const minutes = Math.floor(diff / 60000);
+                return minutes < 1 ? '刚刚' : `${minutes}分钟前`;
+            }
+            
+            // 小于24小时
+            if (diff < 86400000 && diff >= 0) {
+                const hours = Math.floor(diff / 3600000);
+                return `${hours}小时前`;
+            }
+            
+            // 小于7天
+            if (diff < 604800000 && diff >= 0) {
+                const days = Math.floor(diff / 86400000);
+                return `${days}天前`;
+            }
+            
+            return date.toLocaleDateString('zh-CN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            console.warn('formatDate error:', e);
+            return '未知时间';
         }
-        
-        // 小于24小时
-        if (diff < 86400000) {
-            const hours = Math.floor(diff / 3600000);
-            return `${hours}小时前`;
-        }
-        
-        // 小于7天
-        if (diff < 604800000) {
-            const days = Math.floor(diff / 86400000);
-            return `${days}天前`;
-        }
-        
-        return date.toLocaleDateString('zh-CN', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     },
 
     /**

@@ -12,8 +12,9 @@ const BatteryParsers = {
      * @returns {string} - 品牌名称
      */
     detectBrand(entries, content) {
-        const entryNames = entries.map(e => e.filename.toLowerCase());
-        const contentLower = content.toLowerCase();
+        if (!entries || !Array.isArray(entries)) return 'generic';
+        const entryNames = entries.map(e => e.filename ? e.filename.toLowerCase() : '');
+        const contentLower = content ? content.toLowerCase() : '';
         
         // 根据文件路径特征判断
         if (entryNames.some(name => name.includes('miui') || name.includes('xiaomi'))) {
@@ -82,6 +83,11 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseGeneric(content) {
+        if (!content || typeof content !== 'string') {
+            console.warn('parseGeneric: invalid content');
+            return null;
+        }
+        
         const result = {
             currentCapacity: null,
             chargeCounter: null,
@@ -116,8 +122,16 @@ const BatteryParsers = {
                 const value = parseInt(match[1]);
                 if (value > 0 && value < 10000000) { // 合理范围检查
                     result.chargeCounter = value;
-                    // charge_counter 单位是微安时(uAh)，转换为毫安时(mAh)
-                    result.currentCapacity = Math.round(value / 1000);
+                    // charge_counter 单位通常是微安时(uAh)，转换为毫安时(mAh)
+                    // 但如果值已经很小(< 10000)，可能已经是mAh单位
+                    if (value >= 100000) {
+                        result.currentCapacity = Math.round(value / 1000);
+                    } else if (value >= 1000) {
+                        // 可能是uAh但数值较小，或已经是mAh
+                        result.currentCapacity = Math.round(value / 1000) > 10 ? Math.round(value / 1000) : value;
+                    } else {
+                        result.currentCapacity = value;
+                    }
                     result.confidence = 0.95;
                     break;
                 }
@@ -449,6 +463,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseXiaomi(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -545,6 +560,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseVivo(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -627,6 +643,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseOPPO(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -714,6 +731,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseHuawei(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -797,6 +815,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseSamsung(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -834,6 +853,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseMeizu(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -870,6 +890,7 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parseNubia(content) {
+        if (!content || typeof content !== 'string') return null;
         const result = this.parseGeneric(content);
         if (!result) return null;
 
@@ -907,26 +928,31 @@ const BatteryParsers = {
      * @returns {Object|null} - 解析结果
      */
     parse(content, brand = 'generic') {
-        switch (brand) {
-            case 'xiaomi':
-                return this.parseXiaomi(content);
-            case 'vivo':
-            case 'iqoo':
-                return this.parseVivo(content);
-            case 'oppo':
-            case 'realme':
-                return this.parseOPPO(content);
-            case 'huawei':
-            case 'honor':
-                return this.parseHuawei(content);
-            case 'samsung':
-                return this.parseSamsung(content);
-            case 'meizu':
-                return this.parseMeizu(content);
-            case 'nubia':
-                return this.parseNubia(content);
-            default:
-                return this.parseGeneric(content);
+        try {
+            switch (brand) {
+                case 'xiaomi':
+                    return this.parseXiaomi(content);
+                case 'vivo':
+                case 'iqoo':
+                    return this.parseVivo(content);
+                case 'oppo':
+                case 'realme':
+                    return this.parseOPPO(content);
+                case 'huawei':
+                case 'honor':
+                    return this.parseHuawei(content);
+                case 'samsung':
+                    return this.parseSamsung(content);
+                case 'meizu':
+                    return this.parseMeizu(content);
+                case 'nubia':
+                    return this.parseNubia(content);
+                default:
+                    return this.parseGeneric(content);
+            }
+        } catch (error) {
+            console.error('Parser error for brand ' + brand + ':', error);
+            return null;
         }
     }
 };
