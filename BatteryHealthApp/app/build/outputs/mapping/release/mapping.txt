@@ -3,8 +3,8 @@
 # min_api: 24
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: 5511fa0
-# pg_map_hash: SHA-256 5511fa0378b5e88b42594f1ff08dbe1d08ad77e011792c7f511b4f48798b5c6c
+# pg_map_id: afdba20
+# pg_map_hash: SHA-256 afdba20811a08018ec6cb2edd04d9eb44f19a73fcc8e4755e7b62a809aa5ca43
 android.app.AppComponentFactory -> android.app.AppComponentFactory:
 # {"id":"com.android.tools.r8.synthesized"}
 android.app.UiModeManager$ContrastChangeListener -> android.app.UiModeManager$ContrastChangeListener:
@@ -76737,8 +76737,9 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
     1:4:void access$300(com.batteryhealth.app.MainActivity):52:52 -> access$300
     1:3:android.webkit.WebView access$400(com.batteryhealth.app.MainActivity):52:52 -> access$400
     1:5:java.lang.String access$500(com.batteryhealth.app.MainActivity,android.net.Uri):52:52 -> access$500
-    1:3:java.lang.String[] access$600(com.batteryhealth.app.MainActivity):52:52 -> access$600
-    1:4:void access$700(com.batteryhealth.app.MainActivity):52:52 -> access$700
+    1:3:boolean access$600(com.batteryhealth.app.MainActivity):52:52 -> access$600
+    1:3:java.lang.String[] access$700(com.batteryhealth.app.MainActivity):52:52 -> access$700
+    1:4:void access$800(com.batteryhealth.app.MainActivity):52:52 -> access$800
     5:8:void checkAndRequestPermissions():157:157 -> checkAndRequestPermissions
     9:14:void checkAndRequestPermissions():163:163 -> checkAndRequestPermissions
     15:22:void checkAndRequestPermissions():164:164 -> checkAndRequestPermissions
@@ -76798,66 +76799,67 @@ com.batteryhealth.app.MainActivity -> com.batteryhealth.app.MainActivity:
     152:157:void initWebView():369:369 -> initWebView
     158:165:void initWebView():373:373 -> initWebView
     12:15:void injectFilePickerScript():421:421 -> injectFilePickerScript
-    3:7:boolean lambda$onDestroy$0(java.io.File,java.lang.String):1000:1000 -> lambda$onDestroy$0
-    5:16:void notifyFileSelected(java.lang.String,java.lang.String):927:927 -> notifyFileSelected
-    17:24:void notifyFileSelected(java.lang.String,java.lang.String):928:928 -> notifyFileSelected
-    25:76:void notifyFileSelected(java.lang.String,java.lang.String):930:930 -> notifyFileSelected
-    77:80:void notifyFileSelected(java.lang.String,java.lang.String):952:952 -> notifyFileSelected
-    1:21:void onActivityResult(int,int,android.content.Intent):859:859 -> onActivityResult
-    22:25:void onActivityResult(int,int,android.content.Intent):874:874 -> onActivityResult
-    26:31:void onActivityResult(int,int,android.content.Intent):875:875 -> onActivityResult
-    32:40:void onActivityResult(int,int,android.content.Intent):880:880 -> onActivityResult
-    41:43:void onActivityResult(int,int,android.content.Intent):884:884 -> onActivityResult
-    44:64:void onActivityResult(int,int,android.content.Intent):888:888 -> onActivityResult
-    65:78:void onActivityResult(int,int,android.content.Intent):892:892 -> onActivityResult
-    79:104:void onActivityResult(int,int,android.content.Intent):893:893 -> onActivityResult
-    105:112:void onActivityResult(int,int,android.content.Intent):894:894 -> onActivityResult
-    113:116:void onActivityResult(int,int,android.content.Intent):899:899 -> onActivityResult
-    117:137:void onActivityResult(int,int,android.content.Intent):901:901 -> onActivityResult
-    138:147:void onActivityResult(int,int,android.content.Intent):904:904 -> onActivityResult
-    148:159:void onActivityResult(int,int,android.content.Intent):907:907 -> onActivityResult
-    160:166:void onActivityResult(int,int,android.content.Intent):912:912 -> onActivityResult
-    167:171:void onActivityResult(int,int,android.content.Intent):917:917 -> onActivityResult
-    172:183:void onActivityResult(int,int,android.content.Intent):918:918 -> onActivityResult
-    9:16:void onBackPressed():959:959 -> onBackPressed
-    17:20:void onBackPressed():960:960 -> onBackPressed
-    21:24:void onBackPressed():962:962 -> onBackPressed
+    3:7:boolean lambda$onDestroy$0(java.io.File,java.lang.String):1017:1017 -> lambda$onDestroy$0
+    5:16:void notifyFileSelected(java.lang.String,java.lang.String):938:938 -> notifyFileSelected
+    17:24:void notifyFileSelected(java.lang.String,java.lang.String):939:939 -> notifyFileSelected
+    25:76:void notifyFileSelected(java.lang.String,java.lang.String):941:941 -> notifyFileSelected
+    77:80:void notifyFileSelected(java.lang.String,java.lang.String):963:963 -> notifyFileSelected
+    1:21:void onActivityResult(int,int,android.content.Intent):870:870 -> onActivityResult
+    22:25:void onActivityResult(int,int,android.content.Intent):885:885 -> onActivityResult
+    26:31:void onActivityResult(int,int,android.content.Intent):886:886 -> onActivityResult
+    32:40:void onActivityResult(int,int,android.content.Intent):891:891 -> onActivityResult
+    41:43:void onActivityResult(int,int,android.content.Intent):895:895 -> onActivityResult
+    44:64:void onActivityResult(int,int,android.content.Intent):899:899 -> onActivityResult
+    65:78:void onActivityResult(int,int,android.content.Intent):903:903 -> onActivityResult
+    79:104:void onActivityResult(int,int,android.content.Intent):904:904 -> onActivityResult
+    105:112:void onActivityResult(int,int,android.content.Intent):905:905 -> onActivityResult
+    113:116:void onActivityResult(int,int,android.content.Intent):910:910 -> onActivityResult
+    117:137:void onActivityResult(int,int,android.content.Intent):912:912 -> onActivityResult
+    138:147:void onActivityResult(int,int,android.content.Intent):915:915 -> onActivityResult
+    148:159:void onActivityResult(int,int,android.content.Intent):918:918 -> onActivityResult
+    160:166:void onActivityResult(int,int,android.content.Intent):923:923 -> onActivityResult
+    167:171:void onActivityResult(int,int,android.content.Intent):928:928 -> onActivityResult
+    172:183:void onActivityResult(int,int,android.content.Intent):929:929 -> onActivityResult
+    9:16:void onBackPressed():970:970 -> onBackPressed
+    17:20:void onBackPressed():971:971 -> onBackPressed
+    21:24:void onBackPressed():973:973 -> onBackPressed
     1:3:void onCreate(android.os.Bundle):68:68 -> onCreate
     4:14:void onCreate(android.os.Bundle):71:71 -> onCreate
     15:17:void onCreate(android.os.Bundle):76:76 -> onCreate
     18:20:void onCreate(android.os.Bundle):79:79 -> onCreate
     21:27:void onCreate(android.os.Bundle):82:82 -> onCreate
     28:39:void onCreate(android.os.Bundle):86:86 -> onCreate
-    4:7:void onDestroy():999:999 -> onDestroy
-    8:19:void onDestroy():1000:1000 -> onDestroy
-    20:24:void onDestroy():1002:1002 -> onDestroy
-    25:27:void onDestroy():1003:1003 -> onDestroy
-    28:37:void onDestroy():1004:1004 -> onDestroy
-    38:44:void onDestroy():1012:1012 -> onDestroy
-    45:50:void onDestroy():1013:1013 -> onDestroy
-    51:55:void onDestroy():1014:1014 -> onDestroy
-    56:62:void onDestroy():1015:1015 -> onDestroy
-    63:67:void onDestroy():1016:1016 -> onDestroy
-    68:72:void onDestroy():1017:1017 -> onDestroy
-    73:77:void onDestroy():1018:1018 -> onDestroy
-    78:82:void onDestroy():1019:1019 -> onDestroy
-    83:87:void onDestroy():1020:1020 -> onDestroy
-    88:91:void onDestroy():1024:1024 -> onDestroy
+    9:13:void onDestroy():1010:1010 -> onDestroy
+    14:17:void onDestroy():1016:1016 -> onDestroy
+    18:29:void onDestroy():1017:1017 -> onDestroy
+    30:34:void onDestroy():1019:1019 -> onDestroy
+    35:37:void onDestroy():1020:1020 -> onDestroy
+    38:47:void onDestroy():1021:1021 -> onDestroy
+    48:54:void onDestroy():1029:1029 -> onDestroy
+    55:59:void onDestroy():1030:1030 -> onDestroy
+    60:64:void onDestroy():1031:1031 -> onDestroy
+    65:69:void onDestroy():1032:1032 -> onDestroy
+    70:76:void onDestroy():1034:1034 -> onDestroy
+    77:81:void onDestroy():1035:1035 -> onDestroy
+    82:86:void onDestroy():1036:1036 -> onDestroy
+    87:91:void onDestroy():1037:1037 -> onDestroy
+    92:96:void onDestroy():1038:1038 -> onDestroy
+    97:100:void onDestroy():1042:1042 -> onDestroy
     1:14:void onLowMemory():122:122 -> onLowMemory
     15:18:void onLowMemory():127:127 -> onLowMemory
-    1:11:void onPause():968:968 -> onPause
-    12:16:void onPause():970:970 -> onPause
-    17:20:void onPause():971:971 -> onPause
+    1:11:void onPause():979:979 -> onPause
+    12:16:void onPause():981:981 -> onPause
+    17:20:void onPause():982:982 -> onPause
     1:10:void onRequestPermissionsResult(int,java.lang.String[],int[]):180:180 -> onRequestPermissionsResult
     11:13:void onRequestPermissionsResult(int,java.lang.String[],int[]):183:183 -> onRequestPermissionsResult
     14:17:void onRequestPermissionsResult(int,java.lang.String[],int[]):184:184 -> onRequestPermissionsResult
     18:28:void onRequestPermissionsResult(int,java.lang.String[],int[]):186:186 -> onRequestPermissionsResult
     29:36:void onRequestPermissionsResult(int,java.lang.String[],int[]):194:194 -> onRequestPermissionsResult
-    1:11:void onResume():977:977 -> onResume
-    12:16:void onResume():979:979 -> onResume
-    17:20:void onResume():980:980 -> onResume
-    1:8:void onStop():986:986 -> onStop
-    9:14:void onStop():988:988 -> onStop
+    1:11:void onResume():988:988 -> onResume
+    12:16:void onResume():990:990 -> onResume
+    17:20:void onResume():991:991 -> onResume
+    1:8:void onStop():997:997 -> onStop
+    9:14:void onStop():999:999 -> onStop
     1:18:void onTrimMemory(int):95:95 -> onTrimMemory
     19:23:void onTrimMemory(int):102:102 -> onTrimMemory
     24:33:void onTrimMemory(int):103:103 -> onTrimMemory
@@ -76938,24 +76940,24 @@ com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.Main
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void $r8$lambda$PXVmTCXuDmPE6aRKuAuWO8VoQMo(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> c
       # {"id":"com.android.tools.r8.synthesized"}
-    3:21:boolean checkStoragePermission():837:837 -> checkStoragePermission
-    22:34:boolean checkStoragePermission():840:840 -> checkStoragePermission
-    35:45:boolean checkStoragePermission():841:841 -> checkStoragePermission
-    3:6:void cleanAllTempFiles():804:804 -> cleanAllTempFiles
-    7:18:void cleanAllTempFiles():805:805 -> cleanAllTempFiles
-    19:24:void cleanAllTempFiles():807:807 -> cleanAllTempFiles
-    25:31:void cleanAllTempFiles():808:808 -> cleanAllTempFiles
-    1:12:void cleanOldTempFiles(java.io.File):782:782 -> cleanOldTempFiles
-    13:16:void cleanOldTempFiles(java.io.File):783:783 -> cleanOldTempFiles
-    17:25:void cleanOldTempFiles(java.io.File):785:785 -> cleanOldTempFiles
-    26:29:void cleanOldTempFiles(java.io.File):786:786 -> cleanOldTempFiles
-    30:37:void cleanOldTempFiles(java.io.File):788:788 -> cleanOldTempFiles
-    38:46:void cleanOldTempFiles(java.io.File):789:789 -> cleanOldTempFiles
+    3:21:boolean checkStoragePermission():848:848 -> checkStoragePermission
+    22:34:boolean checkStoragePermission():851:851 -> checkStoragePermission
+    35:45:boolean checkStoragePermission():852:852 -> checkStoragePermission
+    3:6:void cleanAllTempFiles():815:815 -> cleanAllTempFiles
+    7:18:void cleanAllTempFiles():816:816 -> cleanAllTempFiles
+    19:24:void cleanAllTempFiles():818:818 -> cleanAllTempFiles
+    25:31:void cleanAllTempFiles():819:819 -> cleanAllTempFiles
+    1:12:void cleanOldTempFiles(java.io.File):793:793 -> cleanOldTempFiles
+    13:16:void cleanOldTempFiles(java.io.File):794:794 -> cleanOldTempFiles
+    17:25:void cleanOldTempFiles(java.io.File):796:796 -> cleanOldTempFiles
+    26:29:void cleanOldTempFiles(java.io.File):797:797 -> cleanOldTempFiles
+    30:37:void cleanOldTempFiles(java.io.File):799:799 -> cleanOldTempFiles
+    38:46:void cleanOldTempFiles(java.io.File):800:800 -> cleanOldTempFiles
     1:1:int $r8$lambda$TvTuJUTmueaV4TA-0mB-sRVzJUM(java.io.File,java.io.File):0:0 -> d
       # {"id":"com.android.tools.r8.synthesized"}
-    1:5:void deleteTempFile(java.lang.String):822:822 -> deleteTempFile
-    6:23:void deleteTempFile(java.lang.String):823:823 -> deleteTempFile
-    24:27:void deleteTempFile(java.lang.String):824:824 -> deleteTempFile
+    1:5:void deleteTempFile(java.lang.String):833:833 -> deleteTempFile
+    6:23:void deleteTempFile(java.lang.String):834:834 -> deleteTempFile
+    24:27:void deleteTempFile(java.lang.String):835:835 -> deleteTempFile
     1:1:void $r8$lambda$UkS7GkC-ydzxJOjaudgLzh7IgNU(com.batteryhealth.app.MainActivity$WebAppInterface):0:0 -> e
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void $r8$lambda$Uw9yUNqb6T_1mefIQuVFwsxS7jg(com.batteryhealth.app.MainActivity$WebAppInterface,java.lang.String):0:0 -> f
@@ -76978,9 +76980,9 @@ com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.Main
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:boolean $r8$lambda$wJul8einuX6wec-pO6NT3s4tWEY(java.io.File,java.lang.String):0:0 -> k
       # {"id":"com.android.tools.r8.synthesized"}
-    3:7:boolean lambda$cleanAllTempFiles$0(java.io.File,java.lang.String):805:805 -> lambda$cleanAllTempFiles$0
-    3:7:boolean lambda$cleanOldTempFiles$0(java.io.File,java.lang.String):782:782 -> lambda$cleanOldTempFiles$0
-    1:13:int lambda$cleanOldTempFiles$1(java.io.File,java.io.File):785:785 -> lambda$cleanOldTempFiles$1
+    3:7:boolean lambda$cleanAllTempFiles$0(java.io.File,java.lang.String):816:816 -> lambda$cleanAllTempFiles$0
+    3:7:boolean lambda$cleanOldTempFiles$0(java.io.File,java.lang.String):793:793 -> lambda$cleanOldTempFiles$0
+    1:13:int lambda$cleanOldTempFiles$1(java.io.File,java.io.File):796:796 -> lambda$cleanOldTempFiles$1
     3:10:void lambda$openFilePicker$0():542:542 -> lambda$openFilePicker$0
     11:21:void lambda$openFilePicker$0():544:544 -> lambda$openFilePicker$0
     22:26:void lambda$openFilePicker$0():552:552 -> lambda$openFilePicker$0
@@ -77001,42 +77003,45 @@ com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.Main
     120:123:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):675:675 -> lambda$readFileContentWithProgress$0
     124:126:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):677:677 -> lambda$readFileContentWithProgress$0
     127:153:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):679:679 -> lambda$readFileContentWithProgress$0
-    154:167:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):682:682 -> lambda$readFileContentWithProgress$0
-    168:175:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):688:688 -> lambda$readFileContentWithProgress$0
-    176:191:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):689:689 -> lambda$readFileContentWithProgress$0
-    192:198:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):694:694 -> lambda$readFileContentWithProgress$0
-    199:236:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):702:702 -> lambda$readFileContentWithProgress$0
-    237:239:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):718:718 -> lambda$readFileContentWithProgress$0
-    240:242:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):719:719 -> lambda$readFileContentWithProgress$0
-    243:245:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):720:720 -> lambda$readFileContentWithProgress$0
-    246:249:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):723:723 -> lambda$readFileContentWithProgress$0
-    250:272:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):725:725 -> lambda$readFileContentWithProgress$0
-    273:289:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):731:731 -> lambda$readFileContentWithProgress$0
-    290:295:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):759:759 -> lambda$readFileContentWithProgress$0
-    296:298:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):760:760 -> lambda$readFileContentWithProgress$0
-    299:313:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):762:762 -> lambda$readFileContentWithProgress$0
-    314:325:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):763:763 -> lambda$readFileContentWithProgress$0
-    326:331:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):748:748 -> lambda$readFileContentWithProgress$0
-    332:336:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):749:749 -> lambda$readFileContentWithProgress$0
-    337:346:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):751:751 -> lambda$readFileContentWithProgress$0
+    154:162:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):682:682 -> lambda$readFileContentWithProgress$0
+    163:174:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):688:688 -> lambda$readFileContentWithProgress$0
+    175:184:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):691:691 -> lambda$readFileContentWithProgress$0
+    185:191:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):692:692 -> lambda$readFileContentWithProgress$0
+    192:209:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):698:698 -> lambda$readFileContentWithProgress$0
+    210:231:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):700:700 -> lambda$readFileContentWithProgress$0
+    232:277:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):711:711 -> lambda$readFileContentWithProgress$0
+    278:280:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):729:729 -> lambda$readFileContentWithProgress$0
+    281:283:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):730:730 -> lambda$readFileContentWithProgress$0
+    284:286:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):731:731 -> lambda$readFileContentWithProgress$0
+    287:290:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):734:734 -> lambda$readFileContentWithProgress$0
+    291:313:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):736:736 -> lambda$readFileContentWithProgress$0
+    314:338:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):742:742 -> lambda$readFileContentWithProgress$0
+    339:344:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):770:770 -> lambda$readFileContentWithProgress$0
+    345:347:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):771:771 -> lambda$readFileContentWithProgress$0
+    348:362:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):773:773 -> lambda$readFileContentWithProgress$0
+    363:374:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):774:774 -> lambda$readFileContentWithProgress$0
+    375:380:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):759:759 -> lambda$readFileContentWithProgress$0
+    381:385:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):760:760 -> lambda$readFileContentWithProgress$0
+    386:395:void lambda$readFileContentWithProgress$0(java.lang.String,int,int,java.lang.String):762:762 -> lambda$readFileContentWithProgress$0
     3:13:void lambda$readFileContentWithProgress$1():646:646 -> lambda$readFileContentWithProgress$1
-    1:8:void lambda$readFileContentWithProgress$2(int,long,long):708:708 -> lambda$readFileContentWithProgress$2
-    9:14:void lambda$readFileContentWithProgress$2(int,long,long):709:709 -> lambda$readFileContentWithProgress$2
-    15:24:void lambda$readFileContentWithProgress$2(int,long,long):710:710 -> lambda$readFileContentWithProgress$2
-    25:30:void lambda$readFileContentWithProgress$2(int,long,long):703:703 -> lambda$readFileContentWithProgress$2
-    31:39:void lambda$readFileContentWithProgress$2(int,long,long):712:712 -> lambda$readFileContentWithProgress$2
-    5:8:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):737:737 -> lambda$readFileContentWithProgress$3
-    9:12:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):738:738 -> lambda$readFileContentWithProgress$3
-    13:16:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):739:739 -> lambda$readFileContentWithProgress$3
-    17:28:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):740:740 -> lambda$readFileContentWithProgress$3
-    29:34:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):732:732 -> lambda$readFileContentWithProgress$3
-    35:43:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):742:742 -> lambda$readFileContentWithProgress$3
-    3:13:void lambda$readFileContentWithProgress$4():752:752 -> lambda$readFileContentWithProgress$4
-    3:10:void lambda$readFileContentWithProgress$5(java.lang.String):764:764 -> lambda$readFileContentWithProgress$5
-    11:20:void lambda$readFileContentWithProgress$5(java.lang.String):767:767 -> lambda$readFileContentWithProgress$5
-    21:25:void lambda$readFileContentWithProgress$5(java.lang.String):765:765 -> lambda$readFileContentWithProgress$5
-    26:29:void lambda$readFileContentWithProgress$5(java.lang.String):764:764 -> lambda$readFileContentWithProgress$5
-    3:6:void lambda$requestStoragePermission$0():853:853 -> lambda$requestStoragePermission$0
+    3:16:void lambda$readFileContentWithProgress$2(int,long,long):712:712 -> lambda$readFileContentWithProgress$2
+    17:24:void lambda$readFileContentWithProgress$2(int,long,long):718:718 -> lambda$readFileContentWithProgress$2
+    25:30:void lambda$readFileContentWithProgress$2(int,long,long):719:719 -> lambda$readFileContentWithProgress$2
+    31:40:void lambda$readFileContentWithProgress$2(int,long,long):720:720 -> lambda$readFileContentWithProgress$2
+    41:46:void lambda$readFileContentWithProgress$2(int,long,long):713:713 -> lambda$readFileContentWithProgress$2
+    47:55:void lambda$readFileContentWithProgress$2(int,long,long):722:722 -> lambda$readFileContentWithProgress$2
+    5:8:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):748:748 -> lambda$readFileContentWithProgress$3
+    9:12:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):749:749 -> lambda$readFileContentWithProgress$3
+    13:16:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):750:750 -> lambda$readFileContentWithProgress$3
+    17:28:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):751:751 -> lambda$readFileContentWithProgress$3
+    29:34:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):743:743 -> lambda$readFileContentWithProgress$3
+    35:43:void lambda$readFileContentWithProgress$3(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String):753:753 -> lambda$readFileContentWithProgress$3
+    3:13:void lambda$readFileContentWithProgress$4():763:763 -> lambda$readFileContentWithProgress$4
+    3:10:void lambda$readFileContentWithProgress$5(java.lang.String):775:775 -> lambda$readFileContentWithProgress$5
+    11:20:void lambda$readFileContentWithProgress$5(java.lang.String):778:778 -> lambda$readFileContentWithProgress$5
+    21:25:void lambda$readFileContentWithProgress$5(java.lang.String):776:776 -> lambda$readFileContentWithProgress$5
+    26:29:void lambda$readFileContentWithProgress$5(java.lang.String):775:775 -> lambda$readFileContentWithProgress$5
+    3:6:void lambda$requestStoragePermission$0():864:864 -> lambda$requestStoragePermission$0
     3:12:void openFilePicker():538:538 -> openFilePicker
     2:7:java.lang.String readFileContent(java.lang.String):566:566 -> readFileContent
     8:11:java.lang.String readFileContent(java.lang.String):567:567 -> readFileContent
@@ -77050,8 +77055,8 @@ com.batteryhealth.app.MainActivity$WebAppInterface -> com.batteryhealth.app.Main
     50:53:java.lang.String readFileContent(java.lang.String):587:587 -> readFileContent
     54:56:java.lang.String readFileContent(java.lang.String):589:589 -> readFileContent
     1:16:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):636:636 -> readFileContentWithProgress
-    17:20:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):773:773 -> readFileContentWithProgress
-    3:12:void requestStoragePermission():853:853 -> requestStoragePermission
+    17:20:void readFileContentWithProgress(java.lang.String,java.lang.String,int,int):784:784 -> readFileContentWithProgress
+    3:12:void requestStoragePermission():864:864 -> requestStoragePermission
 com.batteryhealth.app.MainActivity$WebAppInterface$$ExternalSyntheticLambda0 -> e7:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}

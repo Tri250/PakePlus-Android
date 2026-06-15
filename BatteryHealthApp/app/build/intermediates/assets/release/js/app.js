@@ -60,6 +60,14 @@ const BatteryHealthApp = {
             toast: document.getElementById('toast'),
             guideOverlay: document.getElementById('guide-overlay')
         };
+
+        // 检查关键元素是否存在
+        const criticalElements = ['dropArea', 'calculateBtn', 'progressFill'];
+        criticalElements.forEach(id => {
+            if (!this.elements[id]) {
+                console.warn(`Critical element missing: ${id}`);
+            }
+        });
     },
     
     /**
@@ -139,31 +147,38 @@ const BatteryHealthApp = {
      * 阻止默认事件
      */
     preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
     },
     
     /**
      * 高亮拖放区域
      */
     highlight() {
-        this.elements.dropArea.classList.add('drag-over');
+        if (this.elements.dropArea) {
+            this.elements.dropArea.classList.add('drag-over');
+        }
     },
-    
+
     /**
      * 取消高亮
      */
     unhighlight() {
-        this.elements.dropArea.classList.remove('drag-over');
+        if (this.elements.dropArea) {
+            this.elements.dropArea.classList.remove('drag-over');
+        }
     },
     
     /**
      * 处理拖放
      */
     handleDrop(e) {
+        if (!e.dataTransfer) return;
         const dt = e.dataTransfer;
         const files = dt.files;
-        if (files.length > 0) {
+        if (files && files.length > 0) {
             this.validateAndSetFile(files[0]);
         }
     },
@@ -172,7 +187,7 @@ const BatteryHealthApp = {
      * 处理文件选择
      */
     handleFileSelect(e) {
-        if (e.target.files.length > 0) {
+        if (e.target && e.target.files && e.target.files.length > 0) {
             this.validateAndSetFile(e.target.files[0]);
         }
     },
@@ -182,13 +197,16 @@ const BatteryHealthApp = {
      * 同时支持File对象和Android URI对象
      */
     validateAndSetFile(file) {
-        const errorEl = this.elements.fileValidationError;
+        if (!file) return false;
+        
+        const errorEl = document.getElementById('file-validation-error');
+        const errorText = document.getElementById('validation-error-text');
         
         // 验证文件类型 - 兼容File对象和Android URI对象
         const fileName = file.name || '';
         if (!fileName.toLowerCase().endsWith('.zip')) {
-            if (errorEl) {
-                errorEl.textContent = '请选择 ZIP 格式的文件';
+            if (errorEl && errorText) {
+                errorText.textContent = '请选择 ZIP 格式的文件';
                 errorEl.classList.add('show');
             }
             this.currentFile = null;
@@ -197,8 +215,8 @@ const BatteryHealthApp = {
         
         // 验证文件大小（最大 100MB）- 仅对File对象检查
         if (file.size && file.size > 100 * 1024 * 1024) {
-            if (errorEl) {
-                errorEl.textContent = '文件过大，请选择小于 100MB 的文件';
+            if (errorEl && errorText) {
+                errorText.textContent = '文件过大，请选择小于 100MB 的文件';
                 errorEl.classList.add('show');
             }
             this.currentFile = null;
@@ -225,8 +243,10 @@ const BatteryHealthApp = {
      * 验证容量输入
      */
     validateCapacity() {
-        const value = parseInt(this.elements.initialCapacityInput.value);
         const input = this.elements.initialCapacityInput;
+        if (!input) return false;
+        
+        const value = parseInt(input.value);
         
         if (value && (value < 1000 || value > 10000)) {
             input.classList.add('error');
@@ -256,20 +276,27 @@ const BatteryHealthApp = {
      * 切换品牌标签
      */
     switchBrandTab(tab) {
+        if (!tab) return;
         document.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.brand-content').forEach(c => c.classList.remove('active'));
         
         tab.classList.add('active');
         const brand = tab.getAttribute('data-brand');
-        document.getElementById(brand + '-content').classList.add('active');
+        const contentEl = document.getElementById(brand + '-content');
+        if (contentEl) {
+            contentEl.classList.add('active');
+        }
     },
     
     /**
      * 更新进度条
      */
     updateProgress(percent, text) {
-        this.elements.progressFill.style.width = percent + '%';
-        this.elements.progressText.textContent = text || `解析中... ${percent}%`;
+        if (!this.elements.progressFill || !this.elements.progressText) return;
+        // 限制进度在0-100范围内
+        const clampedPercent = Math.max(0, Math.min(100, percent));
+        this.elements.progressFill.style.width = clampedPercent + '%';
+        this.elements.progressText.textContent = text || `解析中... ${clampedPercent}%`;
     },
     
     /**
@@ -277,6 +304,7 @@ const BatteryHealthApp = {
      */
     showStatus(message, isError = false) {
         const status = this.elements.status;
+        if (!status) return;
         status.textContent = message;
         status.classList.remove('show', 'error');
         status.classList.add('show');
@@ -289,7 +317,9 @@ const BatteryHealthApp = {
      * 隐藏状态
      */
     hideStatus() {
-        this.elements.status.classList.remove('show');
+        if (this.elements.status) {
+            this.elements.status.classList.remove('show');
+        }
     },
     
     /**
@@ -327,17 +357,29 @@ const BatteryHealthApp = {
         // 设置加载状态 - 显示旋转图标
         calculateBtn.disabled = true;
         calculateBtn.classList.add('loading');
+        // 关键修复：变量声明必须在 try 块外部，否则 finally 中无法访问
         const btnIcon = calculateBtn.querySelector('i');
-        const originalIcon = btnIcon.className;
-        btnIcon.className = 'fas fa-spinner';
-        calculateBtn.querySelector('span').textContent = '正在分析...';
+        const originalIcon = btnIcon ? btnIcon.className : 'fas fa-calculator';
+        if (btnIcon) {
+            btnIcon.className = 'fas fa-spinner';
+        }
+        const btnSpan = calculateBtn.querySelector('span');
+        if (btnSpan) {
+            btnSpan.textContent = '正在分析...';
+        }
         
-        progressContainer.classList.add('show');
+        if (progressContainer) {
+            progressContainer.classList.add('show');
+        }
         this.hideStatus();
         
         try {
             this.updateProgress(10, '正在读取文件...');
             const result = await this.analyzeZipFile(this.currentFile, initialCapacity);
+            
+            if (!result || !result.currentCapacity) {
+                throw new Error('未能从文件中提取到电池容量数据，请检查文件是否正确');
+            }
             
             this.updateProgress(100, '分析完成');
             this.displayResult(result, initialCapacity);
@@ -358,13 +400,21 @@ const BatteryHealthApp = {
         } catch (error) {
             this.showStatus('分析失败: ' + error.message, true);
             console.error(error);
+            // 错误时重置状态
+            this.resetAnalysisState();
         } finally {
             calculateBtn.disabled = false;
             calculateBtn.classList.remove('loading');
-            btnIcon.className = originalIcon;
-            calculateBtn.querySelector('span').textContent = '分析电池健康度';
+            if (btnIcon) {
+                btnIcon.className = originalIcon || 'fas fa-calculator';
+            }
+            if (btnSpan) {
+                btnSpan.textContent = '分析电池健康度';
+            }
             setTimeout(() => {
-                progressContainer.classList.remove('show');
+                if (progressContainer) {
+                    progressContainer.classList.remove('show');
+                }
             }, 1000);
         }
     },
@@ -377,6 +427,16 @@ const BatteryHealthApp = {
      */
     async analyzeZipFile(file, initialCapacity) {
         return new Promise((resolve, reject) => {
+            // 验证参数
+            if (!file) {
+                reject(new Error('未选择文件'));
+                return;
+            }
+            if (!initialCapacity || initialCapacity <= 0) {
+                reject(new Error('请输入有效的初始电池容量'));
+                return;
+            }
+
             // 检查是否是Android URI文件
             if (file.isAndroidUri && file.uri) {
                 console.log('Processing Android URI file:', file.uri);
@@ -393,13 +453,19 @@ const BatteryHealthApp = {
                         this._fileReadReject = reject;
                         this._currentInitialCapacity = initialCapacity;
 
-                        // 调用Android带进度的读取方法（进度范围：5% - 50%）
-                        window.AndroidFilePicker.readFileContentWithProgress(
-                            file.uri,
-                            'onFileReadComplete',
-                            5,
-                            50
-                        );
+                        try {
+                            // 调用Android带进度的读取方法（进度范围：5% - 50%）
+                            window.AndroidFilePicker.readFileContentWithProgress(
+                                file.uri,
+                                'onFileReadComplete',
+                                5,
+                                50
+                            );
+                        } catch (androidError) {
+                            console.error('Android interface error:', androidError);
+                            this._cleanupFileReadCallbacks();
+                            reject(new Error('调用Android接口失败: ' + androidError.message));
+                        }
                     } else {
                         // 回退到旧方法
                         this.updateProgress(10, '正在读取Android文件...');
@@ -451,7 +517,11 @@ const BatteryHealthApp = {
                 reject(new Error('文件读取失败'));
             };
 
-            reader.readAsArrayBuffer(file);
+            try {
+                reader.readAsArrayBuffer(file);
+            } catch (readError) {
+                reject(new Error('无法读取文件: ' + readError.message));
+            }
         });
     },
 
@@ -460,8 +530,12 @@ const BatteryHealthApp = {
      */
     _processBase64Content(base64Content, initialCapacity, resolve, reject) {
         try {
+            if (!base64Content || typeof base64Content !== 'string') {
+                throw new Error('无效的Base64内容');
+            }
             // 将Base64转换为Blob
-            const binaryString = atob(base64Content.trim());
+            const trimmedContent = base64Content.trim();
+            const binaryString = atob(trimmedContent);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
@@ -472,7 +546,9 @@ const BatteryHealthApp = {
             this.processZipBlob(blob, initialCapacity, resolve, reject);
         } catch (error) {
             console.error('Failed to process Base64 content:', error);
-            reject(new Error('文件处理失败: ' + error.message));
+            if (reject) {
+                reject(new Error('文件处理失败: ' + error.message));
+            }
         }
     },
 
@@ -485,13 +561,18 @@ const BatteryHealthApp = {
         console.log('=== File read complete ===');
         console.log('File info:', fileInfo);
 
+        const resolve = this._fileReadResolve;
+        const reject = this._fileReadReject;
+        const initialCapacity = this._currentInitialCapacity;
+
         // 兼容旧版本：Base64字符串
         if (typeof fileInfo === 'string') {
             console.warn('Legacy Base64 response, processing...');
             if (!fileInfo) {
-                if (this._fileReadReject) {
-                    this._fileReadReject(new Error('无法读取文件内容'));
+                if (reject) {
+                    reject(new Error('无法读取文件内容'));
                 }
+                this._cleanupFileReadCallbacks();
                 return;
             }
 
@@ -500,24 +581,27 @@ const BatteryHealthApp = {
             try {
                 this._processBase64Content(
                     fileInfo,
-                    this._currentInitialCapacity,
-                    this._fileReadResolve,
-                    this._fileReadReject
+                    initialCapacity,
+                    resolve,
+                    reject
                 );
             } catch (error) {
                 console.error('Failed to process file:', error);
-                if (this._fileReadReject) {
-                    this._fileReadReject(error);
+                if (reject) {
+                    reject(error);
                 }
+            } finally {
+                this._cleanupFileReadCallbacks();
             }
             return;
         }
 
         // 新版本：文件信息对象
         if (!fileInfo || !fileInfo.url) {
-            if (this._fileReadReject) {
-                this._fileReadReject(new Error('文件信息无效'));
+            if (reject) {
+                reject(new Error('文件信息无效'));
             }
+            this._cleanupFileReadCallbacks();
             return;
         }
 
@@ -526,7 +610,6 @@ const BatteryHealthApp = {
         const fileUrl = fileInfo.url;
         const filePath = fileInfo.path;
         const fileSize = fileInfo.size;
-        const initialCapacity = this._currentInitialCapacity;
 
         console.log('Fetching file from:', fileUrl, 'size:', fileSize);
 
@@ -558,7 +641,7 @@ const BatteryHealthApp = {
                 }
 
                 // 解析ZIP
-                return this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
+                return this.processZipBlob(blob, initialCapacity, resolve, reject);
             })
             .catch(error => {
                 console.error('Failed to load file:', error);
@@ -569,10 +652,22 @@ const BatteryHealthApp = {
                         window.AndroidFilePicker.deleteTempFile(filePath);
                     } catch (e) {}
                 }
-                if (this._fileReadReject) {
-                    this._fileReadReject(new Error('文件加载失败: ' + error.message + ' (URL: ' + fileUrl + ')'));
+                if (reject) {
+                    reject(new Error('文件加载失败: ' + error.message + ' (URL: ' + fileUrl + ')'));
                 }
+            })
+            .finally(() => {
+                this._cleanupFileReadCallbacks();
             });
+    },
+
+    /**
+     * 清理文件读取回调引用，防止内存泄漏
+     */
+    _cleanupFileReadCallbacks() {
+        this._fileReadResolve = null;
+        this._fileReadReject = null;
+        this._currentInitialCapacity = null;
     },
 
     /**
@@ -583,6 +678,10 @@ const BatteryHealthApp = {
         if (this._fileReadReject) {
             this._fileReadReject(new Error(errorMessage || '文件读取失败'));
         }
+        // 清理引用防止内存泄漏
+        this._cleanupFileReadCallbacks();
+        // 重置UI状态
+        this.resetAnalysisState();
     },
     
     /**
@@ -593,28 +692,79 @@ const BatteryHealthApp = {
             this.updateProgress(40, '正在解压文件...');
             
             const zipReader = new zip.ZipReader(new zip.BlobReader(blob));
-            const entries = await zipReader.getEntries();
+            let entries = [];
+            try {
+                entries = await zipReader.getEntries();
+            } catch (zipError) {
+                console.error('Failed to read ZIP entries:', zipError);
+                await zipReader.close();
+                reject(new Error('ZIP文件读取失败，可能文件已损坏: ' + zipError.message));
+                return;
+            }
             
-            this.updateProgress(60, '正在查找电池信息...');
+            if (!entries || entries.length === 0) {
+                await zipReader.close();
+                reject(new Error('ZIP文件为空或无法读取'));
+                return;
+            }
+            
+            this.updateProgress(50, '正在查找电池信息...');
             
             // 检测品牌
             let detectedBrand = 'generic';
             let batteryInfo = null;
+            let processedCount = 0;
+            const maxFilesToCheck = Math.min(entries.length, 200); // 限制检查文件数量，避免卡顿
+            
+            // 优先检查可能包含电池信息的文件
+            const priorityEntries = entries.filter(e => {
+                const fn = e.filename.toLowerCase();
+                return fn.includes('battery') || fn.includes('dumpstate') || 
+                       fn.includes('bugreport') || fn.endsWith('.txt');
+            });
+            const otherEntries = entries.filter(e => {
+                const fn = e.filename.toLowerCase();
+                return !(fn.includes('battery') || fn.includes('dumpstate') || 
+                        fn.includes('bugreport') || fn.endsWith('.txt'));
+            });
+            const sortedEntries = priorityEntries.concat(otherEntries).slice(0, maxFilesToCheck);
             
             // 查找可能包含电池信息的文件
-            for (let i = 0; i < entries.length; i++) {
-                const entry = entries[i];
+            for (let i = 0; i < sortedEntries.length; i++) {
+                const entry = sortedEntries[i];
                 const filename = entry.filename.toLowerCase();
                 
-                // 更新进度
-                const progress = 60 + Math.round((i / entries.length) * 20);
-                this.updateProgress(progress, `正在分析: ${entry.filename}...`);
+                processedCount++;
+                
+                // 每处理5个文件更新一次进度，避免过于频繁的UI更新
+                if (processedCount % 5 === 0 || i === sortedEntries.length - 1) {
+                    const progress = Math.min(50 + Math.round((i / sortedEntries.length) * 35), 85);
+                    this.updateProgress(progress, `正在分析文件 (${processedCount}/${sortedEntries.length})...`);
+                    // 让出主线程，避免卡顿
+                    await new Promise(r => setTimeout(r, 0));
+                }
+                
+                // 只检查文本文件，跳过二进制文件
+                if (filename.endsWith('.png') || filename.endsWith('.jpg') || 
+                    filename.endsWith('.jpeg') || filename.endsWith('.gif') ||
+                    filename.endsWith('.mp4') || filename.endsWith('.ogg') ||
+                    filename.endsWith('.wav') || filename.endsWith('.bin') ||
+                    filename.endsWith('.so') || filename.endsWith('.dex')) {
+                    continue;
+                }
+                
+                // 跳过过大的单个文件 (>5MB)
+                if (entry.uncompressedSize && entry.uncompressedSize > 5 * 1024 * 1024) {
+                    console.log('Skipping large file:', entry.filename, entry.uncompressedSize);
+                    continue;
+                }
                 
                 // 查找电池相关文件
                 if (filename.includes('battery') || 
                     filename.includes('dumpstate') ||
                     filename.includes('bugreport') ||
-                    filename.endsWith('.txt')) {
+                    filename.endsWith('.txt') ||
+                    filename.endsWith('.log')) {
                     
                     try {
                         const content = await entry.getData(new zip.TextWriter());
@@ -626,7 +776,7 @@ const BatteryHealthApp = {
                         
                         // 解析电池信息
                         const info = BatteryParsers.parse(content, detectedBrand);
-                        if (info && info.currentCapacity) {
+                        if (info && info.currentCapacity && info.currentCapacity > 0) {
                             batteryInfo = info;
                             break;
                         }
@@ -636,20 +786,24 @@ const BatteryHealthApp = {
                 }
             }
             
-            await zipReader.close();
+            try {
+                await zipReader.close();
+            } catch (e) {
+                console.warn('Error closing zip reader:', e);
+            }
             
-            this.updateProgress(85, '正在计算健康度...');
+            this.updateProgress(90, '正在计算健康度...');
             
             if (batteryInfo) {
                 batteryInfo.brand = detectedBrand;
                 resolve(batteryInfo);
             } else {
-                reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件。'));
+                reject(new Error('未找到电池健康度信息。请确保上传的是正确的安卓手机诊断文件（包含battery、dumpsys等日志）。'));
             }
             
         } catch (error) {
             console.error('processZipBlob error:', error);
-            reject(error);
+            reject(new Error('文件处理失败: ' + (error.message || '未知错误')));
         }
     },
     
@@ -674,33 +828,46 @@ const BatteryHealthApp = {
         
         // 更新数值 - 添加动画效果
         const statValues = document.querySelectorAll('.stat-value');
-        statValues.forEach(el => el.classList.add('animate'));
+        if (statValues) {
+            statValues.forEach(el => el.classList.add('animate'));
+        }
         
-        document.getElementById('initial-capacity-value').textContent = initialCapacity;
-        document.getElementById('current-capacity-value').textContent = result.currentCapacity;
-        document.getElementById('health-percentage').textContent = healthPercentage;
-        document.getElementById('cycle-count').textContent = result.cycleCount || '未检测到';
-        document.getElementById('battery-temp').textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) : '未检测到';
+        const initialCapEl = document.getElementById('initial-capacity-value');
+        const currentCapEl = document.getElementById('current-capacity-value');
+        const healthPctEl = document.getElementById('health-percentage');
+        const cycleCountEl = document.getElementById('cycle-count');
+        const batteryTempEl = document.getElementById('battery-temp');
+        
+        if (initialCapEl) initialCapEl.textContent = initialCapacity;
+        if (currentCapEl) currentCapEl.textContent = result.currentCapacity;
+        if (healthPctEl) healthPctEl.textContent = healthPercentage;
+        if (cycleCountEl) cycleCountEl.textContent = result.cycleCount || '未检测到';
+        if (batteryTempEl) batteryTempEl.textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) : '未检测到';
         
         // 移除动画类
         setTimeout(() => {
-            statValues.forEach(el => el.classList.remove('animate'));
+            if (statValues) {
+                statValues.forEach(el => el.classList.remove('animate'));
+            }
         }, 300);
         
         // 更新电池进度条
         const batteryLevel = document.getElementById('battery-level');
-        batteryLevel.style.width = Math.min(healthPercentage, 100) + '%';
-        batteryLevel.classList.add('animate');
+        if (batteryLevel) {
+            batteryLevel.style.width = Math.min(parseFloat(healthPercentage), 100) + '%';
+            batteryLevel.classList.add('animate');
+        }
         
         // 设置健康状态
         const qualityIndicator = document.getElementById('quality-indicator');
         let qualityText = '';
         let qualityClass = '';
         
-        if (healthPercentage >= 85) {
+        const healthVal = parseFloat(healthPercentage);
+        if (healthVal >= 85) {
             qualityText = '电池状态良好';
             qualityClass = 'quality-good';
-        } else if (healthPercentage >= 70) {
+        } else if (healthVal >= 70) {
             qualityText = '电池状态一般';
             qualityClass = 'quality-fair';
         } else {
@@ -708,16 +875,19 @@ const BatteryHealthApp = {
             qualityClass = 'quality-poor';
         }
         
-        const iconClass = healthPercentage >= 85 ? 'check-circle' : healthPercentage >= 70 ? 'exclamation-circle' : 'times-circle';
-        qualityIndicator.innerHTML = `<span class="${qualityClass}"><i class="fas fa-${iconClass}"></i> ${qualityText}</span>`;
+        const iconClass = healthVal >= 85 ? 'check-circle' : healthVal >= 70 ? 'exclamation-circle' : 'times-circle';
+        if (qualityIndicator) {
+            qualityIndicator.innerHTML = `<span class="${qualityClass}"><i class="fas fa-${iconClass}"></i> ${qualityText}</span>`;
+        }
         
         // 显示原始数据
-        if (result.rawContent) {
-            document.getElementById('original-text').textContent = result.rawContent;
+        const originalTextEl = document.getElementById('original-text');
+        if (originalTextEl && result.rawContent) {
+            originalTextEl.textContent = result.rawContent;
         }
         
         // 显示保养建议
-        this.showMaintenanceAdvice(parseFloat(healthPercentage));
+        this.showMaintenanceAdvice(healthVal);
         
         // 显示健康等级评估
         this.showHealthGrade(result);
@@ -732,9 +902,11 @@ const BatteryHealthApp = {
         }
         
         // 显示结果
-        this.elements.result.classList.add('show');
-        this.elements.result.classList.add('animate-expand');
-        this.elements.result.scrollIntoView({ behavior: 'smooth' });
+        if (this.elements.result) {
+            this.elements.result.classList.add('show');
+            this.elements.result.classList.add('animate-expand');
+            this.elements.result.scrollIntoView({ behavior: 'smooth' });
+        }
         
         // 显示成功提示
         this.showToast('分析完成！', 'success');
@@ -750,6 +922,8 @@ const BatteryHealthApp = {
         const gradeEstimated = document.getElementById('health-grade-estimated');
         const gradeCycleCount = document.getElementById('grade-cycle-count');
         const gradeEstimatedHealth = document.getElementById('grade-estimated-health');
+        
+        if (!gradeBadge) return;
         
         if (result.healthGrade) {
             const grade = result.healthGrade;
@@ -771,18 +945,18 @@ const BatteryHealthApp = {
             gradeBadge.classList.add(gradeClassMap[grade.grade] || 'grade-b');
             
             // 设置描述和预估健康度
-            gradeDescription.textContent = grade.description;
-            gradeEstimated.textContent = `预估健康度范围：${grade.estimatedHealth}`;
-            gradeCycleCount.textContent = grade.cycleCount + ' 次';
-            gradeEstimatedHealth.textContent = grade.estimatedHealth;
+            if (gradeDescription) gradeDescription.textContent = grade.description;
+            if (gradeEstimated) gradeEstimated.textContent = `预估健康度范围：${grade.estimatedHealth}`;
+            if (gradeCycleCount) gradeCycleCount.textContent = grade.cycleCount + ' 次';
+            if (gradeEstimatedHealth) gradeEstimatedHealth.textContent = grade.estimatedHealth;
         } else {
             // 如果没有循环次数数据，显示提示
             gradeBadge.textContent = '?';
             gradeBadge.className = 'health-grade-badge grade-b';
-            gradeDescription.textContent = '无法评估健康等级';
-            gradeEstimated.textContent = '诊断文件未包含循环次数数据';
-            gradeCycleCount.textContent = '未检测到';
-            gradeEstimatedHealth.textContent = '-';
+            if (gradeDescription) gradeDescription.textContent = '无法评估健康等级';
+            if (gradeEstimated) gradeEstimated.textContent = '诊断文件未包含循环次数数据';
+            if (gradeCycleCount) gradeCycleCount.textContent = '未检测到';
+            if (gradeEstimatedHealth) gradeEstimatedHealth.textContent = '-';
         }
     },
     
@@ -793,12 +967,18 @@ const BatteryHealthApp = {
         const textDiv = document.getElementById('original-text');
         const btn = document.getElementById('toggle-text');
         
+        if (!textDiv || !btn) return;
+        
         if (textDiv.classList.contains('show')) {
             textDiv.classList.remove('show');
-            btn.innerHTML = '<i class="fas fa-eye"></i> 显示详情';
+            textDiv.setAttribute('aria-hidden', 'true');
+            btn.innerHTML = '<i class="fas fa-eye"></i> <span>显示详情</span>';
+            btn.setAttribute('aria-expanded', 'false');
         } else {
             textDiv.classList.add('show');
-            btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏详情';
+            textDiv.setAttribute('aria-hidden', 'false');
+            btn.innerHTML = '<i class="fas fa-eye-slash"></i> <span>隐藏详情</span>';
+            btn.setAttribute('aria-expanded', 'true');
         }
     },
     
@@ -807,6 +987,8 @@ const BatteryHealthApp = {
      */
     renderHistory() {
         const historyList = this.elements.historyList;
+        if (!historyList) return;
+        
         const history = HistoryManager.getAll();
         
         if (history.length === 0) {
@@ -834,9 +1016,10 @@ const BatteryHealthApp = {
      * 删除单条历史记录
      */
     deleteHistoryItem(id) {
-        if (confirm('确定删除此记录？')) {
+        if (typeof confirm !== 'undefined' && confirm('确定删除此记录？')) {
             HistoryManager.delete(id);
             this.renderHistory();
+            this.renderTrendChart();
         }
     },
     
@@ -848,22 +1031,38 @@ const BatteryHealthApp = {
         if (!searchInput) return;
         
         // 添加搜索建议
-        searchInput.addEventListener('input', this.debounce(() => {
+        const debouncedSearch = this.debounce(() => {
             const keyword = searchInput.value.trim();
-            if (keyword.length < 2) return;
+            if (keyword.length < 2) {
+                if (this.elements.capacitySearchResult) {
+                    this.elements.capacitySearchResult.classList.remove('show');
+                }
+                return;
+            }
             
             const results = BatteryDatabase.search(keyword);
             this.showCapacitySearchResults(results);
-        }, 300));
+        }, 300);
+        
+        searchInput.addEventListener('input', debouncedSearch);
+        
+        // 点击外部关闭搜索结果
+        document.addEventListener('click', (e) => {
+            if (this.elements.capacitySearchResult && 
+                !searchInput.contains(e.target) && 
+                !this.elements.capacitySearchResult.contains(e.target)) {
+                this.elements.capacitySearchResult.classList.remove('show');
+            }
+        });
     },
     
     /**
      * 搜索电池容量
      */
     searchCapacity() {
-        const keyword = this.elements.capacitySearchInput.value.trim();
+        const keyword = this.elements.capacitySearchInput ? this.elements.capacitySearchInput.value.trim() : '';
         if (keyword.length < 2) {
-            alert('请输入至少2个字符');
+            this.showToast('请输入至少2个字符', 'warning');
             return;
         }
         
@@ -876,9 +1075,10 @@ const BatteryHealthApp = {
      */
     showCapacitySearchResults(results) {
         const resultEl = this.elements.capacitySearchResult;
+        if (!resultEl) return;
         
         if (results.length === 0) {
-            resultEl.innerHTML = '<p style="color: #7f8c8d;">未找到匹配的手机型号</p>';
+            resultEl.innerHTML = '<p style="color: #7f8c8d; padding: 10px;">未找到匹配的手机型号</p>';
             resultEl.classList.add('show');
             return;
         }
@@ -898,8 +1098,12 @@ const BatteryHealthApp = {
      * 选择容量
      */
     selectCapacity(capacity) {
-        this.elements.initialCapacityInput.value = capacity;
-        this.elements.capacitySearchResult.classList.remove('show');
+        if (this.elements.initialCapacityInput) {
+            this.elements.initialCapacityInput.value = capacity;
+        }
+        if (this.elements.capacitySearchResult) {
+            this.elements.capacitySearchResult.classList.remove('show');
+        }
         this.validateCapacity();
     },
     
@@ -907,7 +1111,7 @@ const BatteryHealthApp = {
      * 清空历史记录
      */
     clearHistory() {
-        if (confirm('确定要清空所有历史记录吗？')) {
+        if (typeof confirm !== 'undefined' && confirm('确定要清空所有历史记录吗？')) {
             HistoryManager.clear();
             this.renderHistory();
             this.renderTrendChart();
@@ -920,6 +1124,8 @@ const BatteryHealthApp = {
      */
     renderTrendChart() {
         const trendChart = this.elements.trendChart;
+        if (!trendChart) return;
+        
         const trend = HistoryManager.getTrend();
         
         if (trend.length < 2) {
@@ -931,7 +1137,7 @@ const BatteryHealthApp = {
         const maxHealth = Math.max(...trend.map(t => t.health));
         
         trendChart.innerHTML = trend.slice(-10).map(item => {
-            const height = Math.round((item.health / maxHealth) * 80);
+            const height = Math.max(4, Math.round((item.health / maxHealth) * 80));
             return `<div class="trend-bar" style="height: ${height}px" data-value="${item.health}%"></div>`;
         }).join('');
     },
@@ -944,18 +1150,22 @@ const BatteryHealthApp = {
         const modelCount = document.getElementById('db-model-count');
         const brandCount = document.getElementById('db-brand-count');
         
-        if (modelCount) modelCount.textContent = stats.totalModels;
-        if (brandCount) brandCount.textContent = stats.totalBrands;
+        if (modelCount) modelCount.textContent = stats.totalModels || '500+';
+        if (brandCount) brandCount.textContent = stats.totalBrands || '15+';
     },
     
     /**
      * 检查首次访问
      */
     checkFirstVisit() {
-        const hasVisited = localStorage.getItem('battery_health_visited');
-        if (!hasVisited) {
-            this.elements.guideOverlay.classList.add('show');
-            this.elements.guideOverlay.setAttribute('aria-hidden', 'false');
+        try {
+            const hasVisited = localStorage.getItem('battery_health_visited');
+            if (!hasVisited && this.elements.guideOverlay) {
+                this.elements.guideOverlay.classList.add('show');
+                this.elements.guideOverlay.setAttribute('aria-hidden', 'false');
+            }
+        } catch (e) {
+            console.warn('localStorage not available:', e);
         }
     },
     
@@ -963,9 +1173,15 @@ const BatteryHealthApp = {
      * 关闭引导
      */
     closeGuide() {
-        this.elements.guideOverlay.classList.remove('show');
-        this.elements.guideOverlay.setAttribute('aria-hidden', 'true');
-        localStorage.setItem('battery_health_visited', 'true');
+        if (this.elements.guideOverlay) {
+            this.elements.guideOverlay.classList.remove('show');
+            this.elements.guideOverlay.setAttribute('aria-hidden', 'true');
+        }
+        try {
+            localStorage.setItem('battery_health_visited', 'true');
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+        }
     },
     
     /**
@@ -973,11 +1189,17 @@ const BatteryHealthApp = {
      */
     showToast(message, type = 'info') {
         const toast = this.elements.toast;
+        if (!toast) return;
         toast.textContent = message;
         toast.className = `toast show ${type}`;
         
-        setTimeout(() => {
-            toast.classList.remove('show');
+        // 清除之前的定时器
+        if (this._toastTimeout) {
+            clearTimeout(this._toastTimeout);
+        }
+        
+        this._toastTimeout = setTimeout(() => {
+            if (toast) toast.classList.remove('show');
         }, 3000);
     },
     
@@ -1058,6 +1280,8 @@ const BatteryHealthApp = {
         const advice = this.generateMaintenanceAdvice(healthPercentage);
         const maintenanceList = this.elements.maintenanceList;
         
+        if (!maintenanceList) return;
+        
         maintenanceList.innerHTML = advice.map(item => `
             <div class="maintenance-item">
                 <div class="maintenance-icon"><i class="fas ${item.icon}"></i></div>
@@ -1078,6 +1302,8 @@ const BatteryHealthApp = {
             return;
         }
         
+        const shareText = `电池健康度报告\n健康度: ${this.currentResult.healthPercentage}%\n当前容量: ${this.currentResult.currentCapacity}mAh\n初始容量: ${this.currentResult.initialCapacity}mAh`;
+        
         // 尝试使用 Web Share API
         if (navigator.share) {
             const shareData = {
@@ -1088,14 +1314,40 @@ const BatteryHealthApp = {
             
             navigator.share(shareData)
                 .then(() => this.showToast('分享成功', 'success'))
-                .catch(err => this.showToast('分享失败', 'error'));
+                .catch(err => {
+                    console.log('Share cancelled or failed:', err);
+                    // 分享失败时尝试复制到剪贴板
+                    this._copyToClipboard(shareText);
+                });
         } else {
             // 复制到剪贴板
-            const text = `电池健康度报告\n健康度: ${this.currentResult.healthPercentage}%\n当前容量: ${this.currentResult.currentCapacity}mAh\n初始容量: ${this.currentResult.initialCapacity}mAh`;
-            
+            this._copyToClipboard(shareText);
+        }
+    },
+    
+    /**
+     * 复制文本到剪贴板
+     */
+    _copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text)
                 .then(() => this.showToast('报告已复制到剪贴板', 'success'))
                 .catch(() => this.showToast('复制失败，请手动复制', 'error'));
+        } else {
+            // 降级方案
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                this.showToast('报告已复制到剪贴板', 'success');
+            } catch (e) {
+                this.showToast('复制失败，请手动复制', 'error');
+            }
         }
     },
     
@@ -1108,8 +1360,9 @@ const BatteryHealthApp = {
             return;
         }
         
-        // 生成报告文本
-        const report = `
+        try {
+            // 生成报告文本
+            const report = `
 电池健康度分析报告
 ========================
 
@@ -1127,18 +1380,24 @@ const BatteryHealthApp = {
 
 ========================
 本报告由电池健康度分析工具生成
-        `.trim();
-        
-        // 创建下载
-        const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `电池健康报告_${new Date().toISOString().slice(0,10)}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        this.showToast('报告已保存', 'success');
+            `.trim();
+            
+            // 创建下载
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `电池健康报告_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showToast('报告已保存', 'success');
+        } catch (error) {
+            console.error('Save report failed:', error);
+            this.showToast('保存失败: ' + error.message, 'error');
+        }
     },
     
     /**
@@ -1150,7 +1409,7 @@ const BatteryHealthApp = {
         console.log('=== Android file selected ===');
         console.log('URI:', uriString);
         console.log('Name:', fileName);
-        
+
         try {
             // 验证参数
             if (!uriString || !fileName) {
@@ -1158,7 +1417,7 @@ const BatteryHealthApp = {
                 this.showStatus('文件选择失败：参数错误', true);
                 return;
             }
-            
+
             // 显示文件名
             if (this.elements.selectedFileName) {
                 this.elements.selectedFileName.textContent = fileName;
@@ -1166,21 +1425,23 @@ const BatteryHealthApp = {
             if (this.elements.fileNameDisplay) {
                 this.elements.fileNameDisplay.style.display = 'flex';
             }
-            if (this.elements.fileValidationError) {
-                this.elements.fileValidationError.classList.remove('show');
+            const validationError = document.getElementById('file-validation-error');
+            if (validationError) {
+                validationError.classList.remove('show');
             }
-            
+
             // 验证文件类型
             if (!fileName.toLowerCase().endsWith('.zip')) {
                 console.warn('File is not a ZIP file:', fileName);
-                if (this.elements.fileValidationError) {
-                    this.elements.fileValidationError.textContent = '请选择 ZIP 格式的文件';
-                    this.elements.fileValidationError.classList.add('show');
+                if (validationError) {
+                    const errorText = document.getElementById('validation-error-text');
+                    if (errorText) errorText.textContent = '请选择 ZIP 格式的文件';
+                    validationError.classList.add('show');
                 }
                 this.currentFile = null;
                 return;
             }
-            
+
             // 创建一个模拟File对象用于后续处理
             // 关键修复：必须正确设置currentFile，handleAnalyze才能正常分析
             this.currentFile = {
@@ -1189,7 +1450,7 @@ const BatteryHealthApp = {
                 isAndroidUri: true,
                 size: -1 // 异步获取
             };
-            
+
             this.showToast('已选择文件: ' + fileName, 'success');
             console.log('currentFile set successfully:', this.currentFile);
         } catch (error) {
@@ -1205,10 +1466,29 @@ const BatteryHealthApp = {
     onMemoryWarning() {
         console.warn('Memory warning received from Android');
         this.showToast('内存紧张，正在优化...', 'warning');
-        
+
         // 如果正在处理大文件，显示警告
         if (this.currentFile && this.currentFile.isAndroidUri) {
             this.showStatus('内存紧张，处理可能较慢，请耐心等待', true);
+        }
+    },
+
+    /**
+     * 重置分析状态（用于错误恢复）
+     */
+    resetAnalysisState() {
+        this.currentFile = null;
+        this._cleanupFileReadCallbacks();
+        if (this.elements.calculateBtn) {
+            this.elements.calculateBtn.disabled = false;
+            this.elements.calculateBtn.classList.remove('loading');
+            const btnIcon = this.elements.calculateBtn.querySelector('i');
+            const btnSpan = this.elements.calculateBtn.querySelector('span');
+            if (btnIcon) btnIcon.className = 'fas fa-calculator';
+            if (btnSpan) btnSpan.textContent = '分析电池健康度';
+        }
+        if (this.elements.progressContainer) {
+            this.elements.progressContainer.classList.remove('show');
         }
     }
 };

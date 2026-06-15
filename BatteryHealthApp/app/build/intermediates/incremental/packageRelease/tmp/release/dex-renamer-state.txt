@@ -1,4 +1,4 @@
-#Sat Jun 13 10:38:05 UTC 2026
+#Mon Jun 15 06:04:52 UTC 2026
 base.0=/workspace/BatteryHealthApp/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 path.0=classes.dex
 renamed.0=classes.dex
