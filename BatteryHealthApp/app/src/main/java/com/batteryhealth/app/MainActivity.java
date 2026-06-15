@@ -756,6 +756,11 @@ public class MainActivity extends AppCompatActivity {
                     
                     // 第六步：回调 JS
                     runOnUiThread(() -> {
+                        // 安全检查：webView可能已被销毁
+                        if (webView == null) {
+                            Log.e(TAG, "webView is null, cannot callback JS");
+                            return;
+                        }
                         String jsCode = String.format(
                             "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
                             "  window.BatteryHealthApp.%s(%s);" +
