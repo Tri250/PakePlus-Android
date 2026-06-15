@@ -503,9 +503,12 @@ const BatteryHealthApp = {
             if (typeof result.voltage !== 'number') result.voltage = 0;
             if (!result.brand) result.brand = 'generic';
 
-            if (!result.currentCapacity && !result.cycleCount) {
+            if (!result.currentCapacity && !result.cycleCount && !result.batteryTemp) {
+                // 有 debugInfo 就显示它，帮助用户理解问题
+                const debugMsg = result.debugInfo || '未找到有效的电池数据';
+                console.warn('No valid battery data found. Debug:', debugMsg);
                 if (this._fileReadReject) {
-                    this._fileReadReject(new Error('未找到有效的电池容量或循环次数'));
+                    this._fileReadReject(new Error('未在文件中找到电池健康度信息。\n\n诊断信息：' + debugMsg.replace(/\n/g, ' ')));
                 }
                 return;
             }
