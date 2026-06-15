@@ -655,10 +655,21 @@ const BatteryHealthApp = {
     
     /**
      * 显示结果
+     * 融合新算法：使用综合评级算法 calculateBatteryGrade
      */
     displayResult(result, initialCapacity) {
-        const healthPercentage = ((result.currentCapacity / initialCapacity) * 100).toFixed(1);
-        
+        const healthPercentage = parseFloat(((result.currentCapacity / initialCapacity) * 100).toFixed(1));
+
+        // 使用新的综合评级算法
+        const batteryGrade = BatteryParsers.calculateBatteryGrade(
+            healthPercentage,
+            result.cycleCount || 0,
+            result.batteryTemp || null
+        );
+
+        // 获取温度状态
+        const tempStatus = BatteryParsers.getTemperatureStatus(result.batteryTemp || null);
+
         // 保存当前结果供分享/保存功能使用
         this.currentResult = {
             brand: result.brand,
@@ -667,75 +678,75 @@ const BatteryHealthApp = {
             healthPercentage: healthPercentage,
             cycleCount: result.cycleCount,
             batteryTemp: result.batteryTemp,
-            healthGrade: result.healthGrade,
+            healthGrade: batteryGrade,
+            tempStatus: tempStatus,
             voltage: result.voltage,
             technology: result.technology
         };
-        
+
         // 更新数值 - 添加动画效果
         const statValues = document.querySelectorAll('.stat-value');
         statValues.forEach(el => el.classList.add('animate'));
-        
-        document.getElementById('initial-capacity-value').textContent = initialCapacity;
-        document.getElementById('current-capacity-value').textContent = result.currentCapacity;
-        document.getElementById('health-percentage').textContent = healthPercentage;
-        document.getElementById('cycle-count').textContent = result.cycleCount || '未检测到';
-        document.getElementById('battery-temp').textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) : '未检测到';
-        
+
+        const initialCapEl = document.getElementById('initial-capacity-value');
+        const currentCapEl = document.getElementById('current-capacity-value');
+        const healthPctEl = document.getElementById('health-percentage');
+        const cycleCountEl = document.getElementById('cycle-count');
+        const batteryTempEl = document.getElementById('battery-temp');
+
+        if (initialCapEl) initialCapEl.textContent = initialCapacity;
+        if (currentCapEl) currentCapEl.textContent = result.currentCapacity;
+        if (healthPctEl) healthPctEl.textContent = healthPercentage;
+        if (cycleCountEl) cycleCountEl.textContent = result.cycleCount || '未检测到';
+        if (batteryTempEl) batteryTempEl.textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) + '°C' : '未检测到';
+
         // 移除动画类
         setTimeout(() => {
             statValues.forEach(el => el.classList.remove('animate'));
         }, 300);
-        
+
         // 更新电池进度条
         const batteryLevel = document.getElementById('battery-level');
-        batteryLevel.style.width = Math.min(healthPercentage, 100) + '%';
-        batteryLevel.classList.add('animate');
-        
-        // 设置健康状态
+        if (batteryLevel) {
+            batteryLevel.style.width = Math.min(healthPercentage, 100) + '%';
+            batteryLevel.classList.add('animate');
+        }
+
+        // 设置健康状态（使用新的评级）
         const qualityIndicator = document.getElementById('quality-indicator');
-        let qualityText = '';
-        let qualityClass = '';
-        
-        if (healthPercentage >= 85) {
-            qualityText = '电池状态良好';
-            qualityClass = 'quality-good';
-        } else if (healthPercentage >= 70) {
-            qualityText = '电池状态一般';
-            qualityClass = 'quality-fair';
-        } else {
-            qualityText = '电池状态较差，建议更换';
-            qualityClass = 'quality-poor';
+        if (qualityIndicator) {
+            let qualityText = batteryGrade.gradeDesc.split(' - ')[1] || '';
+            let qualityClass = batteryGrade.gradeClass;
+            const iconClass = batteryGrade.grade <= 'B' ? 'check-circle' : batteryGrade.grade === 'C' ? 'exclamation-circle' : 'times-circle';
+            qualityIndicator.innerHTML = `<span class="${qualityClass}"><i class="fas fa-${iconClass}"></i> ${qualityText}</span>`;
         }
-        
-        const iconClass = healthPercentage >= 85 ? 'check-circle' : healthPercentage >= 70 ? 'exclamation-circle' : 'times-circle';
-        qualityIndicator.innerHTML = `<span class="${qualityClass}"><i class="fas fa-${iconClass}"></i> ${qualityText}</span>`;
-        
+
         // 显示原始数据
-        if (result.rawContent) {
-            document.getElementById('original-text').textContent = result.rawContent;
+        const originalTextEl = document.getElementById('original-text');
+        if (originalTextEl && result.rawContent) {
+            originalTextEl.textContent = result.rawContent;
         }
-        
-        // 显示保养建议
-        this.showMaintenanceAdvice(parseFloat(healthPercentage));
-        
-        // 显示健康等级评估
-        this.showHealthGrade(result);
-        
+
+        // 显示保养建议（使用新的 MAINTENANCE_ADVICE）
+        this.showMaintenanceAdviceNew(batteryGrade.grade);
+
+        // 显示健康等级评估（使用新的评级）
+        this.showHealthGradeNew(batteryGrade, tempStatus);
+
         // 更新趋势图表
         this.renderTrendChart();
-        
+
         // 添加统计卡片动画
         const statsGrid = document.querySelector('.stats-grid');
         if (statsGrid) {
             statsGrid.classList.add('animate');
         }
-        
+
         // 显示结果
         this.elements.result.classList.add('show');
         this.elements.result.classList.add('animate-expand');
         this.elements.result.scrollIntoView({ behavior: 'smooth' });
-        
+
         // 显示成功提示
         this.showToast('分析完成！', 'success');
     },
@@ -1068,7 +1079,106 @@ const BatteryHealthApp = {
             </div>
         `).join('');
     },
-    
+
+    /**
+     * 显示健康等级评估（新方法）
+     * @param {Object} batteryGrade - 评级结果
+     * @param {Object} tempStatus - 温度状态
+     */
+    showHealthGradeNew(batteryGrade, tempStatus) {
+        const gradeBadge = document.getElementById('health-grade-badge');
+        const gradeDescription = document.getElementById('health-grade-description');
+        const gradeEstimated = document.getElementById('health-grade-estimated');
+        const gradeCycleCount = document.getElementById('grade-cycle-count');
+        const gradeEstimatedHealth = document.getElementById('grade-estimated-health');
+
+        if (!gradeBadge) return;
+
+        // 设置等级徽章
+        gradeBadge.textContent = batteryGrade.grade;
+        gradeBadge.className = 'health-grade-badge ' + batteryGrade.gradeClass;
+
+        // 设置描述
+        if (gradeDescription) gradeDescription.textContent = batteryGrade.gradeDesc;
+
+        // 设置综合评分
+        if (gradeEstimated) {
+            gradeEstimated.textContent = `综合评分：${batteryGrade.score}分`;
+        }
+
+        // 设置循环次数
+        if (gradeCycleCount) {
+            const cycleCount = this.currentResult?.cycleCount || '未检测到';
+            gradeCycleCount.textContent = cycleCount + (cycleCount !== '未检测到' ? ' 次' : '');
+        }
+
+        // 设置健康度
+        if (gradeEstimatedHealth) {
+            gradeEstimatedHealth.textContent = this.currentResult?.healthPercentage + '%' || '-';
+        }
+
+        // 添加温度状态显示（如果存在元素）
+        const tempStatusEl = document.getElementById('temp-status');
+        if (tempStatusEl && tempStatus) {
+            tempStatusEl.innerHTML = `<i class="fas ${tempStatus.icon}"></i> ${tempStatus.label}`;
+            tempStatusEl.className = tempStatus.className;
+        }
+    },
+
+    /**
+     * 显示保养建议（新方法）
+     * @param {string} grade - 评级等级 A/B/C/D/E
+     */
+    showMaintenanceAdviceNew(grade) {
+        const maintenanceList = this.elements.maintenanceList;
+        if (!maintenanceList) return;
+
+        const advice = MAINTENANCE_ADVICE[grade] || MAINTENANCE_ADVICE['C'];
+
+        let html = `<div class="maintenance-banner">${advice.banner}</div>`;
+
+        // 充电建议
+        html += '<div class="maintenance-section"><h4><i class="fas fa-plug"></i> 充电建议</h4>';
+        advice.charging.forEach(item => {
+            const itemClass = item.class || '';
+            html += `
+                <div class="maintenance-item ${itemClass}">
+                    <div class="maintenance-icon"><i class="fas fa-${item.icon}"></i></div>
+                    <div class="maintenance-content"><p>${item.text}</p></div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        // 使用建议
+        html += '<div class="maintenance-section"><h4><i class="fas fa-mobile-alt"></i> 使用建议</h4>';
+        advice.usage.forEach(item => {
+            const itemClass = item.class || '';
+            html += `
+                <div class="maintenance-item ${itemClass}">
+                    <div class="maintenance-icon"><i class="fas fa-${item.icon}"></i></div>
+                    <div class="maintenance-content"><p>${item.text}</p></div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        // 更换建议
+        html += '<div class="maintenance-section"><h4><i class="fas fa-tools"></i> 更换建议</h4>';
+        advice.replace.forEach(item => {
+            const itemClass = item.class || '';
+            html += `
+                <div class="maintenance-item ${itemClass}">
+                    <div class="maintenance-icon"><i class="fas fa-${item.icon}"></i></div>
+                    <div class="maintenance-content"><p>${item.text}</p></div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        maintenanceList.innerHTML = html;
+    },
+
     /**
      * 分享报告
      */

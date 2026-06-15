@@ -4,6 +4,257 @@
  * 支持小米、vivo、OPPO、华为、三星、魅族、努比亚等多品牌
  */
 
+// ============================================
+// 配置：各品牌解析规则（支持容量、循环次数、温度）
+// ============================================
+const BRAND_CONFIG = {
+    xiaomi: {
+        name: '小米/Redmi',
+        // 当前容量解析规则
+        capacityPatterns: [
+            /Min learned battery capacity:\s*(\d+)\s*mAh/i,
+            /fc=(\d+)/i,
+            /MF_05[=:\s]+(\d+)/i,
+            /charge_capacity[=:\s]+(\d+)/i,
+            /last_full_capacity[=:\s]+(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i,
+            /CHARGE_COUNTER[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1000, 1, 1, 1, 1, 1],
+        // 设计容量解析规则
+        designPatterns: [
+            /dc=(\d+)/i,
+            /MF_06[=:\s]+(\d+)/i,
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i
+        ],
+        // 循环次数解析规则
+        cyclePatterns: [
+            /CYCLE_COUNT[=:\s]+(\d+)/i,
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i,
+            /MF_02[=:\s]+(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i
+        ],
+        // 温度解析规则（单位0.1°C，需除以10）
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i,
+            /temp[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    huawei: {
+        name: '华为',
+        capacityPatterns: [
+            /healthd:[\s\S]*?capacity[=:\s]+(\d+)/i,
+            /battery_capacity[=:\s]+(\d+)/i,
+            /actual_capacity[=:\s]+(\d+)/i,
+            /Charge\s*capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1, 1, 1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i,
+            /dc=(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i,
+            /CYCLE_COUNT[=:\s]+(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    honor: {
+        name: '荣耀',
+        capacityPatterns: [
+            /healthd:[\s\S]*?capacity[=:\s]+(\d+)/i,
+            /battery_capacity[=:\s]+(\d+)/i,
+            /actual_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1, 1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i,
+            /dc=(\d+)/i
+        ],
+        cyclePatterns: [
+            /cc=(\d+)/i,
+            /cycle_count[=:\s]+(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i,
+            /CYCLE_COUNT[=:\s]+(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    oppo: {
+        name: 'OPPO',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /current_capacity[=:\s]+(\d+)/i,
+            /actual_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /last_full_capacity[=:\s]+(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1, 1, 1000, 1, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i,
+            /dc=(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i,
+            /CYCLE_COUNT[=:\s]+(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    vivo: {
+        name: 'vivo',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /charge_capacity[=:\s]+(\d+)/i,
+            /current_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1, 1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i,
+            /dc=(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i,
+            /CYCLE_COUNT[=:\s]+(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    oneplus: {
+        name: '一加',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /actual_capacity[=:\s]+(\d+)/i,
+            /last_full_capacity[=:\s]+(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1000, 1, 1, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /dc=(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i,
+            /charge_cycles[=:\s]+(\d+)/i,
+            /CYCLE_COUNT[=:\s]+(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /t=(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    samsung: {
+        name: '三星',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    meizu: {
+        name: '魅族',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    },
+    nubia: {
+        name: '努比亚',
+        capacityPatterns: [
+            /battery_capacity[=:\s]+(\d+)/i,
+            /fc=(\d+)/i,
+            /charge[_\s-]?counter[=:\s]+(\d+)/i
+        ],
+        capacityDivisor: [1, 1000, 1],
+        designPatterns: [
+            /design_capacity[=:\s]+(\d+)/i,
+            /nominal_capacity[=:\s]+(\d+)/i
+        ],
+        cyclePatterns: [
+            /cycle_count[=:\s]+(\d+)/i,
+            /cc=(\d+)/i
+        ],
+        tempPatterns: [
+            /temperature[=:\s]+(\d+)/i,
+            /battery_temperature[=:\s]+(\d+)/i
+        ],
+        tempDivisor: 10
+    }
+};
+
 const BatteryParsers = {
     /**
      * 智能单位转换：将 charge_counter 转换为 mAh
@@ -977,10 +1228,282 @@ const BatteryParsers = {
             default:
                 return this.parseGeneric(content);
         }
+    },
+
+    /**
+     * 使用 BRAND_CONFIG 提取电池数据（新方法）
+     * @param {string} text - 文件内容
+     * @param {string} brandKey - 品牌key
+     * @returns {Object} - 提取的电池数据
+     */
+    extractBatteryDataWithConfig(text, brandKey) {
+        const config = BRAND_CONFIG[brandKey] || BRAND_CONFIG.xiaomi;
+        const result = {
+            capacity: null,
+            designCapacity: null,
+            cycleCount: null,
+            temperature: null
+        };
+
+        // 提取当前容量
+        for (let i = 0; i < config.capacityPatterns.length; i++) {
+            const match = text.match(config.capacityPatterns[i]);
+            if (match) {
+                let value = parseInt(match[1]);
+                const divisor = config.capacityDivisor[i] || 1;
+                value = value / divisor;
+                result.capacity = Math.round(value);
+                break;
+            }
+        }
+
+        // 提取设计容量
+        for (const pattern of config.designPatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                result.designCapacity = parseInt(match[1]);
+                break;
+            }
+        }
+
+        // 提取循环次数
+        for (const pattern of config.cyclePatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                result.cycleCount = parseInt(match[1]);
+                break;
+            }
+        }
+
+        // 提取温度
+        for (const pattern of config.tempPatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                let tempValue = parseInt(match[1]);
+                result.temperature = tempValue / (config.tempDivisor || 10);
+                break;
+            }
+        }
+
+        return result;
+    },
+
+    /**
+     * 综合评级算法（新方法）
+     * @param {number} healthPercent - 健康度百分比
+     * @param {number} cycleCount - 循环次数
+     * @param {number} temperature - 温度
+     * @returns {Object} - 评级结果
+     */
+    calculateBatteryGrade(healthPercent, cycleCount, temperature) {
+        const weights = {
+            health: 0.5,
+            cycles: 0.3,
+            temperature: 0.2
+        };
+
+        // 健康度评分
+        let healthScore = healthPercent;
+
+        // 循环次数评分
+        let cycleScore = 100;
+        if (cycleCount !== null && cycleCount > 0) {
+            if (cycleCount <= 300) {
+                cycleScore = 100 - (cycleCount / 300) * 10;
+            } else if (cycleCount <= 500) {
+                cycleScore = 90 - ((cycleCount - 300) / 200) * 20;
+            } else if (cycleCount <= 800) {
+                cycleScore = 70 - ((cycleCount - 500) / 300) * 30;
+            } else {
+                cycleScore = Math.max(0, 40 - ((cycleCount - 800) / 200) * 20);
+            }
+        }
+
+        // 温度评分
+        let tempScore = 100;
+        if (temperature !== null) {
+            if (temperature >= 20 && temperature <= 35) {
+                tempScore = 100;
+            } else if (temperature < 20) {
+                tempScore = Math.max(60, 100 - (20 - temperature) * 2);
+            } else if (temperature > 35 && temperature <= 45) {
+                tempScore = Math.max(60, 100 - (temperature - 35) * 4);
+            } else if (temperature > 45) {
+                tempScore = Math.max(20, 60 - (temperature - 45) * 4);
+            }
+        }
+
+        // 综合评分
+        const totalScore = (healthScore * weights.health) +
+                           (cycleScore * weights.cycles) +
+                           (tempScore * weights.temperature);
+
+        // 评级判定
+        let grade, gradeClass, gradeDesc;
+        if (totalScore >= 90) {
+            grade = 'A';
+            gradeClass = 'grade-excellent';
+            gradeDesc = '优秀 - 电池状态极佳，可正常长期使用';
+        } else if (totalScore >= 80) {
+            grade = 'B';
+            gradeClass = 'grade-good';
+            gradeDesc = '良好 - 电池状态良好，日常使用无影响';
+        } else if (totalScore >= 70) {
+            grade = 'C';
+            gradeClass = 'grade-fair';
+            gradeDesc = '一般 - 电池轻度老化，续航略有下降';
+        } else if (totalScore >= 60) {
+            grade = 'D';
+            gradeClass = 'grade-poor';
+            gradeDesc = '较差 - 电池明显老化，建议关注续航变化';
+        } else {
+            grade = 'E';
+            gradeClass = 'grade-critical';
+            gradeDesc = '严重 - 电池严重老化，建议尽快更换';
+        }
+
+        return {
+            score: Math.round(totalScore),
+            grade: grade,
+            gradeClass: gradeClass,
+            gradeDesc: gradeDesc,
+            healthScore: Math.round(healthScore),
+            cycleScore: Math.round(cycleScore),
+            tempScore: Math.round(tempScore)
+        };
+    },
+
+    /**
+     * 温度状态判断
+     * @param {number} temperature - 温度
+     * @returns {Object} - 温度状态
+     */
+    getTemperatureStatus(temperature) {
+        if (temperature === null || temperature === undefined) {
+            return { label: '未知', className: '', icon: 'fa-question-circle' };
+        }
+        if (temperature < 20) {
+            return { label: '低温', className: 'temp-status-cold', icon: 'fa-snowflake' };
+        }
+        if (temperature >= 20 && temperature <= 35) {
+            return { label: '正常', className: 'temp-status-normal', icon: 'fa-check-circle' };
+        }
+        if (temperature > 35 && temperature <= 45) {
+            return { label: '偏高', className: 'temp-status-high', icon: 'fa-exclamation-circle' };
+        }
+        return { label: '危险', className: 'temp-status-danger', icon: 'fa-fire' };
+    }
+};
+
+// ============================================
+// 电池保养建议系统
+// ============================================
+const MAINTENANCE_ADVICE = {
+    A: {
+        banner: '您的电池状态极佳，继续保持良好的使用习惯即可',
+        charging: [
+            { text: '最佳充电区间为20%-80%，可进一步延长电池寿命', icon: 'check-circle' },
+            { text: '避免长时间保持100%满电状态', icon: 'check-circle' },
+            { text: '使用原装或认证充电器，确保充电稳定', icon: 'check-circle' },
+            { text: '夜间充电建议开启智能充电保护功能', icon: 'check-circle' }
+        ],
+        usage: [
+            { text: '避免边充边玩大型游戏或进行高负载操作', icon: 'check-circle' },
+            { text: '避免在高温环境（如车内、阳光直射）下使用', icon: 'check-circle' },
+            { text: '定期清理后台应用，减少不必要的电量消耗', icon: 'check-circle' },
+            { text: '保持系统更新，获取最新的电池管理优化', icon: 'check-circle' }
+        ],
+        replace: [
+            { text: '当前电池状态优秀，无需更换', icon: 'check-circle' },
+            { text: '预计仍可正常使用2年以上', icon: 'check-circle' },
+            { text: '建议每半年进行一次电池健康检查', icon: 'check-circle' }
+        ]
+    },
+    B: {
+        banner: '您的电池状态良好，注意保养可延长使用寿命',
+        charging: [
+            { text: '最佳充电区间为20%-80%，避免过充过放', icon: 'check-circle' },
+            { text: '电量达到80%后建议拔掉充电器', icon: 'info-circle' },
+            { text: '避免电量低于20%再充电，及时补电', icon: 'info-circle' },
+            { text: '尽量使用慢充，减少快充对电池的损耗', icon: 'info-circle' }
+        ],
+        usage: [
+            { text: '减少边充边玩的频率，尤其是游戏和视频', icon: 'info-circle' },
+            { text: '避免手机长时间处于高温环境', icon: 'info-circle' },
+            { text: '关闭不必要的定位、蓝牙等功能', icon: 'check-circle' },
+            { text: '使用省电模式延长单次续航时间', icon: 'check-circle' }
+        ],
+        replace: [
+            { text: '当前电池状态良好，无需立即更换', icon: 'check-circle' },
+            { text: '预计可继续使用1-2年', icon: 'check-circle' },
+            { text: '如感觉续航明显下降，可考虑更换', icon: 'info-circle' }
+        ]
+    },
+    C: {
+        banner: '您的电池出现轻度老化，需要加强保养并关注续航变化',
+        charging: [
+            { text: '严格控制充电区间在20%-80%之间', icon: 'exclamation-circle', class: 'warning' },
+            { text: '避免过夜充电，充满后及时拔掉', icon: 'exclamation-circle', class: 'warning' },
+            { text: '减少快充使用频率，优先使用普通充电', icon: 'info-circle' },
+            { text: '充电时取下手机壳，帮助散热', icon: 'info-circle' }
+        ],
+        usage: [
+            { text: '严禁边充边玩，尤其是游戏和高负载应用', icon: 'exclamation-circle', class: 'warning' },
+            { text: '避免在高温环境下长时间使用', icon: 'exclamation-circle', class: 'warning' },
+            { text: '开启省电模式，限制后台活动', icon: 'info-circle' },
+            { text: '降低屏幕亮度和刷新率以节省电量', icon: 'info-circle' }
+        ],
+        replace: [
+            { text: '电池已轻度老化，建议关注续航表现', icon: 'info-circle' },
+            { text: '如每日需要多次充电，建议准备备用电池或充电宝', icon: 'info-circle' },
+            { text: '预计半年到一年内可能需要更换', icon: 'exclamation-circle', class: 'warning' }
+        ]
+    },
+    D: {
+        banner: '您的电池老化明显，建议尽快更换以恢复良好体验',
+        charging: [
+            { text: '充电区间严格控制在30%-80%', icon: 'exclamation-circle', class: 'warning' },
+            { text: '避免完全放电后再充电，随用随充', icon: 'exclamation-circle', class: 'warning' },
+            { text: '切勿边充边用，充电时尽量不使用手机', icon: 'exclamation-circle', class: 'danger' },
+            { text: '使用原装充电器，避免使用劣质充电设备', icon: 'exclamation-circle', class: 'warning' }
+        ],
+        usage: [
+            { text: '绝对避免边充边玩，防止电池过热', icon: 'exclamation-circle', class: 'danger' },
+            { text: '避免在高温环境使用，注意散热', icon: 'exclamation-circle', class: 'danger' },
+            { text: '始终开启省电模式，延长使用时间', icon: 'warning' },
+            { text: '减少高负载应用使用，降低功耗', icon: 'warning' }
+        ],
+        replace: [
+            { text: '电池已明显老化，建议尽快更换', icon: 'exclamation-circle', class: 'warning' },
+            { text: '续航已严重下降，影响日常使用', icon: 'exclamation-circle', class: 'warning' },
+            { text: '建议前往官方售后更换原装电池', icon: 'info-circle' },
+            { text: '更换后电池健康度可恢复至95%以上', icon: 'check-circle' }
+        ]
+    },
+    E: {
+        banner: '您的电池严重老化，请立即更换，避免安全隐患',
+        charging: [
+            { text: '充电时务必有人看管，避免无人值守', icon: 'exclamation-circle', class: 'danger' },
+            { text: '避免过夜充电，充满立即拔掉', icon: 'exclamation-circle', class: 'danger' },
+            { text: '切勿边充边用，防止过热引发危险', icon: 'exclamation-circle', class: 'danger' },
+            { text: '仅使用原装充电器，确保充电安全', icon: 'exclamation-circle', class: 'danger' }
+        ],
+        usage: [
+            { text: '严禁边充边用，存在安全风险', icon: 'exclamation-circle', class: 'danger' },
+            { text: '避免任何高温环境下使用', icon: 'exclamation-circle', class: 'danger' },
+            { text: '如电池鼓包或发热异常，立即停止使用', icon: 'exclamation-circle', class: 'danger' },
+            { text: '尽量减少使用，准备更换', icon: 'warning' }
+        ],
+        replace: [
+            { text: '电池严重老化，请立即更换', icon: 'exclamation-circle', class: 'danger' },
+            { text: '继续使用可能存在安全隐患', icon: 'exclamation-circle', class: 'danger' },
+            { text: '建议立即前往官方售后更换', icon: 'exclamation-circle', class: 'danger' },
+            { text: '更换后设备续航将大幅改善', icon: 'check-circle' }
+        ]
     }
 };
 
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = BatteryParsers;
+    module.exports = { BatteryParsers, BRAND_CONFIG, MAINTENANCE_ADVICE };
 }
