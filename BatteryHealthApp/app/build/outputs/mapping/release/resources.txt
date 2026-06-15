@@ -22,6 +22,7 @@ shtml
 android.speech.extra.RESULTS_PENDINGI...
 vnd.android.cursor.dir/contact
 generatedAdapters
+oppo.cycle_count
 android.hardware.display.category.PRE...
 SOURCE_AUTOFILL
 text_hint_inverse
@@ -103,6 +104,7 @@ KeyAttributes
 control_normal
 durationMillis
 getFactory
+l
 kotlin.String
 m
 OnClick
@@ -167,6 +169,7 @@ _invoked
 BatteryHealthApp
 locale
 android:layout_constrainedHeight
+fallback.charge_counter
 SDK_INT
 samsung
 expanded
@@ -313,6 +316,7 @@ dispatchFinishTemporaryDetach
 audio/mpeg
 chipIconVisible
 android.car.EXTENSIONS
+fallback.temperature
 matchDef
 StreamFiles
 CheckedTextViewCompat
@@ -463,6 +467,7 @@ androidx.recyclerview.widget.Recycler...
 androidx.view.accessibility.Accessibi...
 REPLACE
 markState
+actual
 extraLocusId
 .proto
 .new
@@ -590,6 +595,7 @@ android:changeScroll:x
 android:changeBounds:bounds
 neutral_palette_key_color
 android:changeScroll:y
+uah
 materialContainerTransition:bounds
 editor
 SETTLING
@@ -768,6 +774,7 @@ info
 getRealSize
 app:layout_goneMarginEnd
 parcel
+healthd.cc
 .json
 secondary_fixed_dim
 toScene
@@ -813,6 +820,7 @@ app:layout_constraintCircleRadius
 custom
 IconCompat
 app:layout_constraintHeight_max
+charge_capacity
 LIGHTEN
 CAPABILITY_CAN_REQUEST_TOUCH_EXPLORATION
 app:layout_constraintWidth_percent
@@ -883,6 +891,7 @@ app:baselineToBottom
 targets
 android.intent.action.CREATE_REMINDER
 file
+mah
 stream
 waiters
 WEB_MESSAGE_ARRAY_BUFFER
@@ -895,6 +904,7 @@ allowFreeFormInput
 factoryProducer
 HIDE
 android.intent.extra.MIME_TYPES
+battery_level
 listeners
 controlY2
 max
@@ -1614,6 +1624,7 @@ design_capacity
 OP_POST_NOTIFICATION
 handleLifecycleEvent
 on_secondary
+chargecapacity
 COMPLETING_ALREADY
 app:layout_constraintRight_toLeftOf
 My
@@ -1732,6 +1743,7 @@ android.template
 androidx.core.content.pm.shortcut_lis...
 kotlin.Double
 AppCompatDelegate
+fallback.cycle_count
 lifecycle
 voltage_now
 ContextCompat
@@ -1785,6 +1797,7 @@ START_SAFE_BROWSING
 androidx.appcompat.app.AppLocalesMeta...
 android.intent.extra.CHANNEL_GROUP_ID
 min_learned_battery_capacity
+learned
 SOURCE_CLIPBOARD
 Dispatchers.Main
 XA
@@ -1869,6 +1882,7 @@ android.permission.ACCESS_FINE_LOCATION
 ViewGroup.kt
 mContentInsets
 mToken
+miui.fcc
 springdamping
 java.util.Map$Entry
 display
@@ -1990,6 +2004,7 @@ ACTION_UNKNOWN
 defaultLifecycleObserver
 continuousVelocity
 android.intent.extra.shortcut.ICON
+ah
 FLAG_CONVERT_TO_PLAIN_TEXT
 SOURCE_PROCESS_TEXT
 al
@@ -1999,6 +2014,7 @@ ReceiveContent
 BundleCompatBaseImpl
 traceCounter
 ar
+healthd.t
 kotlinx.coroutines.scheduler.resoluti...
 FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY
 web_search
@@ -2103,6 +2119,7 @@ android:switcher:
 tertiary_fixed
 END
 ACTION_ACCESSIBILITY_FOCUS
+fc
 EMd
 127.0.0.1
 minimumHorizontalAngle
@@ -2177,6 +2194,7 @@ maxUpdates
 surface_variant
 kotlin.jvm.internal.
 drawPath
+容量
 DST_IN
 motion_base
 .dex
@@ -2249,6 +2267,7 @@ NULL
 TOO_LATE_TO_CANCEL
 ArraySet
 cancelLabel
+level
 author
 /bha/
 switchMapFunction
@@ -2300,6 +2319,7 @@ keyguard
 getIBinder
 COROUTINE_SUSPENDED
 androidx.lifecycle.PausingDispatcherK...
+miui.cycle_count
 MenuItemImpl
 android:changeTransform:matrix
 app:layout_constraintBottom_toBottomOf
@@ -2412,6 +2432,7 @@ verticalBias
 pjpeg
 FEEDBACK_AUDIBLE
 resultKey
+满充
 TYPE_ACCESSIBILITY_OVERLAY
 dest
 cancellable
@@ -2529,7 +2550,6 @@ java.lang.Double
 flac
 range
 .mid
-capacity
 promo
 com.sony.dtv.hardware.panel.qfhd
 get
