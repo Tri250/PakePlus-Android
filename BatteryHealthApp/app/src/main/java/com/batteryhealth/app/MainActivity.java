@@ -716,6 +716,13 @@ public class MainActivity extends AppCompatActivity {
                     
                     Log.d(TAG, "File copied to: " + tempFile.getAbsolutePath() + " size=" + tempFile.length());
                     
+                    // v2.1.3: 进度更新 - 文件复制完成
+                    safeEvaluateJavascript(
+                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                        "  window.BatteryHealthApp.updateProgress(30, '正在解析电池数据...');" +
+                        "}"
+                    );
+                    
                     // 第二步：初始化 Native 库
                     BatteryAnalyzer.init();
                     if (!BatteryAnalyzer.isNativeAvailable()) {
@@ -723,8 +730,22 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                     
-                    // 第三步：解析文件
+                    // v2.1.3: 进度更新 - 开始解析
+                    safeEvaluateJavascript(
+                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                        "  window.BatteryHealthApp.updateProgress(50, '正在提取电池信息...');" +
+                        "}"
+                    );
+                    
+                    // 第三步：解析文件（v2.1.3: Java预过滤 → Native快速解析）
                     BatteryParseResult parseResult = BatteryAnalyzer.parseFile(tempFile.getAbsolutePath());
+                    
+                    // v2.1.3: 进度更新 - 解析完成
+                    safeEvaluateJavascript(
+                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                        "  window.BatteryHealthApp.updateProgress(70, '正在计算健康度...');" +
+                        "}"
+                    );
                     
                     if (parseResult == null || !parseResult.hasData) {
                         Log.w(TAG, "Native parse returned no data");

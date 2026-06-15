@@ -26,6 +26,8 @@ public class BatteryAnalyzer {
     
     // 文本大小限制：超过此限制只取前10MB传给Native，防止OOM/SIGSEGV
     private static final int MAX_TEXT_SIZE = 10 * 1024 * 1024; // 10MB
+    // 预过滤后传给Native的最大文本大小
+    private static final int MAX_FILTERED_SIZE = 2 * 1024 * 1024; // 2MB
     // 单条目最大大小
     private static final int MAX_ENTRY_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -224,40 +226,57 @@ public class BatteryAnalyzer {
     }
 
     /**
-     * 安全解析文本 - 先限制大小再传给Native
-     * 如果Native失败，回退到Java兜底（仅对截断文本）
+     * 安全解析文本 - v2.1.3 核心修复：预过滤 + 先Java后Native
+     * 
+     * 问题：std::regex_search 在10MB文本上运行20+次 → 卡死
+     * 修复：Java预过滤只保留电池相关行 → ~100KB → 传给Native秒级完成
      */
     private static BatteryParseResult parseTextSafe(String text) {
         if (text == null || text.isEmpty()) {
             return new BatteryParseResult();
         }
         
-        // 限制文本大小，防止Native OOM/SIGSEGV
+        // 限制原始文本大小
         String safeText = text;
         if (text.length() > MAX_TEXT_SIZE) {
             Log.w(TAG, "Text too large (" + text.length() + "), truncating to " + MAX_TEXT_SIZE);
             safeText = text.substring(0, MAX_TEXT_SIZE);
         }
         
-        byte[] textBytes = safeText.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        BatteryParseResult result = parseTextContent(textBytes);
+        // v2.1.3: 先用Java正则快速解析（对全文本，Java引擎更快）
+        BatteryParseResult result = parseWithJavaFallback(safeText);
         
-        // 如果 Native 解析失败，尝试 Java 正则兜底（仅在截断文本上）
-        if (!result.hasData) {
-            Log.w(TAG, "Native parse returned no data, trying Java fallback");
-            result = parseWithJavaFallback(safeText);
+        // 如果Java解析成功，直接返回
+        if (result.hasData) {
+            Log.d(TAG, "Java parse succeeded, hasData=true");
+            result.parseLog = "Java解析 | 文本:" + safeText.length();
+            return result;
         }
         
-        // 添加解析日志
-        if (result.parseLog == null || result.parseLog.isEmpty()) {
-            result.parseLog = "文本长度:" + safeText.length() + " | 原始:" + text.length();
+        // v2.1.3: Java失败时才用Native，但先预过滤文本
+        Log.d(TAG, "Java parse found no data, trying pre-filtered native");
+        String filteredText = preFilterBatteryLines(safeText);
+        Log.d(TAG, "Filtered text: " + safeText.length() + " → " + filteredText.length());
+        
+        if (filteredText.length() > MAX_FILTERED_SIZE) {
+            filteredText = filteredText.substring(0, MAX_FILTERED_SIZE);
+        }
+        
+        byte[] textBytes = filteredText.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        BatteryParseResult nativeResult = parseTextContent(textBytes);
+        
+        if (nativeResult.hasData) {
+            result = nativeResult;
+            result.parseLog = "Native解析 | 过滤后:" + filteredText.length() + " | 原始:" + safeText.length();
+        } else {
+            result.parseLog = "未找到电池信息 | 文本:" + safeText.length();
         }
         
         return result;
     }
 
     /**
-     * 安全解析文本（从字节数组）- 带完整异常保护
+     * 安全解析文本（从字节数组）- 带完整异常保护 + v2.1.3预过滤
      */
     private static BatteryParseResult parseTextSafe(byte[] content) {
         if (content == null || content.length == 0) {
@@ -272,7 +291,77 @@ public class BatteryAnalyzer {
             content = truncated;
         }
         
-        return parseTextContent(content);
+        // v2.1.3: 先转String然后用预过滤逻辑
+        try {
+            String text = new String(content, "UTF-8");
+            return parseTextSafe(text);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to decode bytes: " + e.getMessage());
+            return new BatteryParseResult();
+        }
+    }
+
+    /**
+     * 预过滤文本，只保留电池相关行 - v2.1.3 核心优化
+     * 
+     * 将10MB文本缩减到~100KB，Native regex不再卡死
+     * 使用 StringBuilder + indexOf 高效扫描，避免 split 创建大量临时对象
+     */
+    private static String preFilterBatteryLines(String text) {
+        if (text == null || text.isEmpty()) return "";
+        
+        StringBuilder filtered = new StringBuilder(Math.min(text.length(), 512 * 1024));
+        int len = text.length();
+        int lineStart = 0;
+        
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
+            if (c == '\n' || c == '\r' || i == len - 1) {
+                // 提取行
+                int lineEnd = (c == '\n' || c == '\r') ? i : i + 1;
+                String line = text.substring(lineStart, lineEnd);
+                
+                // 快速检查是否包含电池关键词
+                if (containsBatteryKeyword(line)) {
+                    filtered.append(line);
+                    if (c == '\n') filtered.append('\n');
+                }
+                
+                // 跳过 \r\n
+                if (c == '\r' && i + 1 < len && text.charAt(i + 1) == '\n') {
+                    i++;
+                }
+                lineStart = i + 1;
+            }
+        }
+        
+        return filtered.toString();
+    }
+    
+    /**
+     * 快速检查行是否包含电池关键词
+     */
+    private static boolean containsBatteryKeyword(String line) {
+        // 使用 indexOf 比正则快得多
+        if (line.contains("healthd:")) return true;
+        if (line.contains("fc=")) return true;
+        if (line.contains("cc=")) return true;
+        if (line.contains("MF_05")) return true;
+        if (line.contains("MF_06")) return true;
+        if (line.contains("MF_08")) return true;
+        if (line.contains("QG_01")) return true;
+        if (line.contains("QG_02")) return true;
+        if (line.contains("QG_03")) return true;
+        if (line.contains("ro.product.brand")) return true;
+        if (line.contains("ro.product.model")) return true;
+        if (line.contains("ro.product.manufacturer")) return true;
+        if (line.contains("DesignCapacity")) return true;
+        if (line.contains("full charge")) return true;
+        if (line.contains("Min learned battery capacity")) return true;
+        if (line.contains("battery cycle")) return true;
+        if (line.contains("charge cycle")) return true;
+        if (line.contains("battery temperature")) return true;
+        return false;
     }
 
     /**
