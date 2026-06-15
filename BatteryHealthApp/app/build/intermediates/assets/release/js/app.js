@@ -344,11 +344,17 @@ const BatteryHealthApp = {
             this.displayResult(result, initialCapacity);
             
             // 保存到历史记录
+            // v2.1.9 修复：使用 designCapacity 计算健康度
+            const designCapForHistory = result.designCapacity > 0 ? result.designCapacity : initialCapacity;
+            const healthPctForHistory = designCapForHistory > 0
+                ? ((result.currentCapacity / designCapForHistory) * 100).toFixed(1)
+                : '0';
             HistoryManager.add({
                 brand: result.brand || 'unknown',
                 initialCapacity: initialCapacity,
+                designCapacity: result.designCapacity,
                 currentCapacity: result.currentCapacity,
-                healthPercentage: ((result.currentCapacity / initialCapacity) * 100).toFixed(1),
+                healthPercentage: healthPctForHistory,
                 cycleCount: result.cycleCount,
                 batteryTemp: result.batteryTemp
             });
@@ -490,6 +496,7 @@ const BatteryHealthApp = {
 
             // 归一化字段
             if (typeof result.currentCapacity !== 'number') result.currentCapacity = 0;
+            if (typeof result.designCapacity !== 'number') result.designCapacity = 0;
             if (typeof result.cycleCount !== 'number') result.cycleCount = 0;
             if (typeof result.batteryTemp !== 'number') result.batteryTemp = 0;
             if (typeof result.chargeCounter !== 'number') result.chargeCounter = 0;
@@ -764,9 +771,14 @@ const BatteryHealthApp = {
     /**
      * 显示结果
      * 融合新算法：使用综合评级算法 calculateBatteryGrade
+     * v2.1.9 修复：使用从文件解析的 designCapacity 计算健康度，而非用户输入的 initialCapacity
      */
     displayResult(result, initialCapacity) {
-        const healthPercentage = parseFloat(((result.currentCapacity / initialCapacity) * 100).toFixed(1));
+        // 优先使用从文件解析的设计容量，如果没有则使用用户输入的初始容量
+        const designCap = result.designCapacity > 0 ? result.designCapacity : initialCapacity;
+        const healthPercentage = designCap > 0
+            ? parseFloat(((result.currentCapacity / designCap) * 100).toFixed(1))
+            : 0;
 
         // 使用新的综合评级算法
         const batteryGrade = BatteryParsers.calculateBatteryGrade(
@@ -782,6 +794,7 @@ const BatteryHealthApp = {
         this.currentResult = {
             brand: result.brand,
             initialCapacity: initialCapacity,
+            designCapacity: result.designCapacity,
             currentCapacity: result.currentCapacity,
             healthPercentage: healthPercentage,
             cycleCount: result.cycleCount,
@@ -802,7 +815,8 @@ const BatteryHealthApp = {
         const cycleCountEl = document.getElementById('cycle-count');
         const batteryTempEl = document.getElementById('battery-temp');
 
-        if (initialCapEl) initialCapEl.textContent = initialCapacity;
+        // 显示设计容量（从文件解析）而非用户输入的初始容量
+        if (initialCapEl) initialCapEl.textContent = designCap > 0 ? designCap : initialCapacity;
         if (currentCapEl) currentCapEl.textContent = result.currentCapacity > 0 ? result.currentCapacity : '未检测到';
         if (healthPctEl) healthPctEl.textContent = result.currentCapacity > 0 ? healthPercentage : '0';
         if (cycleCountEl) cycleCountEl.textContent = result.cycleCount > 0 ? result.cycleCount : '未检测到';
@@ -943,7 +957,7 @@ const BatteryHealthApp = {
             <div class="history-item" role="listitem" data-id="${item.id}">
                 <div class="info">
                     <div class="history-date">${HistoryManager.formatDate(item.timestamp)}</div>
-                    <div class="history-detail">${item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? `· ${item.cycleCount}次循环` : ''}</div>
+                    <div class="history-detail">${item.designCapacity || item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? `· ${item.cycleCount}次循环` : ''}</div>
                 </div>
                 <div class="history-health ${HistoryManager.getHealthColor(item.healthPercentage)}">
                     ${item.healthPercentage}%
@@ -1315,7 +1329,7 @@ const BatteryHealthApp = {
                 .catch(err => this.showToast('分享失败', 'error'));
         } else {
             // 复制到剪贴板
-            const text = `电池健康度报告\n健康度: ${this.currentResult.healthPercentage}%\n当前容量: ${this.currentResult.currentCapacity}mAh\n初始容量: ${this.currentResult.initialCapacity}mAh`;
+            const text = `电池健康度报告\n健康度: ${this.currentResult.healthPercentage}%\n当前容量: ${this.currentResult.currentCapacity}mAh\n设计容量: ${this.currentResult.designCapacity || this.currentResult.initialCapacity}mAh`;
             
             navigator.clipboard.writeText(text)
                 .then(() => this.showToast('报告已复制到剪贴板', 'success'))
@@ -1341,7 +1355,7 @@ const BatteryHealthApp = {
 品牌识别: ${this.currentResult.brand || '未知'}
 
 电池数据:
-- 初始容量: ${this.currentResult.initialCapacity} mAh
+- 设计容量: ${this.currentResult.designCapacity || this.currentResult.initialCapacity} mAh
 - 当前容量: ${this.currentResult.currentCapacity} mAh
 - 健康度: ${this.currentResult.healthPercentage}%
 - 循环次数: ${this.currentResult.cycleCount || '未检测到'}
