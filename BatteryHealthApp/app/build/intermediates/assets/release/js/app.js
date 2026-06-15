@@ -809,12 +809,18 @@ const BatteryHealthApp = {
      * 显示结果
      */
     displayResult(result, initialCapacity) {
-        // 安全计算健康百分比，避免除零
-        const safeCurrentCapacity = result.currentCapacity || 0;
-        const safeInitialCapacity = initialCapacity || 1;
-        const healthPercentage = safeCurrentCapacity > 0 
-            ? ((safeCurrentCapacity / safeInitialCapacity) * 100).toFixed(1)
-            : '0.0';
+        // 优先使用 C++ 计算器的加权健康度（多因子综合评估）
+        // 仅在无 C++ 结果时回退到简单容量除法
+        let healthPercentage;
+        if (result._nativeResult && result._nativeResult.healthPercentage > 0) {
+            healthPercentage = result._nativeResult.healthPercentage.toFixed(1);
+        } else {
+            const safeCurrentCapacity = result.currentCapacity || 0;
+            const safeInitialCapacity = initialCapacity || 1;
+            healthPercentage = safeCurrentCapacity > 0 
+                ? ((safeCurrentCapacity / safeInitialCapacity) * 100).toFixed(1)
+                : '0.0';
+        }
         
         // 保存当前结果供分享/保存功能使用
         this.currentResult = {

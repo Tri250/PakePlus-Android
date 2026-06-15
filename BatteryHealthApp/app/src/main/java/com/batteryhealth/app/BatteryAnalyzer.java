@@ -337,7 +337,10 @@ public class BatteryAnalyzer {
                 "(?:healthd:.*?fc[=:\\s]+(\\d+)|\\bfc[=:\\s]+(\\d+))").matcher(text);
             if (fcMatcher.find()) {
                 String fcVal = fcMatcher.group(1) != null ? fcMatcher.group(1) : fcMatcher.group(2);
-                result.currentCapacityMah = Integer.parseInt(fcVal);
+                int fcInt = Integer.parseInt(fcVal);
+                if (fcInt > 0) {
+                    result.currentCapacityMah = fcInt;
+                }
             }
 
             // 提取循环次数 - healthd 格式 (cc= 必须在 healthd 行或独立行)
@@ -345,7 +348,10 @@ public class BatteryAnalyzer {
                 "(?:healthd:.*?cc[=:\\s]+(\\d+)|\\bcc[=:\\s]+(\\d+))").matcher(text);
             if (ccMatcher.find()) {
                 String ccVal = ccMatcher.group(1) != null ? ccMatcher.group(1) : ccMatcher.group(2);
-                result.cycleCount = Integer.parseInt(ccVal);
+                int ccInt = Integer.parseInt(ccVal);
+                if (ccInt >= 0) {
+                    result.cycleCount = ccInt;
+                }
             }
 
             // 小米 MF 格式
