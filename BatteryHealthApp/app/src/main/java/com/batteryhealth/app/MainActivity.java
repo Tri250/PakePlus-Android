@@ -104,12 +104,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "WebView cache cleared due to memory pressure");
             }
 
-            if (webView != null) {
-                webView.evaluateJavascript(
-                    "if(window.BatteryHealthApp) window.BatteryHealthApp.onMemoryWarning();",
-                    null
-                );
-            }
+            // 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针
+            safeEvaluateJavascript(
+                "if(window.BatteryHealthApp) window.BatteryHealthApp.onMemoryWarning();"
+            );
         }
 
         if (level >= TRIM_MEMORY_RUNNING_CRITICAL) {
@@ -426,9 +424,8 @@ public class MainActivity extends AppCompatActivity {
             "   }" +
             "})();";
 
-        if (webView != null && !isWebViewDestroyed) {
-            webView.evaluateJavascript(jsCode, null);
-        }
+        // 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针和异常
+        safeEvaluateJavascript(jsCode);
         Log.d(TAG, "File picker script injected");
     }
 
@@ -534,6 +531,26 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Failed to get file size", e);
             return -1;
         }
+    }
+
+    /**
+     * 全局安全的webView调用，自动检查webView空指针
+     * 关键修复（v2.1.1）：所有异步回调都通过此方法调用 webView.evaluateJavascript
+     * 防止 Activity 销毁后异步线程回调导致 NPE 闪退（3秒闪退根因）
+     * @param jsCode 要执行的JS代码
+     */
+    private void safeEvaluateJavascript(final String jsCode) {
+        runOnUiThread(() -> {
+            if (webView == null) {
+                Log.e(TAG, "webView is null, cannot evaluate JS");
+                return;
+            }
+            try {
+                webView.evaluateJavascript(jsCode, null);
+            } catch (Exception e) {
+                Log.e(TAG, "evaluateJavascript failed", e);
+            }
+        });
     }
 
     /**
@@ -753,23 +770,18 @@ public class MainActivity extends AppCompatActivity {
                     
                     final String resultJson = json.toString();
                     Log.d(TAG, "Native full analysis complete, result length: " + resultJson.length());
-                    
+
                     // 第六步：回调 JS
-                    runOnUiThread(() -> {
-                        // 安全检查：webView可能已被销毁
-                        if (webView == null) {
-                            Log.e(TAG, "webView is null, cannot callback JS");
-                            return;
-                        }
-                        String jsCode = String.format(
-                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s(%s);" +
-                            "}",
-                            callbackJs, callbackJs,
-                            resultJson
-                        );
-                        webView.evaluateJavascript(jsCode, null);
-                    });
+                    // 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针
+                    final String finalResultJson = resultJson;
+                    final String finalCallbackJs = callbackJs;
+                    safeEvaluateJavascript(String.format(
+                        "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                        "  window.BatteryHealthApp.%s(%s);" +
+                        "}",
+                        finalCallbackJs, finalCallbackJs,
+                        finalResultJson
+                    ));
                     
                 } catch (Exception e) {
                     Log.e(TAG, "analyzeFileFullNative failed", e);
@@ -786,29 +798,27 @@ public class MainActivity extends AppCompatActivity {
         
         /**
          * 回调 JS 错误
+         * 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针
+         * 防止 Activity 销毁后异步回调导致 NPE 闪退
          */
         private void callbackError(String callbackJs, String errorMsg) {
-            runOnUiThread(() -> {
-                // 安全转义 JS 字符串
-                String safeMsg = errorMsg
-                    .replace("\\", "\\\\")
-                    .replace("'", "\\'")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "");
-                String jsCode = String.format(
-                    "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                    "  window.BatteryHealthApp.%s({error: '%s'});" +
-                    "}",
-                    callbackJs, callbackJs,
-                    safeMsg
-                );
-                if (webView != null) {
-                    webView.evaluateJavascript(jsCode, null);
-                }
-            });
+            // 安全转义 JS 字符串
+            String safeMsg = errorMsg
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
+            String jsCode = String.format(
+                "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                "  window.BatteryHealthApp.%s({error: '%s'});" +
+                "}",
+                callbackJs, callbackJs,
+                safeMsg
+            );
+            safeEvaluateJavascript(jsCode);
         }
-        
+
         /**
          * 获取解析摘要
          */
@@ -979,12 +989,9 @@ public class MainActivity extends AppCompatActivity {
 
                     if (inputStream == null) {
                         Log.e(TAG, "Failed to open input stream");
-                        runOnUiThread(() -> {
-                            webView.evaluateJavascript(
-                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('无法打开文件');",
-                                null
-                            );
-                        });
+                        safeEvaluateJavascript(
+                            "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('无法打开文件');"
+                        );
                         return;
                     }
 
@@ -1036,18 +1043,16 @@ public class MainActivity extends AppCompatActivity {
                                 final long readBytes = totalRead;
                                 final long totalBytes = fileSize;
 
-                                runOnUiThread(() -> {
-                                    String jsCode = String.format(
-                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
-                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
-                                        "%.1fMB / %.1fMB');" +
-                                        "}",
-                                        progress,
-                                        readBytes / (1024.0 * 1024.0),
-                                        totalBytes / (1024.0 * 1024.0)
-                                    );
-                                    webView.evaluateJavascript(jsCode, null);
-                                });
+                                final String jsCode = String.format(
+                                    "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                                    "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... " +
+                                    "%.1fMB / %.1fMB');" +
+                                    "}",
+                                    progress,
+                                    readBytes / (1024.0 * 1024.0),
+                                    totalBytes / (1024.0 * 1024.0)
+                                );
+                                safeEvaluateJavascript(jsCode);
                             }
                         }
                     }
@@ -1056,56 +1061,50 @@ public class MainActivity extends AppCompatActivity {
                     fos.close();
                     inputStream.close();
 
+                    // 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针，
+                    // 防止 Activity 销毁后异步线程回调导致 NPE 闪退（3秒闪退根因）
                     final long finalSize = totalRead;
                     final String finalPath = tempFile.getAbsolutePath();
                     // 关键：使用WebViewAssetLoader的https://地址绕过file://访问限制
-                    final String fileUrl = "https://appassets.androidplatform.net/bha/" + tempFile.getName();
+                    final String finalFileUrl = "https://appassets.androidplatform.net/bha/" + tempFile.getName();
+                    final String finalSafeName = safeName;
+                    final String finalCallbackJs = callbackJs;
 
                     Log.d(TAG, "File copied to cache: " + finalPath + " size=" + finalSize);
-                    Log.d(TAG, "AssetLoader URL: " + fileUrl);
+                    Log.d(TAG, "AssetLoader URL: " + finalFileUrl);
 
-                    // 回调JS，传递file:// URL和文件信息（对象形式，避免大字符串）
-                    runOnUiThread(() -> {
-                        String jsCode = String.format(
-                            "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
-                            "  window.BatteryHealthApp.%s({url: '%s', size: %d, name: '%s', path: '%s'});" +
-                            "}",
-                            callbackJs, callbackJs,
-                            fileUrl.replace("'", "\\'"),
-                            finalSize,
-                            safeName.replace("'", "\\'"),
-                            finalPath.replace("'", "\\'")
-                        );
-                        webView.evaluateJavascript(jsCode, null);
-                        Log.d(TAG, "Callback executed: " + callbackJs);
-                    });
+                    safeEvaluateJavascript(String.format(
+                        "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                        "  window.BatteryHealthApp.%s({url: '%s', size: %d, name: '%s', path: '%s'});" +
+                        "}",
+                        finalCallbackJs, finalCallbackJs,
+                        finalFileUrl.replace("'", "\\'"),
+                        finalSize,
+                        finalSafeName.replace("'", "\\'"),
+                        finalPath.replace("'", "\\'")
+                    ));
+                    Log.d(TAG, "Callback executed: " + finalCallbackJs);
 
                 } catch (OutOfMemoryError oom) {
                     Log.e(TAG, "Out of memory while copying file", oom);
                     if (tempFile != null && tempFile.exists()) {
                         tempFile.delete();
                     }
-                    runOnUiThread(() -> {
-                        webView.evaluateJavascript(
-                            "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('内存不足，请尝试较小的文件');",
-                            null
-                        );
-                    });
+                    safeEvaluateJavascript(
+                        "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('内存不足，请尝试较小的文件');"
+                    );
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to copy file with progress", e);
                     if (tempFile != null && tempFile.exists()) {
                         tempFile.delete();
                     }
                     final String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
-                    runOnUiThread(() -> {
-                        webView.evaluateJavascript(
-                            String.format(
-                                "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
-                                errorMsg.replace("'", "\\'")
-                            ),
-                            null
-                        );
-                    });
+                    safeEvaluateJavascript(
+                        String.format(
+                            "if(window.BatteryHealthApp) window.BatteryHealthApp.onFileReadError('%s');",
+                            errorMsg.replace("'", "\\'")
+                        )
+                    );
                 }
             }).start();
         }
@@ -1285,9 +1284,8 @@ public class MainActivity extends AppCompatActivity {
             "   }" +
             "})();";
 
-        if (webView != null && !isWebViewDestroyed) {
-            webView.evaluateJavascript(jsCode, null);
-        }
+        // 关键修复：使用 safeEvaluateJavascript 自动检查 webView 空指针
+        safeEvaluateJavascript(jsCode);
         Log.d(TAG, "Notified JavaScript about file selection: " + fileName);
     }
 
