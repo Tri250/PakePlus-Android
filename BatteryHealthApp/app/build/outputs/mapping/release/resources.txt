@@ -90,6 +90,7 @@ a
 user_query
 c
 ACTION_CLEAR_ACCESSIBILITY_FOCUS
+dumpstate.txt
 d
 e
 f
@@ -120,6 +121,7 @@ wrap
 app:layout_constraintGuide_percent
 app:layout_constraintStart_toEndOf
 standard
+harmony
 androidx.core.view.inputmethod.InputC...
 propertyXName
 mimeType
@@ -157,8 +159,8 @@ BatteryHealthApp
 locale
 android:layout_constrainedHeight
 SDK_INT
-expanded
 samsung
+expanded
 provider
 requestRelaunchActivity
 kotlinx.coroutines.main.delay
@@ -190,6 +192,7 @@ WEB_MESSAGE_PORT_CLOSE
 MaterialShapeDrawable
 transitionEasing
 app:layout_marginLeft
+emui
 androidx.profileinstaller.action.SAVE...
 onEntryRemoved
 android.os.Build$VERSION
@@ -217,6 +220,7 @@ positiveCross
 CENTER_Y
 androidx.core.app.EXTRA_CALLING_ACTIVITY
 DiscouragedApi
+iqoo
 CENTER_X
 COLOR_TYPE
 doAfterTextChanged
@@ -234,8 +238,8 @@ xhtm
 %.1fK
 top
 ACTION_PAGE_UP
-it.parameterTypes
 ICUCompat
+it.parameterTypes
 anticipateOvershootInterpolator
 mNextServedView
 com.google.android.gms.provider.actio...
@@ -288,6 +292,7 @@ setEpicenterBounds
 android.progressIndeterminate
 yMMMd
 repeatCount
+bugreport
 void
 tertiary
 statusBarStyle
@@ -366,8 +371,8 @@ Hebr
 android.provider.action.PICK_IMAGES
 androidx.activity.FullyDrawnReporterKt
 centerColor
-kotlinx.coroutines.scheduler.keep.ali...
 IntentName
+kotlinx.coroutines.scheduler.keep.ali...
 dragscale
 audio/wav
 android.title
@@ -401,7 +406,9 @@ pathRotate
 getHorizontallyScrolling
 Spinner
 lge
+battery
 translationXLinear
+redmagic
 contentFade
 paraIndex
 patternPathMotion
@@ -489,6 +496,7 @@ springboundary
 start
 createFromDeprecatedProvider
 GREEN
+generic
 pair
 layout_marginTop
 endY
@@ -533,6 +541,7 @@ android.view.accessibility.action.ARG...
 beforeTextChanged
 .apk
 limitboundsto
+.jar
 displayIntent
 surface_tint
 android:explode:screenBounds
@@ -544,6 +553,7 @@ targetName
 content://
 FragmentManager:
 PrivateApi
+dumpstate
 androidx.viewpager.widget.ViewPager
 className
 GhostViewApi21
@@ -574,9 +584,9 @@ drawableAlphaCompat
 .immediate
 androidx.lifecycle.LifecycleCoroutine...
 motion:percentY
+motorola
 char
 motion:percentX
-motorola
 extraPersonCount
 layout_constraintRight_toRightOf
 setHomeActionContentDescription
@@ -584,6 +594,7 @@ LinearLayoutManager
 layout_marginLeft
 android.intent.action.GET_CONTENT
 uimode
+nubia
 KEY_COMPONENT_ACTIVITY_REGISTERED_KEYS
 checked
 AppLocalesStorageHelper
@@ -599,6 +610,7 @@ DOCUMENT_START_SCRIPT:1
 audio/flac
 WEB_VIEW_RENDERER_TERMINATE
 customWave
+.vdex
 WrongConstant
 androidx.core.view.inputmethod.InputC...
 extraLongLived
@@ -772,12 +784,14 @@ spans
 TYPE_INPUT_METHOD
 pathData
 app:layout_constraintCircleRadius
+.jpg
 custom
 IconCompat
 app:layout_constraintHeight_max
 LIGHTEN
 CAPABILITY_CAN_REQUEST_TOUCH_EXPLORATION
 app:layout_constraintWidth_percent
+%.3f
 trimPathStart
 print
 secondary_container
@@ -785,6 +799,7 @@ DEFAULT
 strokeMiterLimit
 SERVICE_WORKER_CACHE_MODE
 android.support.allowGeneratedReplies
+miui
 image/apng
 BaseTransientBottomBar
 .bak
@@ -936,6 +951,7 @@ STARTUP_FEATURE_SET_DATA_DIRECTORY_SU...
 imageMatrixProperty
 app:layout_constraintHeight_min
 autoComplete
+.oat
 pivotTarget
 circularRevealScrimColor
 MenuItemCompat
@@ -963,6 +979,7 @@ FINISHED
 HORIZONTAL_DIMENSION
 Sv2
 OFF_SCREEN_PRERASTER
+.bin
 CENTER
 observer
 int2
@@ -1195,8 +1212,8 @@ isProjected
 OP_SET_MAX_LIFECYCLE
 float
 FloatValueHolder
-java.lang.Enum
 oppo
+java.lang.Enum
 MultiAutoCompleteTextView
 TOGGLE_BUTTON_TAG
 from
@@ -1279,6 +1296,7 @@ about:blank
 mapFunction
 rtsp://
 on_tertiary_container
+coloros
 onBackPressed
 checkedIconVisible
 chipIconEnabled
@@ -1311,8 +1329,8 @@ DISABLED_ACTION_MODE_MENU_ITEMS
 android.intent.extra.PROCESS_TEXT_REA...
 matrix
 Chip
-Badge
 oneplus
+Badge
 mSpacingAdd
 VectorDrawableCompat
 fillColor
@@ -1333,6 +1351,7 @@ android.progress
 TransitionBuilder
 WRAP
 WEB_RESOURCE_ERROR_GET_CODE
+zte
 TIME_PICKER_TITLE_TEXT
 android.largeIcon
 SAFE_BROWSING_ALLOWLIST
@@ -1346,6 +1365,7 @@ INPUT_MODE_KEY
 PROXY_OVERRIDE
 databases/
 Startup
+dumpstate_battery
 acc
 android:changeTransform:intermediateP...
 ApplySharedPref
@@ -1440,6 +1460,7 @@ GET_VARIATIONS_HEADER
 android.content.res.ThemedResourceCache
 nothing
 handle
+.db
 persistableBundle
 Variant
 StateListDrawableCompat
@@ -1456,6 +1477,7 @@ FORCE_DARK_STRATEGY
 android.intent.extra.TEXT
 pivotY
 pivotX
+BatteryParser
 FLOAT_TYPE
 CALENDAR_CONSTRAINTS_KEY
 URI
@@ -1500,6 +1522,7 @@ ARRAY
 UTC
 kotlin.collections.Collection
 DesignTool
+honor
 triggerID
 app:layout_constraintHorizontal_chain...
 body
@@ -1525,6 +1548,7 @@ MenuItemWrapper
 app:layout_constrainedWidth
 onResume
 java.util.List
+originos
 sensor
 on_surface_variant
 kotlin.Int
@@ -1555,6 +1579,7 @@ androidx.core.view.inputmethod.InputC...
 wallpaper
 transport
 multipart/related
+huawei
 0.0
 android:user_visible_hint
 application
@@ -1578,6 +1603,7 @@ emojiCompat
 android.intent.extra.shortcut.NAME
 deriveConstraintsFrom
 ERROR
+funtouch
 curveFit
 androidx.core.view.ViewGroupKt$descen...
 androidx.appcompat.app.ActionBar$Tab
@@ -1712,6 +1738,7 @@ android.intent.action.VIEW
 window
 Cancelling
 tileMode
+.so
 BOTTOM
 MenuBuilder
 changeScroll
@@ -1744,6 +1771,7 @@ afterTextChanged
 minimumVerticalAngle
 INSTANCE
 ViewPager
+.png
 INVISIBLE
 phone
 kotlin.Short
@@ -1799,6 +1827,7 @@ AppCompatViewInflater
 .left
 notification
 ontouchup
+.txt
 _reusableCancellableContinuation
 android.view.View
 java.lang.Byte
@@ -1824,6 +1853,7 @@ android.chronometerCountDown
 rebase
 nextFunction
 ColorResLoaderCreator
+BatteryInfo
 tint_list
 android:menu:action_views
 app:goneBaselineMargin
@@ -1909,6 +1939,7 @@ video/mp4
 WEB_MESSAGE_PORT_POST_MESSAGE
 iconScale
 android.speech.extra.LANGUAGE_MODEL
+.log
 view.resources
 video/webm
 miscellaneous
@@ -1974,6 +2005,7 @@ android.bigText
 autoMirrored
 minUpdateDistanceMeters
 vivo
+flyme
 btn_check_material_anim
 android.speech.extra.MAX_RESULTS
 layout_height
@@ -1997,6 +2029,7 @@ ACTION_ACCESSIBILITY_FOCUS
 EMd
 127.0.0.1
 minimumHorizontalAngle
+.dat
 ViewOscillator
 frame
 translationAlpha
@@ -2059,6 +2092,7 @@ AppCompatSpinner
 UNDECIDED
 SET_PRIMARY_NAV
 percentY
+oneui
 percentX
 maxUpdates
 surface_variant
@@ -2066,6 +2100,7 @@ kotlin.jvm.internal.
 drawPath
 DST_IN
 motion_base
+.dex
 charset
 MULTI_PROCESS_QUERY
 AnimateRelativeTo
@@ -2089,6 +2124,7 @@ bundle
 mServedView
 DARKER
 ftp
+oxygenos
 translationYLinear
 application/wasm
 ViewSpline
@@ -2118,9 +2154,9 @@ surface_dim
 that
 download
 ogm
-mb
 string1
 limit
+hmos
 android.resource://
 strokeColor
 ogv
@@ -2142,6 +2178,7 @@ expansion
 android.location.GnssRequest
 1.0
 Constraints
+nb
 nd
 android:changeBounds:parent
 mpeg
@@ -2213,6 +2250,7 @@ java.util.Map
 excludeClass
 SuggestionsAdapter
 BASELINE_TO_BOTTOM
+/dumpstate
 drawable
 ACTION_NEXT_HTML_ELEMENT
 application/pdf
@@ -2295,6 +2333,7 @@ KeyCycles
 EXPRESSIVE
 pairs
 NEGATIVE_BUTTON_TEXT_KEY
+oos
 Oscillator
 activity_choser_model_history.xml
 up
@@ -2497,8 +2536,8 @@ m4v
 OnSwipe
 fragment
 FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-boolean
 realme
+boolean
 trimPathOffset
 clazz
 app:layout_constraintCircleAngle
@@ -3320,6 +3359,7 @@ Marking color:error_color_material_dark:2131034201 used because it matches strin
 Marking color:error_color_material_light:2131034202 used because it matches string pool constant err
 Marking string:error_a11y_label:2131689512 used because it matches string pool constant err
 Marking string:error_icon_content_description:2131689513 used because it matches string pool constant err
+Marking id:honorRequest:2131230930 used because it matches string pool constant honor
 Marking attr:layout_constraintBaseline_creator:2130903669 used because it matches string pool constant layout_constraint
 Marking attr:layout_constraintBaseline_toBaselineOf:2130903670 used because it matches string pool constant layout_constraint
 Marking attr:layout_constraintBaseline_toBottomOf:2130903671 used because it matches string pool constant layout_constraint
@@ -8816,7 +8856,7 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @id/hideable : reachable=false
 @id/home : reachable=false
 @id/homeAsUp : reachable=false
-@id/honorRequest : reachable=false
+@id/honorRequest : reachable=true
 @id/horizontal_only : reachable=false
 @id/icon : reachable=true
 @id/icon_group : reachable=true
@@ -19791,6 +19831,7 @@ The root reachable resources are:
  id:grouping:2131230924
  id:groups:2131230925
  id:header_title:2131230926
+ id:honorRequest:2131230930
  id:icon:2131230932
  id:icon_group:2131230933
  id:image:2131230937
@@ -20869,7 +20910,6 @@ Unused resources are:
  id:hideable:2131230927
  id:home:2131230928
  id:homeAsUp:2131230929
- id:honorRequest:2131230930
  id:horizontal_only:2131230931
  id:ifRoom:2131230934
  id:ignore:2131230935
