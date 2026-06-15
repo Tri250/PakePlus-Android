@@ -100,7 +100,7 @@ public class BatteryParser {
         int processed = 0;
         int scanned = 0;
 
-        ZipInputStream zis = new ZipInputStream(new BufferedInputStream(inputStream, 64 * 1024));
+        ZipInputStream zis = new ZipInputStream(inputStream);
         try {
             ZipEntry entry;
 
