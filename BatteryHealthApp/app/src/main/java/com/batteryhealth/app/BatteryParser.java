@@ -44,6 +44,7 @@ public class BatteryParser {
         public String rawContent;       // 原始内容片段（截断）
         public String brand;            // 品牌
         public double confidence;       // 置信度 0-1
+        public String debugInfo;        // 调试信息（entry 列表等）
 
         public boolean hasCapacity() { return currentCapacity > 0; }
     }
@@ -99,6 +100,8 @@ public class BatteryParser {
         BatteryInfo bestInfo = null;
         int processed = 0;
         int scanned = 0;
+        StringBuilder debugBuilder = new StringBuilder();
+        debugBuilder.append("Entries scanned: ");
 
         ZipInputStream zis = new ZipInputStream(inputStream);
         try {
@@ -107,22 +110,26 @@ public class BatteryParser {
             while ((entry = zis.getNextEntry()) != null) {
                 scanned++;
                 String name = entry.getName();
+                long size = entry.getSize();
 
                 try {
-                    long size = entry.getSize();
+                    // 记录 entry 名称（调试用）
+                    if (scanned <= 20) {
+                        debugBuilder.append("\n  ").append(name).append(" (").append(size).append("B)");
+                    }
 
-                    // 过滤：太大的文件跳过
+                    // 跳过太大的文件
                     if (size > MAX_ENTRY_SIZE && size > 0) {
-                        Log.d(TAG, "Skip large file: " + name + " (" + size + " bytes)");
+                        Log.d(TAG, "Skip large: " + name);
                         continue;
                     }
 
-                    // 过滤：明显不是电池相关文件
-                    if (!isLikelyBatteryFile(name)) {
+                    // 跳过明显的二进制文件
+                    if (isBinaryFile(name)) {
                         continue;
                     }
 
-                    // 读取内容（带上限）
+                    // 读取内容
                     String content = readLimited(zis, MAX_ENTRY_SIZE);
                     if (content == null || content.length() < 20) {
                         continue;
@@ -142,7 +149,7 @@ public class BatteryParser {
                         if (bestInfo == null || info.confidence > bestInfo.confidence) {
                             bestInfo = info;
                             Log.d(TAG, "Found battery info in " + name
-                                + " (confidence=" + String.format("%.2f", info.confidence)
+                                + " (conf=" + String.format("%.2f", info.confidence)
                                 + ", cap=" + info.currentCapacity
                                 + ", cyc=" + info.cycleCount
                                 + ", temp=" + info.batteryTemp + ")");
@@ -154,7 +161,7 @@ public class BatteryParser {
                         progress.onProgress(processed, scanned, name, bestInfo);
                     }
 
-                    // 早退：高置信度匹配后立即停止
+                    // 早退
                     if (bestInfo != null && bestInfo.confidence >= 0.7
                             && bestInfo.cycleCount > 0 && bestInfo.hasCapacity()) {
                         break;
@@ -166,81 +173,45 @@ public class BatteryParser {
             }
         } catch (Exception e) {
             Log.e(TAG, "processZipStream error", e);
+            debugBuilder.append("\n  ERROR: ").append(e.getMessage());
         }
+
+        if (scanned > 20) {
+            debugBuilder.append("\n  ... and ").append(scanned - 20).append(" more entries");
+        }
+        debugBuilder.append("\nTotal: ").append(scanned).append(" entries, ").append(processed).append(" processed");
 
         if (bestInfo == null) {
             Log.w(TAG, "No battery info found after scanning " + scanned + " entries");
+            // 创建调试结果
+            bestInfo = new BatteryInfo();
+            bestInfo.brand = "generic";
+            bestInfo.confidence = 0.0;
+            bestInfo.debugInfo = debugBuilder.toString();
+        } else {
+            bestInfo.debugInfo = debugBuilder.toString();
         }
+
         return bestInfo;
     }
 
     // ============= 文件过滤 =============
 
-    private static boolean isLikelyBatteryFile(String name) {
+    /** 跳过明显的二进制文件 */
+    private static boolean isBinaryFile(String name) {
         if (name == null) return false;
         String low = name.toLowerCase();
-
-        // 跳过明显的二进制文件
-        if (low.endsWith(".bin") || low.endsWith(".png") || low.endsWith(".jpg")
-                || low.endsWith(".jpeg") || low.endsWith(".gif") || low.endsWith(".webp")
-                || low.endsWith(".so") || low.endsWith(".dex") || low.endsWith(".apk")
-                || low.endsWith(".jar") || low.endsWith(".oat") || low.endsWith(".vdex")
-                || low.endsWith(".zip") || low.endsWith(".dat") || low.endsWith(".db")
-                || low.endsWith(".proto") || low.endsWith(".prof") || low.endsWith(".profm")
-                || low.endsWith(".mp4") || low.endsWith(".mp3") || low.endsWith(".wav")
-                || low.endsWith(".pdf") || low.endsWith(".ttf") || low.endsWith(".otf")
-                || low.endsWith(".ogg") || low.endsWith(".flac") || low.endsWith(".mid")) {
-            return false;
-        }
-
-        // dumpstate 主体（必含电池段）
-        if (low.contains("dumpstate")) {
-            return true;
-        }
-
-        // bugreport 主体
-        if (low.contains("bugreport")) {
-            return true;
-        }
-
-        // 电池相关文件名
-        if (low.contains("battery") || low.contains("power_supply")
-                || low.contains("healthd") || low.contains("health")
-                || low.contains("batteryservice") || low.contains("batterystats")) {
-            return true;
-        }
-
-        // battery-history 或 dumpsys
-        if (low.contains("history") || low.contains("dumpsys")) {
-            return true;
-        }
-
-        // FS/ 目录下的电池属性文件
-        if (low.contains("/fs/") || low.startsWith("fs/")) {
-            // 只处理电池相关的子文件
-            return low.contains("battery") || low.contains("power_supply")
-                    || low.contains("health") || low.contains("charge");
-        }
-
-        // txt/log 文件（兜底，但限制大小）
-        if (low.endsWith(".txt") || low.endsWith(".log") || low.endsWith(".out")
-                || low.endsWith(".info") || low.endsWith(".trace")) {
-            // 只处理前 3 层目录内的（避免过深的系统日志）
-            int slashCount = 0;
-            for (int i = 0; i < low.length(); i++) {
-                if (low.charAt(i) == '/') slashCount++;
-            }
-            if (slashCount <= 3) {
-                return true;
-            }
-        }
-
-        // 顶层没有扩展名的文件（如 bugreport zip 顶层可能有 main.txt, header.txt）
-        if (!low.contains("/") && !low.contains(".")) {
-            return true;
-        }
-
-        return false;
+        return low.endsWith(".bin") || low.endsWith(".png") || low.endsWith(".jpg")
+            || low.endsWith(".jpeg") || low.endsWith(".gif") || low.endsWith(".webp")
+            || low.endsWith(".so") || low.endsWith(".dex") || low.endsWith(".apk")
+            || low.endsWith(".jar") || low.endsWith(".oat") || low.endsWith(".vdex")
+            || low.endsWith(".zip") || low.endsWith(".dat") || low.endsWith(".db")
+            || low.endsWith(".proto") || low.endsWith(".prof") || low.endsWith(".profm")
+            || low.endsWith(".mp4") || low.endsWith(".mp3") || low.endsWith(".wav")
+            || low.endsWith(".pdf") || low.endsWith(".ttf") || low.endsWith(".otf")
+            || low.endsWith(".ogg") || low.endsWith(".flac") || low.endsWith(".mid")
+            || low.endsWith(".xml") || low.endsWith(".json") || low.endsWith(".html")
+            || low.endsWith(".css") || low.endsWith(".js") || low.endsWith(".svg");
     }
 
     // ============= 读取内容 =============

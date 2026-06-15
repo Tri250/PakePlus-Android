@@ -602,8 +602,10 @@ public class MainActivity extends AppCompatActivity {
                     try { inputStream.close(); } catch (Exception ignore) {}
                     inputStream = null;
 
-                    if (info == null) {
-                        invokeJsOnMain(errorCallbackJs, "未在文件中找到电池健康度信息，请确认上传的是正确的安卓诊断文件");
+                    if (info == null || (info.currentCapacity == 0 && info.cycleCount == 0 && info.batteryTemp == 0)) {
+                        // 即使没有找到电池数据，也返回调试信息（包含 entry 列表）
+                        final String debugJson = info != null ? infoToJson(info) : "{\"debugInfo\":\"解析器返回 null\"}";
+                        invokeJsOnMain(callbackJs, debugJson);
                         return;
                     }
 
@@ -652,7 +654,8 @@ public class MainActivity extends AppCompatActivity {
             sb.append("\"confidence\":").append(String.format(java.util.Locale.US, "%.3f", info.confidence)).append(",");
             sb.append("\"brand\":\"").append(jsonEscape(info.brand == null ? "generic" : info.brand)).append("\",");
             sb.append("\"technology\":\"").append(jsonEscape(info.technology == null ? "" : info.technology)).append("\",");
-            sb.append("\"rawContent\":\"").append(jsonEscape(info.rawContent == null ? "" : info.rawContent)).append("\"");
+            sb.append("\"rawContent\":\"").append(jsonEscape(info.rawContent == null ? "" : info.rawContent)).append("\",");
+            sb.append("\"debugInfo\":\"").append(jsonEscape(info.debugInfo == null ? "" : info.debugInfo)).append("\"");
             sb.append("}");
             return sb.toString();
         }
