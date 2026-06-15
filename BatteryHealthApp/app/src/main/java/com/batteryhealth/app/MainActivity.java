@@ -778,12 +778,19 @@ public class MainActivity extends AppCompatActivity {
          */
         private void callbackError(String callbackJs, String errorMsg) {
             runOnUiThread(() -> {
+                // 安全转义 JS 字符串
+                String safeMsg = errorMsg
+                    .replace("\\", "\\\\")
+                    .replace("'", "\\'")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "");
                 String jsCode = String.format(
                     "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
                     "  window.BatteryHealthApp.%s({error: '%s'});" +
                     "}",
                     callbackJs, callbackJs,
-                    escapeJson(errorMsg)
+                    safeMsg
                 );
                 if (webView != null) {
                     webView.evaluateJavascript(jsCode, null);

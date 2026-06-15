@@ -437,6 +437,16 @@ const BatteryHealthApp = {
             const currentCapacity = result.currentCapacityMah || 
                 (result.healthPercentage > 0 ? Math.round(initialCapacity * result.healthPercentage / 100) : 0);
             
+            // 如果无法确定当前容量，分析失败
+            // （不能用 designCapacityMah 作为当前容量，否则会显示100%健康度，完全误导）
+            if (currentCapacity <= 0) {
+                console.warn('Cannot determine current capacity from native result');
+                if (this._nativeAnalysisReject) {
+                    this._nativeAnalysisReject(new Error('无法确定电池当前容量，请确认上传的是正确的诊断文件'));
+                }
+                return;
+            }
+            
             const displayData = {
                 brand: result.brand || 'unknown',
                 currentCapacity: currentCapacity,
@@ -799,7 +809,12 @@ const BatteryHealthApp = {
      * 显示结果
      */
     displayResult(result, initialCapacity) {
-        const healthPercentage = ((result.currentCapacity / initialCapacity) * 100).toFixed(1);
+        // 安全计算健康百分比，避免除零
+        const safeCurrentCapacity = result.currentCapacity || 0;
+        const safeInitialCapacity = initialCapacity || 1;
+        const healthPercentage = safeCurrentCapacity > 0 
+            ? ((safeCurrentCapacity / safeInitialCapacity) * 100).toFixed(1)
+            : '0.0';
         
         // 保存当前结果供分享/保存功能使用
         this.currentResult = {

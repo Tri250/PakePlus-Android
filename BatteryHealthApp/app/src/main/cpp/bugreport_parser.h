@@ -56,7 +56,8 @@ struct BatteryRawData {
 
     // 辅助方法
     bool hasCapacityData() const {
-        return design_capacity_mah.has_value() || current_capacity_mah.has_value();
+        return (design_capacity_mah.has_value() && design_capacity_mah.value() > 0) ||
+               (current_capacity_mah.has_value() && current_capacity_mah.value() > 0);
     }
 
     bool hasCycleData() const {

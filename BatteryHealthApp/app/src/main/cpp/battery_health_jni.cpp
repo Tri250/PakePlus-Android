@@ -107,11 +107,15 @@ Java_com_batteryhealth_app_BatteryAnalyzer_nativeParseBugreport(
         env->SetIntField(result, field, raw_data.charge_count.value());
     }
 
-    // hasData
+    // hasData - 包含 designCapacityMah 判断
     jfieldID hasDataField = env->GetFieldID(resultClass, "hasData", "Z");
-    env->SetBooleanField(result, hasDataField, raw_data.hasCapacityData() || raw_data.hasCycleData());
+    env->SetBooleanField(result, hasDataField,
+        raw_data.hasCapacityData() || raw_data.hasCycleData() ||
+        raw_data.design_capacity_mah.has_value());
 
-    LOGI("Parse complete: hasData=%d", raw_data.hasCapacityData() || raw_data.hasCycleData());
+    LOGI("Parse complete: hasData=%d, hasCap=%d, hasCycle=%d, hasDesign=%d",
+        raw_data.hasCapacityData() || raw_data.hasCycleData() || raw_data.design_capacity_mah.has_value(),
+        raw_data.hasCapacityData(), raw_data.hasCycleData(), raw_data.design_capacity_mah.has_value());
 
     return result;
 }
@@ -351,9 +355,11 @@ Java_com_batteryhealth_app_BatteryAnalyzer_nativeParseZipFile(
     }
 
     jfieldID hasDataField = env->GetFieldID(resultClass, "hasData", "Z");
-    env->SetBooleanField(result, hasDataField, raw_data.hasCapacityData() || raw_data.hasCycleData());
+    env->SetBooleanField(result, hasDataField,
+        raw_data.hasCapacityData() || raw_data.hasCycleData() ||
+        raw_data.design_capacity_mah.has_value());
 
-    LOGI("ZIP parse complete: hasData=%d", raw_data.hasCapacityData() || raw_data.hasCycleData());
+    LOGI("ZIP parse complete: hasData=%d", raw_data.hasCapacityData() || raw_data.hasCycleData() || raw_data.design_capacity_mah.has_value());
 
     return result;
 }

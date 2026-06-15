@@ -24,18 +24,17 @@ BatteryRawData BugreportParser::parseFromText(const std::string& bugreport_text)
     }
     
     // 尝试从 healthd 格式一次性提取所有电池信息（荣耀/华为/小米等）
-    if (tryExtractHealthd(bugreport_text, data)) {
-        // healthd 成功提取了核心信息，继续提取其他辅助信息
+    tryExtractHealthd(bugreport_text, data);
+
+    // 无论 healthd 是否成功，都尝试品牌专属/通用模式补充缺失字段
+    // （healthd 可能只提取了部分数据，如只有 fc 没有 cc 或 designCapacity）
+    if (brand_type != BrandType::UNKNOWN) {
+        // 使用品牌专属配置
+        extractWithBrandConfig(bugreport_text, data, brand_type);
     } else {
-        // 使用品牌专属或通用模式逐项提取
-        if (brand_type != BrandType::UNKNOWN) {
-            // 使用品牌专属配置
-            extractWithBrandConfig(bugreport_text, data, brand_type);
-        } else {
-            // 使用通用模式
-            extractCapacity(bugreport_text, data);
-            extractCycleCount(bugreport_text, data);
-        }
+        // 使用通用模式
+        extractCapacity(bugreport_text, data);
+        extractCycleCount(bugreport_text, data);
     }
     
     // 提取其他辅助信息
@@ -120,16 +119,23 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
             // match[6] = c (电流)
             // match[7] = fc (实际容量)
             // match[8] = cc (循环次数)
-            
-            data.current_capacity_mah = std::stoi(match[7].str());
-            data.cycle_count = std::stoi(match[8].str());
+
+            int fc_val = std::stoi(match[7].str());
+            int cc_val = std::stoi(match[8].str());
+
+            if (fc_val > 0) {
+                data.current_capacity_mah = fc_val;
+            }
+            if (cc_val >= 0) {
+                data.cycle_count = cc_val;
+            }
             data.temperature_celsius = std::stof(match[3].str());
-            
+
             // 电压电流配对
             float voltage = std::stof(match[2].str());
             float current = std::stof(match[6].str());
             data.voltage_current_pairs.emplace_back(voltage, current);
-            
+
             return true;
         } catch (...) {
             // 解析失败，继续尝试其他方法
@@ -141,26 +147,42 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
     if (std::regex_search(text, match, healthd_simple_regex)) {
         try {
             // healthd: ... fc=4562 ... cc=1200
-            data.current_capacity_mah = std::stoi(match[1].str());
-            data.cycle_count = std::stoi(match[2].str());
+            int fc_val = std::stoi(match[1].str());
+            int cc_val = std::stoi(match[2].str());
+            if (fc_val > 0) {
+                data.current_capacity_mah = fc_val;
+            }
+            if (cc_val >= 0) {
+                data.cycle_count = cc_val;
+            }
             return true;
         } catch (...) {}
     }
-    
-    // 尝试单独提取 fc 和 cc
-    std::regex fc_regex(R"(fc[=:\s]+(\d+))");
-    std::regex cc_regex(R"(cc[=:\s]+(\d+))");
-    
-    if (std::regex_search(text, match, fc_regex)) {
-        try {
-            data.current_capacity_mah = std::stoi(match[1].str());
-        } catch (...) {}
+
+    // 尝试单独提取 fc 和 cc（带词边界，避免误匹配）
+    std::regex fc_regex(R"(\bfc[=:\s]+(\d+))");
+    std::regex cc_regex(R"(\bcc[=:\s]+(\d+))");
+
+    if (!data.current_capacity_mah.has_value()) {
+        if (std::regex_search(text, match, fc_regex)) {
+            try {
+                int val = std::stoi(match[1].str());
+                if (val > 0) {
+                    data.current_capacity_mah = val;
+                }
+            } catch (...) {}
+        }
     }
-    
-    if (std::regex_search(text, match, cc_regex)) {
-        try {
-            data.cycle_count = std::stoi(match[1].str());
-        } catch (...) {}
+
+    if (!data.cycle_count.has_value()) {
+        if (std::regex_search(text, match, cc_regex)) {
+            try {
+                int val = std::stoi(match[1].str());
+                if (val >= 0) {
+                    data.cycle_count = val;
+                }
+            } catch (...) {}
+        }
     }
     
     return data.current_capacity_mah.has_value() || data.cycle_count.has_value();
@@ -179,66 +201,85 @@ void BugreportParser::extractWithBrandConfig(const std::string& text, BatteryRaw
     }
     
     const BrandConfig& config = configs.at(brand_type);
-    
-    // 使用品牌专属容量模式
-    for (const auto& pattern : config.capacityPatterns) {
-        std::regex regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, regex)) {
-            try {
-                data.current_capacity_mah = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+
+    // 使用品牌专属容量模式（仅在未提取到时）
+    if (!data.current_capacity_mah.has_value()) {
+        for (const auto& pattern : config.capacityPatterns) {
+            std::regex regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val > 0) {
+                        data.current_capacity_mah = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
-    
-    // 使用品牌专属设计容量模式
-    for (const auto& pattern : config.designCapacityPatterns) {
-        std::regex regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, regex)) {
-            try {
-                data.design_capacity_mah = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+
+    // 使用品牌专属设计容量模式（仅在未提取到时）
+    if (!data.design_capacity_mah.has_value()) {
+        for (const auto& pattern : config.designCapacityPatterns) {
+            std::regex regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val > 0) {
+                        data.design_capacity_mah = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
-    
-    // 使用品牌专属循环次数模式
-    for (const auto& pattern : config.cycleCountPatterns) {
-        std::regex regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, regex)) {
-            try {
-                data.cycle_count = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+
+    // 使用品牌专属循环次数模式（仅在未提取到时）
+    if (!data.cycle_count.has_value()) {
+        for (const auto& pattern : config.cycleCountPatterns) {
+            std::regex regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val >= 0) {
+                        data.cycle_count = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
-    
-    // 使用品牌专属温度模式
-    for (const auto& pattern : config.temperaturePatterns) {
-        std::regex regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, regex)) {
-            try {
-                data.temperature_celsius = std::stof(match[1].str());
-                break;
-            } catch (...) {}
+
+    // 使用品牌专属温度模式（仅在未提取到时）
+    if (!data.temperature_celsius.has_value()) {
+        for (const auto& pattern : config.temperaturePatterns) {
+            std::regex regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, regex)) {
+                try {
+                    data.temperature_celsius = std::stof(match[1].str());
+                    break;
+                } catch (...) {}
+            }
         }
     }
-    
-    // 使用品牌专属电压模式
-    for (const auto& pattern : config.voltagePatterns) {
-        std::regex regex(pattern);
-        std::sregex_iterator it(text.begin(), text.end(), regex);
-        for (auto iter = it; iter != std::sregex_iterator(); ++iter) {
-            try {
-                float voltage = std::stof(iter->str(1));
-                data.voltage_current_pairs.emplace_back(voltage, 0);
-            } catch (...) {}
+
+    // 使用品牌专属电压模式（仅在未提取到时）
+    if (data.voltage_current_pairs.empty()) {
+        for (const auto& pattern : config.voltagePatterns) {
+            std::regex regex(pattern);
+            std::sregex_iterator it(text.begin(), text.end(), regex);
+            for (auto iter = it; iter != std::sregex_iterator(); ++iter) {
+                try {
+                    float voltage = std::stof(iter->str(1));
+                    data.voltage_current_pairs.emplace_back(voltage, 0);
+                } catch (...) {}
+            }
+            if (!data.voltage_current_pairs.empty()) break;
         }
-        if (!data.voltage_current_pairs.empty()) break;
     }
     
     // 如果品牌专属模式没有提取到数据，使用通用模式兜底
@@ -329,41 +370,56 @@ void BugreportParser::extractBrandModel(const std::string& text, BatteryRawData&
 }
 
 void BugreportParser::extractCapacity(const std::string& text, BatteryRawData& data) {
-    // 提取设计容量（使用新的多模式）
-    for (const auto& pattern : RegexPatterns::getDesignCapacityPatterns()) {
-        std::regex design_regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, design_regex)) {
-            try {
-                data.design_capacity_mah = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+    // 提取设计容量（仅在未提取到时）
+    if (!data.design_capacity_mah.has_value()) {
+        for (const auto& pattern : RegexPatterns::getDesignCapacityPatterns()) {
+            std::regex design_regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, design_regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val > 0) {
+                        data.design_capacity_mah = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
 
-    // 提取当前容量（使用新的多模式）
-    for (const auto& pattern : RegexPatterns::getCapacityPatterns()) {
-        std::regex capacity_regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, capacity_regex)) {
-            try {
-                data.current_capacity_mah = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+    // 提取当前容量（仅在未提取到时）
+    if (!data.current_capacity_mah.has_value()) {
+        for (const auto& pattern : RegexPatterns::getCapacityPatterns()) {
+            std::regex capacity_regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, capacity_regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val > 0) {
+                        data.current_capacity_mah = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
 }
 
 void BugreportParser::extractCycleCount(const std::string& text, BatteryRawData& data) {
-    // 使用新的多模式循环次数提取
-    for (const auto& pattern : RegexPatterns::getCycleCountPatterns()) {
-        std::regex cycle_regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, cycle_regex)) {
-            try {
-                data.cycle_count = std::stoi(match[1].str());
-                break;
-            } catch (...) {}
+    // 仅在未提取到时使用通用模式
+    if (!data.cycle_count.has_value()) {
+        for (const auto& pattern : RegexPatterns::getCycleCountPatterns()) {
+            std::regex cycle_regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, cycle_regex)) {
+                try {
+                    int val = std::stoi(match[1].str());
+                    if (val >= 0) {
+                        data.cycle_count = val;
+                        break;
+                    }
+                } catch (...) {}
+            }
         }
     }
 }
@@ -392,15 +448,17 @@ void BugreportParser::extractManufacturingDate(const std::string& text, BatteryR
 }
 
 void BugreportParser::extractTemperature(const std::string& text, BatteryRawData& data) {
-    // 使用新的多模式温度提取
-    for (const auto& pattern : RegexPatterns::getTemperaturePatterns()) {
-        std::regex temp_regex(pattern);
-        std::smatch match;
-        if (std::regex_search(text, match, temp_regex)) {
-            try {
-                data.temperature_celsius = std::stof(match[1].str());
-                break;
-            } catch (...) {}
+    // 仅在未提取到时使用通用模式
+    if (!data.temperature_celsius.has_value()) {
+        for (const auto& pattern : RegexPatterns::getTemperaturePatterns()) {
+            std::regex temp_regex(pattern);
+            std::smatch match;
+            if (std::regex_search(text, match, temp_regex)) {
+                try {
+                    data.temperature_celsius = std::stof(match[1].str());
+                    break;
+                } catch (...) {}
+            }
         }
     }
 }

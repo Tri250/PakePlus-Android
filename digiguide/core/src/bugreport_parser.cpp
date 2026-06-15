@@ -147,9 +147,9 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
         } catch (...) {}
     }
     
-    // 尝试单独提取 fc 和 cc
-    std::regex fc_regex(R"(fc[=:\s]+(\d+))");
-    std::regex cc_regex(R"(cc[=:\s]+(\d+))");
+    // 尝试单独提取 fc 和 cc（带词边界，避免误匹配）
+    std::regex fc_regex(R"(\bfc[=:\s]+(\d+))");
+    std::regex cc_regex(R"(\bcc[=:\s]+(\d+))");
     
     if (std::regex_search(text, match, fc_regex)) {
         try {
