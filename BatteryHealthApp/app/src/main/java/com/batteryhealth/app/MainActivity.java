@@ -699,6 +699,7 @@ public class MainActivity extends AppCompatActivity {
                     BatteryHealthResult healthResult = BatteryAnalyzer.calculateHealth(parseResult);
                     
                     // 第五步：构建 JSON 结果
+                    // 安全序列化 float：NaN/Infinity 转为 0
                     StringBuilder json = new StringBuilder();
                     json.append("{");
                     json.append("\"success\": true,");
@@ -709,39 +710,39 @@ public class MainActivity extends AppCompatActivity {
                     json.append("\"currentCapacityMah\": ").append(parseResult.currentCapacityMah).append(",");
                     json.append("\"chargeCounterMah\": ").append(parseResult.chargeCounterMah).append(",");
                     json.append("\"cycleCount\": ").append(parseResult.cycleCount).append(",");
-                    json.append("\"temperatureCelsius\": ").append(parseResult.temperatureCelsius).append(",");
+                    json.append("\"temperatureCelsius\": ").append(safeFloat(parseResult.temperatureCelsius)).append(",");
                     json.append("\"manufacturingDate\": \"").append(escapeJson(parseResult.manufacturingDate != null ? parseResult.manufacturingDate : "")).append("\",");
                     json.append("\"capacityRetention\": \"").append(escapeJson(parseResult.getCapacityRetentionText())).append("\",");
-                    json.append("\"healthPercentage\": ").append(healthResult.healthPercentage).append(",");
-                    json.append("\"grade\": \"").append(healthResult.grade).append("\",");
-                    json.append("\"gradeColor\": \"").append(healthResult.gradeColor).append("\",");
-                    json.append("\"gradeDescription\": \"").append(escapeJson(healthResult.gradeDescription)).append("\",");
-                    json.append("\"diagnosisText\": \"").append(escapeJson(healthResult.diagnosisText)).append("\",");
+                    json.append("\"healthPercentage\": ").append(safeFloat(healthResult.healthPercentage)).append(",");
+                    json.append("\"grade\": \"").append(escapeJson(healthResult.grade != null ? healthResult.grade : "F")).append("\",");
+                    json.append("\"gradeColor\": \"").append(escapeJson(healthResult.gradeColor != null ? healthResult.gradeColor : "#9E9E9E")).append("\",");
+                    json.append("\"gradeDescription\": \"").append(escapeJson(healthResult.gradeDescription != null ? healthResult.gradeDescription : "")).append("\",");
+                    json.append("\"diagnosisText\": \"").append(escapeJson(healthResult.diagnosisText != null ? healthResult.diagnosisText : "")).append("\",");
                     json.append("\"confidence\": ").append(healthResult.confidence).append(",");
                     
                     json.append("\"suggestions\": [");
                     if (healthResult.suggestions != null && !healthResult.suggestions.isEmpty()) {
                         for (int i = 0; i < healthResult.suggestions.size(); i++) {
                             if (i > 0) json.append(",");
-                            json.append("\"").append(escapeJson(healthResult.suggestions.get(i))).append("\"");
+                            json.append("\"").append(escapeJson(healthResult.suggestions.get(i) != null ? healthResult.suggestions.get(i) : "")).append("\"");
                         }
                     }
                     json.append("],");
                     
                     if (healthResult.factors != null) {
                         json.append("\"factors\": {");
-                        json.append("\"capacityRetention\": ").append(healthResult.factors.capacityRetention).append(",");
-                        json.append("\"cycleDecay\": ").append(healthResult.factors.cycleDecay).append(",");
-                        json.append("\"resistanceGrowth\": ").append(healthResult.factors.resistanceGrowth).append(",");
-                        json.append("\"thermalAging\": ").append(healthResult.factors.thermalAging).append(",");
-                        json.append("\"chargingDamage\": ").append(healthResult.factors.chargingDamage).append(",");
+                        json.append("\"capacityRetention\": ").append(safeFloat(healthResult.factors.capacityRetention)).append(",");
+                        json.append("\"cycleDecay\": ").append(safeFloat(healthResult.factors.cycleDecay)).append(",");
+                        json.append("\"resistanceGrowth\": ").append(safeFloat(healthResult.factors.resistanceGrowth)).append(",");
+                        json.append("\"thermalAging\": ").append(safeFloat(healthResult.factors.thermalAging)).append(",");
+                        json.append("\"chargingDamage\": ").append(safeFloat(healthResult.factors.chargingDamage)).append(",");
                         json.append("\"availableFactors\": ").append(healthResult.factors.availableFactors);
                         json.append("},");
                     } else {
                         json.append("\"factors\": null,");
                     }
                     
-                    json.append("\"estimatedResistanceMohm\": ").append(healthResult.estimatedResistanceMohm).append(",");
+                    json.append("\"estimatedResistanceMohm\": ").append(safeFloat(healthResult.estimatedResistanceMohm)).append(",");
                     json.append("\"remainingLifespanMonths\": ").append(healthResult.remainingLifespanMonths);
                     json.append("}");
                     
@@ -847,6 +848,15 @@ public class MainActivity extends AppCompatActivity {
                       .replace("\n", "\\n")
                       .replace("\r", "\\r")
                       .replace("\t", "\\t");
+        }
+
+        /**
+         * 安全序列化 float：NaN/Infinity 转为 0
+         * 防止 JSON 中出现 NaN/Infinity 导致 JS 解析崩溃
+         */
+        private String safeFloat(float v) {
+            if (Float.isNaN(v) || Float.isInfinite(v)) return "0";
+            return String.valueOf(v);
         }
 
         @JavascriptInterface

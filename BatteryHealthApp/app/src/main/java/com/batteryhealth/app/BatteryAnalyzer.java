@@ -140,7 +140,15 @@ public class BatteryAnalyzer {
         }
 
         // 传给 Native C++ 解析文本
-        BatteryParseResult result = parseTextContent(mainContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        // 限制文本大小（50MB），防止 OOM
+        byte[] textBytes = mainContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final int MAX_NATIVE_TEXT_SIZE = 50 * 1024 * 1024;
+        if (textBytes.length > MAX_NATIVE_TEXT_SIZE) {
+            Log.w(TAG, "Text too large (" + textBytes.length + " bytes), truncating");
+            String truncated = mainContent.substring(0, Math.min(mainContent.length(), MAX_NATIVE_TEXT_SIZE / 3));
+            textBytes = truncated.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+        BatteryParseResult result = parseTextContent(textBytes);
 
         // 如果 Native 解析也失败，尝试 Java 正则兜底
         if (!result.hasData) {

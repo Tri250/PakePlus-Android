@@ -353,14 +353,25 @@ const BatteryHealthApp = {
             }
             
             this.updateProgress(100, '分析完成');
+            
+            // 安全检查：result 不能为 null
+            if (!result) {
+                this.showStatus('分析失败：无法获取分析结果', true);
+                return;
+            }
+            
             this.displayResult(result, initialCapacity);
             
-            // 保存到历史记录
+            // 保存到历史记录（安全计算健康度）
+            const safeCurrentCap = result.currentCapacity || 0;
+            const safeInitialCap = initialCapacity || 1;
             HistoryManager.add({
                 brand: result.brand || 'unknown',
                 initialCapacity: initialCapacity,
                 currentCapacity: result.currentCapacity,
-                healthPercentage: ((result.currentCapacity / initialCapacity) * 100).toFixed(1),
+                healthPercentage: safeCurrentCap > 0 
+                    ? ((safeCurrentCap / safeInitialCap) * 100).toFixed(1) 
+                    : '0.0',
                 cycleCount: result.cycleCount,
                 batteryTemp: result.batteryTemp
             });

@@ -475,6 +475,11 @@ void BugreportParser::extractScreenOnTime(const std::string& text, BatteryRawDat
 }
 
 void BugreportParser::extractVoltageCurrent(const std::string& text, BatteryRawData& data) {
+    // 仅在 healthd 未提取到电压数据时才使用通用模式
+    if (!data.voltage_current_pairs.empty()) {
+        return;
+    }
+
     // 使用新的多模式电压提取
     for (const auto& pattern : RegexPatterns::getVoltagePatterns()) {
         std::regex voltage_regex(pattern);

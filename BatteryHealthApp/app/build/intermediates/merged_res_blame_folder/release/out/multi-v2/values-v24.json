@@ -4,7 +4,7 @@
             "outputFile": "com.batteryhealth.app-mergeReleaseResources-12:/values-v24/values-v24.xml",
             "map": [
                 {
-                    "source": "/root/.gradle/caches/transforms-3/cb68ad6f5f727f2e7308d7fc784ed9ef/transformed/appcompat-1.1.0/res/values-v24/values-v24.xml",
+                    "source": "/root/.gradle/caches/8.14.4/transforms/32346ebc6000703860b508c7a9c66bc0/transformed/appcompat-1.1.0/res/values-v24/values-v24.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
