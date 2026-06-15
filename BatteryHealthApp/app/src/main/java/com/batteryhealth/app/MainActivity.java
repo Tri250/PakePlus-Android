@@ -655,7 +655,12 @@ public class MainActivity extends AppCompatActivity {
             sb.append("\"brand\":\"").append(jsonEscape(info.brand == null ? "generic" : info.brand)).append("\",");
             sb.append("\"technology\":\"").append(jsonEscape(info.technology == null ? "" : info.technology)).append("\",");
             sb.append("\"rawContent\":\"").append(jsonEscape(info.rawContent == null ? "" : info.rawContent)).append("\",");
-            sb.append("\"debugInfo\":\"").append(jsonEscape(info.debugInfo == null ? "" : info.debugInfo)).append("\"");
+            sb.append("\"debugInfo\":\"").append(jsonEscape(info.debugInfo == null ? "" : info.debugInfo)).append("\",");
+            sb.append("\"dataSource\":\"").append(jsonEscape(info.dataSource == null ? "" : info.dataSource)).append("\",");
+            sb.append("\"kvMapDump\":\"").append(jsonEscape(info.kvMapDump == null ? "" : info.kvMapDump)).append("\",");
+            sb.append("\"capacitySource\":\"").append(jsonEscape(info.capacitySource == null ? "" : info.capacitySource)).append("\",");
+            sb.append("\"cycleSource\":\"").append(jsonEscape(info.cycleSource == null ? "" : info.cycleSource)).append("\",");
+            sb.append("\"tempSource\":\"").append(jsonEscape(info.tempSource == null ? "" : info.tempSource)).append("\"");
             sb.append("}");
             return sb.toString();
         }

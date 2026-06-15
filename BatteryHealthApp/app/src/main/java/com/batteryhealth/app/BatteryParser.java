@@ -45,6 +45,11 @@ public class BatteryParser {
         public String brand;            // 品牌
         public double confidence;       // 置信度 0-1
         public String debugInfo;        // 调试信息（entry 列表等）
+        public String dataSource;       // 数据来源（哪个 entry）
+        public String kvMapDump;        // 提取的 key-value 映射
+        public String capacitySource;   // 容量数据来源字段
+        public String cycleSource;      // 循环次数数据来源字段
+        public String tempSource;       // 温度数据来源字段
 
         public boolean hasCapacity() { return currentCapacity > 0; }
     }
@@ -145,6 +150,7 @@ public class BatteryParser {
                     if (info != null) {
                         info.brand = brand;
                         info.rawContent = extractRawContent(content);
+                        info.dataSource = name;  // 记录数据来源
 
                         if (bestInfo == null || info.confidence > bestInfo.confidence) {
                             bestInfo = info;
@@ -153,6 +159,8 @@ public class BatteryParser {
                                 + ", cap=" + info.currentCapacity
                                 + ", cyc=" + info.cycleCount
                                 + ", temp=" + info.batteryTemp + ")");
+                            Log.d(TAG, "Data source: " + name);
+                            Log.d(TAG, "KV map: " + (info.kvMapDump != null ? info.kvMapDump : "null"));
                         }
                     }
 
@@ -308,6 +316,19 @@ public class BatteryParser {
         if (!r.hasCapacity() && r.cycleCount == 0 && r.batteryTemp == 0) {
             // 直接用全文搜电池相关数字
             fallbackExtractFromText(r, content);
+        }
+
+        // ==== 记录 kvMap 用于调试 ====
+        if (r.hasCapacity() || r.cycleCount > 0 || r.batteryTemp > 0) {
+            StringBuilder kvDump = new StringBuilder();
+            kvDump.append("Extracted keys (").append(kvMap.size()).append("): ");
+            int count = 0;
+            for (Map.Entry<String, List<String>> e : kvMap.entrySet()) {
+                if (count++ < 10) {
+                    kvDump.append(e.getKey()).append("=").append(e.getValue().get(0)).append(" ");
+                }
+            }
+            r.kvMapDump = kvDump.toString();
         }
 
         // ==== 至少要有容量、循环次数或温度中的一项 ====
@@ -668,29 +689,38 @@ public class BatteryParser {
         // 注意：ccMah < 500 不应作为容量（可能是循环次数被误识别）
         if (ccMah > 0 && ccMah < 500) ccMah = 0;
         int chosenMah = 0;
+        String capacitySource = "";
         if (fullChargeCap > 0) {
             chosenMah = fullChargeCap;
+            capacitySource = "full_charge_capacity";
             r.confidence = Math.max(r.confidence, 0.90);
         } else if (minLearned > 0) {
             chosenMah = minLearned;
+            capacitySource = "min_learned_capacity";
             r.confidence = Math.max(r.confidence, 0.93);
         } else if (actualCap > 0) {
             chosenMah = actualCap;
+            capacitySource = "actual_capacity";
             r.confidence = Math.max(r.confidence, 0.88);
         } else if (currentCap > 0) {
             chosenMah = currentCap;
+            capacitySource = "current_capacity";
             r.confidence = Math.max(r.confidence, 0.85);
         } else if (maxLearned > 0) {
             chosenMah = maxLearned;
+            capacitySource = "max_learned_capacity";
             r.confidence = Math.max(r.confidence, 0.82);
         } else if (ccMah > 0) {
             chosenMah = ccMah;
+            capacitySource = "charge_counter";
             r.confidence = Math.max(r.confidence, 0.80);
         } else if (batteryCap > 0) {
             chosenMah = batteryCap;
+            capacitySource = "battery_capacity";
             r.confidence = Math.max(r.confidence, 0.70);
         }
         r.currentCapacity = chosenMah;
+        r.capacitySource = capacitySource;
 
         // ==== 循环次数 ====
         int cycleCount = findIntValue(kvMap, new String[]{
@@ -699,6 +729,7 @@ public class BatteryParser {
             "charge_cycles", "chargecycles", "cycle",
             "充电循环次数", "循环次数", "累计循环", "充电次数",
         }, 0, 10000);
+        String cycleSource = "cycle_count";
 
         // 特殊处理：cc 字段可能是循环次数也可能是充电计数
         // 如果 cc 的值 < 10000，且没有找到明确的 cycle_count，则 cc 可能是循环次数
@@ -710,6 +741,7 @@ public class BatteryParser {
                         int val = Integer.parseInt(v.trim().replaceAll("[^0-9]", ""));
                         if (val > 0 && val < 10000) {
                             cycleCount = val;
+                            cycleSource = "cc";
                             break;
                         }
                     } catch (NumberFormatException ignore) {}
@@ -719,6 +751,7 @@ public class BatteryParser {
 
         if (cycleCount > 0) {
             r.cycleCount = cycleCount;
+            r.cycleSource = cycleSource;
             r.confidence = Math.max(r.confidence, 0.8);
         }
 
@@ -728,6 +761,7 @@ public class BatteryParser {
             "battery_temp", "batterytemp", "temp", "t",
             "电池温度", "温度",
         });
+        String tempSource = "temperature";
         if (temp != 0) {
             int intVal = (int) Math.round(temp);
             if (intVal > 800 && intVal < 5000) {
@@ -741,6 +775,7 @@ public class BatteryParser {
             }
             if (r.batteryTemp >= -20 && r.batteryTemp <= 80) {
                 r.confidence = Math.max(r.confidence, 0.6);
+                r.tempSource = tempSource;
             } else {
                 r.batteryTemp = 0;
             }
@@ -796,10 +831,26 @@ public class BatteryParser {
             if (values != null) {
                 for (String v : values) {
                     try {
+                        String trimmed = v.trim();
+                        // 排除明显是电压的值（包含 mV 或 V 单位）
+                        String low = trimmed.toLowerCase();
+                        if (low.contains("mv") || low.contains("v ") || low.endsWith("v")) {
+                            continue;
+                        }
+                        // 排除电压范围内的值（2500-5000 可能是 mV）
                         // 提取数字部分（去掉单位等后缀）
-                        String numStr = v.trim().replaceAll("[^0-9.]", "");
+                        String numStr = trimmed.replaceAll("[^0-9.]", "");
                         if (numStr.isEmpty()) continue;
                         double val = Double.parseDouble(numStr);
+                        // 排除电压值范围（2500-5000 mV 或 3-5 V）
+                        if (val >= 2500 && val <= 5000) {
+                            // 可能是电压值（mV），跳过
+                            continue;
+                        }
+                        if (val >= 3 && val <= 5) {
+                            // 可能是电压值（V），跳过
+                            continue;
+                        }
                         if (val >= min && val <= max) {
                             return (int) val;
                         }

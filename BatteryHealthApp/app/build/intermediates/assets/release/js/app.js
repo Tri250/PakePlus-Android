@@ -854,8 +854,31 @@ const BatteryHealthApp = {
 
         // 显示原始数据
         const originalTextEl = document.getElementById('original-text');
-        if (originalTextEl && result.rawContent) {
-            originalTextEl.textContent = result.rawContent;
+        if (originalTextEl) {
+            let debugContent = '';
+            if (result.dataSource) {
+                debugContent += '【数据来源】' + result.dataSource + '\n\n';
+            }
+            if (result.capacitySource) {
+                debugContent += '【容量来源】' + result.capacitySource + ' → ' + result.currentCapacity + 'mAh\n';
+            }
+            if (result.cycleSource) {
+                debugContent += '【循环来源】' + result.cycleSource + ' → ' + result.cycleCount + '\n';
+            }
+            if (result.tempSource) {
+                debugContent += '【温度来源】' + result.tempSource + ' → ' + result.batteryTemp + '°C\n';
+            }
+            debugContent += '\n';
+            if (result.kvMapDump) {
+                debugContent += '【提取字段】' + result.kvMapDump + '\n\n';
+            }
+            if (result.debugInfo) {
+                debugContent += '【调试信息】' + result.debugInfo + '\n\n';
+            }
+            if (result.rawContent) {
+                debugContent += '【原始内容】\n' + result.rawContent;
+            }
+            originalTextEl.textContent = debugContent || '无调试信息';
         }
 
         // 显示保养建议（使用新的 MAINTENANCE_ADVICE）
