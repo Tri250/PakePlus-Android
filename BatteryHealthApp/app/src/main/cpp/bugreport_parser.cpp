@@ -481,35 +481,46 @@ void BugreportParser::extractVoltageCurrent(const std::string& text, BatteryRawD
     }
 
     // 使用新的多模式电压提取
+    // 注意：所有电压需统一转换为 mV 存储（与 healthd 格式 v=4356mV 一致）
     for (const auto& pattern : RegexPatterns::getVoltagePatterns()) {
         std::regex voltage_regex(pattern);
-        std::sregex_iterator it(text.begin(), text.end(), voltage_regex);
-        
+        std::smatch vmatch;
         std::vector<float> voltages;
-        for (auto iter = it; iter != std::sregex_iterator(); ++iter) {
+        bool is_mv_format = (pattern.find("mV") != std::string::npos ||
+                            pattern.find("voltage_mv") != std::string::npos ||
+                            pattern.find("healthd:") != std::string::npos);
+
+        auto begin = std::sregex_iterator(text.begin(), text.end(), voltage_regex);
+        auto end = std::sregex_iterator();
+        for (auto iter = begin; iter != end; ++iter) {
             try {
-                voltages.push_back(std::stof(iter->str(1)));
+                float val = std::stof((*iter)[1].str());
+                // 统一为 mV：V 格式（如 3.8V）需乘 1000
+                if (!is_mv_format && val < 100.0f) {
+                    val *= 1000.0f;
+                }
+                voltages.push_back(val);
             } catch (...) {}
         }
-        
+
         if (!voltages.empty()) {
             // 尝试匹配电流
             std::regex current_regex(RegexPatterns::getCurrentPattern());
             std::sregex_iterator current_it(text.begin(), text.end(), current_regex);
-            
+
             std::vector<float> currents;
             for (auto iter = current_it; iter != std::sregex_iterator(); ++iter) {
                 try {
-                    currents.push_back(std::stof(iter->str(1)));
+                    currents.push_back(std::stof((*iter)[1].str()));
                 } catch (...) {}
             }
-            
+
             // 将电压和电流配对
             size_t min_size = std::min(voltages.size(), currents.size());
             for (size_t i = 0; i < min_size; ++i) {
                 data.voltage_current_pairs.emplace_back(voltages[i], currents[i]);
             }
-            
+
             // 如果没有电流，只保存电压
             if (currents.empty()) {
                 for (float v : voltages) {
