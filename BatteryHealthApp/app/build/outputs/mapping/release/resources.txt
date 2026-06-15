@@ -13,6 +13,7 @@ YEAR
 refrence
 xml
 android.graphics.drawable.ColorStateL...
+.profm
 tel
 setBase
 shtml
@@ -26,6 +27,7 @@ WEB_MESSAGE_LISTENER
 java.lang.CharSequence
 .zip
 text/xml
+充电循环次数
 keyframe
 backwards
 0
@@ -61,6 +63,7 @@ displayName
 transformPivotX
 H
 MotionController
+充电次数
 UniqueConstants
 reparentWithOverlay
 L
@@ -90,7 +93,6 @@ a
 user_query
 c
 ACTION_CLEAR_ACCESSIBILITY_FOCUS
-dumpstate.txt
 d
 e
 f
@@ -106,14 +108,17 @@ STATE_
 p
 r
 TIME_PICKER_TITLE_RES
+t
 java.lang.Module
 TypefaceCompatApi26Impl
 Layout
 growFraction
+v
 w
 x
 MODULATE
 y
+li_ion
 z
 HarmonizedColors
 ActionMenuView
@@ -123,6 +128,7 @@ app:layout_constraintStart_toEndOf
 standard
 harmony
 androidx.core.view.inputmethod.InputC...
+当前容量
 propertyXName
 mimeType
 ViewTimeCycle
@@ -137,6 +143,7 @@ getLoadedPackageInfo
 drawableLeft
 android:style
 ACTION_SCROLL_FORWARD
+标称容量
 visibility
 on_tertiary
 unchecked
@@ -200,6 +207,7 @@ on_background
 executor
 android:cancelable
 TooltipCompatHandler
+battery_type
 surface_container_low
 block
 SRC_OVER
@@ -207,6 +215,7 @@ android:slide:screenPosition
 fullPackage
 write
 NEUTRAL
+kernel_log
 period
 SimpleItemAnimator
 byte
@@ -255,6 +264,7 @@ app:layout_constraintDimensionRatio
 drawableEnd
 layout_width
 ListMenuItemView
+battvoltage
 linear
 reminder
 FLAG_REPORT_VIEW_IDS
@@ -279,6 +289,7 @@ mMainThread
 Carousel
 KeyTimeCycles
 android.intent.action.TIME_SET
+batterycycle
 checkedIconEnabled
 shortcutId
 SplineSet
@@ -403,6 +414,7 @@ actions
 text/css
 KEY
 pathRotate
+learnedbatterycapacity
 getHorizontallyScrolling
 Spinner
 lge
@@ -451,11 +463,13 @@ androidx.view.accessibility.Accessibi...
 REPLACE
 markState
 extraLocusId
+.proto
 .new
 search_suggest_query
 JobServiceEngineImpl
 ArrayMap
 weight
+电池容量
 BaseSlider
 kyocera
 layout_constraintStart_toStartOf
@@ -466,6 +480,7 @@ TESTS
 FORCE_DARK
 font_variation_settings
 missed_call
+anr/
 inProgressLabel
 nativeCreateFromTypefaceWithExactStyle
 android.intent.extra.shortcut.ICON_RE...
@@ -533,19 +548,23 @@ requestLocationUpdates
 CheckedTextView
 android.location.LocationRequest
 SERVICE_WORKER_CONTENT_ACCESS
+actualcapacity
 app_color
+battery_design_capacity
 transitionPathRotate
 robolectric
 strokeLineJoin
 android.view.accessibility.action.ARG...
 beforeTextChanged
 .apk
+fullchargecapacity
 limitboundsto
 .jar
 displayIntent
 surface_tint
 android:explode:screenBounds
 primary
+cycle_count
 LUMINOSITY
 java.lang.Throwable
 targetName
@@ -575,6 +594,7 @@ android:changeScroll:y
 materialContainerTransition:bounds
 editor
 SETTLING
+system_log
 文件选择失败
 ACTION_DRAG_START
 dimensionRatio
@@ -621,6 +641,7 @@ patternPathData
 CarouselLayoutManager
 getUri
 KeyCycleOscillator
+maxlearnedbatterycapacity
 SLACK
 values
 GET_COOKIE_INFO
@@ -639,6 +660,7 @@ text_secondary_and_tertiary_inverse_d...
 dimension
 kotlin.String.Companion
 CircularFlow
+temp
 ACTION_SHOW_TOOLTIP
 jClass
 addFontFromAssetManager
@@ -665,6 +687,7 @@ app:layout_goneMarginRight
 Button
 propertyValuesHolder
 kotlin.reflect.jvm.internal.Reflectio...
+minlearnedbatterycapacity
 last_modified
 setTime
 sender_person
@@ -674,6 +697,7 @@ addObserver
 MEDIUM
 generatedAdapter
 modelClass
+max_learned_battery_capacity
 NotifManCompat
 LIBRARY
 TwilightManager
@@ -725,6 +749,7 @@ missingDelimiterValue
 controlX1
 android.backgroundImageUri
 listener
+full_charge_capacity
 android.intent.extra.CC
 NotificationManagerCompat
 BanParcelableUsage
@@ -794,6 +819,7 @@ app:layout_constraintWidth_percent
 %.3f
 trimPathStart
 print
+电压
 secondary_container
 DEFAULT
 strokeMiterLimit
@@ -838,6 +864,7 @@ clipPath
 KeyAttribute
 bounceStart
 getLayoutAlignment
+batt_voltage
 translationX
 TOP
 KeyFrameSet
@@ -898,10 +925,13 @@ subject
 VERTICAL_CHAIN
 mDrawableCache
 integer
+batteryvoltage
 UpsideDownCake
+温度
 registerGnssMeasurementsCallback
 UnknownNullness
 Stagger
+nominalcapacity
 mVisibleInsets
 app:layout_constraintHorizontal_bias
 CheckResult
@@ -962,10 +992,12 @@ ResourceManagerInternal
 Trace
 wrap_content
 ACTVAutoSizeHelper
+power_supply
 Completed
 callback
 mOnKeyListener
 android.permission.READ_EXTERNAL_STORAGE
+battery_temp
 ACTION_PASTE
 android.graphics.FontFamily
 Vertical
@@ -1011,6 +1043,8 @@ inverse_on_surface
 defaultCreationExtras
 QuantizeInterpolator
 mht
+rated_capacity
+实际容量
 setCurrentState
 20
 21
@@ -1034,6 +1068,7 @@ classes_to_restore
 bounceEnd
 application/javascript
 Generate
+temperature
 ViewConstructor
 MotionLabel
 30
@@ -1046,6 +1081,7 @@ ResourceType
 expandedComponentIdHint
 androidx.core.view.inputmethod.Editor...
 android:name
+batterytype
 android.intent.action.CREATE_DOCUMENT
 RippleUtils
 FIDELITY
@@ -1055,6 +1091,8 @@ yyyy
 progress
 STRING
 PropertySet
+min_learned_capacity
+battery_capacity
 WindowUtils
 40
 operation
@@ -1121,6 +1159,7 @@ android.support.AppLaunchChecker
 on_tertiary_fixed_variant
 registry
 WrappedDrawableApi21
+healthd
 cubic
 dispatchStartTemporaryDetach
 MULTI_PROCESS
@@ -1149,6 +1188,7 @@ android.remoteinput.results
 PrivateConstructorForUtilityClass
 NONE
 layout_constraintHorizontal_bias
+chargecycles
 zip
 androidx.core.app.NotificationCompat$...
 application/json
@@ -1156,6 +1196,7 @@ mpg
 overshootInterpolator
 java.util.Set
 inverse_surface
+HarmonyOS
 speedAccuracy
 unresolved
 EXCLUSION
@@ -1170,6 +1211,7 @@ signature
 android.support.BIND_NOTIFICATION_SID...
 createFromFamiliesWithDefault
 ActivityResultRegistry
+循环次数
 CustomSupport
 android.webkit.WebViewFactory
 CAPABILITY_CAN_RETRIEVE_WINDOW_CONTENT
@@ -1184,6 +1226,7 @@ event
 SPREAD
 SOURCE_INPUT_METHOD
 BanUncheckedReflection
+currentcapacity
 MotionLayout
 include
 file:///android_asset/
@@ -1195,6 +1238,7 @@ PENDING
 pathMotion
 androidx.profileinstaller.action.BENC...
 nullLayouts
+battery_cycle
 outState
 View.kt
 java.lang.Comparable
@@ -1215,6 +1259,7 @@ FloatValueHolder
 oppo
 java.lang.Enum
 MultiAutoCompleteTextView
+电池类型
 TOGGLE_BUTTON_TAG
 from
 html
@@ -1269,6 +1314,7 @@ android.activity.usage_time
 onTextChanged
 REUSABLE_CLAIMED
 android:visibility:visibility
+batterycapacity
 0x%08x
 BOTTOM_TO_TOP
 resources
@@ -1282,6 +1328,7 @@ bluetooth
 androidx.activity.result.contract.act...
 anticipate
 exception
+battery_
 suggest_intent_data
 androidx.core.view.extra.INPUT_CONTEN...
 androidx.activity.result.contract.ext...
@@ -1290,6 +1337,7 @@ opus
 String
 actionIntent
 :run
+cycle_counter
 androidx.view.accessibility.Accessibi...
 getUncaughtExceptionPreHandler
 about:blank
@@ -1368,6 +1416,7 @@ Startup
 dumpstate_battery
 acc
 android:changeTransform:intermediateP...
+charge_cycle
 ApplySharedPref
 androidx.profileinstaller.action.SKIP...
 document_id
@@ -1432,6 +1481,7 @@ FORCE_DARK_BEHAVIOR
 LocalBroadcastManager
 getSubId
 android:support:fragments
+charge_cycles
 ACTION_DRAG_DROP
 UNRESTRICTED
 START
@@ -1454,6 +1504,7 @@ dexopt/baseline.prof
 explode
 NEGATIVE_BUTTON_TEXT_RES_ID_KEY
 com.google.android.gms.provider.extra...
+满充容量
 linearInterpolator
 androidx.view.accessibility.Accessibi...
 GET_VARIATIONS_HEADER
@@ -1520,6 +1571,7 @@ app:layout_constraintEnd_toEndOf
 Theme.MaterialComponents
 interpolatedPos
 ARRAY
+设计容量
 UTC
 kotlin.collections.Collection
 DesignTool
@@ -1555,6 +1607,7 @@ on_surface_variant
 kotlin.Int
 animatedTransform
 android.view.
+design_capacity
 OP_POST_NOTIFICATION
 handleLifecycleEvent
 on_secondary
@@ -1590,6 +1643,7 @@ app:layout_marginEnd
 android.media.action.VIDEO_CAPTURE
 WEB_RESOURCE_REQUEST_IS_REDIRECT
 WEB_MESSAGE_CALLBACK_ON_MESSAGE
+event_log
 QuantizeMotionPhase
 accelerateDecelerateInterpolator
 FRUIT_SALAD
@@ -1620,6 +1674,7 @@ TIME_PICKER_TIME_MODEL
 REMOVE_FROZEN
 maxvelocity
 changeClipBounds
+电池温度
 PathParser
 circularReveal
 setProgress
@@ -1638,11 +1693,13 @@ paddingEnd
 setExpireIn
 .right
 android.permission.USE_FINGERPRINT
+/proc/
 outBundle
 PROTECTED
 timestamp
 ACTION_SELECT
 SS
+/fs/
 layout_marginEnd
 viewportWidth
 CIRCULAR_CONSTRAINT
@@ -1672,6 +1729,7 @@ androidx.core.content.pm.shortcut_lis...
 kotlin.Double
 AppCompatDelegate
 lifecycle
+voltage_now
 ContextCompat
 addGhost
 view
@@ -1722,6 +1780,7 @@ android:view_state
 START_SAFE_BROWSING
 androidx.appcompat.app.AppLocalesMeta...
 android.intent.extra.CHANNEL_GROUP_ID
+min_learned_battery_capacity
 SOURCE_CLIPBOARD
 Dispatchers.Main
 XA
@@ -1784,11 +1843,14 @@ disableScroll
 bounds
 PUBLIC
 reportWhenComplete
+actual_capacity
 已取消选择
+battery_voltage
 Dispatchers.Unconfined
 on_secondary_container
 media_projection
 app:layout_constraintWidth_max
+fcc
 onBackPressedDispatcherOwner
 flags
 ViewConfigCompat
@@ -1807,6 +1869,7 @@ jfif
 PrintHelper
 MissingNullability
 ReferencesDeprecated
+HEALTHD:
 MMMd
 waveShape
 width
@@ -1828,6 +1891,7 @@ Include
 VersionedParcelParcel
 AppCompatViewInflater
 .left
+chargecycle
 notification
 ontouchup
 .txt
@@ -1858,6 +1922,7 @@ nextFunction
 ColorResLoaderCreator
 BatteryInfo
 tint_list
+batterytemp
 android:menu:action_views
 app:goneBaselineMargin
 SAFE_BROWSING_RESPONSE_BACK_TO_SAFETY
@@ -1875,6 +1940,7 @@ ACTION_PREVIOUS_HTML_ELEMENT
 http://schemas.android.com/apk/res/an...
 suggest_text_2_url
 https://appassets.androidplatform.net...
+累计循环
 detectDarkMode
 _h
 transitionOrdering
@@ -1882,6 +1948,7 @@ android:changeTransform:parent
 ensureImeVisible
 androidx.lifecycle.savedstate.vm.tag
 spread
+batterytemperature
 WindowInsetsCompat
 vibrator
 android.intent.action.PROCESS_TEXT
@@ -1909,6 +1976,7 @@ androidx.lifecycle.LifecycleDispatche...
 getSuppressed
 .DYNAMIC_RECEIVER_NOT_EXPORTED_PERMIS...
 FLAG_REQUEST_TOUCH_EXPLORATION_MODE
+cyclecount
 nativeCreateWeightAlias
 Toolbar
 getCurrentWebViewPackageName
@@ -1961,10 +2029,12 @@ throwableMethods
 StateSet
 BASELINE_TO_BASELINE
 cc
+chargecounter
 completion
 ToggleButton
 androidx.view.accessibility.Accessibi...
 set
+tombstone
 ACTION_IME_ENTER
 DynamicColors
 TIME_PICKER_OVERRIDE_THEME_RES_ID
@@ -2065,9 +2135,11 @@ negativeCross
 ACTION_MOVE_WINDOW
 android.support.text.emoji.emojiCompa...
 MATCH_PARENT
+fs/
 sharedElement:snapshot:imageScaleType
 LOCK
 recommendation
+current_capacity
 clipboard
 AHT
 android.intent.extra.START_PLAYBACK
@@ -2113,6 +2185,7 @@ extras
 js
 spline
 telephony_subscription_service
+cycle
 motion.progress
 suggest_intent_action
 androidx.core.app.NotificationCompat$...
@@ -2157,6 +2230,7 @@ _size
 surface_dim
 that
 download
+m_
 ogm
 string1
 limit
@@ -2164,6 +2238,7 @@ hmos
 android.resource://
 strokeColor
 ogv
+designcapacity
 kotlin.Number
 SHOWING
 waveOffset
@@ -2175,10 +2250,13 @@ author
 /bha/
 switchMapFunction
 restrictions
+cyclecounter
 mv
 TRUE
 OBJECT
+/dev/
 expansion
+battery_temperature
 android.location.GnssRequest
 1.0
 Constraints
@@ -2254,11 +2332,12 @@ java.util.Map
 excludeClass
 SuggestionsAdapter
 BASELINE_TO_BOTTOM
-/dumpstate
 drawable
+li_po
 ACTION_NEXT_HTML_ELEMENT
 application/pdf
 insertReorderBarrier
+learned_battery_capacity
 text_primary_inverse_disable_only
 ActionBarOverlayLayout
 invoker
@@ -2274,6 +2353,7 @@ RIGHT_TO_RIGHT
 SoonBlockedPrivateApi
 CONDITION_FALSE
 SOURCE_DRAG_AND_DROP
+.prof
 rm
 SERVICE_WORKER_BASIC_USAGE
 androidx.activity.result.contract.ext...
@@ -2389,11 +2469,14 @@ android.intent.action.TIMEZONE_CHANGED
 layout_constraintBaseline_toBaselineOf
 MaterialBackHelper
 android.intent.extra.TIME
+max_learned_capacity
 androidx.core.app.NotificationCompat$...
+technology
 MenuPopupWindow
 Dispatchers.Main.immediate
 android.core.view.accessibility.extra...
 valueFrom
+voltage
 .xml:
 topLeft
 location
@@ -2426,6 +2509,7 @@ android.provider.extra.INITIAL_URI
 CONSUMED
 android.remoteinput.dataTypeResultsData
 baseline
+charge_counter
 mCheckMarkDrawable
 ACTION_ARGUMENT_SELECTION_START_INT
 android.support.text.emoji.emojiCompa...
@@ -2442,6 +2526,7 @@ android.support.action.semanticAction
 java.lang.Double
 flac
 range
+capacity
 promo
 com.sony.dtv.hardware.panel.qfhd
 get
@@ -2515,6 +2600,7 @@ tertiary_container
 scale
 SERVICE_WORKER_FILE_ACCESS
 kotlinName
+ratedcapacity
 androidx.contentpager.content.wakelockid
 Variables
 mAccessibilityDelegate
@@ -2538,6 +2624,7 @@ x_right
 kotlin.CharSequence
 m4v
 OnSwipe
+nominal_capacity
 fragment
 FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
 realme
