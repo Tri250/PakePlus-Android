@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BatteryHealthApp";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_REQUEST_CODE = 1002;
-    private static final long MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB限制
+    private static final long MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB限制（原 200MB，避免大 bugreport 被拒）
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -551,6 +551,143 @@ public class MainActivity extends AppCompatActivity {
                 }
                 isPickerFromJs = true;
                 openFileChooser();
+            });
+        }
+
+        /**
+         * 关键方法：原生 ZIP 流式解析电池健康度（v2.1.7 重构）
+         *
+         * 之前的 readFileAsBase64 方案将 200MB 文件读入 ByteArrayOutputStream
+         * 再生成 1.33 倍的 Base64 字符串，传入 evaluateJavascript 时 WebView
+         * 直接 OOM 闪退。本方法直接对 URI 打开 ZipInputStream 单遍扫描，
+         * 内存占用 O(1)，结果以小型 JSON 字符串返回给 JS。
+         *
+         * @param uriString 文件 URI（content:// 形式，SAF 选择）
+         * @param callbackJs 成功回调函数名（接收 JSON 字符串）
+         * @param errorCallbackJs 错误回调函数名（接收错误消息）
+         */
+        @JavascriptInterface
+        public void analyzeZipNative(final String uriString, final String callbackJs, final String errorCallbackJs) {
+            Log.d(TAG, "=== analyzeZipNative for: " + uriString + " ===");
+            new Thread(() -> {
+                InputStream inputStream = null;
+                try {
+                    Uri uri = Uri.parse(uriString);
+                    ContentResolver resolver = getContentResolver();
+                    inputStream = resolver.openInputStream(uri);
+                    if (inputStream == null) {
+                        invokeJsOnMain(errorCallbackJs, "无法打开文件 URI");
+                        return;
+                    }
+
+                    // 进度回调：单条信息
+                    final BatteryParser.ProgressCallback progressCb = (processed, total, currentName, bestSoFar) -> {
+                        runOnUiThread(() -> {
+                            String safeName = currentName == null ? "" :
+                                    currentName.replace("\\", "\\\\").replace("'", "\\'");
+                            int bestCurrent = bestSoFar != null ? bestSoFar.currentCapacity : 0;
+                            int bestCycle = bestSoFar != null ? bestSoFar.cycleCount : 0;
+                            String js = "if(window.BatteryHealthApp && window.BatteryHealthApp.onNativeProgress){" +
+                                    "  window.BatteryHealthApp.onNativeProgress(" + processed + "," +
+                                    total + ",'" + safeName + "'," + bestCurrent + "," + bestCycle + ");" +
+                                    "}";
+                            try { webView.evaluateJavascript(js, null); } catch (Exception ignore) {}
+                        });
+                    };
+
+                    // 核心解析
+                    final BatteryParser.BatteryInfo info = BatteryParser.processZipStream(inputStream, progressCb);
+
+                    // 关闭流
+                    try { inputStream.close(); } catch (Exception ignore) {}
+                    inputStream = null;
+
+                    if (info == null) {
+                        invokeJsOnMain(errorCallbackJs, "未在文件中找到电池健康度信息，请确认上传的是正确的安卓诊断文件");
+                        return;
+                    }
+
+                    // 构造 JSON
+                    final String json = infoToJson(info);
+
+                    runOnUiThread(() -> {
+                        String jsCode = "if(window.BatteryHealthApp && window.BatteryHealthApp." + callbackJs + "){" +
+                                "  window.BatteryHealthApp." + callbackJs + "(" + json + ");" +
+                                "}";
+                        Log.d(TAG, "Returning result: brand=" + info.brand + " cap=" + info.currentCapacity + " cycles=" + info.cycleCount);
+                        try {
+                            webView.evaluateJavascript(jsCode, null);
+                        } catch (Exception e) {
+                            Log.e(TAG, "evaluateJavascript failed", e);
+                        }
+                    });
+
+                } catch (OutOfMemoryError oom) {
+                    Log.e(TAG, "OOM in analyzeZipNative", oom);
+                    invokeJsOnMain(errorCallbackJs, "内存不足，请尝试较小的文件");
+                } catch (Exception e) {
+                    Log.e(TAG, "analyzeZipNative failed", e);
+                    invokeJsOnMain(errorCallbackJs, "解析失败: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+                } finally {
+                    if (inputStream != null) {
+                        try { inputStream.close(); } catch (Exception ignore) {}
+                    }
+                }
+            }, "BatteryParser-Native").start();
+        }
+
+        /**
+         * BatteryInfo → JSON
+         * 使用 JSON 字符串拼接避免引入 org.json 依赖在某些设备上的兼容问题
+         */
+        private String infoToJson(BatteryParser.BatteryInfo info) {
+            StringBuilder sb = new StringBuilder(512);
+            sb.append("{");
+            sb.append("\"currentCapacity\":").append(info.currentCapacity).append(",");
+            sb.append("\"designCapacity\":").append(info.designCapacity).append(",");
+            sb.append("\"chargeCounter\":").append(info.chargeCounter).append(",");
+            sb.append("\"cycleCount\":").append(info.cycleCount).append(",");
+            sb.append("\"batteryTemp\":").append(info.batteryTemp).append(",");
+            sb.append("\"voltage\":").append(info.voltage).append(",");
+            sb.append("\"confidence\":").append(String.format(java.util.Locale.US, "%.3f", info.confidence)).append(",");
+            sb.append("\"brand\":\"").append(jsonEscape(info.brand == null ? "generic" : info.brand)).append("\",");
+            sb.append("\"technology\":\"").append(jsonEscape(info.technology == null ? "" : info.technology)).append("\",");
+            sb.append("\"rawContent\":\"").append(jsonEscape(info.rawContent == null ? "" : info.rawContent)).append("\"");
+            sb.append("}");
+            return sb.toString();
+        }
+
+        private String jsonEscape(String s) {
+            if (s == null) return "";
+            StringBuilder out = new StringBuilder(s.length() + 16);
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                switch (c) {
+                    case '\\': out.append("\\\\"); break;
+                    case '"': out.append("\\\""); break;
+                    case '\n': out.append("\\n"); break;
+                    case '\r': out.append("\\r"); break;
+                    case '\t': out.append("\\t"); break;
+                    case '\b': out.append("\\b"); break;
+                    case '\f': out.append("\\f"); break;
+                    default:
+                        if (c < 0x20) {
+                            out.append(String.format("\\u%04x", (int) c));
+                        } else {
+                            out.append(c);
+                        }
+                }
+            }
+            return out.toString();
+        }
+
+        private void invokeJsOnMain(final String fn, final String arg) {
+            runOnUiThread(() -> {
+                String safe = arg.replace("\\", "\\\\").replace("'", "\\'");
+                String js = "if(window.BatteryHealthApp && window.BatteryHealthApp." + fn + "){" +
+                        "  window.BatteryHealthApp." + fn + "('" + safe + "');" +
+                        "}";
+                try { webView.evaluateJavascript(js, null); } catch (Exception ignore) {}
             });
         }
 
@@ -1053,7 +1190,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
                         String sizeMB = String.format("%.1f", fileSize / (1024.0 * 1024.0));
-                        Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于200MB的文件", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "文件过大(" + sizeMB + "MB)，请选择小于500MB的文件", Toast.LENGTH_LONG).show();
                         callback.onReceiveValue(null);
                         return;
                     }

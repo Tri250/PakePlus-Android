@@ -195,10 +195,11 @@ const BatteryHealthApp = {
             return false;
         }
         
-        // 验证文件大小（最大 100MB）- 仅对File对象检查
-        if (file.size && file.size > 100 * 1024 * 1024) {
+        // 验证文件大小（最大 500MB）- 仅对File对象检查
+        // 原生解析使用 ZipInputStream 流式扫描，500MB 也不卡
+        if (file.size && file.size > 500 * 1024 * 1024) {
             if (errorEl) {
-                errorEl.textContent = '文件过大，请选择小于 100MB 的文件';
+                errorEl.textContent = '文件过大，请选择小于 500MB 的文件';
                 errorEl.classList.add('show');
             }
             this.currentFile = null;
@@ -371,87 +372,71 @@ const BatteryHealthApp = {
     
     /**
      * 分析 ZIP 文件
-     * 关键修复：使用临时文件方案，避免200MB大文件OOM
-     * Android端将文件复制到cacheDir，返回file:// URL
-     * JS端通过fetch流式读取
+     * v2.1.7 关键重构：完全使用 Android 原生 ZIP 流式解析，避免 200MB+ 大文件 OOM 闪退
+     * 不再读取/传输整个文件到 JS，只接收小型 JSON 结果
      */
     async analyzeZipFile(file, initialCapacity) {
         return new Promise((resolve, reject) => {
             // 检查是否是Android URI文件
             if (file.isAndroidUri && file.uri) {
-                console.log('Processing Android URI file:', file.uri);
+                console.log('Processing Android URI file via native parser:', file.uri);
 
-                // 使用Android接口读取文件内容
                 if (window.AndroidFilePicker) {
-                    // 优先使用新的 Base64 传输方法（更稳定，避免 WebViewAssetLoader 拦截失败）
+                    // 关键路径：使用 Android 原生 ZipInputStream 流式解析
+                    // 内存占用 O(1)，不传输大文件到 JS
+                    if (typeof window.AndroidFilePicker.analyzeZipNative === 'function') {
+                        this.updateProgress(5, '正在启动原生解析引擎...');
+
+                        this._fileReadResolve = resolve;
+                        this._fileReadReject = reject;
+                        this._currentInitialCapacity = initialCapacity;
+
+                        window.AndroidFilePicker.analyzeZipNative(
+                            file.uri,
+                            'onNativeAnalyzeComplete',
+                            'onNativeAnalyzeError'
+                        );
+                        return;
+                    }
+
+                    // 旧回退路径：使用 Base64 传输（小文件可用，>50MB 极易 OOM）
                     if (typeof window.AndroidFilePicker.readFileAsBase64 === 'function') {
                         this.updateProgress(5, '正在准备读取文件...');
-
-                        // 设置回调函数
                         this._fileReadResolve = resolve;
                         this._fileReadReject = reject;
                         this._currentInitialCapacity = initialCapacity;
-
-                        // 调用 Android 读取并返回 Base64
                         window.AndroidFilePicker.readFileAsBase64(
-                            file.uri,
-                            'onFileReadComplete',
-                            'onFileReadError',
-                            5,
-                            50
+                            file.uri, 'onFileReadComplete', 'onFileReadError', 5, 50
                         );
-                    } else if (typeof window.AndroidFilePicker.readFileContentWithProgress === 'function') {
-                        // 回退到带进度的读取方法（WebViewAssetLoader URL 方式）
-                        this.updateProgress(5, '正在准备读取文件...');
+                        return;
+                    }
 
+                    if (typeof window.AndroidFilePicker.readFileContentWithProgress === 'function') {
+                        this.updateProgress(5, '正在准备读取文件...');
                         this._fileReadResolve = resolve;
                         this._fileReadReject = reject;
                         this._currentInitialCapacity = initialCapacity;
-
                         window.AndroidFilePicker.readFileContentWithProgress(
-                            file.uri,
-                            'onFileReadComplete',
-                            5,
-                            50
+                            file.uri, 'onFileReadComplete', 5, 50
                         );
-                    } else {
-                        // 回退到旧方法
-                        this.updateProgress(10, '正在读取Android文件...');
-
-                        setTimeout(() => {
-                            try {
-                                const base64Content = window.AndroidFilePicker.readFileContent(file.uri);
-
-                                if (!base64Content) {
-                                    reject(new Error('无法读取文件内容'));
-                                    return;
-                                }
-
-                                this.updateProgress(50, '正在解压文件...');
-                                this._processBase64Content(base64Content, initialCapacity, resolve, reject);
-
-                            } catch (error) {
-                                console.error('Failed to process Android file:', error);
-                                reject(new Error('文件处理失败: ' + error.message));
-                            }
-                        }, 100);
+                        return;
                     }
+
+                    reject(new Error('Android接口不可用'));
                 } else {
                     reject(new Error('Android文件接口不可用'));
                 }
                 return;
             }
 
-            // 常规文件处理（浏览器环境）
+            // 常规文件处理（浏览器环境，用于调试）
             const reader = new FileReader();
-
             reader.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 30) + 10;
                     this.updateProgress(percent, `正在读取文件... ${(e.loaded / 1024 / 1024).toFixed(1)}MB / ${(e.total / 1024 / 1024).toFixed(1)}MB`);
                 }
             };
-
             reader.onload = async (e) => {
                 try {
                     const blob = new Blob([e.target.result]);
@@ -460,13 +445,84 @@ const BatteryHealthApp = {
                     reject(error);
                 }
             };
-
-            reader.onerror = () => {
-                reject(new Error('文件读取失败'));
-            };
-
+            reader.onerror = () => reject(new Error('文件读取失败'));
             reader.readAsArrayBuffer(file);
         });
+    },
+
+    /**
+     * 原生解析进度回调（Java → JS）
+     * 由 MainActivity.analyzeZipNative 通过 evaluateJavascript 调用
+     * @param {number} processed - 已处理的电池相关 entry 数
+     * @param {number} total - 已扫描的总 entry 数
+     * @param {string} currentName - 当前 entry 文件名
+     * @param {number} bestCurrent - 当前最佳容量匹配
+     * @param {number} bestCycle - 当前最佳循环次数匹配
+     */
+    onNativeProgress(processed, total, currentName, bestCurrent, bestCycle) {
+        // 5% ~ 90% 进度区间
+        const percent = total > 0
+            ? Math.min(90, 5 + Math.round((processed / Math.min(total, 20)) * 85))
+            : Math.min(90, 5 + processed * 4);
+
+        let msg = `正在解析 (${processed}/${total || '?'}): ${currentName || ''}`;
+        if (bestCurrent > 0) {
+            msg += ` · 已识别 ${bestCurrent}mAh`;
+        }
+        if (bestCycle > 0) {
+            msg += ` · ${bestCycle} 次循环`;
+        }
+        this.updateProgress(percent, msg);
+        console.log('[NativeProgress]', percent + '%', msg);
+    },
+
+    /**
+     * 原生解析完成回调（Java → JS）
+     * 接收一个小型 JSON 字符串作为参数
+     */
+    onNativeAnalyzeComplete(jsonString) {
+        console.log('=== Native analyze complete ===');
+        try {
+            const result = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+            console.log('Parsed result:', result);
+
+            this.updateProgress(95, '正在生成报告...');
+
+            // 归一化字段
+            if (typeof result.currentCapacity !== 'number') result.currentCapacity = 0;
+            if (typeof result.cycleCount !== 'number') result.cycleCount = 0;
+            if (typeof result.batteryTemp !== 'number') result.batteryTemp = 0;
+            if (typeof result.chargeCounter !== 'number') result.chargeCounter = 0;
+            if (typeof result.voltage !== 'number') result.voltage = 0;
+            if (!result.brand) result.brand = 'generic';
+
+            if (!result.currentCapacity && !result.cycleCount) {
+                if (this._fileReadReject) {
+                    this._fileReadReject(new Error('未找到有效的电池容量或循环次数'));
+                }
+                return;
+            }
+
+            this.updateProgress(100, '分析完成');
+            if (this._fileReadResolve) {
+                this._fileReadResolve(result);
+            }
+        } catch (error) {
+            console.error('Failed to parse native result:', error, jsonString);
+            if (this._fileReadReject) {
+                this._fileReadReject(new Error('解析结果失败: ' + error.message));
+            }
+        }
+    },
+
+    /**
+     * 原生解析错误回调（Java → JS）
+     */
+    onNativeAnalyzeError(errorMessage) {
+        console.error('Native analyze error:', errorMessage);
+        if (this._fileReadReject) {
+            this._fileReadReject(new Error(errorMessage || '原生解析失败'));
+        }
     },
 
     /**
