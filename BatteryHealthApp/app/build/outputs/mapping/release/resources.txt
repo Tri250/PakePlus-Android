@@ -1457,6 +1457,7 @@ com.google.android.gms.provider.extra...
 linearInterpolator
 androidx.view.accessibility.Accessibi...
 GET_VARIATIONS_HEADER
+EMUI
 android.content.res.ThemedResourceCache
 nothing
 handle
@@ -1628,6 +1629,7 @@ hintScreenTimeout
 BanConcurrentHashMap
 RoundedBitmapDrawableFa
 DROP_SHADER_CACHE
+healthd:
 kotlin.collections.ListIterator
 app:layout_constraintTop_toTopOf
 app:layout_constraintWidth_min
@@ -2072,6 +2074,7 @@ output
 yMMMMEEEEd
 FullyDrawnReporter.kt
 sizePercent
+MIUI
 on_surface
 android:changeImageTransform:bounds
 java.lang.Character

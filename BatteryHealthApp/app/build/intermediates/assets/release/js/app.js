@@ -803,10 +803,16 @@ const BatteryHealthApp = {
         const batteryTempEl = document.getElementById('battery-temp');
 
         if (initialCapEl) initialCapEl.textContent = initialCapacity;
-        if (currentCapEl) currentCapEl.textContent = result.currentCapacity;
-        if (healthPctEl) healthPctEl.textContent = healthPercentage;
-        if (cycleCountEl) cycleCountEl.textContent = result.cycleCount || '未检测到';
-        if (batteryTempEl) batteryTempEl.textContent = result.batteryTemp ? result.batteryTemp.toFixed(1) + '°C' : '未检测到';
+        if (currentCapEl) currentCapEl.textContent = result.currentCapacity > 0 ? result.currentCapacity : '未检测到';
+        if (healthPctEl) healthPctEl.textContent = result.currentCapacity > 0 ? healthPercentage : '0';
+        if (cycleCountEl) cycleCountEl.textContent = result.cycleCount > 0 ? result.cycleCount : '未检测到';
+        if (batteryTempEl) {
+            if (result.batteryTemp && result.batteryTemp > -30 && result.batteryTemp < 80) {
+                batteryTempEl.textContent = result.batteryTemp.toFixed(1) + '°C';
+            } else {
+                batteryTempEl.textContent = '未检测到';
+            }
+        }
 
         // 移除动画类
         setTimeout(() => {
