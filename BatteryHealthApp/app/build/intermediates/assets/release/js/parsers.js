@@ -6,6 +6,42 @@
 
 const BatteryParsers = {
     /**
+     * 智能单位转换：将 charge_counter 转换为 mAh
+     * 关键修复：处理不同厂商的单位差异
+     * @param {number} value - 原始值
+     * @returns {number} - 转换后的 mAh 值
+     */
+    convertToMah(value) {
+        if (!value || value <= 0) return 0;
+        
+        // 如果值已经很小（< 1000），可能是 mAh，直接返回
+        if (value < 1000) {
+            return Math.round(value);
+        }
+        
+        // 如果值很大（>= 1000000），肯定是 uAh，除以 1000
+        if (value >= 1000000) {
+            return Math.round(value / 1000);
+        }
+        
+        // 值在 1000-100000 之间，需要智能判断
+        // 如果除以 1000 后结果在合理范围（1000-20000 mAh），则是 uAh
+        // 否则可能是 mAh
+        const divided = Math.round(value / 1000);
+        if (divided >= 1000 && divided <= 20000) {
+            return divided;
+        }
+        
+        // 如果原始值在合理范围，直接返回
+        if (value >= 1000 && value <= 20000) {
+            return Math.round(value);
+        }
+        
+        // 默认除以 1000
+        return divided;
+    },
+
+    /**
      * 检测文件品牌类型
      * @param {Array} entries - ZIP文件条目
      * @param {string} content - 文件内容
@@ -114,10 +150,10 @@ const BatteryParsers = {
             const match = content.match(pattern);
             if (match) {
                 const value = parseInt(match[1]);
-                if (value > 0 && value < 10000000) { // 合理范围检查
+                if (value > 0) {
                     result.chargeCounter = value;
-                    // charge_counter 单位是微安时(uAh)，转换为毫安时(mAh)
-                    result.currentCapacity = Math.round(value / 1000);
+                    // 关键修复：使用统一的单位转换函数
+                    result.currentCapacity = this.convertToMah(value);
                     result.confidence = 0.95;
                     break;
                 }
@@ -304,8 +340,10 @@ const BatteryParsers = {
             if (!result.chargeCounter) {
                 const ccMatch = section.match(/Charge counter:\s*(\d+)/i);
                 if (ccMatch) {
-                    result.chargeCounter = parseInt(ccMatch[1]);
-                    result.currentCapacity = Math.round(result.chargeCounter / 1000);
+                    const value = parseInt(ccMatch[1]);
+                    result.chargeCounter = value;
+                    // 关键修复：使用统一的单位转换函数
+                    result.currentCapacity = this.convertToMah(value);
                     result.confidence = 0.9;
                 }
             }
@@ -343,7 +381,8 @@ const BatteryParsers = {
                     const value = parseInt(match[1]);
                     if (key === 'chargeCounter' && value > 0) {
                         result.chargeCounter = value;
-                        result.currentCapacity = Math.round(value / 1000);
+                        // 关键修复：使用统一的单位转换函数
+                        result.currentCapacity = this.convertToMah(value);
                         result.confidence = 0.85;
                     } else if (key === 'cycleCount') {
                         result.cycleCount = value;
@@ -465,8 +504,10 @@ const BatteryParsers = {
                 const miCCMatch = section.match(/Charge counter:\s*(\d+)\s*uAh/i) ||
                                   section.match(/Charge counter:\s*(\d+)/i);
                 if (miCCMatch) {
-                    result.chargeCounter = parseInt(miCCMatch[1]);
-                    result.currentCapacity = Math.round(result.chargeCounter / 1000);
+                    const value = parseInt(miCCMatch[1]);
+                    result.chargeCounter = value;
+                    // 关键修复：使用统一的单位转换函数
+                    result.currentCapacity = this.convertToMah(value);
                     result.confidence = 0.95;
                 }
             }
@@ -523,7 +564,8 @@ const BatteryParsers = {
                         result.currentCapacity = value;
                     } else {
                         result.chargeCounter = value;
-                        result.currentCapacity = Math.round(value / 1000);
+                        // 关键修复：使用统一的单位转换函数
+                        result.currentCapacity = this.convertToMah(value);
                     }
                     result.confidence = 0.9;
                 }
@@ -576,7 +618,8 @@ const BatteryParsers = {
                     if (key === 'currentCapacity') {
                         if (pattern.toString().includes('counter')) {
                             result.chargeCounter = value;
-                            result.currentCapacity = Math.round(value / 1000);
+                            // 关键修复：使用统一的单位转换函数
+                            result.currentCapacity = this.convertToMah(value);
                             result.confidence = 0.9;
                         } else {
                             result.currentCapacity = Math.round(value);
@@ -601,8 +644,10 @@ const BatteryParsers = {
             if (!result.currentCapacity) {
                 const capMatch = section.match(/ChargeCounter[:\s]+(\d+)/i);
                 if (capMatch) {
-                    result.chargeCounter = parseInt(capMatch[1]);
-                    result.currentCapacity = Math.round(result.chargeCounter / 1000);
+                    const value = parseInt(capMatch[1]);
+                    result.chargeCounter = value;
+                    // 关键修复：使用统一的单位转换函数
+                    result.currentCapacity = this.convertToMah(value);
                     result.confidence = 0.9;
                 }
             }
@@ -660,7 +705,8 @@ const BatteryParsers = {
                         let value = parseFloat(match[1]);
                         if (key === 'chargeCounter') {
                             result.chargeCounter = value;
-                            result.currentCapacity = Math.round(value / 1000);
+                            // 关键修复：使用统一的单位转换函数
+                            result.currentCapacity = this.convertToMah(value);
                             result.confidence = 0.9;
                         } else if (key === 'batteryTemp') {
                             result.batteryTemp = value > 100 ? value / 10 : value;
@@ -692,8 +738,10 @@ const BatteryParsers = {
             if (!result.currentCapacity) {
                 const capMatch = section.match(/capacity[:\s]+(\d+)/i);
                 if (capMatch) {
-                    result.chargeCounter = parseInt(capMatch[1]);
-                    result.currentCapacity = Math.round(result.chargeCounter / 1000);
+                    const value = parseInt(capMatch[1]);
+                    result.chargeCounter = value;
+                    // 关键修复：使用统一的单位转换函数
+                    result.currentCapacity = this.convertToMah(value);
                     result.confidence = 0.85;
                 }
             }
@@ -752,7 +800,8 @@ const BatteryParsers = {
                         let value = parseFloat(match[1]);
                         if (key === 'chargeCounter') {
                             result.chargeCounter = value;
-                            result.currentCapacity = Math.round(value / 1000);
+                            // 关键修复：使用统一的单位转换函数
+                            result.currentCapacity = this.convertToMah(value);
                             result.confidence = 0.9;
                         } else if (key === 'batteryTemp') {
                             result.batteryTemp = value > 100 ? value / 10 : value;
