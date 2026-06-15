@@ -774,6 +774,169 @@ public class MainActivity extends AppCompatActivity {
         }
 
         /**
+         * 读取文件并返回 Base64 字符串
+         * 关键修复：避免 WebViewAssetLoader URL 拦截在某些设备上不可靠的问题
+         * 直接通过 JavaScriptInterface 返回 Base64，JS 端转为 ArrayBuffer
+         * 支持进度回调
+         *
+         * @param uriString 文件 URI
+         * @param callbackJs 成功回调
+         * @param errorCallbackJs 错误回调
+         * @param startPercent 起始进度
+         * @param endPercent 结束进度
+         */
+        @JavascriptInterface
+        public void readFileAsBase64(String uriString, final String callbackJs,
+                                     final String errorCallbackJs,
+                                     final int startPercent, final int endPercent) {
+            Log.d(TAG, "=== readFileAsBase64 for: " + uriString + " ===");
+            new Thread(() -> {
+                java.io.File tempFile = null;
+                try {
+                    Uri uri = Uri.parse(uriString);
+                    ContentResolver resolver = getContentResolver();
+                    InputStream inputStream = resolver.openInputStream(uri);
+                    if (inputStream == null) {
+                        invokeErrorJs(errorCallbackJs, "无法打开文件");
+                        return;
+                    }
+
+                    // 文件大小
+                    long fileSize = 0;
+                    android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                    if (cursor != null) {
+                        int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                        if (sizeIndex >= 0 && cursor.moveToFirst()) {
+                            fileSize = cursor.getLong(sizeIndex);
+                        }
+                        cursor.close();
+                    }
+                    Log.d(TAG, "File size: " + fileSize + " bytes");
+
+                    String originalName = getFileName(uri);
+                    if (originalName == null || originalName.isEmpty()) {
+                        originalName = "upload_" + System.currentTimeMillis() + ".zip";
+                    }
+                    String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+                    java.io.File cacheDir = getCacheDir();
+                    cleanOldTempFiles(cacheDir);
+                    tempFile = new java.io.File(cacheDir, "bha_" + System.currentTimeMillis() + "_" + safeName);
+
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
+                    byte[] buffer = new byte[64 * 1024];
+                    int bytesRead;
+                    long totalRead = 0;
+                    int lastReportedPercent = startPercent;
+                    long lastUiUpdateTime = 0;
+                    long bytesSinceLastUpdate = 0;
+
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+                        bytesSinceLastUpdate += bytesRead;
+                        if (fileSize > 0) {
+                            int currentPercent = (int) (startPercent + (totalRead * (endPercent - startPercent) / fileSize));
+                            long currentTime = System.currentTimeMillis();
+                            if (currentPercent > lastReportedPercent &&
+                                (currentTime - lastUiUpdateTime > 300 || bytesSinceLastUpdate > 512 * 1024)) {
+                                lastReportedPercent = currentPercent;
+                                lastUiUpdateTime = currentTime;
+                                bytesSinceLastUpdate = 0;
+                                final int progress = currentPercent;
+                                final long readBytes = totalRead;
+                                final long totalBytes = fileSize;
+                                runOnUiThread(() -> {
+                                    String jsCode = String.format(
+                                        "if(window.BatteryHealthApp && window.BatteryHealthApp.updateProgress) {" +
+                                        "  window.BatteryHealthApp.updateProgress(%d, '正在读取文件... %.1fMB / %.1fMB');" +
+                                        "}",
+                                        progress,
+                                        readBytes / (1024.0 * 1024.0),
+                                        totalBytes / (1024.0 * 1024.0)
+                                    );
+                                    webView.evaluateJavascript(jsCode, null);
+                                });
+                            }
+                        }
+                    }
+                    fos.flush();
+                    fos.close();
+                    inputStream.close();
+
+                    final long finalSize = totalRead;
+                    final String finalPath = tempFile.getAbsolutePath();
+
+                    // 关键修复：直接读取临时文件为 Base64，分块传输避免一次性占用大内存
+                    final java.io.File finalTempFile = tempFile;
+                    final long size = tempFile.length();
+                    final long chunkSize = 1024 * 1024; // 1MB per chunk
+
+                    // 启动新线程分块读取并 Base64
+                    new Thread(() -> {
+                        try {
+                            java.io.FileInputStream fis = new java.io.FileInputStream(finalTempFile);
+                            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream((int) size);
+                            byte[] readBuffer = new byte[(int) Math.min(chunkSize, size)];
+                            int read;
+                            long readTotal = 0;
+                            while ((read = fis.read(readBuffer)) != -1) {
+                                baos.write(readBuffer, 0, read);
+                                readTotal += read;
+                            }
+                            fis.close();
+                            final String base64Data = android.util.Base64.encodeToString(
+                                baos.toByteArray(), android.util.Base64.NO_WRAP);
+                            baos.close();
+
+                            final String finalName = safeName;
+                            runOnUiThread(() -> {
+                                String jsCode = String.format(
+                                    "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                                    "  window.BatteryHealthApp.%s({data: '%s', size: %d, name: '%s', path: '%s'});" +
+                                    "}",
+                                    callbackJs, callbackJs,
+                                    base64Data.replace("'", "\\'"),
+                                    size,
+                                    finalName.replace("'", "\\'"),
+                                    finalPath.replace("'", "\\'")
+                                );
+                                webView.evaluateJavascript(jsCode, null);
+                                Log.d(TAG, "Callback executed: " + callbackJs + " size=" + size);
+                            });
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to encode file to base64", e);
+                            if (finalTempFile.exists()) finalTempFile.delete();
+                            invokeErrorJs(errorCallbackJs, "Base64 编码失败: " + e.getMessage());
+                        }
+                    }).start();
+
+                } catch (OutOfMemoryError oom) {
+                    Log.e(TAG, "Out of memory while copying file", oom);
+                    if (tempFile != null && tempFile.exists()) tempFile.delete();
+                    invokeErrorJs(errorCallbackJs, "内存不足，请尝试较小的文件");
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to copy file with progress", e);
+                    if (tempFile != null && tempFile.exists()) tempFile.delete();
+                    invokeErrorJs(errorCallbackJs, e.getMessage() != null ? e.getMessage() : "Unknown error");
+                }
+            }).start();
+        }
+
+        private void invokeErrorJs(final String errorCallbackJs, final String message) {
+            runOnUiThread(() -> {
+                String js = String.format(
+                    "if(window.BatteryHealthApp && window.BatteryHealthApp.%s) {" +
+                    "  window.BatteryHealthApp.%s('%s');" +
+                    "}",
+                    errorCallbackJs, errorCallbackJs,
+                    message.replace("'", "\\'")
+                );
+                webView.evaluateJavascript(js, null);
+            });
+        }
+
+        /**
          * 清理旧的临时文件
          * 避免cacheDir累积
          */

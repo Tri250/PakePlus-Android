@@ -383,9 +383,8 @@ const BatteryHealthApp = {
 
                 // 使用Android接口读取文件内容
                 if (window.AndroidFilePicker) {
-                    // 检查是否有带进度的读取方法
-                    if (typeof window.AndroidFilePicker.readFileContentWithProgress === 'function') {
-                        // 使用带进度的读取方法（新版：复制到临时目录）
+                    // 优先使用新的 Base64 传输方法（更稳定，避免 WebViewAssetLoader 拦截失败）
+                    if (typeof window.AndroidFilePicker.readFileAsBase64 === 'function') {
                         this.updateProgress(5, '正在准备读取文件...');
 
                         // 设置回调函数
@@ -393,7 +392,22 @@ const BatteryHealthApp = {
                         this._fileReadReject = reject;
                         this._currentInitialCapacity = initialCapacity;
 
-                        // 调用Android带进度的读取方法（进度范围：5% - 50%）
+                        // 调用 Android 读取并返回 Base64
+                        window.AndroidFilePicker.readFileAsBase64(
+                            file.uri,
+                            'onFileReadComplete',
+                            'onFileReadError',
+                            5,
+                            50
+                        );
+                    } else if (typeof window.AndroidFilePicker.readFileContentWithProgress === 'function') {
+                        // 回退到带进度的读取方法（WebViewAssetLoader URL 方式）
+                        this.updateProgress(5, '正在准备读取文件...');
+
+                        this._fileReadResolve = resolve;
+                        this._fileReadReject = reject;
+                        this._currentInitialCapacity = initialCapacity;
+
                         window.AndroidFilePicker.readFileContentWithProgress(
                             file.uri,
                             'onFileReadComplete',
@@ -477,15 +491,15 @@ const BatteryHealthApp = {
     },
 
     /**
-     * Android文件读取完成回调（新版本：接收文件信息对象）
-     * 关键修复：使用fetch流式读取临时文件，避免OOM
-     * @param {Object|string} fileInfo - 文件信息对象{url, size, name, path} 或 旧版本的Base64字符串
+     * Android文件读取完成回调
+     * 关键修复：直接接收 Base64 数据，避免 WebViewAssetLoader fetch 失败问题
+     * @param {Object|string} fileInfo - 文件信息对象 {data, size, name, path} 或 旧版本的Base64字符串
      */
     onFileReadComplete(fileInfo) {
         console.log('=== File read complete ===');
-        console.log('File info:', fileInfo);
+        console.log('File info type:', typeof fileInfo);
 
-        // 兼容旧版本：Base64字符串
+        // 旧版本：直接是 Base64 字符串
         if (typeof fileInfo === 'string') {
             console.warn('Legacy Base64 response, processing...');
             if (!fileInfo) {
@@ -495,7 +509,7 @@ const BatteryHealthApp = {
                 return;
             }
 
-            this.updateProgress(45, '正在解压文件...');
+            this.updateProgress(55, '正在解压文件...');
 
             try {
                 this._processBase64Content(
@@ -514,65 +528,103 @@ const BatteryHealthApp = {
         }
 
         // 新版本：文件信息对象
-        if (!fileInfo || !fileInfo.url) {
+        if (!fileInfo || (!fileInfo.data && !fileInfo.url)) {
             if (this._fileReadReject) {
                 this._fileReadReject(new Error('文件信息无效'));
             }
             return;
         }
 
-        this.updateProgress(55, '正在加载文件...');
-
-        const fileUrl = fileInfo.url;
-        const filePath = fileInfo.path;
-        const fileSize = fileInfo.size;
         const initialCapacity = this._currentInitialCapacity;
 
-        console.log('Fetching file from:', fileUrl, 'size:', fileSize);
+        // 关键修复：直接处理 Base64 数据（避免 WebViewAssetLoader URL 拦截在某些设备上失败）
+        if (fileInfo.data) {
+            console.log('Processing Base64 data, size:', fileInfo.size);
+            this.updateProgress(60, '正在解码文件...');
 
-        // 关键修复：使用WebViewAssetLoader的https://地址
-        // 这个URL会被Android端shouldInterceptRequest拦截并返回本地文件
-        // 绕过了file://无法通过fetch访问的限制
-        fetch(fileUrl, {
-            method: 'GET',
-            cache: 'no-store',
-            credentials: 'omit'
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('文件读取失败: ' + response.status);
+            try {
+                // Base64 转 ArrayBuffer
+                const base64Data = fileInfo.data;
+                const binaryString = atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                 }
-                return response.blob();
-            })
-            .then(blob => {
-                console.log('File loaded, size:', blob.size);
-                this.updateProgress(60, '正在解压文件...');
+                const blob = new Blob([bytes], { type: 'application/zip' });
+                console.log('Base64 decoded, blob size:', blob.size);
 
-                // 清理临时文件（解析完成后）
-                if (window.AndroidFilePicker && filePath) {
+                this.updateProgress(70, '正在解压文件...');
+
+                // 清理临时文件
+                if (window.AndroidFilePicker && fileInfo.path) {
                     try {
-                        window.AndroidFilePicker.deleteTempFile(filePath);
+                        window.AndroidFilePicker.deleteTempFile(fileInfo.path);
                     } catch (e) {
                         console.warn('Failed to delete temp file:', e);
                     }
                 }
 
-                // 解析ZIP
-                return this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
-            })
-            .catch(error => {
-                console.error('Failed to load file:', error);
-                console.error('URL was:', fileUrl);
-                // 清理临时文件
-                if (window.AndroidFilePicker && filePath) {
+                // 解析 ZIP
+                this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
+            } catch (error) {
+                console.error('Failed to decode base64:', error);
+                if (window.AndroidFilePicker && fileInfo.path) {
                     try {
-                        window.AndroidFilePicker.deleteTempFile(filePath);
+                        window.AndroidFilePicker.deleteTempFile(fileInfo.path);
                     } catch (e) {}
                 }
                 if (this._fileReadReject) {
-                    this._fileReadReject(new Error('文件加载失败: ' + error.message + ' (URL: ' + fileUrl + ')'));
+                    this._fileReadReject(new Error('文件解码失败: ' + error.message));
                 }
-            });
+            }
+            return;
+        }
+
+        // 兼容旧版本 URL 方式（保留作为降级）
+        if (fileInfo.url) {
+            console.warn('Falling back to URL fetch:', fileInfo.url);
+            this.updateProgress(55, '正在加载文件...');
+
+            const fileUrl = fileInfo.url;
+            const filePath = fileInfo.path;
+
+            fetch(fileUrl, {
+                method: 'GET',
+                cache: 'no-store',
+                credentials: 'omit'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('文件读取失败: ' + response.status);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    console.log('File loaded, size:', blob.size);
+                    this.updateProgress(60, '正在解压文件...');
+
+                    if (window.AndroidFilePicker && filePath) {
+                        try {
+                            window.AndroidFilePicker.deleteTempFile(filePath);
+                        } catch (e) {
+                            console.warn('Failed to delete temp file:', e);
+                        }
+                    }
+
+                    return this.processZipBlob(blob, initialCapacity, this._fileReadResolve, this._fileReadReject);
+                })
+                .catch(error => {
+                    console.error('Failed to load file:', error);
+                    if (window.AndroidFilePicker && filePath) {
+                        try {
+                            window.AndroidFilePicker.deleteTempFile(filePath);
+                        } catch (e) {}
+                    }
+                    if (this._fileReadReject) {
+                        this._fileReadReject(new Error('文件加载失败: ' + error.message));
+                    }
+                });
+        }
     },
 
     /**
