@@ -387,14 +387,14 @@ public class BatteryAnalyzer {
                 result.model = modelMatcher.group(1).trim();
             }
 
-            // 提取当前容量 - healthd 格式
+            // 提取当前容量 - healthd 格式 (fc= 单位是 uAh，需要除以 1000 转为 mAh)
             java.util.regex.Matcher fcMatcher = java.util.regex.Pattern.compile(
                 "(?:healthd:.*?fc[=:\\s]+(\\d+)|\\bfc[=:\\s]+(\\d+))").matcher(text);
             if (fcMatcher.find()) {
                 String fcVal = fcMatcher.group(1) != null ? fcMatcher.group(1) : fcMatcher.group(2);
                 int fcInt = Integer.parseInt(fcVal);
                 if (fcInt > 0) {
-                    result.currentCapacityMah = fcInt;
+                    result.currentCapacityMah = fcInt / 1000; // uAh 转 mAh
                 }
             }
 

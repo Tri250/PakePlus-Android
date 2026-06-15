@@ -124,7 +124,7 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
             int cc_val = std::stoi(match[8].str());
 
             if (fc_val > 0) {
-                data.current_capacity_mah = fc_val;
+                data.current_capacity_mah = fc_val / 1000; // uAh 转 mAh
             }
             if (cc_val >= 0) {
                 data.cycle_count = cc_val;
@@ -150,7 +150,7 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
             int fc_val = std::stoi(match[1].str());
             int cc_val = std::stoi(match[2].str());
             if (fc_val > 0) {
-                data.current_capacity_mah = fc_val;
+                data.current_capacity_mah = fc_val / 1000; // uAh 转 mAh
             }
             if (cc_val >= 0) {
                 data.cycle_count = cc_val;
@@ -168,7 +168,7 @@ bool BugreportParser::tryExtractHealthd(const std::string& text, BatteryRawData&
             try {
                 int val = std::stoi(match[1].str());
                 if (val > 0) {
-                    data.current_capacity_mah = val;
+                    data.current_capacity_mah = val / 1000; // uAh 转 mAh
                 }
             } catch (...) {}
         }

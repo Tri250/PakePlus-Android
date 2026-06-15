@@ -58,12 +58,10 @@ struct RegexPatterns {
             // 小米/Redmi 配置
             {BrandType::XIAOMI, {
                 BrandType::XIAOMI, "Xiaomi", "小米",
-                // 容量模式
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(MF_05[=:\s]+(\d+))",                    // 小米 MF 格式
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))", // healthd 格式
-                    R"(\bfc[=:\s]+(\d+))",                       // healthd 格式兜底
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
                     R"(full charge capacity:\s*(\d+)\s*mAh)",
@@ -118,10 +116,8 @@ struct RegexPatterns {
             // 华为配置
             {BrandType::HUAWEI, {
                 BrandType::HUAWEI, "Huawei", "华为",
-                // 容量模式 - healthd 格式为主
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -164,10 +160,8 @@ struct RegexPatterns {
             // 荣耀配置（继承华为格式）
             {BrandType::HONOR, {
                 BrandType::HONOR, "Honor", "荣耀",
-                // 容量模式 - 与华为相同，healthd 格式为主
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -210,10 +204,8 @@ struct RegexPatterns {
             // OPPO 配置
             {BrandType::OPPO, {
                 BrandType::OPPO, "OPPO", "OPPO",
-                // 容量模式
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(QG_01[=:\s]+(\d+))",                    // OPPO QG 格式
                     R"(charge_capacity[=:\s]+(\d+))",
@@ -254,10 +246,8 @@ struct RegexPatterns {
             // vivo/iQOO 配置
             {BrandType::VIVO, {
                 BrandType::VIVO, "vivo", "vivo",
-                // 容量模式
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -298,10 +288,8 @@ struct RegexPatterns {
             // 一加配置
             {BrandType::ONEPLUS, {
                 BrandType::ONEPLUS, "OnePlus", "一加",
-                // 容量模式
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -339,10 +327,8 @@ struct RegexPatterns {
             // 三星配置
             {BrandType::SAMSUNG, {
                 BrandType::SAMSUNG, "Samsung", "三星",
-                // 容量模式
+                // 容量模式（注意：fc= 已在 tryExtractHealthd 中处理，此处不包含）
                 {
-                    R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-                    R"(\bfc[=:\s]+(\d+))",
                     R"(Min learned battery capacity:\s*(\d+)\s*mAh)",
                     R"(charge_capacity[=:\s]+(\d+))",
                     R"(last_full_capacity[=:\s]+(\d+))",
@@ -381,11 +367,9 @@ struct RegexPatterns {
     }
     
     // ========== 通用容量提取模式（所有品牌兜底）==========
+    // 注意：fc= 模式已在 tryExtractHealthd 中处理（含 uAh 转 mAh），此处不再包含
     static const std::vector<std::string>& getCapacityPatterns() {
         static const std::vector<std::string> patterns = {
-            // healthd 格式（荣耀/华为/小米等）- 必须在 healthd 行内
-            R"(healthd:\s*battery\s+.*?fc[=:\s]+(\d+))",
-            R"(\bfc[=:\s]+(\d+))",
             // 小米 MF 格式
             R"(MF_05[=:\s]+(\d+))",
             // 通用格式
