@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.batteryhealth.app"
-    android:versionCode="2110"
-    android:versionName="2.1.10" >
+    android:versionCode="2111"
+    android:versionName="2.1.11" >
 
     <uses-sdk
         android:minSdkVersion="24"
