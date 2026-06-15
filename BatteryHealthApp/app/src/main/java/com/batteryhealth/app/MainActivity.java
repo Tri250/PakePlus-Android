@@ -667,6 +667,27 @@ public class MainActivity extends AppCompatActivity {
                     // 第一步：复制文件到缓存
                     Uri uri = Uri.parse(uriString);
                     ContentResolver resolver = getContentResolver();
+                    
+                    // v2.1.2: 先检查文件大小，拒绝超大文件
+                    try {
+                        android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
+                        if (cursor != null) {
+                            cursor.moveToFirst();
+                            int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                            if (sizeIndex >= 0) {
+                                long fileSize = cursor.getLong(sizeIndex);
+                                Log.d(TAG, "File size: " + fileSize + " bytes");
+                                if (fileSize > 100 * 1024 * 1024) { // 100MB
+                                    cursor.close();
+                                    callbackError(callbackJs, "文件过大(" + (fileSize / 1024 / 1024) + "MB)，请选择小于100MB的诊断文件");
+                                    return;
+                                }
+                            }
+                            cursor.close();
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Failed to query file size: " + e.getMessage());
+                    }
                     InputStream inputStream = resolver.openInputStream(uri);
                     
                     if (inputStream == null) {
@@ -783,9 +804,14 @@ public class MainActivity extends AppCompatActivity {
                         finalResultJson
                     ));
                     
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    // v2.1.2: 捕获 Throwable (包括 OOM Error 等)，防止任何异常导致闪退
                     Log.e(TAG, "analyzeFileFullNative failed", e);
-                    callbackError(callbackJs, "分析失败: " + e.getMessage());
+                    String errorMsg = e.getMessage();
+                    if (errorMsg == null || errorMsg.isEmpty()) {
+                        errorMsg = e.getClass().getSimpleName();
+                    }
+                    callbackError(callbackJs, "分析失败[" + errorMsg + "]，请尝试较小的文件");
                 } finally {
                     // 清理临时文件
                     if (tempFile != null && tempFile.exists()) {

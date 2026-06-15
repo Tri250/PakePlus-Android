@@ -17,10 +17,17 @@ import java.util.zip.ZipInputStream;
  * 
  * ZIP 解压使用 Java ZipInputStream（可靠）
  * 文本解析使用 Native C++ 正则引擎（快速）
+ * 
+ * v2.1.2 关键修复：内存优化 - 不再一次性加载所有ZIP条目文本到内存
  */
 public class BatteryAnalyzer {
     private static final String TAG = "BatteryAnalyzer";
     private static boolean libraryLoaded = false;
+    
+    // 文本大小限制：超过此限制只取前10MB传给Native，防止OOM/SIGSEGV
+    private static final int MAX_TEXT_SIZE = 10 * 1024 * 1024; // 10MB
+    // 单条目最大大小
+    private static final int MAX_ENTRY_SIZE = 50 * 1024 * 1024; // 50MB
 
     // 加载 native 库
     static {
@@ -59,267 +66,218 @@ public class BatteryAnalyzer {
 
         try {
             if (fileName.endsWith(".zip")) {
-                // ZIP 文件：Java 解压 + Native 解析
-                return parseZipFileWithJava(filePath);
+                return parseZipFileMemoryEfficient(filePath);
             } else {
-                // 非 ZIP 文件：直接读取内容传给 Native
                 byte[] content = readFileBytes(file);
                 if (content != null && content.length > 0) {
-                    return parseTextContent(content);
+                    return parseTextSafe(content);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 捕获所有异常包括OOM，防止闪退
             Log.e(TAG, "Error parsing file: " + e.getMessage(), e);
+            BatteryParseResult result = new BatteryParseResult();
+            result.parseLog = "解析异常: " + e.getClass().getSimpleName();
+            return result;
         }
 
         return new BatteryParseResult();
     }
 
     /**
-     * 使用 Java ZipInputStream 解压 ZIP 文件
-     * 然后将解压后的文本内容传给 Native C++ 解析
+     * 内存高效版 ZIP 解析 - v2.1.2 核心修复
+     * 
+     * 问题：旧版 extractZipEntries 将所有条目文本加载到内存
+     *   对于50MB的bugreport ZIP，内存占用可达200MB+ → OOM闪退
+     * 
+     * 修复：两遍扫描策略
+     *   第一遍：只收集条目名称和大小，不读文本
+     *   第二遍：只提取目标文件的文本内容
      */
-    private static BatteryParseResult parseZipFileWithJava(String zipPath) {
-        Log.d(TAG, "Parsing ZIP with Java ZipInputStream: " + zipPath);
-
-        List<ZipFileEntry> entries = extractZipEntries(zipPath);
-
-        if (entries.isEmpty()) {
-            Log.w(TAG, "No entries found in ZIP file");
-            return new BatteryParseResult();
-        }
-
-        Log.d(TAG, "ZIP extracted " + entries.size() + " entries");
-
-        // 查找主 bugreport 文本文件
-        String mainContent = null;
-        String allTextContent = "";
-
-        // 优先级1：查找 bugreport*.txt
-        for (ZipFileEntry entry : entries) {
-            String name = entry.name.toLowerCase();
-            if (name.contains("bugreport") && name.endsWith(".txt") && entry.isText) {
-                mainContent = entry.textContent;
-                Log.d(TAG, "Found main bugreport: " + entry.name + " length=" + mainContent.length());
-                break;
-            }
-        }
-
-        // 优先级2：查找包含电池信息的文件
-        if (mainContent == null) {
-            for (ZipFileEntry entry : entries) {
-                if (entry.isText && containsBatteryInfo(entry.textContent)) {
-                    mainContent = entry.textContent;
-                    Log.d(TAG, "Found battery info in: " + entry.name);
-                    break;
+    private static BatteryParseResult parseZipFileMemoryEfficient(String zipPath) {
+        Log.d(TAG, "Memory-efficient ZIP parsing: " + zipPath);
+        
+        try {
+            // 第一遍：扫描所有条目，找到最佳候选
+            String bestEntryName = null;
+            long bestEntrySize = 0;
+            List<String> textEntryNames = new ArrayList<>();
+            
+            try (FileInputStream fis = new FileInputStream(zipPath);
+                 ZipInputStream zis = new ZipInputStream(fis)) {
+                
+                ZipEntry zipEntry;
+                while ((zipEntry = zis.getNextEntry()) != null) {
+                    String name = zipEntry.getName();
+                    if (zipEntry.isDirectory()) {
+                        zis.closeEntry();
+                        continue;
+                    }
+                    
+                    long size = zipEntry.getSize();
+                    String lowerName = name.toLowerCase();
+                    boolean isText = lowerName.endsWith(".txt") ||
+                                     lowerName.endsWith(".log") ||
+                                     lowerName.endsWith(".xml") ||
+                                     lowerName.endsWith(".prop") ||
+                                     lowerName.contains("bugreport") ||
+                                     lowerName.contains("dumpstate");
+                    
+                    if (isText) {
+                        textEntryNames.add(name);
+                        Log.d(TAG, "Found text entry: " + name + " size=" + size);
+                        
+                        // 优先级：bugreport*.txt > dumpstate*.txt > 其他
+                        if (lowerName.contains("bugreport") && lowerName.endsWith(".txt")) {
+                            if (bestEntryName == null || !bestEntryName.toLowerCase().contains("bugreport")) {
+                                bestEntryName = name;
+                                bestEntrySize = size;
+                            }
+                        } else if (lowerName.contains("dumpstate") && bestEntryName == null) {
+                            bestEntryName = name;
+                            bestEntrySize = size;
+                        } else if (bestEntryName == null) {
+                            bestEntryName = name;
+                            bestEntrySize = size;
+                        }
+                    }
+                    
+                    zis.closeEntry();
                 }
             }
-        }
-
-        // 优先级3：合并所有文本文件
-        if (mainContent == null) {
-            StringBuilder sb = new StringBuilder();
-            for (ZipFileEntry entry : entries) {
-                if (entry.isText) {
-                    sb.append("=== ").append(entry.name).append(" ===\n");
-                    sb.append(entry.textContent).append("\n\n");
-                }
+            
+            if (bestEntryName == null) {
+                Log.w(TAG, "No text entries found in ZIP");
+                BatteryParseResult result = new BatteryParseResult();
+                result.parseLog = "ZIP文件中未找到文本内容";
+                return result;
             }
-            allTextContent = sb.toString();
-            if (allTextContent.length() > 0) {
-                mainContent = allTextContent;
-                Log.d(TAG, "Using combined text content, length=" + mainContent.length());
+            
+            Log.d(TAG, "Best candidate: " + bestEntryName + " size=" + bestEntrySize);
+            
+            // 第二遍：只提取目标文件的文本
+            String mainContent = extractSingleEntryText(zipPath, bestEntryName);
+            
+            if (mainContent == null || mainContent.isEmpty()) {
+                Log.w(TAG, "Failed to extract text from: " + bestEntryName);
+                BatteryParseResult result = new BatteryParseResult();
+                result.parseLog = "无法读取文件内容: " + bestEntryName;
+                return result;
             }
-        }
-
-        if (mainContent == null || mainContent.isEmpty()) {
-            Log.w(TAG, "No text content found in ZIP");
+            
+            Log.d(TAG, "Extracted text length: " + mainContent.length());
+            
+            // 传给 Native 解析（限制文本大小）
+            return parseTextSafe(mainContent);
+            
+        } catch (Throwable e) {
+            Log.e(TAG, "ZIP parsing failed: " + e.getMessage(), e);
             BatteryParseResult result = new BatteryParseResult();
-            result.parseLog = "ZIP文件中未找到文本内容，共" + entries.size() + "个文件";
+            result.parseLog = "ZIP解析失败: " + e.getClass().getSimpleName();
             return result;
         }
+    }
 
-        // 传给 Native C++ 解析文本
-        // 限制文本大小（50MB），防止 OOM
-        byte[] textBytes = mainContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        final int MAX_NATIVE_TEXT_SIZE = 50 * 1024 * 1024;
-        if (textBytes.length > MAX_NATIVE_TEXT_SIZE) {
-            Log.w(TAG, "Text too large (" + textBytes.length + " bytes), truncating");
-            String truncated = mainContent.substring(0, Math.min(mainContent.length(), MAX_NATIVE_TEXT_SIZE / 3));
-            textBytes = truncated.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    /**
+     * 从 ZIP 中提取单个条目的文本内容
+     * 限制大小不超过 MAX_ENTRY_SIZE
+     */
+    private static String extractSingleEntryText(String zipPath, String targetEntryName) {
+        try (FileInputStream fis = new FileInputStream(zipPath);
+             ZipInputStream zis = new ZipInputStream(fis)) {
+            
+            ZipEntry zipEntry;
+            while ((zipEntry = zis.getNextEntry()) != null) {
+                if (zipEntry.getName().equals(targetEntryName)) {
+                    // 读取内容，限制大小
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[64 * 1024];
+                    int len;
+                    long totalRead = 0;
+                    
+                    while ((len = zis.read(buffer)) > 0) {
+                        totalRead += len;
+                        if (totalRead > MAX_ENTRY_SIZE) {
+                            Log.w(TAG, "Entry too large, truncating at " + MAX_ENTRY_SIZE);
+                            baos.write(buffer, 0, len - (int)(totalRead - MAX_ENTRY_SIZE));
+                            break;
+                        }
+                        baos.write(buffer, 0, len);
+                    }
+                    
+                    byte[] content = baos.toByteArray();
+                    zis.closeEntry();
+                    
+                    try {
+                        return new String(content, "UTF-8");
+                    } catch (Exception e) {
+                        Log.w(TAG, "Failed to decode text: " + e.getMessage());
+                        return null;
+                    }
+                }
+                zis.closeEntry();
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error extracting entry: " + e.getMessage());
         }
-        BatteryParseResult result = parseTextContent(textBytes);
+        return null;
+    }
 
-        // 如果 Native 解析也失败，尝试 Java 正则兜底
+    /**
+     * 安全解析文本 - 先限制大小再传给Native
+     * 如果Native失败，回退到Java兜底（仅对截断文本）
+     */
+    private static BatteryParseResult parseTextSafe(String text) {
+        if (text == null || text.isEmpty()) {
+            return new BatteryParseResult();
+        }
+        
+        // 限制文本大小，防止Native OOM/SIGSEGV
+        String safeText = text;
+        if (text.length() > MAX_TEXT_SIZE) {
+            Log.w(TAG, "Text too large (" + text.length() + "), truncating to " + MAX_TEXT_SIZE);
+            safeText = text.substring(0, MAX_TEXT_SIZE);
+        }
+        
+        byte[] textBytes = safeText.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        BatteryParseResult result = parseTextContent(textBytes);
+        
+        // 如果 Native 解析失败，尝试 Java 正则兜底（仅在截断文本上）
         if (!result.hasData) {
             Log.w(TAG, "Native parse returned no data, trying Java fallback");
-            result = parseWithJavaFallback(mainContent);
+            result = parseWithJavaFallback(safeText);
         }
-
+        
         // 添加解析日志
         if (result.parseLog == null || result.parseLog.isEmpty()) {
-            result.parseLog = "ZIP文件:" + entries.size() + "个 | 文本长度:" + mainContent.length();
+            result.parseLog = "文本长度:" + safeText.length() + " | 原始:" + text.length();
         }
-
+        
         return result;
     }
 
     /**
-     * 使用 Java ZipInputStream 提取 ZIP 文件中的所有条目
+     * 安全解析文本（从字节数组）- 带完整异常保护
      */
-    private static List<ZipFileEntry> extractZipEntries(String zipPath) {
-        List<ZipFileEntry> entries = new ArrayList<>();
-
-        try (FileInputStream fis = new FileInputStream(zipPath);
-             ZipInputStream zis = new ZipInputStream(fis)) {
-
-            ZipEntry zipEntry;
-            while ((zipEntry = zis.getNextEntry()) != null) {
-                String entryName = zipEntry.getName();
-
-                // 跳过目录
-                if (zipEntry.isDirectory()) {
-                    zis.closeEntry();
-                    continue;
-                }
-
-                // 读取条目内容
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buffer = new byte[64 * 1024];
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    baos.write(buffer, 0, len);
-                }
-                byte[] content = baos.toByteArray();
-                zis.closeEntry();
-
-                ZipFileEntry entry = new ZipFileEntry();
-                entry.name = entryName;
-                entry.size = content.length;
-
-                // 判断是否是文本文件
-                String lowerName = entryName.toLowerCase();
-                boolean isText = lowerName.endsWith(".txt") ||
-                                 lowerName.endsWith(".log") ||
-                                 lowerName.endsWith(".xml") ||
-                                 lowerName.endsWith(".prop") ||
-                                 lowerName.contains("bugreport") ||
-                                 lowerName.contains("dumpstate");
-
-                // 对于非明确文本文件，检查内容是否包含可读文本
-                if (!isText && content.length > 0 && content.length < 50 * 1024 * 1024) {
-                    // 检查前1KB是否是可读文本
-                    int checkLen = Math.min(content.length, 1024);
-                    String preview = new String(content, 0, checkLen, "UTF-8");
-                    if (preview.contains("healthd:") || preview.contains("fc=") ||
-                        preview.contains("ro.product") || preview.contains("battery")) {
-                        isText = true;
-                    }
-                }
-
-                if (isText && content.length > 0) {
-                    try {
-                        entry.textContent = new String(content, "UTF-8");
-                        entry.isText = true;
-                    } catch (Exception e) {
-                        Log.w(TAG, "Failed to decode text for: " + entryName);
-                    }
-                }
-
-                // 处理嵌套 ZIP
-                if (lowerName.endsWith(".zip")) {
-                    Log.d(TAG, "Found nested ZIP: " + entryName);
-                    try {
-                        List<ZipFileEntry> nestedEntries = extractZipEntriesFromBytes(content);
-                        entries.addAll(nestedEntries);
-                    } catch (Exception e) {
-                        Log.w(TAG, "Failed to extract nested ZIP: " + entryName);
-                    }
-                }
-
-                entries.add(entry);
-                Log.d(TAG, "ZIP entry: " + entryName + " size=" + content.length + " isText=" + isText);
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error reading ZIP file: " + e.getMessage(), e);
+    private static BatteryParseResult parseTextSafe(byte[] content) {
+        if (content == null || content.length == 0) {
+            return new BatteryParseResult();
         }
-
-        return entries;
-    }
-
-    /**
-     * 从字节数组提取嵌套 ZIP
-     */
-    private static List<ZipFileEntry> extractZipEntriesFromBytes(byte[] zipData) {
-        List<ZipFileEntry> entries = new ArrayList<>();
-
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(zipData);
-             ZipInputStream zis = new ZipInputStream(bis)) {
-
-            ZipEntry zipEntry;
-            while ((zipEntry = zis.getNextEntry()) != null) {
-                String entryName = zipEntry.getName();
-
-                if (zipEntry.isDirectory()) {
-                    zis.closeEntry();
-                    continue;
-                }
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buffer = new byte[64 * 1024];
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    baos.write(buffer, 0, len);
-                }
-                byte[] content = baos.toByteArray();
-                zis.closeEntry();
-
-                ZipFileEntry entry = new ZipFileEntry();
-                entry.name = entryName;
-                entry.size = content.length;
-
-                String lowerName = entryName.toLowerCase();
-                if (lowerName.endsWith(".txt") || lowerName.endsWith(".log") ||
-                    lowerName.contains("bugreport") || lowerName.contains("dumpstate")) {
-                    try {
-                        entry.textContent = new String(content, "UTF-8");
-                        entry.isText = true;
-                    } catch (Exception e) {
-                        Log.w(TAG, "Failed to decode text for nested: " + entryName);
-                    }
-                }
-
-                entries.add(entry);
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "Error reading nested ZIP: " + e.getMessage());
+        
+        // 限制大小
+        if (content.length > MAX_TEXT_SIZE) {
+            Log.w(TAG, "Byte content too large (" + content.length + "), truncating");
+            byte[] truncated = new byte[MAX_TEXT_SIZE];
+            System.arraycopy(content, 0, truncated, 0, MAX_TEXT_SIZE);
+            content = truncated;
         }
-
-        return entries;
-    }
-
-    /**
-     * 检查文本是否包含电池信息
-     */
-    private static boolean containsBatteryInfo(String text) {
-        if (text == null || text.isEmpty()) return false;
-        return text.contains("healthd:") ||
-               text.contains("fc=") ||
-               text.contains("cc=") ||
-               text.contains("MF_05") ||
-               text.contains("MF_06") ||
-               text.contains("QG_01") ||
-               text.contains("QG_03") ||
-               text.contains("Min learned battery capacity") ||
-               text.contains("battery cycle count") ||
-               text.contains("charge cycles") ||
-               text.contains("DesignCapacity") ||
-               text.contains("full charge capacity") ||
-               text.contains("ro.product.brand");
+        
+        return parseTextContent(content);
     }
 
     /**
      * Java 正则兜底解析（当 Native 解析失败时使用）
+     * v2.1.2: 只对已截断的文本进行解析，防止OOM
      */
     private static BatteryParseResult parseWithJavaFallback(String text) {
         BatteryParseResult result = new BatteryParseResult();
@@ -340,7 +298,7 @@ public class BatteryAnalyzer {
                 result.model = modelMatcher.group(1).trim();
             }
 
-            // 提取当前容量 - healthd 格式 (fc= 必须在 healthd 行或独立行)
+            // 提取当前容量 - healthd 格式
             java.util.regex.Matcher fcMatcher = java.util.regex.Pattern.compile(
                 "(?:healthd:.*?fc[=:\\s]+(\\d+)|\\bfc[=:\\s]+(\\d+))").matcher(text);
             if (fcMatcher.find()) {
@@ -351,7 +309,7 @@ public class BatteryAnalyzer {
                 }
             }
 
-            // 提取循环次数 - healthd 格式 (cc= 必须在 healthd 行或独立行)
+            // 提取循环次数
             java.util.regex.Matcher ccMatcher = java.util.regex.Pattern.compile(
                 "(?:healthd:.*?cc[=:\\s]+(\\d+)|\\bcc[=:\\s]+(\\d+))").matcher(text);
             if (ccMatcher.find()) {
@@ -424,13 +382,12 @@ public class BatteryAnalyzer {
                 }
             }
 
-            // 温度 - healthd 格式中的 t= (必须在 healthd 行内)
+            // 温度
             java.util.regex.Matcher tempMatcher = java.util.regex.Pattern.compile(
                 "healthd:\\s*battery\\s+.*?t[=:\\s]+(\\d+\\.?\\d*)").matcher(text);
             if (tempMatcher.find()) {
                 result.temperatureCelsius = Float.parseFloat(tempMatcher.group(1));
             }
-            // 温度 - 通用格式
             if (result.temperatureCelsius == 0) {
                 java.util.regex.Matcher tempMatcher2 = java.util.regex.Pattern.compile(
                     "battery[_ ]?temperature[:\\s]+(\\d+\\.?\\d*)\\s*°?C").matcher(text);
@@ -439,7 +396,6 @@ public class BatteryAnalyzer {
                 }
             }
 
-            // 更新 hasData
             result.hasData = result.currentCapacityMah > 0 || result.cycleCount > 0 || result.designCapacityMah > 0;
 
             Log.d(TAG, "Java fallback parse: hasData=" + result.hasData +
@@ -448,7 +404,7 @@ public class BatteryAnalyzer {
                   " cycleCount=" + result.cycleCount +
                   " designCap=" + result.designCapacityMah);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Java fallback parse error: " + e.getMessage(), e);
         }
 
@@ -465,9 +421,8 @@ public class BatteryAnalyzer {
         }
         try {
             BatteryParseResult result = nativeParseBugreport(content, content.length);
-            // JNI可能返回null（C++异常或OOM），确保返回非null对象
             return result != null ? result : new BatteryParseResult();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Native parse error: " + e.getMessage());
             return new BatteryParseResult();
         }
@@ -486,9 +441,8 @@ public class BatteryAnalyzer {
         }
         try {
             BatteryHealthResult result = nativeCalculateHealth(parseResult);
-            // JNI可能返回null（C++异常），确保返回非null对象
             return result != null ? result : new BatteryHealthResult();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Error calculating health: " + e.getMessage());
             return new BatteryHealthResult();
         }
@@ -503,7 +457,7 @@ public class BatteryAnalyzer {
         }
         try {
             return nativeGetParseSummary(parseResult);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return "解析摘要获取失败";
         }
     }
@@ -524,19 +478,16 @@ public class BatteryAnalyzer {
      * 读取文件字节数组
      */
     private static byte[] readFileBytes(File file) throws IOException {
+        long fileLen = file.length();
+        if (fileLen > MAX_ENTRY_SIZE) {
+            Log.w(TAG, "File too large: " + fileLen + ", truncating");
+            fileLen = MAX_ENTRY_SIZE;
+        }
         FileInputStream fis = new FileInputStream(file);
-        byte[] content = new byte[(int) file.length()];
+        byte[] content = new byte[(int) fileLen];
         int read = fis.read(content);
         fis.close();
         return read > 0 ? content : null;
-    }
-
-    // ZIP 文件条目
-    private static class ZipFileEntry {
-        String name;
-        long size;
-        boolean isText;
-        String textContent;
     }
 
     // Native 方法声明
