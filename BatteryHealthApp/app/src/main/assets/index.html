@@ -329,11 +329,11 @@
                 <div class="file-upload-area" id="drop-area" role="button" tabindex="0" aria-label="点击或拖放上传文件">
                     <i class="fas fa-file-archive"></i>
                     <p>拖放文件到此处 或 <strong>点击选择文件</strong></p>
-                    <small>支持小米、vivo、OPPO、华为等安卓手机诊断文件</small>
+                    <small>支持 .zip 格式诊断文件（小米/vivo/OPPO/华为等），最大 500MB</small>
                 </div>
                 <div id="file-name-display" class="file-name-display">
                     <i class="fas fa-file-check"></i>
-                    <span id="selected-file-name">未选择文件</span>
+                    <span id="selected-file-name">未选择文件</span><span id="selected-file-size" style="margin-left:8px;color:var(--gray);font-size:var(--font-size-xs);"></span>
                 </div>
                 <div id="file-validation-error" class="file-validation-error" role="alert">
                     <i class="fas fa-exclamation-circle"></i>
@@ -346,7 +346,7 @@
                 <label for="initial-capacity">设备初始电池容量 (mAh)</label>
                 <input type="number" id="initial-capacity" class="custom-input" placeholder="例如: 5000" min="1000" max="10000" aria-describedby="capacity-hint">
                 <small id="capacity-hint" style="color: var(--gray); font-size: var(--font-size-xs); margin-top: var(--spacing-xs); display: block;">
-                    可在上方搜索框查找您的手机型号获取初始容量
+                    可搜索上方数据库获取，常见容量：5000/4500/4000mAh
                 </small>
             </div>
 
@@ -384,6 +384,17 @@
                     </div>
                 </div>
                 
+                <div class="history-filter" style="display:flex;gap:8px;margin-bottom:12px;">
+                    <input type="text" id="history-search" placeholder="搜索品牌或日期..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:var(--font-size-sm);background:var(--white);">
+                    <select id="history-brand-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:var(--font-size-sm);background:var(--white);">
+                        <option value="">全部品牌</option>
+                        <option value="xiaomi">小米</option>
+                        <option value="huawei">华为</option>
+                        <option value="vivo">vivo</option>
+                        <option value="oppo">OPPO</option>
+                        <option value="samsung">三星</option>
+                    </select>
+                </div>
                 <div id="history-list" class="history-list" role="list">
                     <div class="history-empty" role="listitem">暂无历史记录</div>
                 </div>
@@ -436,6 +447,27 @@
                         <div class="stat-label">电池温度</div>
                         <div class="stat-value" id="battery-temp">-</div>
                         <div class="stat-label">°C</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="stat-label">电池电压</div>
+                        <div class="stat-value" id="battery-voltage">-</div>
+                        <div class="stat-label">mV</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-microchip"></i></div>
+                        <div class="stat-label">电池技术</div>
+                        <div class="stat-value" id="battery-technology">-</div>
+                        <div class="stat-label">&nbsp;</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-info-circle"></i></div>
+                        <div class="stat-label">数据置信度</div>
+                        <div class="stat-value" id="confidence-value">-</div>
+                        <div class="stat-label">%</div>
                     </div>
                 </div>
 
@@ -500,6 +532,10 @@
                         <i class="fas fa-download"></i>
                         <span>保存报告</span>
                     </button>
+                    <button class="share-btn ripple" onclick="BatteryHealthApp.exportAsImage()" aria-label="导出报告图片">
+                        <i class="fas fa-image"></i>
+                        <span>导出图片</span>
+                    </button>
                 </div>
             </div>
         </section>
@@ -514,8 +550,11 @@
             <div class="guide-icon"><i class="fas fa-battery-full"></i></div>
             <div class="guide-title">欢迎使用电池健康度分析工具</div>
             <div class="guide-text">
-                本工具可以帮助您分析安卓手机的电池健康状态。<br>
-                只需上传诊断文件，即可获取详细的电池健康报告。<br>
+                本工具可以帮助您分析安卓手机的电池健康状态。<br><br>
+                <strong>只需3步：</strong><br>
+                1️⃣ 按说明生成诊断文件（ZIP格式）<br>
+                2️⃣ 选择文件并输入电池设计容量<br>
+                3️⃣ 点击"分析电池健康度"查看报告<br><br>
                 所有数据均在本地处理，保护您的隐私安全。
             </div>
             <button class="guide-btn ripple" onclick="BatteryHealthApp.closeGuide()">开始使用</button>

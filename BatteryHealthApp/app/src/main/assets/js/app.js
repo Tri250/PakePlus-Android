@@ -22,8 +22,22 @@ const BatteryHealthApp = {
         this.cacheElements();
         this.bindEvents();
         this.renderHistory();
+        // 历史记录搜索
+        const historySearch = document.getElementById('history-search');
+        if (historySearch) {
+            historySearch.addEventListener('input', this.debounce(() => this.renderHistory(), 300));
+        }
+        const historyBrandFilter = document.getElementById('history-brand-filter');
+        if (historyBrandFilter) {
+            historyBrandFilter.addEventListener('change', () => this.renderHistory());
+        }
         this.renderTrendChart();
         this.initBatteryDatabase();
+        // 恢复上次输入的容量
+        const savedCapacity = localStorage.getItem('battery_health_last_capacity');
+        if (savedCapacity && this.elements.initialCapacityInput) {
+            this.elements.initialCapacityInput.value = savedCapacity;
+        }
         this.checkFirstVisit();
         
         // 禁用 zip.js web worker（在 WebView 中可能有问题）
@@ -214,6 +228,12 @@ const BatteryHealthApp = {
         if (this.elements.selectedFileName) {
             this.elements.selectedFileName.textContent = fileName;
         }
+        // 显示文件大小
+        const fileSizeEl = document.getElementById('selected-file-size');
+        if (fileSizeEl && file.size && file.size > 0) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            fileSizeEl.textContent = '(' + sizeMB + 'MB)';
+        }
         if (this.elements.fileNameDisplay) {
             this.elements.fileNameDisplay.style.display = 'flex';
         }
@@ -234,6 +254,10 @@ const BatteryHealthApp = {
             return false;
         } else {
             input.classList.remove('error');
+            // 保存容量到localStorage
+            if (value && value >= 500 && value <= 30000) {
+                localStorage.setItem('battery_health_last_capacity', value);
+            }
             return true;
         }
     },
@@ -337,9 +361,16 @@ const BatteryHealthApp = {
         this.hideStatus();
         
         try {
-            this.updateProgress(10, '正在读取文件...');
+            this.updateProgress(10, '第1步/4步：正在读取文件...');
+            // 大文件警告
+            if (this.currentFile.size && this.currentFile.size > 200 * 1024 * 1024) {
+                const sizeMB = (this.currentFile.size / (1024 * 1024)).toFixed(0);
+                this.updateProgress(8, '大文件(' + sizeMB + 'MB)，解析可能需要较长时间...');
+                await new Promise(r => setTimeout(r, 100));
+            }
             const result = await this.analyzeZipFile(this.currentFile, initialCapacity);
             
+            this.updateProgress(95, '第4步/4步：正在生成报告...');
             this.updateProgress(100, '分析完成');
             this.displayResult(result, initialCapacity);
             
@@ -531,7 +562,14 @@ const BatteryHealthApp = {
     onNativeAnalyzeError(errorMessage) {
         console.error('Native analyze error:', errorMessage);
         if (this._fileReadReject) {
-            this._fileReadReject(new Error(errorMessage || '原生解析失败'));
+            const cnMsg = {
+                'OutOfMemoryError': '内存不足，请关闭其他应用后重试',
+                'FileNotFoundException': '文件不存在，请重新选择',
+                'IOException': '文件读取失败，请重新选择',
+                'SecurityException': '没有文件访问权限',
+                'NullPointerException': '解析异常，请尝试重新分析'
+            }[errorMessage] || errorMessage || '解析失败，请重试';
+            this._fileReadReject(new Error(cnMsg));
         }
     },
 
@@ -831,6 +869,24 @@ const BatteryHealthApp = {
             }
         }
 
+        // 电池电压
+        const voltageEl = document.getElementById('battery-voltage');
+        if (voltageEl) {
+            voltageEl.textContent = result.voltage > 0 ? result.voltage : '未检测到';
+        }
+
+        // 电池技术
+        const techEl = document.getElementById('battery-technology');
+        if (techEl) {
+            techEl.textContent = result.technology || '未检测到';
+        }
+
+        // 置信度
+        const confEl = document.getElementById('confidence-value');
+        if (confEl) {
+            confEl.textContent = result.confidence > 0 ? Math.round(result.confidence * 100) : '-';
+        }
+
         // 移除动画类
         setTimeout(() => {
             statValues.forEach(el => el.classList.remove('animate'));
@@ -972,10 +1028,32 @@ const BatteryHealthApp = {
      */
     renderHistory() {
         const historyList = this.elements.historyList;
-        const history = HistoryManager.getAll();
+        let history = HistoryManager.getAll();
+        
+        // 搜索过滤
+        const searchInput = document.getElementById('history-search');
+        const brandFilter = document.getElementById('history-brand-filter');
+        const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const filterBrand = brandFilter ? brandFilter.value : '';
+        
+        if (searchKeyword || filterBrand) {
+            history = history.filter(item => {
+                let match = true;
+                if (searchKeyword) {
+                    const searchStr = (item.brand + ' ' + item.initialCapacity + 'mAh ' + 
+                        HistoryManager.formatDate(item.timestamp)).toLowerCase();
+                    match = searchStr.includes(searchKeyword);
+                }
+                if (filterBrand) {
+                    match = match && item.brand === filterBrand;
+                }
+                return match;
+            });
+        }
         
         if (history.length === 0) {
-            historyList.innerHTML = '<div class="history-empty" role="listitem">暂无历史记录</div>';
+            historyList.innerHTML = '<div class="history-empty" role="listitem">' + 
+                (searchKeyword || filterBrand ? '没有匹配的记录' : '暂无历史记录') + '</div>';
             return;
         }
         
@@ -983,7 +1061,7 @@ const BatteryHealthApp = {
             <div class="history-item" role="listitem" data-id="${item.id}">
                 <div class="info">
                     <div class="history-date">${HistoryManager.formatDate(item.timestamp)}</div>
-                    <div class="history-detail">${item.designCapacity || item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? `· ${item.cycleCount}次循环` : ''}</div>
+                    <div class="history-detail">${item.designCapacity || item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? '· ' + item.cycleCount + '次循环' : ''}</div>
                 </div>
                 <div class="history-health ${HistoryManager.getHealthColor(item.healthPercentage)}">
                     ${item.healthPercentage}%
@@ -1072,7 +1150,7 @@ const BatteryHealthApp = {
      * 清空历史记录
      */
     clearHistory() {
-        if (confirm('确定要清空所有历史记录吗？')) {
+        if (confirm('确定要清空所有历史记录吗？此操作不可恢复！')) {
             HistoryManager.clear();
             this.renderHistory();
             this.renderTrendChart();
@@ -1092,13 +1170,24 @@ const BatteryHealthApp = {
             return;
         }
         
-        // 计算最大值用于比例
-        const maxHealth = Math.max(...trend.map(t => t.health));
+        const recentTrend = trend.slice(-10);
+        const maxHealth = Math.max(...recentTrend.map(t => t.health));
+        const minHealth = Math.min(...recentTrend.map(t => t.health));
         
-        trendChart.innerHTML = trend.slice(-10).map(item => {
-            const height = Math.round((item.health / maxHealth) * 80);
-            return `<div class="trend-bar" style="height: ${height}px" data-value="${item.health}%"></div>`;
-        }).join('');
+        trendChart.innerHTML = '<div style="display:flex;align-items:flex-end;gap:4px;height:100px;padding:8px 0;">' +
+            recentTrend.map((item, idx) => {
+                const height = Math.max(10, Math.round((item.health / Math.max(maxHealth, 100)) * 80));
+                const isLast = idx === recentTrend.length - 1;
+                return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                    '<div style="font-size:10px;color:var(--gray);">' + item.health + '%</div>' +
+                    '<div style="width:100%;height:' + height + 'px;border-radius:4px 4px 0 0;' +
+                    'background:' + (isLast ? 'var(--primary)' : 'var(--primary-light, rgba(0,0,0,0.1))') + ';' +
+                    'transition:height 0.3s;min-height:8px;"></div>' +
+                    '<div style="font-size:9px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40px;">' + 
+                    item.date.replace(/\//g, '-').substring(5) + '</div>' +
+                    '</div>';
+            }).join('') +
+            '</div>';
     },
     
     /**
@@ -1342,21 +1431,25 @@ const BatteryHealthApp = {
             return;
         }
         
-        // 尝试使用 Web Share API
+        const r = this.currentResult;
+        const text = '🔋 电池健康度报告\n' +
+            '━━━━━━━━━━━━━\n' +
+            '设计容量: ' + (r.designCapacity || r.initialCapacity) + ' mAh\n' +
+            '当前容量: ' + r.currentCapacity + ' mAh\n' +
+            '健康度: ' + r.healthPercentage + '%\n' +
+            '循环次数: ' + (r.cycleCount || '未检测到') + (r.cycleCount ? ' 次' : '') + '\n' +
+            '电池温度: ' + (r.batteryTemp || '未检测到') + (r.batteryTemp ? '°C' : '') + '\n' +
+            '健康等级: ' + (r.healthGrade ? r.healthGrade.grade : '-') + '\n' +
+            '━━━━━━━━━━━━━\n' +
+            '来自「电池健康度分析工具」';
+        
         if (navigator.share) {
-            const shareData = {
+            navigator.share({
                 title: '电池健康度报告',
-                text: `我的电池健康度为 ${this.currentResult.healthPercentage}%，当前容量 ${this.currentResult.currentCapacity}mAh`,
-                url: window.location.href
-            };
-            
-            navigator.share(shareData)
-                .then(() => this.showToast('分享成功', 'success'))
-                .catch(err => this.showToast('分享失败', 'error'));
+                text: text
+            }).then(() => this.showToast('分享成功', 'success'))
+              .catch(() => {});
         } else {
-            // 复制到剪贴板
-            const text = `电池健康度报告\n健康度: ${this.currentResult.healthPercentage}%\n当前容量: ${this.currentResult.currentCapacity}mAh\n设计容量: ${this.currentResult.designCapacity || this.currentResult.initialCapacity}mAh`;
-            
             navigator.clipboard.writeText(text)
                 .then(() => this.showToast('报告已复制到剪贴板', 'success'))
                 .catch(() => this.showToast('复制失败，请手动复制', 'error'));
@@ -1372,37 +1465,107 @@ const BatteryHealthApp = {
             return;
         }
         
-        // 生成报告文本
-        const report = `
-电池健康度分析报告
-========================
-
-分析时间: ${new Date().toLocaleString('zh-CN')}
-品牌识别: ${this.currentResult.brand || '未知'}
-
-电池数据:
-- 设计容量: ${this.currentResult.designCapacity || this.currentResult.initialCapacity} mAh
-- 当前容量: ${this.currentResult.currentCapacity} mAh
-- 健康度: ${this.currentResult.healthPercentage}%
-- 循环次数: ${this.currentResult.cycleCount || '未检测到'}
-- 电池温度: ${this.currentResult.batteryTemp || '未检测到'} °C
-
-健康状态: ${this.currentResult.healthPercentage >= 85 ? '良好' : this.currentResult.healthPercentage >= 70 ? '一般' : '较差'}
-
-========================
-本报告由电池健康度分析工具生成
-        `.trim();
+        const r = this.currentResult;
+        const report = '电池健康度分析报告\n' +
+            '========================\n\n' +
+            '分析时间: ' + new Date().toLocaleString('zh-CN') + '\n' +
+            '品牌识别: ' + (r.brand || '未知') + '\n\n' +
+            '电池数据:\n' +
+            '- 设计容量: ' + (r.designCapacity || r.initialCapacity) + ' mAh\n' +
+            '- 当前容量: ' + r.currentCapacity + ' mAh\n' +
+            '- 健康度: ' + r.healthPercentage + '%\n' +
+            '- 循环次数: ' + (r.cycleCount || '未检测到') + (r.cycleCount ? ' 次' : '') + '\n' +
+            '- 电池温度: ' + (r.batteryTemp || '未检测到') + (r.batteryTemp ? ' °C' : '') + '\n' +
+            '- 电池电压: ' + (r.voltage || '未检测到') + (r.voltage ? ' mV' : '') + '\n' +
+            '- 电池技术: ' + (r.technology || '未检测到') + '\n\n' +
+            '健康评估:\n' +
+            '- 健康等级: ' + (r.healthGrade ? r.healthGrade.grade : '-') + '\n' +
+            '- 综合评分: ' + (r.healthGrade ? r.healthGrade.score + '分' : '-') + '\n' +
+            '- 评估说明: ' + (r.healthGrade ? r.healthGrade.gradeDesc : '-') + '\n\n' +
+            '========================\n' +
+            '本报告由电池健康度分析工具生成\n' +
+            '抖音：带娃的小陈工';
         
-        // 创建下载
         const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `电池健康报告_${new Date().toISOString().slice(0,10)}.txt`;
+        a.download = '电池健康报告_' + new Date().toISOString().slice(0,10) + '.txt';
         a.click();
         URL.revokeObjectURL(url);
         
         this.showToast('报告已保存', 'success');
+    },
+    
+    /**
+     * 导出报告为图片
+     */
+    exportAsImage() {
+        if (!this.currentResult) {
+            this.showToast('请先完成电池健康度分析', 'error');
+            return;
+        }
+        
+        const r = this.currentResult;
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+        
+        // 背景
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 800, 600);
+        
+        // 标题
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText('电池健康度报告', 40, 50);
+        
+        // 分隔线
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(40, 65, 120, 4);
+        
+        // 数据
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#555';
+        const lines = [
+            '设计容量: ' + (r.designCapacity || r.initialCapacity) + ' mAh',
+            '当前容量: ' + r.currentCapacity + ' mAh',
+            '健康度: ' + r.healthPercentage + '%',
+            '循环次数: ' + (r.cycleCount || '未检测到') + (r.cycleCount ? ' 次' : ''),
+            '电池温度: ' + (r.batteryTemp || '未检测到') + (r.batteryTemp ? ' °C' : ''),
+            '电池电压: ' + (r.voltage || '未检测到') + (r.voltage ? ' mV' : ''),
+            '电池技术: ' + (r.technology || '未检测到'),
+            '品牌: ' + (r.brand || '未知'),
+            '',
+            '健康等级: ' + (r.healthGrade ? r.healthGrade.grade : '-'),
+            '综合评分: ' + (r.healthGrade ? r.healthGrade.score + '分' : '-')
+        ];
+        
+        lines.forEach((line, i) => {
+            ctx.fillText(line, 60, 110 + i * 36);
+        });
+        
+        // 健康度进度条
+        const barY = 110 + lines.length * 36 + 20;
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(60, barY, 680, 24);
+        const healthWidth = Math.min(r.healthPercentage, 100) / 100 * 680;
+        ctx.fillStyle = r.healthPercentage >= 80 ? '#2ecc71' : r.healthPercentage >= 60 ? '#f39c12' : '#e74c3c';
+        ctx.fillRect(60, barY, healthWidth, 24);
+        
+        // 水印
+        ctx.fillStyle = '#bdc3c7';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('电池健康度分析工具 · ' + new Date().toLocaleDateString('zh-CN'), 40, 580);
+        
+        // 下载
+        const link = document.createElement('a');
+        link.download = '电池健康报告_' + new Date().toISOString().slice(0,10) + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        this.showToast('报告图片已保存', 'success');
     },
     
     /**
@@ -1427,6 +1590,8 @@ const BatteryHealthApp = {
             if (this.elements.selectedFileName) {
                 this.elements.selectedFileName.textContent = fileName;
             }
+            const fileSizeEl = document.getElementById('selected-file-size');
+            if (fileSizeEl) fileSizeEl.textContent = '';
             if (this.elements.fileNameDisplay) {
                 this.elements.fileNameDisplay.style.display = 'flex';
             }
