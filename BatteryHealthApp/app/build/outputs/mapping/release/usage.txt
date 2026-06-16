@@ -1,3 +1,33 @@
+android.support.customtabs.ICustomTabsCallback$Default
+android.support.customtabs.ICustomTabsCallback$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.ICustomTabsCallback$_Parcel:
+    public void <init>()
+android.support.customtabs.ICustomTabsService$Default
+android.support.customtabs.ICustomTabsService$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.ICustomTabsService$_Parcel:
+    public void <init>()
+android.support.customtabs.IEngagementSignalsCallback$Default
+android.support.customtabs.IEngagementSignalsCallback$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.IEngagementSignalsCallback$_Parcel:
+    public void <init>()
+android.support.customtabs.IPostMessageService$Default
+android.support.customtabs.IPostMessageService$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.IPostMessageService$_Parcel:
+    public void <init>()
+android.support.customtabs.trusted.ITrustedWebActivityCallback$Default
+android.support.customtabs.trusted.ITrustedWebActivityCallback$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.trusted.ITrustedWebActivityCallback$_Parcel:
+    public void <init>()
+android.support.customtabs.trusted.ITrustedWebActivityService$Default
+android.support.customtabs.trusted.ITrustedWebActivityService$Stub$Proxy:
+    public java.lang.String getInterfaceDescriptor()
+android.support.customtabs.trusted.ITrustedWebActivityService$_Parcel:
+    public void <init>()
 android.support.v4.app.INotificationSideChannel$Default
 android.support.v4.app.INotificationSideChannel$Stub$Proxy:
     public java.lang.String getInterfaceDescriptor()
@@ -6384,6 +6414,12 @@ org.jetbrains.annotations.NotNull
 org.jetbrains.annotations.Nullable
 org.jetbrains.annotations.PropertyKey
 org.jetbrains.annotations.TestOnly
+android.support.customtabs.ICustomTabsCallback$_Parcel
+android.support.customtabs.ICustomTabsService$_Parcel
+android.support.customtabs.IEngagementSignalsCallback$_Parcel
+android.support.customtabs.IPostMessageService$_Parcel
+android.support.customtabs.trusted.ITrustedWebActivityCallback$_Parcel
+android.support.customtabs.trusted.ITrustedWebActivityService$_Parcel
 android.support.v4.app.INotificationSideChannel$_Parcel
 androidx.activity.ComponentActivity$$InternalSyntheticLambda$1$f7979a7b7286ed37b664e8d41a94ec65e3d54774ca037fa175dd9df0faa673c4$0
 androidx.activity.ComponentDialog$$InternalSyntheticLambda$1$bea0efecfbdbd441d49af04bfdf9955934424a07259119ec0236a888ffd3a3e0$0
@@ -6399,6 +6435,10 @@ androidx.appcompat.widget.TooltipCompatHandler$$InternalSyntheticLambda$1$990bd1
 androidx.appcompat.widget.VectorEnabledTintResources:
     static void <clinit>()
 androidx.arch.core.executor.ArchTaskExecutor$$InternalSyntheticLambda$1$0cd99cbb60de02b88cedd941efa6ec8920ea8ed67fbe5be81367346cb3187fdb$1
+androidx.browser.customtabs.CustomTabsSession$1$$InternalSyntheticLambda$1$d813ecf54ccb60422d77cf4377cbb02b996eefeb1a33beeeb0312d07a74dce1b$0
+androidx.browser.customtabs.CustomTabsSession$2$$InternalSyntheticLambda$1$1bbea58c717efbd854e4df19140846b0e795856515f0d6b26702ee09846d3701$0
+androidx.browser.customtabs.CustomTabsSession$2$$InternalSyntheticLambda$1$31f1ad39b4fbab05c26c06b7b5807f06ed93a506ebf5aae641c24fbf492ff2ce$0
+androidx.browser.customtabs.CustomTabsSession$2$$InternalSyntheticLambda$1$3470ce3c0a60c186499ee6c78486f5490601f486530a96291524df10175773ca$0
 androidx.concurrent.futures.AbstractResolvableFuture$SafeAtomicHelper$$InternalSyntheticBackportWithForwarding$1$58dd097c22a157c6fc915c3ca83711e3efdab037cd14fe4274f47b3cf6d48957$0
 androidx.concurrent.futures.AbstractResolvableFuture$SafeAtomicHelper$$InternalSyntheticBackportWithForwarding$1$82f54a21e99bad96364241afd7c94fa10136f847e9ec268f425e359c2bd3ac71$0
 androidx.concurrent.futures.AbstractResolvableFuture$SafeAtomicHelper$$InternalSyntheticBackportWithForwarding$1$fb8314b2a246fdede90db86bc0a5f02a5311a747f5ea8d198568d1a1879ae6ba$0
@@ -6445,6 +6485,7 @@ androidx.constraintlayout.helper.widget.CircularFlow:
     static void <clinit>()
 androidx.constraintlayout.motion.widget.Key:
     static void <clinit>()
+androidx.constraintlayout.motion.widget.ViewTransition$$InternalSyntheticLambda$1$3650b6f22807ec68045e6a594276eaff908aea753fe513c49871a8412ea5c505$0
 androidx.constraintlayout.motion.widget.ViewTransition:
     static void <clinit>()
 androidx.constraintlayout.utils.widget.MotionLabel:
@@ -6553,8 +6594,10 @@ androidx.viewpager2.widget.ViewPager2:
 androidx.webkit.ProcessGlobalConfig$$InternalSyntheticBackportWithForwarding$1$6e47baf2111c232e3cbb35c51f9a16151e4acc16e1de68c94156721d400eff93$0
 com.batteryhealth.app.MainActivity$$InternalSyntheticLambda$1$79d3d718a92c670844829b2b23617445e366caf04cf509578911028d848fa4bb$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$44d80dbb9ad7a590560647b113fd692811d2768ab991e6beaf4fd468a9eccfb4$0
+com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$5af74ccca2bdc422f86c62413d60dd43b13477982c41b2a7d7706a177e301b1a$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$6e72604be298d6096702e6407346cc7c8f1fd63c996996321a0ac54dd0639224$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$6f21c6832e587cdd5dc7ce4294c0b426b3ff5a5af4f132a680af9e5365a8ecfe$0
+com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$9dd99ac6b89adbe9236aa443a9db637c508058e1232a8a642dbec1d54114f02a$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$b17a169f65ab96f909e6dc71d5ef4a04dd83bd2bdc67fe0a057f02f41c76fbe8$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$de7d09f3a0de2c98f42845d454c6480a2b7a278387d27b153a728b3748bd0829$0
 com.batteryhealth.app.MainActivity$WebAppInterface$$InternalSyntheticLambda$1$de7d09f3a0de2c98f42845d454c6480a2b7a278387d27b153a728b3748bd0829$1
@@ -6815,6 +6858,7 @@ kotlin.collections.AbstractMutableList:
     public abstract int getSize()
     public abstract java.lang.Object removeAt()
 kotlin.collections.ArrayAsCollection:
+    public final boolean isVarargs
     public static int getSize()
 kotlin.collections.ArrayDeque$Companion
 kotlin.collections.ArrayDeque:
@@ -6946,7 +6990,27 @@ kotlin.jvm.internal.ClassReference:
     public static final java.util.HashMap primitiveWrapperFqNames
     public static final java.util.Map simpleNames
 kotlin.jvm.internal.InlineMarker
-kotlin.jvm.internal.Intrinsics
+kotlin.jvm.internal.Intrinsics$$InternalSyntheticThrowCCEIfNotNull$14$cf571aae0070d0ee90cf3be61bcd8f3cc6d560e6625e20732683d0e686e0bbd4$0
+kotlin.jvm.internal.Intrinsics:
+    public static final void cancel(kotlin.coroutines.CoroutineContext,java.util.concurrent.CancellationException)
+    public static void cancel$default(kotlin.coroutines.CoroutineContext)
+    public static final boolean equals(char,char,boolean)
+    public static final java.lang.String getCoroutineName()
+    public static final java.lang.Throwable handlerException(java.lang.Throwable,java.lang.Throwable)
+    public static final boolean hasCopyableElements(kotlin.coroutines.CoroutineContext)
+    public abstract long nanoTime()
+    public abstract void parkNanos()
+    public abstract void registerTimeLoopThread()
+    public static kotlin.sequences.SequencesKt__SequenceBuilderKt$sequence$$inlined$Sequence$1 sequence(kotlin.jvm.functions.Function2)
+    public static final java.lang.String systemProp(java.lang.String)
+    public static final boolean systemProp(java.lang.String,boolean)
+    public static synthetic long systemProp$default(java.lang.String,long)
+    public static final java.lang.Object toState(java.lang.Object,kotlin.jvm.functions.Function1)
+    public static java.lang.Object toState$default(java.lang.Object)
+    public abstract void trackTask()
+    public abstract void unTrackTask()
+    public abstract void unpark()
+    public abstract void unregisterTimeLoopThread()
 kotlin.jvm.internal.PackageReference:
     public final java.lang.String moduleName
 kotlin.jvm.internal.PropertyReference0
@@ -6995,6 +7059,8 @@ kotlin.reflect.KVisibility:
     public static final enum kotlin.reflect.KVisibility PRIVATE
     public static final enum kotlin.reflect.KVisibility PROTECTED
     public static final enum kotlin.reflect.KVisibility PUBLIC
+kotlin.sequences.FilteringSequence:
+    public final boolean sendWhen
 kotlin.sequences.SequenceBuilderIterator:
     public static java.lang.Object nextNotReady()
     public static void setNextStep()
@@ -7025,25 +7091,7 @@ kotlin.text.Charsets:
     public static final java.nio.charset.Charset UTF_16LE
 kotlin.text.StringsKt
 kotlin.text.StringsKt__AppendableKt
-kotlin.text.StringsKt__IndentKt$$InternalSyntheticThrowCCEIfNotNull$14$e49cbb98d0bee32dd17303742e3e6da9c9553623a72ddc1043ba2b29876aa9ea$0
-kotlin.text.StringsKt__IndentKt:
-    public static final void cancel(kotlin.coroutines.CoroutineContext,java.util.concurrent.CancellationException)
-    public static void cancel$default(kotlin.coroutines.CoroutineContext)
-    public static final java.lang.String getCoroutineName()
-    public static final java.lang.Throwable handlerException(java.lang.Throwable,java.lang.Throwable)
-    public static final boolean hasCopyableElements(kotlin.coroutines.CoroutineContext)
-    public abstract long nanoTime()
-    public abstract void parkNanos()
-    public abstract void registerTimeLoopThread()
-    public static final java.lang.String systemProp(java.lang.String)
-    public static final boolean systemProp(java.lang.String,boolean)
-    public static synthetic long systemProp$default(java.lang.String,long)
-    public static final java.lang.Object toState(java.lang.Object,kotlin.jvm.functions.Function1)
-    public static java.lang.Object toState$default(java.lang.Object)
-    public abstract void trackTask()
-    public abstract void unTrackTask()
-    public abstract void unpark()
-    public abstract void unregisterTimeLoopThread()
+kotlin.text.StringsKt__IndentKt
 kotlin.text.StringsKt__RegexExtensionsJVMKt
 kotlin.text.StringsKt__StringBuilderJVMKt
 kotlin.text.StringsKt__StringNumberConversionsJVMKt
@@ -7154,11 +7202,14 @@ kotlinx.coroutines.CoroutineStart
 kotlinx.coroutines.CoroutinesInternalError
 kotlinx.coroutines.DebugKt
 kotlinx.coroutines.DebugStringsKt:
+    public static java.lang.Object access$000$2(android.os.Parcel,android.os.Parcelable$Creator)
+    public static java.lang.Object access$000$3(android.os.Parcel,android.os.Parcelable$Creator)
+    public static void access$100$2(android.os.Parcel,android.os.Parcelable)
+    public static void access$100$3(android.os.Parcel,android.os.Parcelable)
     public static final void closeFinally(java.io.BufferedReader,java.lang.Throwable)
     public static final int differenceModulo(int,int,int)
     public static java.util.List emptyList()
     public static final java.util.Set emptySet()
-    public static final boolean equals(char,char,boolean)
     public static java.lang.Object getCOROUTINE_SUSPENDED()
     public static final java.lang.String getClassSimpleName(java.lang.Object)
     public static final java.lang.Class getJavaClass(kotlin.reflect.KClass)
@@ -7167,7 +7218,6 @@ kotlinx.coroutines.DebugStringsKt:
     public static varargs java.util.List listOf(java.lang.Object[])
     public static final int mod(int,int)
     public static java.util.List optimizeReadOnlyList(java.util.ArrayList)
-    public static kotlin.sequences.SequencesKt__SequenceBuilderKt$sequence$$inlined$Sequence$1 sequence(kotlin.jvm.functions.Function2)
     public static final java.util.Set setOf(java.lang.Object)
 kotlinx.coroutines.DefaultExecutor:
     public final synchronized java.lang.Thread createThreadSync()

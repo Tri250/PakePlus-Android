@@ -1792,6 +1792,342 @@ const BatteryHealthApp = {
 
         this.copyToClipboard(info);
     },
+
+    // ============= v2.1.17+ 查询激活日期引导浮层 =============
+
+    /**
+     * 当前选中的查询渠道
+     */
+    selectedQueryChannel: 'official',
+
+    /**
+     * 各品牌查询渠道配置
+     */
+    brandChannels: {
+        'huawei': [
+            { id: 'official', name: '华为官网', icon: 'fa-globe', url: 'https://consumer.huawei.com/cn/support/warranty-query/' },
+            { id: 'service', name: '服务APP', icon: 'fa-mobile-alt', url: 'https://consumer.huawei.com/cn/support/warranty-query/' },
+            { id: 'wechat', name: '微信公众号', icon: 'fa-comments', url: 'https://consumer.huawei.com/cn/support/warranty-query/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:950800' }
+        ],
+        'xiaomi': [
+            { id: 'official', name: '小米官网', icon: 'fa-globe', url: 'https://www.mi.com/verify' },
+            { id: 'mall', name: '小米商城', icon: 'fa-shopping-bag', url: 'https://www.mi.com/verify' },
+            { id: 'wechat', name: '小米服务', icon: 'fa-comments', url: 'https://www.mi.com/verify' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4001005678' }
+        ],
+        'oppo': [
+            { id: 'official', name: 'OPPO官网', icon: 'fa-globe', url: 'https://support.oppo.com/cn/check/' },
+            { id: 'store', name: 'OPPO商城', icon: 'fa-shopping-bag', url: 'https://support.oppo.com/cn/check/' },
+            { id: 'wechat', name: 'OPPO服务', icon: 'fa-comments', url: 'https://support.oppo.com/cn/check/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4001666888' }
+        ],
+        'vivo': [
+            { id: 'official', name: 'vivo官网', icon: 'fa-globe', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'store', name: 'vivo商城', icon: 'fa-shopping-bag', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'wechat', name: 'vivo服务', icon: 'fa-comments', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4006789688' }
+        ],
+        'samsung': [
+            { id: 'official', name: '三星官网', icon: 'fa-globe', url: 'https://www.samsung.com/cn/support/warranty/' },
+            { id: 'service', name: '三星服务', icon: 'fa-mobile-alt', url: 'https://www.samsung.com/cn/support/warranty/' },
+            { id: 'wechat', name: '三星服务', icon: 'fa-comments', url: 'https://www.samsung.com/cn/support/warranty/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4008105858' }
+        ],
+        'apple': [
+            { id: 'official', name: '苹果官网', icon: 'fa-globe', url: 'https://checkcoverage.apple.com/cn/zh/' },
+            { id: 'support', name: 'Apple支持', icon: 'fa-mobile-alt', url: 'https://checkcoverage.apple.com/cn/zh/' },
+            { id: 'store', name: 'Apple Store', icon: 'fa-apple', url: 'https://checkcoverage.apple.com/cn/zh/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4006668800' }
+        ],
+        'oneplus': [
+            { id: 'official', name: '一加官网', icon: 'fa-globe', url: 'https://support.oneplus.com/cn/check/' },
+            { id: 'store', name: '一加商城', icon: 'fa-shopping-bag', url: 'https://support.oneplus.com/cn/check/' },
+            { id: 'wechat', name: '一加服务', icon: 'fa-comments', url: 'https://support.oneplus.com/cn/check/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4008881111' }
+        ],
+        'realme': [
+            { id: 'official', name: 'realme官网', icon: 'fa-globe', url: 'https://www.realme.com/cn/support/warranty-check' },
+            { id: 'store', name: 'realme商城', icon: 'fa-shopping-bag', url: 'https://www.realme.com/cn/support/warranty-check' },
+            { id: 'wechat', name: 'realme服务', icon: 'fa-comments', url: 'https://www.realme.com/cn/support/warranty-check' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4006280066' }
+        ],
+        'iqoo': [
+            { id: 'official', name: 'iQOO官网', icon: 'fa-globe', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'store', name: 'iQOO商城', icon: 'fa-shopping-bag', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'wechat', name: 'iQOO服务', icon: 'fa-comments', url: 'https://www.vivo.com.cn/service/authenticityCheck/index' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4006789688' }
+        ],
+        'meizu': [
+            { id: 'official', name: '魅族官网', icon: 'fa-globe', url: 'https://service.meizu.com/cn/warranty.html' },
+            { id: 'store', name: '魅族商城', icon: 'fa-shopping-bag', url: 'https://service.meizu.com/cn/warranty.html' },
+            { id: 'wechat', name: '魅族服务', icon: 'fa-comments', url: 'https://service.meizu.com/cn/warranty.html' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4007883333' }
+        ],
+        'nubia': [
+            { id: 'official', name: '努比亚官网', icon: 'fa-globe', url: 'https://www.nubia.com/service/warranty' },
+            { id: 'store', name: '努比亚商城', icon: 'fa-shopping-bag', url: 'https://www.nubia.com/service/warranty' },
+            { id: 'wechat', name: '努比亚服务', icon: 'fa-comments', url: 'https://www.nubia.com/service/warranty' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4007006600' }
+        ],
+        'zte': [
+            { id: 'official', name: '中兴官网', icon: 'fa-globe', url: 'https://www.zte.com.cn/service/warranty' },
+            { id: 'store', name: '中兴商城', icon: 'fa-shopping-bag', url: 'https://www.zte.com.cn/service/warranty' },
+            { id: 'wechat', name: '中兴服务', icon: 'fa-comments', url: 'https://www.zte.com.cn/service/warranty' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4008809999' }
+        ],
+        'motorola': [
+            { id: 'official', name: '摩托罗拉官网', icon: 'fa-globe', url: 'https://support.motorola.com/cn/warranty' },
+            { id: 'store', name: '摩托罗拉商城', icon: 'fa-shopping-bag', url: 'https://support.motorola.com/cn/warranty' },
+            { id: 'wechat', name: '摩托罗拉服务', icon: 'fa-comments', url: 'https://support.motorola.com/cn/warranty' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:4008899090' }
+        ],
+        'honor': [
+            { id: 'official', name: '荣耀官网', icon: 'fa-globe', url: 'https://www.hihonor.com/cn/support/warranty-query/' },
+            { id: 'service', name: '荣耀服务', icon: 'fa-mobile-alt', url: 'https://www.hihonor.com/cn/support/warranty-query/' },
+            { id: 'wechat', name: '荣耀服务', icon: 'fa-comments', url: 'https://www.hihonor.com/cn/support/warranty-query/' },
+            { id: 'hotline', name: '客服热线', icon: 'fa-phone', url: 'tel:95030' }
+        ],
+        'generic': [
+            { id: 'official', name: '搜索引擎', icon: 'fa-search', url: 'https://www.baidu.com/s?wd=手机激活日期查询' },
+            { id: 'guide', name: '查询教程', icon: 'fa-book', url: 'https://www.baidu.com/s?wd=手机激活日期查询教程' },
+            { id: 'tool', name: '第三方工具', icon: 'fa-tools', url: 'https://www.baidu.com/s?wd=IMEI查询工具' },
+            { id: 'hotline', name: '品牌客服', icon: 'fa-phone', url: '#' }
+        ]
+    },
+
+    /**
+     * 显示查询引导浮层（v2.1.17+ 核心交互优化）
+     */
+    showQueryDialog() {
+        const r = this.currentResult;
+        if (!r) {
+            this.showToast('请先完成分析', 'error');
+            return;
+        }
+
+        // 获取设备信息
+        const imei = r.imei1 || '';
+        const sn = r.serialNumber || '';
+        const brand = r.brand || 'generic';
+
+        // 更新浮层中的设备信息
+        const imeiEl = document.getElementById('dialog-imei-value');
+        const snEl = document.getElementById('dialog-sn-value');
+
+        if (imeiEl) {
+            imeiEl.textContent = imei || '未检测到';
+            const imeiItem = document.getElementById('copy-item-imei');
+            if (imeiItem) {
+                imeiItem.classList.toggle('empty', !imei);
+            }
+        }
+
+        if (snEl) {
+            snEl.textContent = sn || '未检测到';
+            const snItem = document.getElementById('copy-item-sn');
+            if (snItem) {
+                snItem.classList.toggle('empty', !sn);
+            }
+        }
+
+        // 生成渠道按钮
+        this.renderChannelButtons(brand);
+
+        // 自动复制IMEI（优先）
+        if (imei) {
+            this.nativeCopy(imei);
+            // 高亮IMEI复制项
+            setTimeout(() => {
+                const imeiItem = document.getElementById('copy-item-imei');
+                if (imeiItem) {
+                    imeiItem.classList.add('copied');
+                    setTimeout(() => imeiItem.classList.remove('copied'), 2000);
+                }
+            }, 100);
+        }
+
+        // 显示浮层
+        const overlay = document.getElementById('query-dialog-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            // 强制重绘以触发过渡动画
+            overlay.offsetHeight;
+            overlay.classList.add('active');
+        }
+
+        // 记录日志
+        Log.d(TAG, 'Query dialog shown for brand: ' + brand + ', imei: ' + (imei ? 'present' : 'missing'));
+    },
+
+    /**
+     * 关闭查询引导浮层
+     */
+    closeQueryDialog() {
+        const overlay = document.getElementById('query-dialog-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            // 等待动画完成后隐藏
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        }
+    },
+
+    /**
+     * 渲染渠道按钮
+     */
+    renderChannelButtons(brand) {
+        const grid = document.getElementById('channel-grid');
+        if (!grid) return;
+
+        const channels = this.brandChannels[brand] || this.brandChannels['generic'];
+        this.selectedQueryChannel = channels[0].id;
+
+        grid.innerHTML = channels.map((channel, index) => `
+            <button class="channel-btn ${index === 0 ? 'active' : ''}" 
+                    data-channel="${channel.id}"
+                    data-url="${channel.url}"
+                    onclick="BatteryHealthApp.selectChannel('${channel.id}', '${channel.url}')">
+                <i class="fas ${channel.icon}"></i>
+                <span>${channel.name}</span>
+            </button>
+        `).join('');
+    },
+
+    /**
+     * 选择查询渠道
+     */
+    selectChannel(channelId, url) {
+        this.selectedQueryChannel = channelId;
+
+        // 更新UI状态
+        document.querySelectorAll('.channel-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.channel === channelId);
+        });
+
+        Log.d(TAG, 'Channel selected: ' + channelId);
+    },
+
+    /**
+     * 复制单项并显示反馈
+     */
+    copyItemAndFeedback(type) {
+        const r = this.currentResult;
+        if (!r) return;
+
+        let text = '';
+        let itemId = '';
+
+        if (type === 'imei') {
+            text = r.imei1 || '';
+            itemId = 'copy-item-imei';
+        } else if (type === 'sn') {
+            text = r.serialNumber || '';
+            itemId = 'copy-item-sn';
+        }
+
+        if (!text) {
+            this.showToast('无' + (type === 'imei' ? 'IMEI' : '序列号') + '可复制', 'error');
+            return;
+        }
+
+        // 执行复制
+        this.nativeCopy(text);
+
+        // 视觉反馈
+        const item = document.getElementById(itemId);
+        if (item) {
+            item.classList.add('copied');
+            setTimeout(() => item.classList.remove('copied'), 2000);
+        }
+
+        this.showToast((type === 'imei' ? 'IMEI' : '序列号') + '已复制', 'success');
+    },
+
+    /**
+     * 一键复制全部信息并显示反馈
+     */
+    copyAllDeviceInfoWithFeedback() {
+        const r = this.currentResult;
+        if (!r) {
+            this.showToast('请先完成分析', 'error');
+            return;
+        }
+
+        const info = [
+            '设备型号: ' + (r.deviceModel || r.brand || '-'),
+            'IMEI: ' + (r.imei1 || '-'),
+            '序列号: ' + (r.serialNumber || '-'),
+            '电池健康度: ' + (r.healthPercentage || '-') + '%'
+        ].join('\n');
+
+        this.nativeCopy(info);
+
+        // 按钮反馈
+        const btn = document.querySelector('.btn-copy-all');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.classList.add('copied');
+            btn.innerHTML = '<i class="fas fa-check"></i><span>已复制全部信息</span>';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = originalText;
+            }, 2000);
+        }
+
+        this.showToast('全部信息已复制', 'success');
+    },
+
+    /**
+     * 原生复制（优先使用Android接口）
+     */
+    nativeCopy(text) {
+        // 优先使用Android原生接口
+        if (typeof AndroidFilePicker !== 'undefined' && AndroidFilePicker.copyToClipboard) {
+            AndroidFilePicker.copyToClipboard(text);
+            return;
+        }
+
+        // 降级到Web Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch(() => {
+                this.fallbackCopy(text);
+            });
+        } else {
+            this.fallbackCopy(text);
+        }
+    },
+
+    /**
+     * 打开官网查询页面
+     */
+    openOfficialQueryPage() {
+        const r = this.currentResult;
+        if (!r) return;
+
+        const brand = r.brand || 'generic';
+        const channels = this.brandChannels[brand] || this.brandChannels['generic'];
+        const selectedChannel = channels.find(c => c.id === this.selectedQueryChannel) || channels[0];
+
+        // 特殊处理电话热线
+        if (selectedChannel.url.startsWith('tel:')) {
+            window.location.href = selectedChannel.url;
+            return;
+        }
+
+        // 使用Android接口打开外部链接
+        if (typeof AndroidFilePicker !== 'undefined' && AndroidFilePicker.openExternalUrl) {
+            AndroidFilePicker.openExternalUrl(selectedChannel.url);
+        } else {
+            window.open(selectedChannel.url, '_blank');
+        }
+
+        // 关闭浮层
+        this.closeQueryDialog();
+
+        Log.d(TAG, 'Opening query page: ' + selectedChannel.url);
+    },
     
     /**
      * 导出报告为图片

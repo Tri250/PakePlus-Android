@@ -552,7 +552,7 @@
                         </div>
                     </div>
                     <div class="device-info-actions">
-                        <button class="device-action-btn ripple" onclick="BatteryHealthApp.queryActivationDate()" id="query-activation-btn">
+                        <button class="device-action-btn ripple" onclick="BatteryHealthApp.showQueryDialog()" id="query-activation-btn">
                             <i class="fas fa-calendar-check"></i>
                             <span>查询激活日期</span>
                         </button>
@@ -603,6 +603,91 @@
                 所有数据均在本地处理，保护您的隐私安全。
             </div>
             <button class="guide-btn ripple" onclick="BatteryHealthApp.closeGuide()">开始使用</button>
+        </div>
+    </div>
+
+    <!-- v2.1.17+ 查询激活日期引导浮层 -->
+    <div id="query-dialog-overlay" class="query-dialog-overlay" style="display:none;" onclick="BatteryHealthApp.closeQueryDialog()">
+        <div class="query-dialog" onclick="event.stopPropagation()">
+            <!-- 头部 -->
+            <div class="query-dialog-header">
+                <div class="query-dialog-title">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>查询激活日期</span>
+                </div>
+                <button class="query-dialog-close" onclick="BatteryHealthApp.closeQueryDialog()" aria-label="关闭">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- 步骤1：复制设备信息 -->
+            <div class="query-step">
+                <div class="query-step-header">
+                    <div class="step-badge">1</div>
+                    <h4 class="step-title">复制设备信息</h4>
+                </div>
+                <div class="step-content">
+                    <div class="info-copy-list">
+                        <div class="copy-item" id="copy-item-imei" onclick="BatteryHealthApp.copyItemAndFeedback('imei')">
+                            <div class="copy-item-info">
+                                <span class="copy-item-label">IMEI</span>
+                                <span class="copy-item-value" id="dialog-imei-value">-</span>
+                            </div>
+                            <div class="copy-item-action">
+                                <i class="fas fa-copy"></i>
+                                <span class="copied-text">已复制</span>
+                            </div>
+                        </div>
+                        <div class="copy-item" id="copy-item-sn" onclick="BatteryHealthApp.copyItemAndFeedback('sn')">
+                            <div class="copy-item-info">
+                                <span class="copy-item-label">序列号 SN</span>
+                                <span class="copy-item-value" id="dialog-sn-value">-</span>
+                            </div>
+                            <div class="copy-item-action">
+                                <i class="fas fa-copy"></i>
+                                <span class="copied-text">已复制</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-copy-all" onclick="BatteryHealthApp.copyAllDeviceInfoWithFeedback()">
+                        <i class="fas fa-copy"></i>
+                        <span>一键复制全部信息</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 步骤2：选择查询渠道 -->
+            <div class="query-step">
+                <div class="query-step-header">
+                    <div class="step-badge">2</div>
+                    <h4 class="step-title">选择查询渠道</h4>
+                </div>
+                <div class="step-content">
+                    <div class="channel-grid" id="channel-grid">
+                        <!-- 动态生成渠道按钮 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部提示 -->
+            <div class="query-hint">
+                <i class="fas fa-lightbulb"></i>
+                <div class="hint-content">
+                    <strong>已自动复制IMEI</strong>
+                    <span>打开页面后长按粘贴即可查询</span>
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="query-dialog-footer">
+                <button class="btn-open-official" onclick="BatteryHealthApp.openOfficialQueryPage()">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>打开官网查询</span>
+                </button>
+                <button class="btn-later" onclick="BatteryHealthApp.closeQueryDialog()">
+                    稍后再说
+                </button>
+            </div>
         </div>
     </div>
 

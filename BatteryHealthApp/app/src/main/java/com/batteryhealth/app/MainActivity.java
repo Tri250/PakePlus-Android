@@ -760,6 +760,115 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "JS Log: " + message);
         }
 
+        /**
+         * v2.1.17+ 新增：打开外部链接（查询激活日期）
+         * 使用Chrome Custom Tab获得更好体验，降级到系统浏览器
+         *
+         * @param url 目标URL
+         */
+        @JavascriptInterface
+        public void openExternalUrl(String url) {
+            Log.d(TAG, "=== openExternalUrl: " + url + " ===");
+
+            // 输入验证
+            if (url == null || url.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URL: null or empty");
+                showToastOnMain("链接无效");
+                return;
+            }
+
+            // URL安全校验
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                Log.e(TAG, "Invalid URL scheme: " + url);
+                showToastOnMain("不安全的链接");
+                return;
+            }
+
+            // 检查WebView状态
+            if (isWebViewDestroyed) {
+                Log.e(TAG, "WebView is destroyed, cannot open URL");
+                return;
+            }
+
+            runOnUiThread(() -> {
+                try {
+                    Uri uri = Uri.parse(url);
+
+                    // 优先尝试Chrome Custom Tab
+                    try {
+                        androidx.browser.customtabs.CustomTabsIntent.Builder builder =
+                            new androidx.browser.customtabs.CustomTabsIntent.Builder();
+                        builder.setToolbarColor(getResources().getColor(android.R.color.white));
+                        builder.setShowTitle(true);
+                        // 使用系统默认动画资源
+                        builder.setStartAnimations(MainActivity.this, android.R.anim.fade_in, android.R.anim.fade_out);
+                        builder.setExitAnimations(MainActivity.this, android.R.anim.fade_in, android.R.anim.fade_out);
+
+                        androidx.browser.customtabs.CustomTabsIntent customTabsIntent = builder.build();
+                        customTabsIntent.launchUrl(MainActivity.this, uri);
+                        Log.d(TAG, "Opened URL with Chrome Custom Tab");
+                    } catch (Exception e) {
+                        // 降级到普通浏览器
+                        Log.w(TAG, "Chrome Custom Tab failed, falling back to browser", e);
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to open URL: " + url, e);
+                    showToastOnMain("打开链接失败");
+                }
+            });
+        }
+
+        /**
+         * v2.1.17+ 新增：复制文本到剪贴板
+         *
+         * @param text 要复制的文本
+         * @return 是否复制成功
+         */
+        @JavascriptInterface
+        public boolean copyToClipboard(String text) {
+            Log.d(TAG, "=== copyToClipboard ===");
+
+            // 输入验证
+            if (text == null || text.trim().isEmpty()) {
+                Log.w(TAG, "Empty text, nothing to copy");
+                return false;
+            }
+
+            // 长度限制（防止异常大数据）
+            if (text.length() > 10000) {
+                Log.w(TAG, "Text too long, truncating to 10000 chars");
+                text = text.substring(0, 10000);
+            }
+
+            final String finalText = text;
+
+            runOnUiThread(() -> {
+                try {
+                    android.content.ClipboardManager clipboard =
+                        (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("设备信息", finalText);
+                    clipboard.setPrimaryClip(clip);
+                    Log.d(TAG, "Text copied to clipboard: " + finalText.substring(0, Math.min(20, finalText.length())) + "...");
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to copy to clipboard", e);
+                }
+            });
+
+            return true;
+        }
+
+        /**
+         * 在主线程显示Toast
+         */
+        private void showToastOnMain(String message) {
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            });
+        }
+
         @JavascriptInterface
         public String readFileContent(String uriString) {
             Log.d(TAG, "JavaScript called readFileContent for: " + uriString);
