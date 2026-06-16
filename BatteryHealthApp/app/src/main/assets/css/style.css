@@ -97,6 +97,15 @@
     box-sizing: border-box;
 }
 
+/* 隐藏破损图片占位符 */
+img {
+    display: none !important;
+}
+
+img[src]:not([src=""]) {
+    display: inline-block !important;
+}
+
 html {
     font-size: 16px;
     scroll-behavior: smooth;
