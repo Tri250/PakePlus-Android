@@ -89,12 +89,25 @@
 }
 
 /* ============================================
-   二、基础样式重置
+   二、基础样式重置 + 性能优化
    ============================================ */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* 性能优化：强制GPU加速 */
+.gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* 性能优化：内容可见性 */
+.content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
 }
 
 /* 隐藏破损图片占位符 */
@@ -104,6 +117,24 @@ img {
 
 img[src]:not([src=""]) {
     display: inline-block !important;
+}
+
+/* 性能优化：减少重绘区域 */
+.isolate {
+    isolation: isolate;
+}
+
+/* 性能优化：contain属性 */
+.contain-layout {
+    contain: layout;
+}
+
+.contain-paint {
+    contain: paint;
+}
+
+.contain-strict {
+    contain: strict;
 }
 
 html {

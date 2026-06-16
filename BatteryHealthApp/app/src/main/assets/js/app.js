@@ -1,6 +1,41 @@
 /**
  * 电池健康度分析工具 - 主应用模块
+ * v2.1.17+ 性能优化版
  */
+
+// 性能监控工具
+const PerformanceMonitor = {
+    marks: {},
+    
+    mark(name) {
+        this.marks[name] = performance.now();
+    },
+    
+    measure(name, startMark, endMark) {
+        const start = this.marks[startMark] || 0;
+        const end = this.marks[endMark] || performance.now();
+        const duration = end - start;
+        console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+        return duration;
+    },
+    
+    // 长任务监控
+    observeLongTasks() {
+        if ('PerformanceObserver' in window) {
+            const observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (entry.duration > 50) {
+                        console.warn(`[Performance] Long task detected: ${entry.duration.toFixed(2)}ms`);
+                    }
+                }
+            });
+            observer.observe({ entryTypes: ['longtask'] });
+        }
+    }
+};
+
+// 启动性能监控
+PerformanceMonitor.observeLongTasks();
 
 const BatteryHealthApp = {
     // DOM 元素缓存
@@ -15,29 +50,49 @@ const BatteryHealthApp = {
     // 当前分析结果
     currentResult: null,
     
+    // 性能优化：IntersectionObserver缓存
+    intersectionObserver: null,
+    
+    // 性能优化：RAF ID缓存
+    rafIds: new Set(),
+    
     /**
      * 初始化应用
      */
     init() {
+        PerformanceMonitor.mark('init-start');
+        
         this.cacheElements();
         this.bindEvents();
         this.renderHistory();
-        // 历史记录搜索
+        
+        // 性能优化：延迟非关键初始化
+        requestIdleCallback(() => {
+            this.initBatteryDatabase();
+            this.renderTrendChart();
+            this.updateDatabaseStats();
+        });
+        
+        // 历史记录搜索 - 使用passive事件监听器
         const historySearch = document.getElementById('history-search');
         if (historySearch) {
-            historySearch.addEventListener('input', this.debounce(() => this.renderHistory(), 300));
+            historySearch.addEventListener('input', 
+                this.debounce(() => this.renderHistory(), 300), 
+                { passive: true }
+            );
         }
+        
         const historyBrandFilter = document.getElementById('history-brand-filter');
         if (historyBrandFilter) {
-            historyBrandFilter.addEventListener('change', () => this.renderHistory());
+            historyBrandFilter.addEventListener('change', () => this.renderHistory(), { passive: true });
         }
-        this.renderTrendChart();
-        this.initBatteryDatabase();
+        
         // 恢复上次输入的容量
         const savedCapacity = localStorage.getItem('battery_health_last_capacity');
         if (savedCapacity && this.elements.initialCapacityInput) {
             this.elements.initialCapacityInput.value = savedCapacity;
         }
+        
         this.checkFirstVisit();
         
         // 禁用 zip.js web worker（在 WebView 中可能有问题）
@@ -45,8 +100,8 @@ const BatteryHealthApp = {
             zip.useWebWorkers = false;
         }
         
-        // 更新数据库统计
-        this.updateDatabaseStats();
+        PerformanceMonitor.mark('init-end');
+        PerformanceMonitor.measure('Initialization', 'init-start', 'init-end');
     },
     
     /**
