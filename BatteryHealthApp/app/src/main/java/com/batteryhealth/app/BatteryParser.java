@@ -76,6 +76,20 @@ public class BatteryParser {
 
         public boolean hasCapacity() { return currentCapacity > 0; }
         public boolean hasDeviceInfo() { return imei1 != null || serialNumber != null; }
+        public int getLevel() { return (int) Math.round((double) currentCapacity / designCapacity * 100); }
+    }
+
+    /**
+     * 计算电池健康度百分比
+     *
+     * @param currentCapacity 当前容量 (mAh)
+     * @param designCapacity 设计容量 (mAh)
+     * @return 健康度百分比 (0-100)
+     */
+    public static double calculateHealthPercentage(int currentCapacity, int designCapacity) {
+        if (designCapacity <= 0) return 0.0;
+        double percentage = (double) currentCapacity / designCapacity * 100.0;
+        return Math.min(percentage, 100.0); // 上限100%
     }
 
     // ============= 电池段落起始标记 =============
@@ -265,6 +279,10 @@ public class BatteryParser {
 
     // ============= 品牌检测 =============
 
+    public static String detectBrand(String content) {
+        return detectBrand(null, content);
+    }
+
     private static String detectBrand(String fileName, String content) {
         String lowName = fileName == null || fileName.isEmpty() ? "" : fileName.toLowerCase(Locale.US);
         if (lowName.contains("miui") || lowName.contains("xiaomi")) return "xiaomi";
@@ -315,7 +333,7 @@ public class BatteryParser {
 
         // ==== 第3步：优先解析 healthd 格式行 ====
         // healthd 格式是最标准、最可靠的电池数据来源
-        parseHealthdLines(content, r);
+        parseHealthdLinesInternal(content, r);
 
         // ==== 第4步：映射到 BatteryInfo ====
         mapToBatteryInfo(r, kvMap, content, brand);
@@ -370,7 +388,7 @@ public class BatteryParser {
      * IMEI 格式：15位数字（如 867123456789012）
      * SN 格式：各品牌不同，通常 8-20 字符
      */
-    private static void extractDeviceInfo(BatteryInfo r, String content, Map<String, List<String>> kvMap) {
+    public static void extractDeviceInfo(BatteryInfo r, String content, Map<String, List<String>> kvMap) {
         // ==== IMEI 提取 ====
         // 方式1：从 kvMap 提取
         String imei1 = null;
@@ -551,7 +569,13 @@ public class BatteryParser {
      *   tl = temperature limit
      *   ct = charger type name
      */
-    private static void parseHealthdLines(String content, BatteryInfo r) {
+    public static BatteryInfo parseHealthdLines(String content) {
+        BatteryInfo r = new BatteryInfo();
+        parseHealthdLinesInternal(content, r);
+        return r;
+    }
+
+    private static void parseHealthdLinesInternal(String content, BatteryInfo r) {
         if (content == null) return;
 
         String[] lines = content.split("\n");

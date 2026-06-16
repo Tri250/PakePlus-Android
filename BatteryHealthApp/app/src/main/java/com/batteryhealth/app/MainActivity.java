@@ -60,9 +60,9 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
     private String[] permissions;
-    private boolean isWebViewDestroyed = false;
-    private boolean isMemoryLow = false;
-    private boolean isPickerFromJs = false; // 标记是否由JS触发
+    private volatile boolean isWebViewDestroyed = false;
+    private volatile boolean isMemoryLow = false;
+    private volatile boolean isPickerFromJs = false; // 标记是否由JS触发
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
