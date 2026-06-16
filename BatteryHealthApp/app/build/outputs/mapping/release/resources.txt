@@ -189,6 +189,7 @@ android.app.shortcuts
 pdf
 SearchView
 service
+imei
 getNextValue
 ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE
 android.view.View$AttachInfo
@@ -357,6 +358,7 @@ android.intent.action.SEARCH
 BITMAP
 pathInterpolator
 无法打开文件
+ro.product.device
 ActionMenuPresenter
 android.intent.action.MAIN
 intrface
@@ -507,6 +509,7 @@ SHOW
 androidx.content.action.LOAD_EMOJI_FONT
 DrawableContainerCompat
 android:layout_height
+ro.product.model
 meizu
 SeekBar
 android.usage_time_packages
@@ -552,6 +555,8 @@ ACTION_SHOW_ON_SCREEN
 android.intent.action.AUTO_REVOKE_PER...
 requestLocationUpdates
 CheckedTextView
+imei_1
+imei_2
 android.location.LocationRequest
 SERVICE_WORKER_CONTENT_ACCESS
 actualcapacity
@@ -672,6 +677,7 @@ jClass
 addFontFromAssetManager
 doBeforeTextChanged
 tv_input
+telephony.registry
 build
 CROSS
 PolarRelativeTo
@@ -749,6 +755,7 @@ $this$initializer
 font_results
 app:barrierMargin
 LayoutInflaterCompatHC
+meid
 androidx.core.view.inputmethod.InputC...
 controlX2
 missingDelimiterValue
@@ -855,6 +862,7 @@ userdebug
 SCREEN
 layout_constraintVertical_bias
 GET_WEB_CHROME_CLIENT
+device_imei
 VIBRANT
 translations
 androidx.view.accessibility.Accessibi...
@@ -1244,6 +1252,7 @@ currentcapacity
 MotionLayout
 include
 file:///android_asset/
+kvMap.
 mViewFlags
 MotionSpec
 android.infoText
@@ -1376,6 +1385,7 @@ layout_constraintRight_toLeftOf
 MButtonToggleGroup
 onBackProgressed
 text/html
+ro.serialno
 stop
 kotlin.jvm.functions.
 ActivityChooserModel
@@ -1468,6 +1478,7 @@ pendingIntent
 GONE
 strokeWidth
 .gif
+device_model
 ACTION_CLEAR_FOCUS
 android.hiddenConversationTitle
 ClassVerificationFailure
@@ -1546,6 +1557,7 @@ android.intent.extra.NOTIFICATION_ID
 FORCE_DARK_STRATEGY
 android.intent.extra.TEXT
 pivotY
+build.prop.serialno
 pivotX
 BatteryParser
 FLOAT_TYPE
@@ -1585,6 +1597,7 @@ androidx.core.app.extra.COMPAT_TEMPLATE
 android.pictureIcon
 LIBRARY_GROUP
 LAYER
+FS/data/system/
 app:layout_constraintEnd_toEndOf
 Theme.MaterialComponents
 interpolatedPos
@@ -1608,9 +1621,11 @@ onStart
 ViewDragHelper
 setStarted
 getSlotIndex
+product_model
 MM
 read
 SUBCLASSES
+serialnumber
 DST
 layout_constraint
 nfc
@@ -1684,6 +1699,7 @@ curveFit
 androidx.core.view.ViewGroupKt$descen...
 androidx.appcompat.app.ActionBar$Tab
 FragmentPagerAdapter
+gsm.imei
 onFilePickerError
 .flac
 android.remoteInputHistory
@@ -1730,6 +1746,7 @@ call
 dismissalId
 .top
 androidx.core.app.NotificationCompat$...
+device_serial
 .webp
 kotlin.Char
 android:backStackId
@@ -2168,6 +2185,7 @@ LOCK
 recommendation
 current_capacity
 clipboard
+gsm.imei2
 AHT
 android.intent.extra.START_PLAYBACK
 output
@@ -2179,6 +2197,7 @@ on_surface
 android:changeImageTransform:bounds
 java.lang.Character
 context
+model
 https
 id
 mLock
@@ -2229,8 +2248,10 @@ bundle
 mServedView
 DARKER
 ftp
+device_sn
 oxygenos
 translationYLinear
+serial_number
 application/wasm
 ViewSpline
 image/tiff
@@ -2255,10 +2276,12 @@ tintMode
 ogg
 mailto:
 _size
+imei2
 surface_dim
 that
 download
 m_
+imei1
 ogm
 string1
 limit
@@ -2406,6 +2429,7 @@ animationFraction
 vector
 ACTION_SCROLL_TO_POSITION
 audio
+sn
 arcMotion
 key
 email
@@ -2572,6 +2596,7 @@ CONSTANT
 Custom
 large_icon
 fcnt
+FS/data/system
 initializer
 fraction
 slideEdge
@@ -2607,6 +2632,7 @@ webp
 android:clipBounds:bounds
 webm
 controlState
+regex.imei
 FEEDBACK_GENERIC
 JobIntentService
 android.wearable.EXTENSIONS
@@ -2632,6 +2658,7 @@ scale
 SERVICE_WORKER_FILE_ACCESS
 kotlinName
 ratedcapacity
+serialno
 androidx.contentpager.content.wakelockid
 Variables
 mAccessibilityDelegate
@@ -3964,6 +3991,13 @@ Marking layout:activity_main:2131427356 used because it matches string pool cons
 Marking attr:scrimAnimationDuration:2130903971 used because it matches string pool constant scrim
 Marking attr:scrimBackground:2130903972 used because it matches string pool constant scrim
 Marking attr:scrimVisibleHeightTrigger:2130903973 used because it matches string pool constant scrim
+Marking attr:snackbarButtonStyle:2130904017 used because it matches string pool constant sn
+Marking attr:snackbarStyle:2130904018 used because it matches string pool constant sn
+Marking attr:snackbarTextViewStyle:2130904019 used because it matches string pool constant sn
+Marking id:snackbar_action:2131231117 used because it matches string pool constant sn
+Marking id:snackbar_text:2131231118 used because it matches string pool constant sn
+Marking id:snap:2131231119 used because it matches string pool constant sn
+Marking id:snapMargins:2131231120 used because it matches string pool constant sn
 Marking attr:keyPositionType:2130903648 used because it matches string pool constant key
 Marking attr:keyboardIcon:2130903649 used because it matches string pool constant key
 Marking attr:keylines:2130903650 used because it matches string pool constant key
@@ -9167,8 +9201,8 @@ Marking attr:viewTransitionOnCross:2130904256 used because it matches string poo
 @id/slide : reachable=true
 @id/snackbar_action : reachable=true
 @id/snackbar_text : reachable=true
-@id/snap : reachable=false
-@id/snapMargins : reachable=false
+@id/snap : reachable=true
+@id/snapMargins : reachable=true
 @id/south : reachable=false
 @id/spacer : reachable=true
 @id/special_effects_controller_view_tag : reachable=true
@@ -20085,6 +20119,8 @@ The root reachable resources are:
  id:slide:2131231116
  id:snackbar_action:2131231117
  id:snackbar_text:2131231118
+ id:snap:2131231119
+ id:snapMargins:2131231120
  id:spacer:2131231122
  id:special_effects_controller_view_tag:2131231123
  id:spline:2131231124
@@ -21089,8 +21125,6 @@ Unused resources are:
  id:showHome:2131231111
  id:showTitle:2131231112
  id:sin:2131231113
- id:snap:2131231119
- id:snapMargins:2131231120
  id:south:2131231121
  id:square:2131231129
  id:src_atop:2131231130

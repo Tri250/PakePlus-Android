@@ -2146,3 +2146,218 @@ a:focus-visible {
 
 .share-btn:nth-child(1) { animation-delay: 0.1s; }
 .share-btn:nth-child(2) { animation-delay: 0.2s; }
+
+/* ============================================
+   三十、设备信息卡片 (v2.1.17)
+   ============================================ */
+.device-info-section {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(100, 116, 139, 0.1);
+    animation: cardSlideUp 0.4s var(--ease-out);
+}
+
+.device-info-title {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.device-info-title i {
+    color: var(--primary);
+    font-size: var(--font-size-lg);
+}
+
+.device-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.device-info-item {
+    padding: var(--spacing-sm);
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-light);
+    transition: all var(--transition-fast);
+}
+
+.device-info-item:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+}
+
+.device-info-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray);
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.device-info-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--dark);
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.device-info-copyable {
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin: calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-sm));
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.device-info-copyable:hover {
+    background: rgba(52, 152, 219, 0.08);
+    color: var(--primary);
+}
+
+.device-info-copyable:active {
+    background: rgba(52, 152, 219, 0.15);
+    transform: scale(0.98);
+}
+
+.device-info-copyable::after {
+    content: '\f0c5';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 10px;
+    color: var(--gray);
+    margin-left: 6px;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.device-info-copyable:hover::after {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.device-info-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--gray-light);
+}
+
+.device-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, var(--primary), #2980b9);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.25);
+}
+
+.device-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.35);
+}
+
+.device-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+}
+
+.device-action-btn.secondary {
+    background: white;
+    color: var(--dark);
+    border: 1px solid var(--gray-light);
+    box-shadow: none;
+}
+
+.device-action-btn.secondary:hover {
+    background: var(--gray-light);
+    border-color: var(--gray);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.device-action-btn i {
+    font-size: var(--font-size-base);
+}
+
+.device-info-hint {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(52, 152, 219, 0.08);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.device-info-hint i {
+    font-size: var(--font-size-sm);
+}
+
+/* 设备信息卡片入场动画 */
+.device-info-section {
+    animation: deviceInfoSlideIn 0.5s var(--ease-out);
+}
+
+@keyframes deviceInfoSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.device-info-item:nth-child(1) { animation: deviceItemFadeIn 0.3s var(--ease-out) 0.1s both; }
+.device-info-item:nth-child(2) { animation: deviceItemFadeIn 0.3s var(--ease-out) 0.15s both; }
+.device-info-item:nth-child(3) { animation: deviceItemFadeIn 0.3s var(--ease-out) 0.2s both; }
+.device-info-item:nth-child(4) { animation: deviceItemFadeIn 0.3s var(--ease-out) 0.25s both; }
+.device-info-item:nth-child(5) { animation: deviceItemFadeIn 0.3s var(--ease-out) 0.3s both; }
+
+@keyframes deviceItemFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 480px) {
+    .device-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .device-info-actions {
+        flex-direction: column;
+    }
+    
+    .device-action-btn {
+        width: 100%;
+    }
+}
