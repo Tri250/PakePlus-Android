@@ -710,7 +710,13 @@ public class MainActivity extends AppCompatActivity {
             sb.append("\"kvMapDump\":\"").append(jsonEscape(info.kvMapDump == null ? "" : info.kvMapDump)).append("\",");
             sb.append("\"capacitySource\":\"").append(jsonEscape(info.capacitySource == null ? "" : info.capacitySource)).append("\",");
             sb.append("\"cycleSource\":\"").append(jsonEscape(info.cycleSource == null ? "" : info.cycleSource)).append("\",");
-            sb.append("\"tempSource\":\"").append(jsonEscape(info.tempSource == null ? "" : info.tempSource)).append("\"");
+            sb.append("\"tempSource\":\"").append(jsonEscape(info.tempSource == null ? "" : info.tempSource)).append("\",");
+            // v2.1.17 新增：设备信息
+            sb.append("\"imei1\":\"").append(jsonEscape(info.imei1 == null ? "" : info.imei1)).append("\",");
+            sb.append("\"imei2\":\"").append(jsonEscape(info.imei2 == null ? "" : info.imei2)).append("\",");
+            sb.append("\"serialNumber\":\"").append(jsonEscape(info.serialNumber == null ? "" : info.serialNumber)).append("\",");
+            sb.append("\"deviceModel\":\"").append(jsonEscape(info.deviceModel == null ? "" : info.deviceModel)).append("\",");
+            sb.append("\"deviceSource\":\"").append(jsonEscape(info.deviceSource == null ? "" : info.deviceSource)).append("\"");
             sb.append("}");
             return sb.toString();
         }

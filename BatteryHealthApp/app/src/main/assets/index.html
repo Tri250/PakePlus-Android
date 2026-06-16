@@ -522,6 +522,51 @@
                     </div>
                 </div>
 
+                <!-- 设备信息卡片 v2.1.17 -->
+                <div class="device-info-section" id="device-info-section">
+                    <div class="device-info-title">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>设备信息</span>
+                        <small style="color:var(--gray);margin-left:8px;">可用于查询激活日期</small>
+                    </div>
+                    <div class="device-info-grid">
+                        <div class="device-info-item">
+                            <div class="device-info-label">设备型号</div>
+                            <div class="device-info-value" id="device-model">-</div>
+                        </div>
+                        <div class="device-info-item">
+                            <div class="device-info-label">IMEI 1</div>
+                            <div class="device-info-value device-info-copyable" id="device-imei1" onclick="BatteryHealthApp.copyToClipboard(this.textContent)" title="点击复制">-</div>
+                        </div>
+                        <div class="device-info-item" id="imei2-item" style="display:none;">
+                            <div class="device-info-label">IMEI 2</div>
+                            <div class="device-info-value device-info-copyable" id="device-imei2" onclick="BatteryHealthApp.copyToClipboard(this.textContent)" title="点击复制">-</div>
+                        </div>
+                        <div class="device-info-item">
+                            <div class="device-info-label">序列号 SN</div>
+                            <div class="device-info-value device-info-copyable" id="device-sn" onclick="BatteryHealthApp.copyToClipboard(this.textContent)" title="点击复制">-</div>
+                        </div>
+                        <div class="device-info-item">
+                            <div class="device-info-label">数据来源</div>
+                            <div class="device-info-value" id="device-source" style="font-size:var(--font-size-xs);color:var(--gray);">-</div>
+                        </div>
+                    </div>
+                    <div class="device-info-actions">
+                        <button class="device-action-btn ripple" onclick="BatteryHealthApp.queryActivationDate()" id="query-activation-btn">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>查询激活日期</span>
+                        </button>
+                        <button class="device-action-btn ripple secondary" onclick="BatteryHealthApp.copyAllDeviceInfo()">
+                            <i class="fas fa-copy"></i>
+                            <span>复制全部信息</span>
+                        </button>
+                    </div>
+                    <div class="device-info-hint" id="device-info-hint" style="display:none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span>点击 IMEI/SN 可复制，然后前往官网查询激活日期</span>
+                    </div>
+                </div>
+
                 <!-- 分享报告 -->
                 <div class="share-section">
                     <button class="share-btn ripple" onclick="BatteryHealthApp.shareReport()" aria-label="分享报告">

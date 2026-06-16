@@ -980,6 +980,9 @@ const BatteryHealthApp = {
         // 显示健康等级评估（使用新的评级）
         this.showHealthGradeNew(batteryGrade, tempStatus);
 
+        // v2.1.17 新增：显示设备信息
+        this.displayDeviceInfo(result);
+
         // 更新趋势图表
         this.renderTrendChart();
 
@@ -1596,6 +1599,198 @@ const BatteryHealthApp = {
         URL.revokeObjectURL(url);
         
         this.showToast('报告已保存', 'success');
+    },
+    
+    // ============= v2.1.17 新增：设备信息功能 =============
+    
+    /**
+     * 显示设备信息（IMEI/SN/型号）
+     */
+    displayDeviceInfo(result) {
+        const deviceSection = document.getElementById('device-info-section');
+        if (!deviceSection) return;
+
+        // 更新设备信息显示
+        const modelEl = document.getElementById('device-model');
+        const imei1El = document.getElementById('device-imei1');
+        const imei2El = document.getElementById('device-imei2');
+        const imei2Item = document.getElementById('imei2-item');
+        const snEl = document.getElementById('device-sn');
+        const sourceEl = document.getElementById('device-source');
+        const hintEl = document.getElementById('device-info-hint');
+
+        // 设备型号
+        if (modelEl) {
+            modelEl.textContent = result.deviceModel || result.brand || '-';
+        }
+
+        // IMEI 1
+        if (imei1El) {
+            imei1El.textContent = result.imei1 || '-';
+            imei1El.style.cursor = result.imei1 ? 'pointer' : 'default';
+        }
+
+        // IMEI 2（双卡机型）
+        if (imei2El && imei2Item) {
+            if (result.imei2) {
+                imei2El.textContent = result.imei2;
+                imei2Item.style.display = 'block';
+            } else {
+                imei2Item.style.display = 'none';
+            }
+        }
+
+        // 序列号 SN
+        if (snEl) {
+            snEl.textContent = result.serialNumber || '-';
+            snEl.style.cursor = result.serialNumber ? 'pointer' : 'default';
+        }
+
+        // 数据来源
+        if (sourceEl) {
+            sourceEl.textContent = result.deviceSource || '未检测到';
+        }
+
+        // 显示提示
+        const hasDeviceInfo = result.imei1 || result.serialNumber;
+        if (hintEl) {
+            hintEl.style.display = hasDeviceInfo ? 'block' : 'none';
+        }
+
+        // 保存设备信息到 currentResult
+        if (this.currentResult) {
+            this.currentResult.imei1 = result.imei1;
+            this.currentResult.imei2 = result.imei2;
+            this.currentResult.serialNumber = result.serialNumber;
+            this.currentResult.deviceModel = result.deviceModel;
+            this.currentResult.deviceSource = result.deviceSource;
+        }
+
+        Log.d(TAG, 'Device info displayed: imei1=' + result.imei1 + ', sn=' + result.serialNumber);
+    },
+
+    /**
+     * 查询激活日期 - 跳转品牌官网
+     */
+    queryActivationDate() {
+        const brand = this.currentResult?.brand || 'generic';
+        const imei = this.currentResult?.imei1 || '';
+        const sn = this.currentResult?.serialNumber || '';
+
+        // 各品牌官网激活日期查询链接
+        const queryUrls = {
+            'huawei': 'https://consumer.huawei.com/cn/support/warranty-query/',
+            'xiaomi': 'https://www.mi.com/verify',
+            'oppo': 'https://support.oppo.com/cn/check/',
+            'vivo': 'https://www.vivo.com.cn/service/authenticityCheck/index',
+            'samsung': 'https://www.samsung.com/cn/support/warranty/',
+            'apple': 'https://checkcoverage.apple.com/cn/zh/',
+            'oneplus': 'https://support.oneplus.com/cn/check/',
+            'realme': 'https://www.realme.com/cn/support/warranty-check',
+            'iqoo': 'https://www.vivo.com.cn/service/authenticityCheck/index',
+            'meizu': 'https://service.meizu.com/cn/warranty.html',
+            'nubia': 'https://www.nubia.com/service/warranty',
+            'zte': 'https://www.zte.com.cn/service/warranty',
+            'motorola': 'https://support.motorola.com/cn/warranty',
+            'honor': 'https://consumer.huawei.com/cn/support/warranty-query/',
+            'generic': 'https://www.baidu.com/s?wd=手机激活日期查询'
+        };
+
+        // 获取对应品牌的查询链接
+        const brandKey = brand.toLowerCase();
+        const url = queryUrls[brandKey] || queryUrls['generic'];
+
+        // 构建提示信息
+        let tipInfo = '';
+        if (imei) {
+            tipInfo = 'IMEI: ' + imei;
+        } else if (sn) {
+            tipInfo = 'SN: ' + sn;
+        } else {
+            tipInfo = '未检测到 IMEI/SN，请在官网手动输入';
+        }
+
+        // 显示提示
+        this.showToast('即将跳转官网查询\n' + tipInfo, 'info', 3000);
+
+        // 延迟跳转，让用户看到提示
+        setTimeout(() => {
+            // 在 Android 端使用 WebView 打开外部链接
+            if (typeof AndroidInterface !== 'undefined' && AndroidInterface.openExternalUrl) {
+                AndroidInterface.openExternalUrl(url);
+            } else {
+                // 非 Android 环境使用 window.open
+                window.open(url, '_blank');
+            }
+        }, 1500);
+    },
+
+    /**
+     * 复制到剪贴板
+     */
+    copyToClipboard(text) {
+        if (!text || text === '-' || text === '未检测到') {
+            this.showToast('无可复制内容', 'error');
+            return;
+        }
+
+        // 使用 Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    this.showToast('已复制: ' + text, 'success');
+                })
+                .catch(() => {
+                    this.fallbackCopy(text);
+                });
+        } else {
+            this.fallbackCopy(text);
+        }
+    },
+
+    /**
+     * 兜底复制方法
+     */
+    fallbackCopy(text) {
+        // 创建临时 textarea
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            this.showToast('已复制: ' + text, 'success');
+        } catch (e) {
+            this.showToast('复制失败，请手动复制', 'error');
+        }
+        document.body.removeChild(textarea);
+    },
+
+    /**
+     * 复制全部设备信息
+     */
+    copyAllDeviceInfo() {
+        const r = this.currentResult;
+        if (!r) {
+            this.showToast('请先完成分析', 'error');
+            return;
+        }
+
+        const info = [
+            '设备型号: ' + (r.deviceModel || r.brand || '-'),
+            'IMEI 1: ' + (r.imei1 || '-'),
+            'IMEI 2: ' + (r.imei2 || '-'),
+            '序列号 SN: ' + (r.serialNumber || '-'),
+            '',
+            '电池健康度: ' + (r.healthPercentage || '-') + '%',
+            '设计容量: ' + (r.designCapacity || r.initialCapacity || '-') + 'mAh',
+            '当前容量: ' + (r.currentCapacity || '-') + 'mAh',
+            '循环次数: ' + (r.cycleCount || '-') + '次'
+        ].join('\n');
+
+        this.copyToClipboard(info);
     },
     
     /**

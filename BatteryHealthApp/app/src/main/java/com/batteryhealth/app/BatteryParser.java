@@ -15,7 +15,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * 电池健康度解析器 v2.1.14 - 全面重写
+ * 电池健康度解析器 v2.1.17 - 设备信息增强
+ *
+ * v2.1.17 新增：
+ * 1. IMEI/SN 设备信息提取
+ *    - IMEI 1/2：国际移动设备识别码
+ *    - Serial Number：设备序列号
+ *    - Device Model：设备型号
+ * 2. 激活日期查询跳转支持
+ *    - 提供各品牌官网查询链接
  *
  * 根因修复（v2.1.14）：
  * 1. healthd 格式字段含义纠正：
@@ -58,8 +66,16 @@ public class BatteryParser {
         public String capacitySource;   // 容量数据来源字段
         public String cycleSource;      // 循环次数数据来源字段
         public String tempSource;       // 温度数据来源字段
+        
+        // v2.1.17 新增：设备信息
+        public String imei1;            // IMEI 1（主卡）
+        public String imei2;            // IMEI 2（副卡，双卡机型）
+        public String serialNumber;     // 设备序列号 SN
+        public String deviceModel;      // 设备型号
+        public String deviceSource;     // 设备信息来源
 
         public boolean hasCapacity() { return currentCapacity > 0; }
+        public boolean hasDeviceInfo() { return imei1 != null || serialNumber != null; }
     }
 
     // ============= 电池段落起始标记 =============
@@ -312,8 +328,11 @@ public class BatteryParser {
             fallbackExtractFromText(r, content);
         }
 
+        // ==== 第7步：提取设备信息（IMEI/SN/型号） ====
+        extractDeviceInfo(r, content, kvMap);
+
         // ==== 记录 kvMap 用于调试 ====
-        if (r.hasCapacity() || r.cycleCount > 0 || r.batteryTemp > 0) {
+        if (r.hasCapacity() || r.cycleCount > 0 || r.batteryTemp > 0 || r.hasDeviceInfo()) {
             StringBuilder kvDump = new StringBuilder();
             kvDump.append("Keys(").append(kvMap.size()).append("): ");
             int count = 0;
@@ -325,10 +344,190 @@ public class BatteryParser {
             r.kvMapDump = kvDump.toString();
         }
 
-        if (!r.hasCapacity() && r.cycleCount == 0 && r.batteryTemp == 0) {
+        // 即使没有电池数据，如果有设备信息也返回
+        if (!r.hasCapacity() && r.cycleCount == 0 && r.batteryTemp == 0 && !r.hasDeviceInfo()) {
             return null;
         }
         return r;
+    }
+
+    // ============= 设备信息提取（IMEI/SN/型号） =============
+
+    /**
+     * 提取设备信息：IMEI、序列号、设备型号
+     *
+     * bugreport 中常见的设备信息位置：
+     * 1. build.prop 段：
+     *    - ro.serialno=xxx
+     *    - ro.product.model=xxx
+     *    - gsm.imei=xxx（部分机型）
+     * 2. telephony.registry 段：
+     *    - imei=xxx
+     *    - imei1=xxx / imei2=xxx
+     * 3. FS/data/system 文件：
+     *    - 设备配置文件
+     *
+     * IMEI 格式：15位数字（如 867123456789012）
+     * SN 格式：各品牌不同，通常 8-20 字符
+     */
+    private static void extractDeviceInfo(BatteryInfo r, String content, Map<String, List<String>> kvMap) {
+        // ==== IMEI 提取 ====
+        // 方式1：从 kvMap 提取
+        String imei1 = null;
+        String imei2 = null;
+
+        // IMEI 常见 key 名称
+        String[] imei1Keys = {
+            "imei", "imei1", "imei_1", "gsm.imei", "device_imei",
+            "meid",  // CDMA 设备
+        };
+        String[] imei2Keys = {
+            "imei2", "imei_2", "gsm.imei2",
+        };
+
+        for (String key : imei1Keys) {
+            List<String> values = kvMap.get(key);
+            if (values != null && !values.isEmpty()) {
+                String val = values.get(0).trim();
+                // IMEI 应该是 14-15 位数字
+                String cleaned = val.replaceAll("[^0-9]", "");
+                if (cleaned.length() >= 14 && cleaned.length() <= 16) {
+                    imei1 = cleaned;
+                    r.deviceSource = "kvMap." + key;
+                    break;
+                }
+            }
+        }
+
+        for (String key : imei2Keys) {
+            List<String> values = kvMap.get(key);
+            if (values != null && !values.isEmpty()) {
+                String val = values.get(0).trim();
+                String cleaned = val.replaceAll("[^0-9]", "");
+                if (cleaned.length() >= 14 && cleaned.length() <= 16) {
+                    imei2 = cleaned;
+                    break;
+                }
+            }
+        }
+
+        // 方式2：从全文正则提取（兜底）
+        if (imei1 == null) {
+            // 匹配格式：IMEI: 867123456789012 或 imei=867123456789012
+            Pattern imeiPattern = Pattern.compile("(?:imei|IMEI|gsm\\.imei)[\\s:=]+([0-9]{14,15})");
+            Matcher m = imeiPattern.matcher(content);
+            if (m.find()) {
+                imei1 = m.group(1);
+                r.deviceSource = "regex.imei";
+            }
+        }
+
+        // 方式3：从 telephony.registry 段提取
+        if (imei1 == null) {
+            int teleIdx = content.indexOf("DUMP OF SERVICE telephony.registry");
+            if (teleIdx >= 0) {
+                int endIdx = Math.min(content.length(), teleIdx + 5000);
+                String teleSection = content.substring(teleIdx, endIdx);
+                Pattern imeiPattern = Pattern.compile("imei[\\s:=]+([0-9]{14,15})");
+                Matcher m = imeiPattern.matcher(teleSection);
+                if (m.find()) {
+                    imei1 = m.group(1);
+                    r.deviceSource = "telephony.registry";
+                }
+            }
+        }
+
+        r.imei1 = imei1;
+        r.imei2 = imei2;
+
+        // ==== 序列号 SN 提取 ====
+        String sn = null;
+        String[] snKeys = {
+            "serial_number", "serialnumber", "serialno", "sn",
+            "ro.serialno", "device_sn", "device_serial",
+        };
+
+        for (String key : snKeys) {
+            List<String> values = kvMap.get(key);
+            if (values != null && !values.isEmpty()) {
+                String val = values.get(0).trim();
+                // SN 通常 8-20 字符，可能包含字母和数字
+                if (val.length() >= 6 && val.length() <= 30) {
+                    sn = val;
+                    if (r.deviceSource == null) r.deviceSource = "kvMap." + key;
+                    break;
+                }
+            }
+        }
+
+        // 方式2：从 build.prop 提取
+        if (sn == null) {
+            Pattern snPattern = Pattern.compile("ro\\.serialno[\\s:=]+([A-Za-z0-9]+)");
+            Matcher m = snPattern.matcher(content);
+            if (m.find()) {
+                sn = m.group(1);
+                if (r.deviceSource == null) r.deviceSource = "build.prop.serialno";
+            }
+        }
+
+        // 方式3：从 FS/data/system/device_info.xml 提取（部分品牌）
+        if (sn == null) {
+            int fsIdx = content.indexOf("FS/data/system/");
+            if (fsIdx >= 0) {
+                int endIdx = Math.min(content.length(), fsIdx + 10000);
+                String fsSection = content.substring(fsIdx, endIdx);
+                Pattern snPattern = Pattern.compile("(?:serial|sn)[\"'>\\s:=]+([A-Za-z0-9]{6,20})");
+                Matcher m = snPattern.matcher(fsSection);
+                if (m.find()) {
+                    sn = m.group(1);
+                    if (r.deviceSource == null) r.deviceSource = "FS/data/system";
+                }
+            }
+        }
+
+        r.serialNumber = sn;
+
+        // ==== 设备型号提取 ====
+        String model = null;
+        String[] modelKeys = {
+            "ro.product.model", "product_model", "model",
+            "device_model", "ro.product.device",
+        };
+
+        for (String key : modelKeys) {
+            List<String> values = kvMap.get(key);
+            if (values != null && !values.isEmpty()) {
+                String val = values.get(0).trim();
+                if (val.length() >= 2 && val.length() <= 50) {
+                    model = val;
+                    break;
+                }
+            }
+        }
+
+        // 方式2：从 Build fingerprint 提取
+        if (model == null) {
+            Pattern modelPattern = Pattern.compile("ro\\.product\\.model[\\s:=]+([A-Za-z0-9_\\-]+)");
+            Matcher m = modelPattern.matcher(content);
+            if (m.find()) {
+                model = m.group(1);
+            }
+        }
+
+        // 方式3：从 Build fingerprint 解析（如 'Redmi/frost/frost:11/...'）
+        if (model == null) {
+            Pattern fpPattern = Pattern.compile("Build fingerprint: '([^/]+)/([^/]+)/([^/:]+)");
+            Matcher m = fpPattern.matcher(content);
+            if (m.find()) {
+                // m.group(1) = 品牌, m.group(2) = 设备代号, m.group(3) = 设备代号
+                model = m.group(3);  // 使用第三个作为型号
+            }
+        }
+
+        r.deviceModel = model;
+
+        Log.d(TAG, "Device info extracted: imei1=" + imei1 + ", imei2=" + imei2
+            + ", sn=" + sn + ", model=" + model + ", source=" + r.deviceSource);
     }
 
     // ============= healthd 格式专用解析 =============
