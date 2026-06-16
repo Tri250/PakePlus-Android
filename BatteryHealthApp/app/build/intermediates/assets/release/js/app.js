@@ -3,6 +3,32 @@
  * v2.1.17+ 性能优化版
  */
 
+// 日志工具（兼容Android WebView和浏览器环境）
+const Log = {
+    d: function(tag, message) {
+        if (typeof console !== 'undefined' && console.log) {
+            console.log('[' + tag + '] ' + message);
+        }
+    },
+    e: function(tag, message) {
+        if (typeof console !== 'undefined' && console.error) {
+            console.error('[' + tag + '] ' + message);
+        }
+    },
+    w: function(tag, message) {
+        if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[' + tag + '] ' + message);
+        }
+    },
+    i: function(tag, message) {
+        if (typeof console !== 'undefined' && console.info) {
+            console.info('[' + tag + '] ' + message);
+        }
+    }
+};
+
+const TAG = 'BatteryHealthApp';
+
 // 性能监控工具
 const PerformanceMonitor = {
     marks: {},
