@@ -209,6 +209,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // v2.1.17+ 关键修复：强制清除WebView缓存，确保加载最新JS文件
+        // 解决"Log is not defined"错误（WebView可能缓存旧版本JS）
+        webView.clearCache(true);
+        webView.clearHistory();
+        Log.d(TAG, "WebView cache cleared to ensure fresh JS load");
+
         WebSettings webSettings = webView.getSettings();
 
         // ========== 安全配置 ==========
@@ -229,8 +235,9 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setSaveFormData(false);
 
         // ========== 性能优化（v2.1.17+ 100分标准）==========
-        // 1. 缓存策略优化
-        webSettings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        // 1. 缓存策略优化 - v2.1.17+ 修复：使用LOAD_NO_CACHE确保加载最新JS
+        // 解决WebView缓存导致"Log is not defined"错误
+        webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         
         // 2. 渲染优化
         webSettings.setUseWideViewPort(true);
