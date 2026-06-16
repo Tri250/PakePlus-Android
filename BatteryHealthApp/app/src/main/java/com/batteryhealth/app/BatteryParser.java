@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -202,8 +204,8 @@ public class BatteryParser {
     // ============= 文件过滤 =============
 
     private static boolean isBinaryFile(String name) {
-        if (name == null) return false;
-        String low = name.toLowerCase();
+        if (name == null || name.isEmpty()) return false;
+        String low = name.toLowerCase(Locale.US);
         return low.endsWith(".bin") || low.endsWith(".png") || low.endsWith(".jpg")
             || low.endsWith(".jpeg") || low.endsWith(".gif") || low.endsWith(".webp")
             || low.endsWith(".so") || low.endsWith(".dex") || low.endsWith(".apk")
@@ -248,7 +250,7 @@ public class BatteryParser {
     // ============= 品牌检测 =============
 
     private static String detectBrand(String fileName, String content) {
-        String lowName = fileName == null ? "" : fileName.toLowerCase();
+        String lowName = fileName == null || fileName.isEmpty() ? "" : fileName.toLowerCase(Locale.US);
         if (lowName.contains("miui") || lowName.contains("xiaomi")) return "xiaomi";
         if (lowName.contains("vivo") || lowName.contains("funtouch") || lowName.contains("originos") || lowName.contains("iqoo")) return "vivo";
         if (lowName.contains("coloros") || lowName.contains("oppo") || lowName.contains("oneplus") || lowName.contains("oos") || lowName.contains("realme") || lowName.contains("oxygenos")) return "oppo";
@@ -271,7 +273,8 @@ public class BatteryParser {
     }
 
     private static boolean matchAny(String text, java.util.regex.Pattern p) {
-        return p.matcher(text == null ? "" : text).find();
+        if (text == null || text.isEmpty()) return false;
+        return p.matcher(text).find();
     }
 
     // ============= 核心解析 =============
@@ -385,67 +388,109 @@ public class BatteryParser {
             String fcStr = healthdFields.get("fc");
             if (fcStr != null) {
                 try {
-                    long fcUah = Long.parseLong(fcStr.replaceAll("[^0-9\\-]", ""));
-                    if (fcUah > 0) {
-                        int fcMah = uahToMah(fcUah);
-                        if (fcMah >= 500 && fcMah <= 30000) {
-                            r.currentCapacity = fcMah;
-                            r.chargeCounter = (int) fcUah;
-                            r.capacitySource = "healthd.fc(" + fcUah + "uAh)";
-                            r.confidence = Math.max(r.confidence, 0.95);
+                    String numStr = fcStr.replaceAll("[^0-9\\-]", "");
+                    if (!numStr.isEmpty()) {
+                        long fcUah = Long.parseLong(numStr);
+                        // 负值检查
+                        if (fcUah < 0) {
+                            Log.w(TAG, "Negative fc value: " + fcUah);
+                        } else if (fcUah > 0) {
+                            int fcMah = uahToMah(fcUah);
+                            // 边界检查：容量应在合理范围内
+                            if (fcMah >= 500 && fcMah <= 30000) {
+                                r.currentCapacity = fcMah;
+                                r.chargeCounter = (int) fcUah;
+                                r.capacitySource = "healthd.fc(" + fcUah + "uAh)";
+                                r.confidence = Math.max(r.confidence, 0.95);
+                            } else {
+                                Log.w(TAG, "fc value out of bounds: " + fcMah + "mAh");
+                            }
                         }
                     }
-                } catch (NumberFormatException ignore) {}
+                } catch (NumberFormatException nfe) {
+                    Log.w(TAG, "Invalid fc format: " + fcStr);
+                }
             }
 
             // 解析 cc (cycle count) → 循环次数
             String ccStr = healthdFields.get("cc");
             if (ccStr != null) {
                 try {
-                    int cc = Integer.parseInt(ccStr.replaceAll("[^0-9]", ""));
-                    if (cc > 0 && cc < 10000) {
-                        r.cycleCount = cc;
-                        r.cycleSource = "healthd.cc";
-                        r.confidence = Math.max(r.confidence, 0.9);
+                    String numStr = ccStr.replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        int cc = Integer.parseInt(numStr);
+                        // 边界检查：循环次数应在合理范围内
+                        if (cc > 0 && cc < 10000) {
+                            r.cycleCount = cc;
+                            r.cycleSource = "healthd.cc";
+                            r.confidence = Math.max(r.confidence, 0.9);
+                        } else if (cc >= 10000) {
+                            Log.w(TAG, "cc value out of bounds: " + cc);
+                        }
                     }
-                } catch (NumberFormatException ignore) {}
+                } catch (NumberFormatException nfe) {
+                    Log.w(TAG, "Invalid cc format: " + ccStr);
+                }
             }
 
             // 解析 v (voltage, mV)
             String vStr = healthdFields.get("v");
             if (vStr != null) {
                 try {
-                    int v = Integer.parseInt(vStr.replaceAll("[^0-9]", ""));
-                    if (v >= 2500 && v <= 5000) {
-                        r.voltage = v;
-                        r.confidence = Math.max(r.confidence, 0.5);
+                    String numStr = vStr.replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        int v = Integer.parseInt(numStr);
+                        // 边界检查：电压应在合理范围内 (2500-5000mV)
+                        if (v >= 2500 && v <= 5000) {
+                            r.voltage = v;
+                            r.confidence = Math.max(r.confidence, 0.5);
+                        } else {
+                            Log.w(TAG, "v value out of bounds: " + v + "mV");
+                        }
                     }
-                } catch (NumberFormatException ignore) {}
+                } catch (NumberFormatException nfe) {
+                    Log.w(TAG, "Invalid v format: " + vStr);
+                }
             }
 
             // 解析 t (temperature, °C 格式 X.Y)
             String tStr = healthdFields.get("t");
             if (tStr != null) {
                 try {
-                    double t = Double.parseDouble(tStr.replaceAll("[^0-9.\\-]", ""));
-                    if (t >= -30 && t <= 80) {
-                        r.batteryTemp = t;
-                        r.tempSource = "healthd.t";
-                        r.confidence = Math.max(r.confidence, 0.7);
+                    String numStr = tStr.replaceAll("[^0-9.\\-]", "");
+                    if (!numStr.isEmpty()) {
+                        double t = Double.parseDouble(numStr);
+                        // 边界检查：温度应在合理范围内 (-30°C ~ 80°C)
+                        if (t >= -30 && t <= 80) {
+                            r.batteryTemp = t;
+                            r.tempSource = "healthd.t";
+                            r.confidence = Math.max(r.confidence, 0.7);
+                        } else {
+                            Log.w(TAG, "t value out of bounds: " + t + "°C");
+                        }
                     }
-                } catch (NumberFormatException ignore) {}
+                } catch (NumberFormatException nfe) {
+                    Log.w(TAG, "Invalid t format: " + tStr);
+                }
             }
 
             // 解析 l (level, 百分比) - 用于验证
             String lStr = healthdFields.get("l");
             if (lStr != null) {
                 try {
-                    int level = Integer.parseInt(lStr.replaceAll("[^0-9]", ""));
-                    if (level >= 0 && level <= 100) {
-                        // level 可用于后续验证
-                        Log.d(TAG, "healthd battery level: " + level + "%");
+                    String numStr = lStr.replaceAll("[^0-9]", "");
+                    if (!numStr.isEmpty()) {
+                        int level = Integer.parseInt(numStr);
+                        // 边界检查：电量百分比应在 0-100 范围内
+                        if (level >= 0 && level <= 100) {
+                            Log.d(TAG, "healthd battery level: " + level + "%");
+                        } else {
+                            Log.w(TAG, "l value out of bounds: " + level + "%");
+                        }
                     }
-                } catch (NumberFormatException ignore) {}
+                } catch (NumberFormatException nfe) {
+                    Log.w(TAG, "Invalid l format: " + lStr);
+                }
             }
 
             // 找到一条有效的 healthd 行就够了
@@ -958,13 +1003,27 @@ public class BatteryParser {
                     try {
                         String trimmed = v.trim();
                         // 排除明显是电压的值（包含 mV 或 V 单位，但不是 mAh/uAh）
-                        String low = trimmed.toLowerCase();
+                        String low = trimmed.toLowerCase(Locale.US);
                         if (low.contains("mv") && !low.contains("mah")) continue;
                         if ((low.endsWith("v") || low.contains("v ")) && !low.contains("mah") && !low.contains("uah")) continue;
 
                         String numStr = trimmed.replaceAll("[^0-9.]", "");
                         if (numStr.isEmpty()) continue;
-                        double val = Double.parseDouble(numStr);
+                        
+                        // 验证数字格式
+                        double val;
+                        try {
+                            val = Double.parseDouble(numStr);
+                        } catch (NumberFormatException nfe) {
+                            Log.w(TAG, "Invalid number format: " + numStr);
+                            continue;
+                        }
+                        
+                        // 负值检查
+                        if (val < 0) {
+                            Log.w(TAG, "Negative capacity value: " + val);
+                            continue;
+                        }
 
                         // 智能单位判断：
                         // 如果值 >= 100000，很可能是 uAh，需要转换
@@ -999,7 +1058,9 @@ public class BatteryParser {
                         if (val >= min && val <= max) {
                             return (int) val;
                         }
-                    } catch (NumberFormatException ignore) {}
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error parsing capacity value: " + v, e);
+                    }
                 }
             }
         }
@@ -1015,8 +1076,15 @@ public class BatteryParser {
                         String numStr = v.trim().replaceAll("[^0-9\\-]", "");
                         if (numStr.isEmpty()) continue;
                         int val = Integer.parseInt(numStr);
+                        // 负值检查（循环次数不能为负）
+                        if (val < 0) {
+                            Log.w(TAG, "Negative integer value for key " + key + ": " + val);
+                            continue;
+                        }
                         if (val >= min && val <= max) return val;
-                    } catch (NumberFormatException ignore) {}
+                    } catch (NumberFormatException nfe) {
+                        Log.w(TAG, "Invalid integer format for key " + key + ": " + v);
+                    }
                 }
             }
         }
@@ -1031,8 +1099,16 @@ public class BatteryParser {
                     try {
                         String numStr = v.trim().replaceAll("[^0-9]", "");
                         if (numStr.isEmpty()) continue;
-                        return Long.parseLong(numStr);
-                    } catch (NumberFormatException ignore) {}
+                        long val = Long.parseLong(numStr);
+                        // 负值检查
+                        if (val < 0) {
+                            Log.w(TAG, "Negative long value for key " + key + ": " + val);
+                            continue;
+                        }
+                        return val;
+                    } catch (NumberFormatException nfe) {
+                        Log.w(TAG, "Invalid long format for key " + key + ": " + v);
+                    }
                 }
             }
         }
@@ -1047,8 +1123,12 @@ public class BatteryParser {
                     try {
                         String numStr = v.trim().replaceAll("[^0-9.\\-]", "");
                         if (numStr.isEmpty()) continue;
-                        return Double.parseDouble(numStr);
-                    } catch (NumberFormatException ignore) {}
+                        double val = Double.parseDouble(numStr);
+                        // 边界检查（温度范围）
+                        return val;
+                    } catch (NumberFormatException nfe) {
+                        Log.w(TAG, "Invalid double format for key " + key + ": " + v);
+                    }
                 }
             }
         }

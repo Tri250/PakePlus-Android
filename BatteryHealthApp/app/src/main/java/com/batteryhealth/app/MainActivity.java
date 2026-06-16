@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.View;
@@ -437,9 +438,7 @@ public class MainActivity extends AppCompatActivity {
 
             String[] mimeTypes = {
                 "application/zip",
-                "application/x-zip-compressed",
-                "application/octet-stream",
-                "*/*"
+                "application/x-zip-compressed"
             };
             intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -535,7 +534,17 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void openFilePicker() {
             Log.d(TAG, "=== JavaScript called openFilePicker ===");
+            // 输入验证：确保在主线程执行
+            if (!isMainThread()) {
+                Log.w(TAG, "openFilePicker called from non-main thread, dispatching to main thread");
+            }
             runOnUiThread(() -> {
+                // 检查 WebView 是否已被销毁
+                if (isWebViewDestroyed || webView == null) {
+                    Log.e(TAG, "WebView is destroyed, cannot open file picker");
+                    invokeJsOnMain("onFilePickerError", "WebView已销毁");
+                    return;
+                }
                 // 关键修复：JS触发时也要保留callback
                 // 但因为JS触发没有onShowFileChooser的callback，
                 // 这里创建一个空callback以便文件选择完成后通知JS
@@ -554,6 +563,10 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        private boolean isMainThread() {
+            return Looper.myLooper() == Looper.getMainLooper();
+        }
+
         /**
          * 关键方法：原生 ZIP 流式解析电池健康度（v2.1.7 重构）
          *
@@ -569,6 +582,43 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void analyzeZipNative(final String uriString, final String callbackJs, final String errorCallbackJs) {
             Log.d(TAG, "=== analyzeZipNative for: " + uriString + " ===");
+            
+            // 输入验证
+            if (uriString == null || uriString.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URI string: null or empty");
+                invokeJsOnMain(errorCallbackJs, "无效的文件URI");
+                return;
+            }
+            if (callbackJs == null || callbackJs.trim().isEmpty()) {
+                Log.e(TAG, "Invalid callback function name");
+                invokeJsOnMain(errorCallbackJs, "无效的回调函数名");
+                return;
+            }
+            if (errorCallbackJs == null || errorCallbackJs.trim().isEmpty()) {
+                Log.e(TAG, "Invalid error callback function name");
+                return;
+            }
+            
+            // 验证 URI 格式
+            try {
+                Uri uri = Uri.parse(uriString);
+                if (uri == null || uri.getScheme() == null) {
+                    invokeJsOnMain(errorCallbackJs, "URI格式无效");
+                    return;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to parse URI: " + uriString, e);
+                invokeJsOnMain(errorCallbackJs, "URI解析失败");
+                return;
+            }
+            
+            // 检查 WebView 状态
+            if (isWebViewDestroyed || webView == null) {
+                Log.e(TAG, "WebView is destroyed, cannot analyze");
+                invokeJsOnMain(errorCallbackJs, "WebView已销毁");
+                return;
+            }
+            
             new Thread(() -> {
                 InputStream inputStream = null;
                 try {
@@ -707,8 +757,26 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public String readFileContent(String uriString) {
             Log.d(TAG, "JavaScript called readFileContent for: " + uriString);
+            
+            // 输入验证
+            if (uriString == null || uriString.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URI string: null or empty");
+                return null;
+            }
+            
+            // 检查 WebView 状态
+            if (isWebViewDestroyed) {
+                Log.e(TAG, "WebView is destroyed, cannot read file");
+                return null;
+            }
+            
             try {
                 Uri uri = Uri.parse(uriString);
+                if (uri == null || uri.getScheme() == null) {
+                    Log.e(TAG, "Invalid URI format");
+                    return null;
+                }
+                
                 ContentResolver resolver = getContentResolver();
                 InputStream inputStream = resolver.openInputStream(uri);
 
@@ -729,6 +797,13 @@ public class MainActivity extends AppCompatActivity {
                 outputStream.close();
 
                 byte[] fileBytes = outputStream.toByteArray();
+                
+                // 文件大小限制检查（避免内存溢出）
+                if (fileBytes.length > MAX_FILE_SIZE) {
+                    Log.e(TAG, "File too large: " + fileBytes.length + " bytes");
+                    return null;
+                }
+                
                 String base64 = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
 
                 Log.d(TAG, "File content read successfully, size: " + fileBytes.length);
@@ -742,8 +817,20 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public long getFileSize(String uriString) {
             Log.d(TAG, "JavaScript called getFileSize for: " + uriString);
+            
+            // 输入验证
+            if (uriString == null || uriString.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URI string: null or empty");
+                return -1;
+            }
+            
             try {
                 Uri uri = Uri.parse(uriString);
+                if (uri == null || uri.getScheme() == null) {
+                    Log.e(TAG, "Invalid URI format");
+                    return -1;
+                }
+                
                 ContentResolver resolver = getContentResolver();
                 android.database.Cursor cursor = resolver.query(uri, null, null, null, null);
                 if (cursor != null) {
@@ -777,6 +864,30 @@ public class MainActivity extends AppCompatActivity {
         public void readFileContentWithProgress(String uriString, final String callbackJs,
                                                  final int startPercent, final int endPercent) {
             Log.d(TAG, "=== readFileContentWithProgress (copy to cache) for: " + uriString + " ===");
+            
+            // 输入验证
+            if (uriString == null || uriString.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URI string: null or empty");
+                invokeErrorJs("onFileReadError", "无效的文件URI");
+                return;
+            }
+            if (callbackJs == null || callbackJs.trim().isEmpty()) {
+                Log.e(TAG, "Invalid callback function name");
+                invokeErrorJs("onFileReadError", "无效的回调函数名");
+                return;
+            }
+            if (startPercent < 0 || startPercent > 100 || endPercent < 0 || endPercent > 100 || startPercent > endPercent) {
+                Log.e(TAG, "Invalid progress range: " + startPercent + " - " + endPercent);
+                invokeErrorJs("onFileReadError", "无效的进度范围");
+                return;
+            }
+            
+            // 检查 WebView 状态
+            if (isWebViewDestroyed || webView == null) {
+                Log.e(TAG, "WebView is destroyed, cannot read file");
+                invokeErrorJs("onFileReadError", "WebView已销毁");
+                return;
+            }
 
             new Thread(() -> {
                 java.io.File tempFile = null;
@@ -935,6 +1046,35 @@ public class MainActivity extends AppCompatActivity {
                                      final String errorCallbackJs,
                                      final int startPercent, final int endPercent) {
             Log.d(TAG, "=== readFileAsBase64 for: " + uriString + " ===");
+            
+            // 输入验证
+            if (uriString == null || uriString.trim().isEmpty()) {
+                Log.e(TAG, "Invalid URI string: null or empty");
+                invokeErrorJs(errorCallbackJs, "无效的文件URI");
+                return;
+            }
+            if (callbackJs == null || callbackJs.trim().isEmpty()) {
+                Log.e(TAG, "Invalid callback function name");
+                invokeErrorJs(errorCallbackJs, "无效的回调函数名");
+                return;
+            }
+            if (errorCallbackJs == null || errorCallbackJs.trim().isEmpty()) {
+                Log.e(TAG, "Invalid error callback function name");
+                return;
+            }
+            if (startPercent < 0 || startPercent > 100 || endPercent < 0 || endPercent > 100 || startPercent > endPercent) {
+                Log.e(TAG, "Invalid progress range: " + startPercent + " - " + endPercent);
+                invokeErrorJs(errorCallbackJs, "无效的进度范围");
+                return;
+            }
+            
+            // 检查 WebView 状态
+            if (isWebViewDestroyed || webView == null) {
+                Log.e(TAG, "WebView is destroyed, cannot read file");
+                invokeErrorJs(errorCallbackJs, "WebView已销毁");
+                return;
+            }
+            
             new Thread(() -> {
                 java.io.File tempFile = null;
                 try {

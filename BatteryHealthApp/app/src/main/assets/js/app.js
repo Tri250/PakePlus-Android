@@ -198,9 +198,31 @@ const BatteryHealthApp = {
     validateAndSetFile(file) {
         const errorEl = this.elements.fileValidationError;
         
+        // 输入验证：确保 file 对象存在
+        if (!file) {
+            if (errorEl) {
+                errorEl.textContent = '请选择有效的文件';
+                errorEl.classList.add('show');
+            }
+            this.currentFile = null;
+            return false;
+        }
+        
         // 验证文件类型 - 兼容File对象和Android URI对象
         const fileName = file.name || '';
-        if (!fileName.toLowerCase().endsWith('.zip')) {
+        if (!fileName || typeof fileName !== 'string') {
+            if (errorEl) {
+                errorEl.textContent = '无法识别文件名';
+                errorEl.classList.add('show');
+            }
+            this.currentFile = null;
+            return false;
+        }
+        
+        // 净化文件名（防止 XSS）
+        const sanitizedFileName = fileName.replace(/[<>'"&]/g, '');
+        
+        if (!sanitizedFileName.toLowerCase().endsWith('.zip')) {
             if (errorEl) {
                 errorEl.textContent = '请选择 ZIP 格式的文件';
                 errorEl.classList.add('show');
@@ -211,7 +233,7 @@ const BatteryHealthApp = {
         
         // 验证文件大小（最大 500MB）- 仅对File对象检查
         // 原生解析使用 ZipInputStream 流式扫描，500MB 也不卡
-        if (file.size && file.size > 500 * 1024 * 1024) {
+        if (file.size && typeof file.size === 'number' && file.size > 500 * 1024 * 1024) {
             if (errorEl) {
                 errorEl.textContent = '文件过大，请选择小于 500MB 的文件';
                 errorEl.classList.add('show');
@@ -226,11 +248,12 @@ const BatteryHealthApp = {
         }
         this.currentFile = file;
         if (this.elements.selectedFileName) {
-            this.elements.selectedFileName.textContent = fileName;
+            // 使用 textContent 防止 XSS
+            this.elements.selectedFileName.textContent = sanitizedFileName;
         }
         // 显示文件大小
         const fileSizeEl = document.getElementById('selected-file-size');
-        if (fileSizeEl && file.size && file.size > 0) {
+        if (fileSizeEl && file.size && typeof file.size === 'number' && file.size > 0) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
             fileSizeEl.textContent = '(' + sizeMB + 'MB)';
         }
@@ -246,17 +269,23 @@ const BatteryHealthApp = {
      * 验证容量输入
      */
     validateCapacity() {
-        const value = parseInt(this.elements.initialCapacityInput.value);
+        const inputValue = this.elements.initialCapacityInput.value;
+        const value = parseInt(inputValue);
         const input = this.elements.initialCapacityInput;
         
-        if (value && (value < 1000 || value > 10000)) {
+        // 输入验证：确保是有效数字
+        if (inputValue && (isNaN(value) || value < 1000 || value > 10000)) {
             input.classList.add('error');
             return false;
         } else {
             input.classList.remove('error');
-            // 保存容量到localStorage
+            // 保存容量到localStorage（仅保存有效值）
             if (value && value >= 500 && value <= 30000) {
-                localStorage.setItem('battery_health_last_capacity', value);
+                try {
+                    localStorage.setItem('battery_health_last_capacity', String(value));
+                } catch (e) {
+                    console.warn('Failed to save capacity to localStorage:', e);
+                }
             }
             return true;
         }
@@ -335,16 +364,24 @@ const BatteryHealthApp = {
         
         // 验证文件类型 - 兼容File对象和Android URI对象
         const fileName = this.currentFile.name || '';
-        if (!fileName.toLowerCase().endsWith('.zip')) {
+        if (!fileName || typeof fileName !== 'string' || !fileName.toLowerCase().endsWith('.zip')) {
             console.warn('Invalid file type:', fileName);
             this.showStatus('请选择 ZIP 格式的文件', true);
             return;
         }
         
         // 验证容量
-        const initialCapacity = parseInt(initialCapacityInput.value);
-        if (!initialCapacity || initialCapacity <= 0) {
+        const capacityInputValue = initialCapacityInput.value;
+        const initialCapacity = parseInt(capacityInputValue);
+        if (!capacityInputValue || isNaN(initialCapacity) || initialCapacity <= 0) {
             this.showStatus('请输入有效的初始电池容量', true);
+            initialCapacityInput.classList.add('error');
+            return;
+        }
+        
+        // 容量范围验证
+        if (initialCapacity < 500 || initialCapacity > 30000) {
+            this.showStatus('电池容量应在 500-30000 mAh 范围内', true);
             initialCapacityInput.classList.add('error');
             return;
         }
@@ -363,7 +400,7 @@ const BatteryHealthApp = {
         try {
             this.updateProgress(10, '第1步/4步：正在读取文件...');
             // 大文件警告
-            if (this.currentFile.size && this.currentFile.size > 200 * 1024 * 1024) {
+            if (this.currentFile.size && typeof this.currentFile.size === 'number' && this.currentFile.size > 200 * 1024 * 1024) {
                 const sizeMB = (this.currentFile.size / (1024 * 1024)).toFixed(0);
                 this.updateProgress(8, '大文件(' + sizeMB + 'MB)，解析可能需要较长时间...');
                 await new Promise(r => setTimeout(r, 100));
@@ -394,7 +431,7 @@ const BatteryHealthApp = {
             this.renderHistory();
             
         } catch (error) {
-            this.showStatus('分析失败: ' + error.message, true);
+            this.showStatus('分析失败: ' + (error.message || '未知错误'), true);
             console.error(error);
         } finally {
             calculateBtn.disabled = false;
@@ -1033,44 +1070,83 @@ const BatteryHealthApp = {
         // 搜索过滤
         const searchInput = document.getElementById('history-search');
         const brandFilter = document.getElementById('history-brand-filter');
-        const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        const filterBrand = brandFilter ? brandFilter.value : '';
+        const searchKeyword = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
+        const filterBrand = brandFilter ? (brandFilter.value || '') : '';
         
         if (searchKeyword || filterBrand) {
             history = history.filter(item => {
                 let match = true;
                 if (searchKeyword) {
-                    const searchStr = (item.brand + ' ' + item.initialCapacity + 'mAh ' + 
-                        HistoryManager.formatDate(item.timestamp)).toLowerCase();
+                    const searchStr = ((item.brand || 'unknown') + ' ' + (item.initialCapacity || 0) + 'mAh ' + 
+                        HistoryManager.formatDate(item.timestamp || new Date().toISOString())).toLowerCase();
                     match = searchStr.includes(searchKeyword);
                 }
                 if (filterBrand) {
-                    match = match && item.brand === filterBrand;
+                    match = match && (item.brand || '') === filterBrand;
                 }
                 return match;
             });
         }
         
+        // 清空历史列表
+        historyList.innerHTML = '';
+        
         if (history.length === 0) {
-            historyList.innerHTML = '<div class="history-empty" role="listitem">' + 
-                (searchKeyword || filterBrand ? '没有匹配的记录' : '暂无历史记录') + '</div>';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'history-empty';
+            emptyDiv.setAttribute('role', 'listitem');
+            emptyDiv.textContent = searchKeyword || filterBrand ? '没有匹配的记录' : '暂无历史记录';
+            historyList.appendChild(emptyDiv);
             return;
         }
         
-        historyList.innerHTML = history.map(item => `
-            <div class="history-item" role="listitem" data-id="${item.id}">
-                <div class="info">
-                    <div class="history-date">${HistoryManager.formatDate(item.timestamp)}</div>
-                    <div class="history-detail">${item.designCapacity || item.initialCapacity}mAh → ${item.currentCapacity}mAh ${item.cycleCount ? '· ' + item.cycleCount + '次循环' : ''}</div>
-                </div>
-                <div class="history-health ${HistoryManager.getHealthColor(item.healthPercentage)}">
-                    ${item.healthPercentage}%
-                </div>
-                <button class="delete-btn" onclick="BatteryHealthApp.deleteHistoryItem(${item.id})" aria-label="删除此记录">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `).join('');
+        // 使用 DOM API 创建元素，避免 XSS
+        history.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+            itemDiv.setAttribute('role', 'listitem');
+            itemDiv.setAttribute('data-id', item.id || '');
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'info';
+            
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'history-date';
+            dateDiv.textContent = HistoryManager.formatDate(item.timestamp || new Date().toISOString());
+            infoDiv.appendChild(dateDiv);
+            
+            const detailDiv = document.createElement('div');
+            detailDiv.className = 'history-detail';
+            const designCap = item.designCapacity || item.initialCapacity || 0;
+            const currentCap = item.currentCapacity || 0;
+            const cycles = item.cycleCount || 0;
+            detailDiv.textContent = designCap + 'mAh → ' + currentCap + 'mAh' + (cycles ? ' · ' + cycles + '次循环' : '');
+            infoDiv.appendChild(detailDiv);
+            
+            itemDiv.appendChild(infoDiv);
+            
+            const healthDiv = document.createElement('div');
+            healthDiv.className = 'history-health ' + HistoryManager.getHealthColor(item.healthPercentage || 0);
+            healthDiv.textContent = (item.healthPercentage || '0') + '%';
+            itemDiv.appendChild(healthDiv);
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.setAttribute('aria-label', '删除此记录');
+            deleteBtn.onclick = () => {
+                if (confirm('确定删除此记录？')) {
+                    HistoryManager.delete(item.id);
+                    this.renderHistory();
+                }
+            };
+            
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-times';
+            deleteBtn.appendChild(deleteIcon);
+            itemDiv.appendChild(deleteBtn);
+            
+            historyList.appendChild(itemDiv);
+        });
     },
     
     /**
@@ -1120,19 +1196,44 @@ const BatteryHealthApp = {
     showCapacitySearchResults(results) {
         const resultEl = this.elements.capacitySearchResult;
         
+        // 清空结果
+        resultEl.innerHTML = '';
+        
         if (results.length === 0) {
-            resultEl.innerHTML = '<p style="color: #7f8c8d;">未找到匹配的手机型号</p>';
+            const noResultP = document.createElement('p');
+            noResultP.style.color = '#7f8c8d';
+            noResultP.textContent = '未找到匹配的手机型号';
+            resultEl.appendChild(noResultP);
             resultEl.classList.add('show');
             return;
         }
         
-        resultEl.innerHTML = results.map(item => `
-            <div style="padding: 10px; border-bottom: 1px solid #f0f4f8; cursor: pointer;" 
-                 onclick="BatteryHealthApp.selectCapacity(${item.capacity})">
-                <strong>${item.brand} ${item.model}</strong>
-                <span style="float: right; color: var(--primary); font-weight: 600;">${item.capacity} mAh</span>
-            </div>
-        `).join('');
+        // 使用 DOM API 创建元素，避免 XSS
+        results.forEach(item => {
+            const resultDiv = document.createElement('div');
+            resultDiv.style.padding = '10px';
+            resultDiv.style.borderBottom = '1px solid #f0f4f8';
+            resultDiv.style.cursor = 'pointer';
+            
+            const brandStrong = document.createElement('strong');
+            brandStrong.textContent = (item.brand || '') + ' ' + (item.model || '');
+            resultDiv.appendChild(brandStrong);
+            
+            const capacitySpan = document.createElement('span');
+            capacitySpan.style.float = 'right';
+            capacitySpan.style.color = 'var(--primary)';
+            capacitySpan.style.fontWeight = '600';
+            capacitySpan.textContent = (item.capacity || 0) + ' mAh';
+            resultDiv.appendChild(capacitySpan);
+            
+            resultDiv.onclick = () => {
+                if (item.capacity && typeof item.capacity === 'number') {
+                    this.selectCapacity(item.capacity);
+                }
+            };
+            
+            resultEl.appendChild(resultDiv);
+        });
         
         resultEl.classList.add('show');
     },

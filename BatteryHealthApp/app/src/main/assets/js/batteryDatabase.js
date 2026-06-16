@@ -4,6 +4,187 @@
  */
 
 const BatteryDatabase = {
+    // 品牌索引（用于快速搜索）
+    brandIndex: null,
+    
+    /**
+     * 初始化品牌索引（延迟加载）
+     */
+    initIndex() {
+        if (this.brandIndex) return;
+        
+        this.brandIndex = {};
+        this.data.forEach(phone => {
+            const brandLower = (phone.brand || '').toLowerCase();
+            if (!this.brandIndex[brandLower]) {
+                this.brandIndex[brandLower] = [];
+            }
+            this.brandIndex[brandLower].push(phone);
+        });
+    },
+
+    /**
+     * 净化搜索关键词（防止注入和特殊字符问题）
+     * @param {string} keyword - 搜索关键词
+     * @returns {string} - 净化后的关键词
+     */
+    sanitizeKeyword(keyword) {
+        if (!keyword || typeof keyword !== 'string') return '';
+        // 移除危险字符和特殊正则字符
+        return keyword.replace(/[<>'"&\[\](){}.*+?^$|\\]/g, '').trim().substring(0, 50);
+    },
+
+    /**
+     * 搜索手机型号
+     * @param {string} keyword - 搜索关键词
+     * @param {number} limit - 结果数量限制（默认10，最大50）
+     * @returns {Array} - 匹配的结果
+     */
+    search(keyword, limit) {
+        // 输入验证
+        if (!keyword || typeof keyword !== 'string') {
+            return [];
+        }
+        
+        // 净化关键词
+        const sanitizedKeyword = this.sanitizeKeyword(keyword);
+        if (!sanitizedKeyword) {
+            return [];
+        }
+        
+        // 验证 limit 参数
+        const validLimit = Math.max(1, Math.min(limit || 10, 50));
+        
+        // 初始化索引
+        this.initIndex();
+        
+        const lowerKeyword = sanitizedKeyword.toLowerCase();
+        const results = [];
+        const addedKeys = new Set(); // 防止重复添加
+        
+        // 先尝试品牌索引搜索（更高效）
+        const matchingBrands = Object.keys(this.brandIndex).filter(brand => 
+            brand.includes(lowerKeyword)
+        );
+        
+        // 从匹配的品牌中获取结果
+        matchingBrands.forEach(brand => {
+            const brandPhones = this.brandIndex[brand] || [];
+            brandPhones.forEach(phone => {
+                if (results.length >= validLimit) return;
+                
+                const key = (phone.brand || '') + '|' + (phone.model || '');
+                if (!addedKeys.has(key)) {
+                    addedKeys.add(key);
+                    results.push({
+                        brand: phone.brand || '',
+                        model: phone.model || '',
+                        capacity: phone.capacity || 0
+                    });
+                }
+            });
+        });
+        
+        // 如果品牌搜索结果不足，进行全文搜索
+        if (results.length < validLimit) {
+            this.data.forEach(phone => {
+                if (results.length >= validLimit) return;
+                
+                const brandLower = (phone.brand || '').toLowerCase();
+                const modelLower = (phone.model || '').toLowerCase();
+                
+                // 使用简单的字符串匹配（避免正则性能问题）
+                if (brandLower.includes(lowerKeyword) || modelLower.includes(lowerKeyword)) {
+                    const key = (phone.brand || '') + '|' + (phone.model || '');
+                    if (!addedKeys.has(key)) {
+                        addedKeys.add(key);
+                        results.push({
+                            brand: phone.brand || '',
+                            model: phone.model || '',
+                            capacity: phone.capacity || 0
+                        });
+                    }
+                }
+            });
+        }
+        
+        return results;
+    },
+
+    /**
+     * 根据品牌和型号获取电池容量
+     * @param {string} brand - 品牌
+     * @param {string} model - 型号
+     * @returns {number|null} - 电池容量(mAh)或null
+     */
+    getCapacity(brand, model) {
+        // 输入验证
+        if (!brand || typeof brand !== 'string' || !model || typeof model !== 'string') {
+            return null;
+        }
+        
+        // 净化输入
+        const sanitizedBrand = this.sanitizeKeyword(brand);
+        const sanitizedModel = this.sanitizeKeyword(model);
+        
+        if (!sanitizedBrand || !sanitizedModel) {
+            return null;
+        }
+        
+        const item = this.data.find(item => 
+            (item.brand || '') === sanitizedBrand && (item.model || '') === sanitizedModel
+        );
+        
+        // 验证容量值
+        if (item && typeof item.capacity === 'number' && item.capacity > 0) {
+            return item.capacity;
+        }
+        return null;
+    },
+
+    /**
+     * 获取所有品牌列表
+     * @returns {Array} - 品牌列表
+     */
+    getBrands() {
+        const brands = new Set(this.data.map(item => item.brand || '').filter(b => b));
+        return Array.from(brands).sort();
+    },
+
+    /**
+     * 获取指定品牌的所有型号
+     * @param {string} brand - 品牌
+     * @returns {Array} - 型号列表
+     */
+    getModelsByBrand(brand) {
+        // 输入验证
+        if (!brand || typeof brand !== 'string') {
+            return [];
+        }
+        
+        const sanitizedBrand = this.sanitizeKeyword(brand);
+        if (!sanitizedBrand) {
+            return [];
+        }
+        
+        return this.data
+            .filter(item => (item.brand || '') === sanitizedBrand)
+            .map(item => item.model || '');
+    },
+    
+    /**
+     * 获取数据库统计信息
+     * @returns {Object} - 统计信息
+     */
+    getStats() {
+        const brands = this.getBrands();
+        return {
+            totalModels: this.data.length,
+            totalBrands: brands.length,
+            brands: brands
+        };
+    },
+
     // 数据库
     data: [
         // ==================== 小米/红米系列 ====================
@@ -642,82 +823,7 @@ const BatteryDatabase = {
         { brand: '苹果', model: 'iPhone X', capacity: 2716 },
         { brand: '苹果', model: 'iPhone SE 2022', capacity: 2018 },
         { brand: '苹果', model: 'iPhone SE 2020', capacity: 1821 },
-    ],
-
-    /**
-     * 搜索手机型号
-     * @param {string} keyword - 搜索关键词
-     * @returns {Array} - 匹配的结果
-     */
-    search(keyword) {
-        if (!keyword || keyword.trim() === '') {
-            return [];
-        }
-        
-        const lowerKeyword = keyword.toLowerCase().trim();
-        
-        // 支持模糊搜索：品牌+型号、单独型号、单独品牌
-        return this.data.filter(item => {
-            const brandLower = item.brand.toLowerCase();
-            const modelLower = item.model.toLowerCase();
-            const fullText = `${brandLower} ${modelLower}`;
-            
-            // 匹配品牌
-            if (brandLower.includes(lowerKeyword)) return true;
-            // 匹配型号
-            if (modelLower.includes(lowerKeyword)) return true;
-            // 匹配完整名称
-            if (fullText.includes(lowerKeyword)) return true;
-            
-            return false;
-        }).slice(0, 10); // 最多返回10个结果
-    },
-
-    /**
-     * 根据品牌和型号获取电池容量
-     * @param {string} brand - 品牌
-     * @param {string} model - 型号
-     * @returns {number|null} - 电池容量(mAh)或null
-     */
-    getCapacity(brand, model) {
-        const item = this.data.find(item => 
-            item.brand === brand && item.model === model
-        );
-        return item ? item.capacity : null;
-    },
-
-    /**
-     * 获取所有品牌列表
-     * @returns {Array} - 品牌列表
-     */
-    getBrands() {
-        const brands = new Set(this.data.map(item => item.brand));
-        return Array.from(brands);
-    },
-
-    /**
-     * 获取指定品牌的所有型号
-     * @param {string} brand - 品牌
-     * @returns {Array} - 型号列表
-     */
-    getModelsByBrand(brand) {
-        return this.data
-            .filter(item => item.brand === brand)
-            .map(item => item.model);
-    },
-    
-    /**
-     * 获取数据库统计信息
-     * @returns {Object} - 统计信息
-     */
-    getStats() {
-        const brands = this.getBrands();
-        return {
-            totalModels: this.data.length,
-            totalBrands: brands.length,
-            brands: brands
-        };
-    }
+    ]
 };
 
 // 导出模块
