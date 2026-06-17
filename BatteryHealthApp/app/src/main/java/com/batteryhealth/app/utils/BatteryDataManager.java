@@ -2,6 +2,7 @@ package com.batteryhealth.app.utils;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.util.Log;
@@ -103,10 +104,10 @@ public class BatteryDataManager {
                 if (level >= 0) {
                     currentBatteryInfo.setLevel(level);
                 }
-                
+
                 int currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                 currentBatteryInfo.setCurrentNow(currentNow);
-                
+
                 // 尝试获取容量信息
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     long chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
@@ -115,9 +116,45 @@ public class BatteryDataManager {
                         currentBatteryInfo.setCurrentCapacity((int) (chargeCounter / 1000));
                     }
                 }
+
+                // 尝试读取循环次数（公开API从Android 14开始，但常量隐藏）
+                if (Build.VERSION.SDK_INT >= 34) {
+                    try {
+                        int cycleCount = batteryManager.getIntProperty(7);
+                        if (cycleCount >= 0) {
+                            currentBatteryInfo.setCycleCount(cycleCount);
+                            currentBatteryInfo.setCycleCountEstimated(false);
+                        }
+                    } catch (Exception ignored) {
+                        // 某些设备可能不支持
+                    }
+                }
             }
+
+            // 从sticky intent读取温度、电压、状态等基本信息
+            refreshFromStickyIntent();
         } catch (Exception e) {
             Log.e(TAG, "Error loading battery info: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 从电池sticky intent刷新基本信息
+     */
+    public void refreshFromStickyIntent() {
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent intent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                intent = context.registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                intent = context.registerReceiver(null, filter);
+            }
+            if (intent != null) {
+                updateFromIntent(intent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error refreshing from sticky intent: " + e.getMessage());
         }
     }
     
@@ -125,9 +162,9 @@ public class BatteryDataManager {
      * 读取充电循环次数 (异步)
      *
      * 尝试从多个路径读取，包括：
-     * 1. 标准sysfs路径
-     * 2. 厂商特定路径
-     * 3. 使用BatteryManager API (Android 14+)
+     * 1. BatteryManager API (Android 14+)
+     * 2. 标准sysfs路径
+     * 3. 厂商特定路径
      */
     public void readCycleCountAsync() {
         new Thread(() -> {
@@ -139,23 +176,16 @@ public class BatteryDataManager {
                     try {
                         BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                         if (batteryManager != null) {
-                            // 使用反射获取cycle_count属性
-                            // BATTERY_PROPERTY_CYCLE_COUNT = 7 (隐藏API)
-                            // 注意：此API在Android 14+可能被Greylist限制
-                            java.lang.reflect.Method method = BatteryManager.class.getMethod("getIntProperty", int.class);
-                            Integer result = (Integer) method.invoke(batteryManager, 7);
-                            if (result != null && result > 0) {
+                            // BATTERY_PROPERTY_CYCLE_COUNT = 7 (隐藏常量)
+                            // getIntProperty是公开API，直接使用避免反射Greylist问题
+                            int result = batteryManager.getIntProperty(7);
+                            if (result >= 0) {
                                 cycleCount = result;
                                 Log.d(TAG, "Cycle count from API: " + cycleCount);
                             }
                         }
-                    } catch (NoSuchMethodException e) {
-                        Log.d(TAG, "getIntProperty method not available");
-                    } catch (java.lang.reflect.InvocationTargetException e) {
-                        // API被Greylist拦截，返回-1或抛出异常
-                        Log.d(TAG, "Cycle count API blocked by Greylist: " + e.getCause());
                     } catch (Exception e) {
-                        Log.d(TAG, "Error accessing cycle count API: " + e.getMessage());
+                        Log.d(TAG, "Cycle count API not available: " + e.getMessage());
                     }
                 }
 
@@ -188,9 +218,7 @@ public class BatteryDataManager {
                 }
 
                 // 方法3: 如果无法获取真实值，保持-1表示未知
-                // 不再使用无意义的估算值
                 if (cycleCount < 0) {
-                    cycleCount = -1; // 表示无法获取
                     currentBatteryInfo.setCycleCountEstimated(true);
                     Log.d(TAG, "Cycle count unavailable, marking as unknown");
                 } else {
@@ -311,7 +339,31 @@ public class BatteryDataManager {
             }
         }).start();
     }
-    
+
+    /**
+     * 刷新所有电池数据（异步）
+     * 供UI调用，统一触发基本信息、容量、循环次数、电池来源的读取
+     */
+    public void refreshAllDataAsync() {
+        new Thread(() -> {
+            try {
+                // 刷新基本信息（电量、温度、电压、状态等）
+                refreshFromStickyIntent();
+
+                // 刷新容量和健康度
+                readBatteryCapacityAsync();
+
+                // 刷新循环次数
+                readCycleCountAsync();
+
+                // 刷新电池来源
+                detectBatterySourceAsync();
+            } catch (Exception e) {
+                Log.e(TAG, "Error refreshing all data: " + e.getMessage());
+            }
+        }).start();
+    }
+
     /**
      * 判断是否为原装电池
      * 

@@ -73,10 +73,9 @@ public class PerformanceFragment extends Fragment {
             
             // 设置默认值
             setDefaultValues();
-            
+
             handler = new Handler(Looper.getMainLooper());
-            isRunning = true;
-            
+
             updateTask = new Runnable() {
                 @Override
                 public void run() {
@@ -87,25 +86,41 @@ public class PerformanceFragment extends Fragment {
                     }
                 }
             };
-            
-            handler.post(updateTask);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
-    
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isRunning = true;
+        if (handler != null && updateTask != null) {
+            handler.post(updateTask);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isRunning = false;
+        if (handler != null && updateTask != null) {
+            handler.removeCallbacks(updateTask);
+        }
+    }
+
     private void setDefaultValues() {
         if (tvCpuUsage != null) tvCpuUsage.setText("0%");
         if (tvMemoryUsage != null) tvMemoryUsage.setText("0%");
         if (progressCpu != null) progressCpu.setProgress(0);
         if (progressMemory != null) progressMemory.setProgress(0);
     }
-    
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         isRunning = false;
-        if (handler != null) {
+        if (handler != null && updateTask != null) {
             handler.removeCallbacks(updateTask);
         }
     }

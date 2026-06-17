@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
@@ -51,6 +52,12 @@ public class BatteryHealthFragment extends Fragment {
         @Override
         public void run() {
             if (!isRunning) return;
+
+            // 每次刷新UI前先从系统读取最新基本数据（电量、温度、电压等）
+            if (batteryDataManager != null) {
+                batteryDataManager.refreshFromStickyIntent();
+            }
+
             updateUI();
             if (mainHandler != null) {
                 mainHandler.postDelayed(this, UPDATE_INTERVAL);
@@ -104,12 +111,18 @@ public class BatteryHealthFragment extends Fragment {
     public void onResume() {
         super.onResume();
         isRunning = true;
-        // 启动定时更新
+
+        // 进入页面时刷新一次完整数据（容量、循环次数、电池来源等）
+        if (batteryDataManager != null) {
+            batteryDataManager.refreshAllDataAsync();
+        }
+
+        // 启动定时更新，刷新UI和基本电池信息
         if (mainHandler != null) {
             mainHandler.post(updateRunnable);
         }
     }
-    
+
     @Override
     public void onPause() {
         super.onPause();
@@ -256,15 +269,15 @@ public class BatteryHealthFragment extends Fragment {
     private int getHealthColor(float percentage) {
         try {
             if (percentage >= 90) {
-                return getResources().getColor(R.color.health_a_plus);
+                return ContextCompat.getColor(requireContext(), R.color.health_a_plus);
             } else if (percentage >= 80) {
-                return getResources().getColor(R.color.health_a);
+                return ContextCompat.getColor(requireContext(), R.color.health_a);
             } else if (percentage >= 70) {
-                return getResources().getColor(R.color.health_c);
+                return ContextCompat.getColor(requireContext(), R.color.health_c);
             } else if (percentage >= 60) {
-                return getResources().getColor(R.color.health_d);
+                return ContextCompat.getColor(requireContext(), R.color.health_d);
             } else {
-                return getResources().getColor(R.color.health_e);
+                return ContextCompat.getColor(requireContext(), R.color.health_e);
             }
         } catch (Exception e) {
             // 返回默认颜色

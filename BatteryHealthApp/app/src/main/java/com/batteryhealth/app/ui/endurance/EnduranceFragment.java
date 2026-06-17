@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
@@ -55,6 +56,12 @@ public class EnduranceFragment extends Fragment {
         @Override
         public void run() {
             if (!isRunning) return;
+
+            // 刷新基本电池信息
+            if (batteryDataManager != null) {
+                batteryDataManager.refreshFromStickyIntent();
+            }
+
             updateUI();
             if (mainHandler != null) {
                 mainHandler.postDelayed(this, UPDATE_INTERVAL);
@@ -186,7 +193,7 @@ public class EnduranceFragment extends Fragment {
                 if (tvEnduranceTime != null) {
                     if (isCharging) {
                         tvEnduranceTime.setText("充电中");
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_blue));
+                        tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_blue));
                     } else if (dischargeRate > 0 && level > 0) {
                         float remainingHours = level / dischargeRate;
                         if (remainingHours >= 24) {
@@ -194,7 +201,7 @@ public class EnduranceFragment extends Fragment {
                         } else {
                             tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
                         }
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_green));
+                        tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                     } else {
                         tvEnduranceTime.setText("-- 小时");
                     }

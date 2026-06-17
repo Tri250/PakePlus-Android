@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -115,9 +116,9 @@ public class TrendFragment extends Fragment {
         chart.setDrawGridBackground(false);
         chart.setExtraOffsets(8, 8, 8, 8);
         
-        // 获取颜色（兼容API 23以下）
-        int secondaryLabelColor = getResources().getColor(R.color.ios_secondary_label);
-        int separatorColor = getResources().getColor(R.color.ios_separator);
+        // 获取颜色
+        int secondaryLabelColor = ContextCompat.getColor(requireContext(), R.color.ios_secondary_label);
+        int separatorColor = ContextCompat.getColor(requireContext(), R.color.ios_separator);
         
         // X轴 - 时间
         XAxis xAxis = chart.getXAxis();
@@ -224,7 +225,7 @@ public class TrendFragment extends Fragment {
         if (chart == null || entries == null || entries.isEmpty()) return;
         
         LineDataSet dataSet = new LineDataSet(entries, label);
-        int color = getResources().getColor(colorRes);
+        int color = ContextCompat.getColor(requireContext(), colorRes);
         dataSet.setColor(color);
         dataSet.setLineWidth(2.5f);
         dataSet.setCircleColor(color);

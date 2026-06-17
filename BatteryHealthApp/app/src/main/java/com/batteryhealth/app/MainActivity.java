@@ -17,8 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.batteryhealth.app.data.model.BatteryInfo;
-import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
@@ -372,12 +370,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // 获取电池信息
                 if (batteryDataManager != null) {
-                    BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
-                }
-                
-                // 获取设备配置
-                if (deviceInfoManager != null) {
-                    DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
+                    batteryDataManager.refreshAllDataAsync();
                 }
                 
                 // 在主线程更新UI
