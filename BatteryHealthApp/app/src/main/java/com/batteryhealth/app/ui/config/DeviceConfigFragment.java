@@ -25,6 +25,7 @@ public class DeviceConfigFragment extends Fragment {
     
     private final Runnable dataChangeListener = () -> {
         if (getView() != null) {
+            Log.d(TAG, "Data changed, refreshing config UI");
             initViews(getView());
         }
     };
@@ -46,6 +47,7 @@ public class DeviceConfigFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         deviceInfoManager = AppManager.getInstance().getDeviceInfoManager();
         AppManager.getInstance().addDataChangeListener(dataChangeListener);
+        Log.d(TAG, "onViewCreated, deviceInfoManager=" + deviceInfoManager);
         initViews(view);
     }
     

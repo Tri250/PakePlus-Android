@@ -70,41 +70,62 @@ public class BatteryDataManager {
     public void updateFromIntent(Intent intent) {
         if (intent == null) return;
         
+        boolean changed = false;
         try {
             // 电量百分比
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             if (level != -1 && scale != -1 && scale > 0) {
-                currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+                int newLevel = (int) ((level / (float) scale) * 100);
+                if (currentBatteryInfo.getLevel() != newLevel) {
+                    currentBatteryInfo.setLevel(newLevel);
+                    changed = true;
+                }
             }
             
             // 电池状态
             int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            currentBatteryInfo.setStatus(status);
+            if (status != -1 && currentBatteryInfo.getStatus() != status) {
+                currentBatteryInfo.setStatus(status);
+                changed = true;
+            }
             
             // 充电方式
             int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-            currentBatteryInfo.setPlugged(plugged);
+            if (plugged != -1 && currentBatteryInfo.getPlugged() != plugged) {
+                currentBatteryInfo.setPlugged(plugged);
+                changed = true;
+            }
             
             // 电池温度
             int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
             if (temperature != -1) {
-                currentBatteryInfo.setTemperature(temperature / 10.0f);
+                float newTemp = temperature / 10.0f;
+                if (Math.abs(currentBatteryInfo.getTemperature() - newTemp) > 0.05f) {
+                    currentBatteryInfo.setTemperature(newTemp);
+                    changed = true;
+                }
             }
             
             // 电池电压
             int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-            if (voltage != -1) {
+            if (voltage != -1 && currentBatteryInfo.getVoltage() != voltage) {
                 currentBatteryInfo.setVoltage(voltage);
+                changed = true;
             }
             
             // 电池技术
             String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
-            if (technology != null) {
+            if (technology != null && !technology.equals(currentBatteryInfo.getTechnology())) {
                 currentBatteryInfo.setTechnology(technology);
+                changed = true;
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating from intent: " + e.getMessage());
+        }
+        
+        if (changed) {
+            notifyDataChanged();
         }
     }
     

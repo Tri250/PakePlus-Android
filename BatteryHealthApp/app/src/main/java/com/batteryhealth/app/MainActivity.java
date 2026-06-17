@@ -324,6 +324,13 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 registerReceiver(batteryReceiver, filter);
             }
+            
+            // 立即获取sticky intent更新数据，确保Fragment初始化时数据已就绪
+            Intent stickyIntent = registerReceiver(null, filter);
+            if (stickyIntent != null && batteryDataManager != null) {
+                batteryDataManager.updateFromIntent(stickyIntent);
+                updateBatteryData(stickyIntent);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error registering battery receiver: " + e.getMessage());
         }
@@ -372,15 +379,19 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 // 获取电池信息
-                BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
+                BatteryInfo batteryInfo = batteryDataManager != null ? batteryDataManager.getCurrentBatteryInfo() : null;
+                if (batteryInfo != null) {
+                    Log.d(TAG, "Initial battery level: " + batteryInfo.getLevel() + "%");
+                }
                 
                 // 获取设备配置
-                DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
+                DeviceConfig deviceConfig = deviceInfoManager != null ? deviceInfoManager.getDeviceConfig() : null;
+                if (deviceConfig != null) {
+                    Log.d(TAG, "Initial device: " + deviceConfig.getFullModelName());
+                }
                 
-                // 在主线程更新UI
-                mainHandler.post(() -> {
-                    // 数据已加载，Fragment会自行获取
-                });
+                // 在主线程触发一次全局刷新，确保Fragment都能拿到数据
+                mainHandler.post(() -> AppManager.getInstance().refreshAll());
             } catch (Exception e) {
                 Log.e(TAG, "Error loading initial data: " + e.getMessage());
             }

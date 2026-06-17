@@ -24,16 +24,22 @@ public class BuildInfoHelper {
     public static String getDeviceName() {
         try {
             String brand = Build.BRAND;
-            if (brand != null && !brand.isEmpty()) {
-                brand = brand.substring(0, 1).toUpperCase() + brand.substring(1);
-            } else {
-                brand = "Unknown";
-            }
             String model = Build.MODEL;
-            if (model == null || model.isEmpty()) {
-                model = "Unknown";
+            if ((brand == null || brand.isEmpty()) && (model == null || model.isEmpty())) {
+                return "Unknown Device";
             }
-            return brand + " " + model;
+            StringBuilder sb = new StringBuilder();
+            if (brand != null && !brand.isEmpty()) {
+                sb.append(brand.substring(0, 1).toUpperCase());
+                if (brand.length() > 1) {
+                    sb.append(brand.substring(1));
+                }
+                sb.append(" ");
+            }
+            if (model != null && !model.isEmpty()) {
+                sb.append(model);
+            }
+            return sb.toString().trim();
         } catch (Exception e) {
             return "Unknown Device";
         }

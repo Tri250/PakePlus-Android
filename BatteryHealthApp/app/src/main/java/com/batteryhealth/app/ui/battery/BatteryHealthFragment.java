@@ -81,6 +81,7 @@ public class BatteryHealthFragment extends Fragment {
         // 监听数据变化
         AppManager.getInstance().addDataChangeListener(dataChangeListener);
         
+        Log.d(TAG, "onViewCreated, dataManager=" + batteryDataManager);
         updateUI();
     }
     

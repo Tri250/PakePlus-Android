@@ -99,6 +99,7 @@ public class PowerFragment extends Fragment {
         
         AppManager.getInstance().addDataChangeListener(dataChangeListener);
         
+        Log.d(TAG, "onViewCreated, dataManager=" + batteryDataManager);
         updateAllData();
     }
     

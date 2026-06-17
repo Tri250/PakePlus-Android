@@ -381,7 +381,7 @@ public class DeviceConfig {
      * 获取格式化的品牌名
      */
     public String getFormattedBrand() {
-        if (brand == null) return "Unknown";
+        if (brand == null || brand.isEmpty()) return "Unknown";
         return brand.substring(0, 1).toUpperCase() + brand.substring(1).toLowerCase();
     }
     
