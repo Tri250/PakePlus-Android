@@ -78,18 +78,22 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             
+            Log.d(TAG, "Views initialized successfully");
+            
             // 初始化管理器（带异常处理）
             try {
                 batteryDataManager = new BatteryDataManager(this);
+                Log.d(TAG, "BatteryDataManager created");
             } catch (Exception e) {
-                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage());
+                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage(), e);
                 batteryDataManager = null;
             }
             
             try {
                 deviceInfoManager = new DeviceInfoManager(this);
+                Log.d(TAG, "DeviceInfoManager created");
             } catch (Exception e) {
-                Log.e(TAG, "Error creating DeviceInfoManager: " + e.getMessage());
+                Log.e(TAG, "Error creating DeviceInfoManager: " + e.getMessage(), e);
                 deviceInfoManager = null;
             }
             
@@ -155,35 +159,50 @@ public class MainActivity extends AppCompatActivity {
      * 设置ViewPager
      */
     private void setupViewPager() {
-        List<Fragment> fragments = new ArrayList<>();
-        fragments.add(new BatteryHealthFragment());
-        fragments.add(new DeviceConfigFragment());
-        fragments.add(new PerformanceFragment());
-        fragments.add(new EnduranceFragment());
-        fragments.add(new TrendFragment());
-        fragments.add(new PowerFragment());
-        
         viewPager.setAdapter(new FragmentStateAdapter(this) {
             @NonNull
             @Override
             public Fragment createFragment(int position) {
-                return fragments.get(position);
+                Log.d(TAG, "Creating fragment at position: " + position);
+                switch (position) {
+                    case 0:
+                        return new BatteryHealthFragment();
+                    case 1:
+                        return new DeviceConfigFragment();
+                    case 2:
+                        return new PerformanceFragment();
+                    case 3:
+                        return new EnduranceFragment();
+                    case 4:
+                        return new TrendFragment();
+                    case 5:
+                        return new PowerFragment();
+                    default:
+                        return new BatteryHealthFragment();
+                }
             }
-            
+
             @Override
             public int getItemCount() {
-                return fragments.size();
+                return 6;
             }
         });
-        
+
         viewPager.setOffscreenPageLimit(5);
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
+                Log.d(TAG, "Page selected: " + position);
                 updateBottomNavigation(position);
             }
         });
+
+        // 显式设置初始页面为第0页（健康）
+        viewPager.setCurrentItem(0, false);
+        updateBottomNavigation(0);
+
+        Log.d(TAG, "ViewPager setup completed");
     }
     
     /**

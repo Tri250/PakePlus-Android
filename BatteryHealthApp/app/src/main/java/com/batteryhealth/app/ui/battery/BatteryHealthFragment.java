@@ -60,16 +60,25 @@ public class BatteryHealthFragment extends Fragment {
     
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, 
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         try {
             return inflater.inflate(R.layout.fragment_battery_health, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            // 创建一个简单的错误视图
-            View errorView = new View(requireContext());
-            return errorView;
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            // 创建错误提示视图，避免完全空白
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override

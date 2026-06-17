@@ -69,8 +69,6 @@ public class ChargingMonitorService extends Service {
                 startChargingSession();
             } else if (Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
                 endChargingSession();
-            } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-                updateChargingData(intent);
             }
         }
     };
@@ -163,7 +161,6 @@ public class ChargingMonitorService extends Service {
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
             filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
             
             // Android 14+ 需要指定导出标志
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -180,8 +177,7 @@ public class ChargingMonitorService extends Service {
      * 检查充电状态
      */
     private void checkChargingStatus() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent batteryStatus = registerReceiver(null, filter);
+        Intent batteryStatus = getBatteryIntent();
         if (batteryStatus != null) {
             int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
             isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
@@ -190,6 +186,23 @@ public class ChargingMonitorService extends Service {
             if (isCharging) {
                 startChargingSession();
             }
+        }
+    }
+    
+    /**
+     * 安全获取电池sticky intent（兼容Android 14+）
+     */
+    private Intent getBatteryIntent() {
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                return registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                return registerReceiver(null, filter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting battery intent: " + e.getMessage());
+            return null;
         }
     }
     
@@ -243,23 +256,6 @@ public class ChargingMonitorService extends Service {
         
         currentSessionId = null;
         updateNotification();
-    }
-    
-    /**
-     * 更新充电数据
-     */
-    private void updateChargingData(Intent intent) {
-        if (intent == null) return;
-        
-        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                          status == BatteryManager.BATTERY_STATUS_FULL;
-        
-        if (charging && !isCharging) {
-            startChargingSession();
-        } else if (!charging && isCharging) {
-            endChargingSession();
-        }
     }
     
     /**
@@ -328,8 +324,7 @@ public class ChargingMonitorService extends Service {
             // 尝试从BatteryManager读取
             BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
-                IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-                Intent batteryStatus = registerReceiver(null, filter);
+                Intent batteryStatus = getBatteryIntent();
                 if (batteryStatus != null) {
                     int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
                     if (voltageMv != -1) {
@@ -376,8 +371,7 @@ public class ChargingMonitorService extends Service {
      */
     private int readBatteryLevel() {
         try {
-            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent batteryStatus = registerReceiver(null, filter);
+            Intent batteryStatus = getBatteryIntent();
             if (batteryStatus != null) {
                 int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
                 int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
@@ -390,14 +384,13 @@ public class ChargingMonitorService extends Service {
         }
         return 0;
     }
-    
+
     /**
      * 读取电池温度
      */
     private float readBatteryTemperature() {
         try {
-            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent batteryStatus = registerReceiver(null, filter);
+            Intent batteryStatus = getBatteryIntent();
             if (batteryStatus != null) {
                 int temperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
                 if (temperature != -1) {

@@ -1,11 +1,6 @@
 package com.batteryhealth.app.ui.endurance;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,10 +26,13 @@ import com.batteryhealth.app.utils.BatteryDataManager;
  * 2. 放电速率监测
  * 3. 充电状态分析
  * 4. 预计充满时间计算
+ * 
+ * 注意：电池广播由BatteryMonitorService统一处理，此Fragment使用定时轮询
  */
 public class EnduranceFragment extends Fragment {
     
     private static final String TAG = "EnduranceFragment";
+    private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
     
     private TextView tvEnduranceTime;
     private TextView tvEnduranceStatus;
@@ -46,18 +44,20 @@ public class EnduranceFragment extends Fragment {
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
-    private boolean isReceiverRegistered = false;
+    private boolean isRunning = false;
     
     // 放电速率计算
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0; // %/h
     
-    private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+    private Runnable updateRunnable = new Runnable() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && isAdded() && !isDetached()) {
-                updateUI();
+        public void run() {
+            if (!isRunning) return;
+            updateUI();
+            if (mainHandler != null) {
+                mainHandler.postDelayed(this, UPDATE_INTERVAL);
             }
         }
     };
@@ -69,9 +69,19 @@ public class EnduranceFragment extends Fragment {
         try {
             return inflater.inflate(R.layout.fragment_endurance, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            return new View(requireContext());
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override
@@ -86,23 +96,36 @@ public class EnduranceFragment extends Fragment {
             }
             
             initViews(view);
-            registerBatteryReceiver();
             updateUI();
         } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
+            Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
+        }
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        isRunning = true;
+        if (mainHandler != null) {
+            mainHandler.post(updateRunnable);
+        }
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
         }
     }
     
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        try {
-            if (isReceiverRegistered && getContext() != null) {
-                getContext().unregisterReceiver(batteryReceiver);
-                isReceiverRegistered = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
         }
     }
     
@@ -114,26 +137,6 @@ public class EnduranceFragment extends Fragment {
         tvChargeStatus = view.findViewById(R.id.tv_charge_status);
         tvBatteryTemp = view.findViewById(R.id.tv_battery_temp);
         tvFullChargeTime = view.findViewById(R.id.tv_full_charge_time);
-    }
-    
-    private void registerBatteryReceiver() {
-        try {
-            if (getContext() != null) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-                filter.addAction(Intent.ACTION_POWER_CONNECTED);
-                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-                
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    getContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(batteryReceiver, filter);
-                }
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering receiver: " + e.getMessage());
-        }
     }
     
     private void updateUI() {

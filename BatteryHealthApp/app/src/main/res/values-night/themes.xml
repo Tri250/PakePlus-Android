@@ -29,5 +29,14 @@
         
         <!-- iOS 2026动画效果 -->
         <item name="android:windowAnimationStyle">@style/iOSWindowAnimation</item>
+        
+        <!-- Android 15 临时禁用强制edge-to-edge，避免系统栏覆盖内容 -->
+        <item name="android:windowOptOutEdgeToEdge">true</item>
+    </style>
+    
+    <!-- 无ActionBar主题 - 继承自主主题 -->
+    <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>
