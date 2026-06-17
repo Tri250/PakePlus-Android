@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- 应用主题 - iOS 2026风格 -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- 主色调 -->
@@ -17,11 +17,11 @@
         
         <!-- 状态栏 -->
         <item name="android:statusBarColor">@color/ios_background</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
         
         <!-- 导航栏 -->
         <item name="android:navigationBarColor">@color/ios_background</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
         
         <!-- 禁用默认ActionBar -->
         <item name="windowActionBar">false</item>
