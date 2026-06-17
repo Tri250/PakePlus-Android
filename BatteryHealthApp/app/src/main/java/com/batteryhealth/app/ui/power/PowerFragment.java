@@ -18,6 +18,7 @@ import java.util.LinkedList;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
@@ -40,6 +41,9 @@ public class PowerFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvChargeType;
+    private TextView tvBatteryLevel;
+    private TextView tvChargingPhase;
+    private TextView tvBatteryTemp;
 
     private Handler mainHandler;
     private boolean isRunning = false;
@@ -86,10 +90,10 @@ public class PowerFragment extends Fragment {
     private View createErrorView(String message) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
         errorView.setText(message);
-        errorView.setTextColor(0xFF000000);
+        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(0xFFF2F2F7);
+        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
     }
     
@@ -104,15 +108,40 @@ public class PowerFragment extends Fragment {
             tvVoltage = view.findViewById(R.id.tv_voltage);
             tvCurrent = view.findViewById(R.id.tv_current);
             tvChargeType = view.findViewById(R.id.tv_charge_type);
+            tvBatteryLevel = view.findViewById(R.id.tv_power_battery_level);
+            tvChargingPhase = view.findViewById(R.id.tv_charging_phase);
+            tvBatteryTemp = view.findViewById(R.id.tv_power_battery_temp);
             
             // 设置默认值
             setDefaultValues();
             updatePowerData();
+            animateCardsEntry(view);
         } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
+            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
     
+    private void animateCardsEntry(View view) {
+        try {
+            if (!(view instanceof android.view.ViewGroup)) return;
+            android.view.ViewGroup root = (android.view.ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                child.setAlpha(0f);
+                child.setTranslationY(30f);
+                child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(i * 80L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -145,6 +174,9 @@ public class PowerFragment extends Fragment {
         if (tvVoltage != null) tvVoltage.setText("0.00 V");
         if (tvCurrent != null) tvCurrent.setText("0.00 A");
         if (tvChargeType != null) tvChargeType.setText("未充电");
+        if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
+        if (tvChargingPhase != null) tvChargingPhase.setText("--");
+        if (tvBatteryTemp != null) tvBatteryTemp.setText("--°C");
     }
     
     private void updatePowerData() {
@@ -173,6 +205,41 @@ public class PowerFragment extends Fragment {
                     tvChargeType.setText(chargeType + " · " + phase);
                 } else {
                     tvChargeType.setText(chargeType);
+                }
+            }
+
+            // 更新电池电量
+            if (tvBatteryLevel != null) {
+                tvBatteryLevel.setText(level + "%");
+            }
+
+            // 更新充电阶段
+            if (tvChargingPhase != null) {
+                if (power > 0) {
+                    tvChargingPhase.setText(detectChargingPhase(level, power));
+                } else {
+                    tvChargingPhase.setText("未充电");
+                }
+            }
+
+            // 更新电池温度
+            if (tvBatteryTemp != null) {
+                try {
+                    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                    Intent batteryStatus;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        batteryStatus = getContext().registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+                    } else {
+                        batteryStatus = getContext().registerReceiver(null, filter);
+                    }
+                    if (batteryStatus != null) {
+                        int temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+                        if (temp != -1) {
+                            tvBatteryTemp.setText(String.format("%.1f°C", temp / 10.0f));
+                        }
+                    }
+                } catch (Exception e) {
+                    tvBatteryTemp.setText("--°C");
                 }
             }
         } catch (Exception e) {

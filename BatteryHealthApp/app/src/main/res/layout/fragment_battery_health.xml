@@ -94,6 +94,107 @@
 
         </androidx.cardview.widget.CardView>
 
+        <!-- 当前状态卡片 - iOS 2026风格 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="当前状态"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="8dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp" />
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池电量 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池电量"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_battery_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 充电状态 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="充电状态"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_charging_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电流 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="20dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电流"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_current_now"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- mA"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
         <!-- 详细信息卡片 - iOS 2026风格 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card_details"

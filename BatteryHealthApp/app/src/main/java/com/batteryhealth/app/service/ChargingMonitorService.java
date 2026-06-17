@@ -47,7 +47,7 @@ public class ChargingMonitorService extends Service {
     
     private static final String TAG = "ChargingMonitorService";
     private static final String CHANNEL_ID = "charging_monitor_channel";
-    private static final int NOTIFICATION_ID = 1002;
+    private static final int NOTIFICATION_ID = 1003;
     private static final long UPDATE_INTERVAL = 3000; // 3秒更新一次
     
     private Handler handler;

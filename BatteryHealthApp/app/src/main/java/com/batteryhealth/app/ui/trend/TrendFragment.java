@@ -17,6 +17,8 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.chip.Chip;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -50,6 +52,8 @@ public class TrendFragment extends Fragment {
     private LineChart chartPower;
     private TextView tvDataCount;
     private TextView tvNoData;
+    private ChipGroup chipGroupTimeRange;
+    private int selectedTimeRangeDays = 7; // 默认7天
     
     @Nullable
     @Override
@@ -66,10 +70,10 @@ public class TrendFragment extends Fragment {
     private View createErrorView(String message) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
         errorView.setText(message);
-        errorView.setTextColor(0xFF000000);
+        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(0xFFF2F2F7);
+        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
     }
     
@@ -84,20 +88,60 @@ public class TrendFragment extends Fragment {
             chartPower = view.findViewById(R.id.chart_power);
             tvDataCount = view.findViewById(R.id.tv_data_count);
             tvNoData = view.findViewById(R.id.tv_no_data);
+            chipGroupTimeRange = view.findViewById(R.id.chip_group_time_range);
+            setupTimeRangeSelector();
             
             setupCharts();
             loadData();
+            animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
     
+    private void animateCardsEntry(View view) {
+        try {
+            if (!(view instanceof android.view.ViewGroup)) return;
+            android.view.ViewGroup root = (android.view.ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                child.setAlpha(0f);
+                child.setTranslationY(30f);
+                child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(i * 80L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         loadData();
     }
     
+    private void setupTimeRangeSelector() {
+        if (chipGroupTimeRange == null) return;
+        chipGroupTimeRange.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) return;
+            int checkedId = checkedIds.get(0);
+            if (checkedId == R.id.chip_1day) {
+                selectedTimeRangeDays = 1;
+            } else if (checkedId == R.id.chip_7days) {
+                selectedTimeRangeDays = 7;
+            } else if (checkedId == R.id.chip_30days) {
+                selectedTimeRangeDays = 30;
+            }
+            loadData();
+        });
+    }
+
     private void setupCharts() {
         setupChart(chartHealth, "健康度 (%)", R.color.ios_green);
         setupChart(chartLevel, "电量 (%)", R.color.ios_blue);
@@ -163,11 +207,11 @@ public class TrendFragment extends Fragment {
                 if (db == null) return;
                 
                 // 获取最近7天的电池数据
-                long sevenDaysAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
-                List<BatteryInfo> batteryData = db.batteryInfoDao().getSince(sevenDaysAgo);
-                
+                long startTime = System.currentTimeMillis() - (long) selectedTimeRangeDays * 24 * 60 * 60 * 1000;
+                List<BatteryInfo> batteryData = db.batteryInfoDao().getSince(startTime);
+
                 // 获取充电功率历史
-                List<PowerHistory> powerData = db.powerHistoryDao().getSince(sevenDaysAgo);
+                List<PowerHistory> powerData = db.powerHistoryDao().getSince(startTime);
                 
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> updateCharts(batteryData, powerData));

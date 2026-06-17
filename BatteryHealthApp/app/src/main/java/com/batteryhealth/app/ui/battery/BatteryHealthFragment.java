@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.battery;
 
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -42,6 +43,9 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvBatterySource;
     private TextView tvTechnology;
+    private TextView tvBatteryLevel;
+    private TextView tvChargingStatus;
+    private TextView tvCurrentNow;
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
@@ -81,10 +85,10 @@ public class BatteryHealthFragment extends Fragment {
     private View createErrorView(String message) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
         errorView.setText(message);
-        errorView.setTextColor(0xFF000000);
+        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(0xFFF2F2F7);
+        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
     }
     
@@ -102,6 +106,7 @@ public class BatteryHealthFragment extends Fragment {
             
             initViews(view);
             updateUI();
+            animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
@@ -157,6 +162,9 @@ public class BatteryHealthFragment extends Fragment {
             tvVoltage = view.findViewById(R.id.tv_voltage);
             tvBatterySource = view.findViewById(R.id.tv_battery_source);
             tvTechnology = view.findViewById(R.id.tv_technology);
+            tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
+            tvChargingStatus = view.findViewById(R.id.tv_charging_status);
+            tvCurrentNow = view.findViewById(R.id.tv_current_now);
             
             // 设置默认值
             setDefaultValues();
@@ -175,6 +183,9 @@ public class BatteryHealthFragment extends Fragment {
         if (tvVoltage != null) tvVoltage.setText("-- mV");
         if (tvBatterySource != null) tvBatterySource.setText("检测中");
         if (tvTechnology != null) tvTechnology.setText("--");
+        if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
+        if (tvChargingStatus != null) tvChargingStatus.setText("--");
+        if (tvCurrentNow != null) tvCurrentNow.setText("-- mA");
     }
     
     private void updateUI() {
@@ -227,7 +238,7 @@ public class BatteryHealthFragment extends Fragment {
                     }
                 } else if (tvHealthPercentage != null) {
                     // 未知状态使用灰色
-                    tvHealthPercentage.setTextColor(0xFF8E8E93);
+                    tvHealthPercentage.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_tertiary_label));
                 }
                 
                 // 更新详细信息
@@ -266,12 +277,52 @@ public class BatteryHealthFragment extends Fragment {
                     String tech = info.getTechnology();
                     tvTechnology.setText(tech != null && !tech.isEmpty() ? tech : "Li-ion");
                 }
+
+                // 更新电池电量
+                if (tvBatteryLevel != null) {
+                    tvBatteryLevel.setText(info.getLevel() + "%");
+                }
+
+                // 更新充电状态
+                if (tvChargingStatus != null) {
+                    tvChargingStatus.setText(batteryDataManager.getChargingStatusText());
+                }
+
+                // 更新电流
+                if (tvCurrentNow != null) {
+                    int currentNow = info.getCurrentNow();
+                    if (currentNow != 0) {
+                        tvCurrentNow.setText(String.format("%.0f mA", Math.abs(currentNow / 1000.0f)));
+                    } else {
+                        tvCurrentNow.setText("-- mA");
+                    }
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating UI: " + e.getMessage());
             }
         });
     }
     
+    private void animateCardsEntry(View view) {
+        try {
+            android.view.ViewGroup root = (android.view.ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                child.setAlpha(0f);
+                child.setTranslationY(30f);
+                child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(i * 80L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+        }
+    }
+
     private int getHealthColor(float percentage) {
         try {
             if (percentage >= 90) {
@@ -287,7 +338,7 @@ public class BatteryHealthFragment extends Fragment {
             }
         } catch (Exception e) {
             // 返回默认颜色
-            return 0xFF34C759; // iOS绿色
+            return ContextCompat.getColor(requireContext(), R.color.ios_green);
         }
     }
 }

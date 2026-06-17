@@ -39,4 +39,11 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
+
+    <!-- iOS 2026风格开关 - 深色模式 -->
+    <style name="iOSSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="android:thumbTint">@color/white</item>
+        <item name="android:trackTint">@color/ios_tertiary_background</item>
+        <item name="android:backgroundTint">@color/ios_blue</item>
+    </style>
 </resources>

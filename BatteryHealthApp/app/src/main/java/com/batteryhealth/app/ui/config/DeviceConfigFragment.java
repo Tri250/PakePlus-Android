@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
@@ -28,7 +29,12 @@ public class DeviceConfigFragment extends Fragment {
     private static final String TAG = "DeviceConfigFragment";
     
     private DeviceInfoManager deviceInfoManager;
-    
+
+    private TextView tvActivationSource;
+    private TextView tvAvailableMemory;
+    private TextView tvAvailableStorage;
+    private TextView tvNetworkType;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -44,10 +50,10 @@ public class DeviceConfigFragment extends Fragment {
     private View createErrorView(String message) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
         errorView.setText(message);
-        errorView.setTextColor(0xFF000000);
+        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(0xFFF2F2F7);
+        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
     }
     
@@ -61,6 +67,7 @@ public class DeviceConfigFragment extends Fragment {
             }
             
             initViews(view);
+            animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
@@ -87,6 +94,10 @@ public class DeviceConfigFragment extends Fragment {
             TextView tvScreen = view.findViewById(R.id.tv_screen);
             TextView tvActivation = view.findViewById(R.id.tv_activation);
             TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
+            tvActivationSource = view.findViewById(R.id.tv_activation_source);
+            tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
+            tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
+            tvNetworkType = view.findViewById(R.id.tv_network_type);
             
             if (tvDeviceName != null) {
                 tvDeviceName.setText(config.getFullModelName());
@@ -111,6 +122,38 @@ public class DeviceConfigFragment extends Fragment {
             }
             if (tvUsageDays != null) {
                 tvUsageDays.setText(config.getUsageDays() + " 天");
+            }
+
+            // 激活来源与可信度
+            if (tvActivationSource != null) {
+                String sourceText = deviceInfoManager.getActivationSourceText();
+                float confidence = deviceInfoManager.getActivationConfidence();
+                tvActivationSource.setText(String.format("%s (可信度 %.0f%%)", sourceText, confidence * 100));
+            }
+            // 可用内存
+            if (tvAvailableMemory != null) {
+                long availMem = config.getAvailableMemory();
+                if (availMem > 0) {
+                    tvAvailableMemory.setText(availMem >= 1024
+                        ? String.format("%.1f GB", availMem / 1024.0)
+                        : availMem + " MB");
+                } else {
+                    tvAvailableMemory.setText("--");
+                }
+            }
+            // 可用存储
+            if (tvAvailableStorage != null) {
+                long availStorage = config.getAvailableStorage();
+                if (availStorage > 0) {
+                    tvAvailableStorage.setText(availStorage + " GB");
+                } else {
+                    tvAvailableStorage.setText("--");
+                }
+            }
+            // 网络类型
+            if (tvNetworkType != null) {
+                String networkType = config.getNetworkType();
+                tvNetworkType.setText(networkType != null ? networkType : "--");
             }
 
             initHealthAlertSwitch(view);
@@ -143,6 +186,27 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
+    private void animateCardsEntry(View view) {
+        try {
+            if (!(view instanceof android.view.ViewGroup)) return;
+            android.view.ViewGroup root = (android.view.ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                child.setAlpha(0f);
+                child.setTranslationY(30f);
+                child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(i * 80L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+        }
+    }
+
     private void setDefaultValues(View view) {
         TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
         TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
@@ -161,5 +225,9 @@ public class DeviceConfigFragment extends Fragment {
         if (tvScreen != null) tvScreen.setText("--");
         if (tvActivation != null) tvActivation.setText("--");
         if (tvUsageDays != null) tvUsageDays.setText("--");
+        if (tvActivationSource != null) tvActivationSource.setText("--");
+        if (tvAvailableMemory != null) tvAvailableMemory.setText("--");
+        if (tvAvailableStorage != null) tvAvailableStorage.setText("--");
+        if (tvNetworkType != null) tvNetworkType.setText("--");
     }
 }

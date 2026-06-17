@@ -127,6 +127,155 @@
 
         </androidx.cardview.widget.CardView>
 
+        <!-- 性能评分卡片 - iOS 2026风格 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="性能评分"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp" />
+
+                <TextView
+                    android:id="@+id/tv_performance_score"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textColor="@color/ios_green"
+                    android:letterSpacing="-0.03"
+                    android:layout_marginTop="16dp" />
+
+                <ProgressBar
+                    android:id="@+id/progress_score"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="10dp"
+                    android:layout_marginTop="16dp"
+                    android:progress="0"
+                    android:max="100"
+                    android:progressDrawable="@drawable/progress_health" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 存储使用率卡片 - iOS 2026风格 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="存储使用率"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp" />
+
+                <TextView
+                    android:id="@+id/tv_storage_usage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textColor="@color/ios_orange"
+                    android:letterSpacing="-0.03"
+                    android:layout_marginTop="16dp" />
+
+                <ProgressBar
+                    android:id="@+id/progress_storage"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="10dp"
+                    android:layout_marginTop="16dp"
+                    android:progress="0"
+                    android:max="100"
+                    android:progressDrawable="@drawable/progress_health" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- GPU信息卡片 - iOS 2026风格 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GPU信息"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="8dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp" />
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="20dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="GPU渲染器"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_gpu_info"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

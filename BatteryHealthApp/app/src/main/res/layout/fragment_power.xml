@@ -125,8 +125,7 @@
 
                 <!-- 电流 -->
                 <LinearLayout style="@style/iOSListItem"
-                    android:minHeight="48dp"
-                    android:paddingBottom="20dp">
+                    android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -140,6 +139,76 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0.00 A"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池电量 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池电量"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_power_battery_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 充电阶段 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="充电阶段"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_charging_phase"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池温度 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="20dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池温度"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_power_battery_temp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°C"
                         android:textAppearance="@style/iOSBody.Secondary"
                         android:letterSpacing="0"
                         android:lineSpacingExtra="1dp" />

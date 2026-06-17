@@ -188,6 +188,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         viewPager.setOffscreenPageLimit(5);
+        // 设置页面切换动画
+        viewPager.setPageTransformer((page, position) -> {
+            float absPosition = Math.abs(position);
+            if (absPosition >= 1f) {
+                page.setAlpha(0f);
+            } else {
+                page.setAlpha(1f);
+                page.setTranslationX(-position * page.getWidth() * 0.15f);
+                page.setScaleX(1f - absPosition * 0.05f);
+                page.setScaleY(1f - absPosition * 0.05f);
+            }
+        });
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -211,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigation.setOnItemSelectedListener(item -> {
             int position = getPositionByMenuId(item.getItemId());
             if (position != -1) {
-                viewPager.setCurrentItem(position, false);
+                viewPager.setCurrentItem(position, true);
                 return true;
             }
             return false;

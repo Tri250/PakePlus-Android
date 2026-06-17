@@ -90,10 +90,10 @@ public class EnduranceFragment extends Fragment {
     private View createErrorView(String message) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
         errorView.setText(message);
-        errorView.setTextColor(0xFF000000);
+        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(0xFFF2F2F7);
+        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
     }
     
@@ -111,6 +111,7 @@ public class EnduranceFragment extends Fragment {
             initViews(view);
             loadHistoricalDischargeRate();
             updateUI();
+            animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
         }
@@ -161,6 +162,27 @@ public class EnduranceFragment extends Fragment {
                 Log.e(TAG, "Error loading historical discharge rate: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void animateCardsEntry(View view) {
+        try {
+            if (!(view instanceof android.view.ViewGroup)) return;
+            android.view.ViewGroup root = (android.view.ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                child.setAlpha(0f);
+                child.setTranslationY(30f);
+                child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(i * 80L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+        }
     }
 
     @Override

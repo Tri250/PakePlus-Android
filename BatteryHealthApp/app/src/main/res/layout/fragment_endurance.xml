@@ -111,14 +111,16 @@
                         android:layout_weight="1"
                         android:text="当前电量"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
                     <TextView
                         android:id="@+id/tv_current_level"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--%"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
@@ -132,14 +134,16 @@
                         android:layout_weight="1"
                         android:text="放电速率"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
                     <TextView
                         android:id="@+id/tv_discharge_rate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--%/h"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
@@ -153,14 +157,16 @@
                         android:layout_weight="1"
                         android:text="充电状态"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
                     <TextView
                         android:id="@+id/tv_charge_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
@@ -174,14 +180,16 @@
                         android:layout_weight="1"
                         android:text="电池温度"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
                     <TextView
                         android:id="@+id/tv_battery_temp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--°C"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
@@ -196,14 +204,16 @@
                         android:layout_weight="1"
                         android:text="预计充满"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
                     <TextView
                         android:id="@+id/tv_full_charge_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0" />
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
                 </LinearLayout>
 
             </LinearLayout>

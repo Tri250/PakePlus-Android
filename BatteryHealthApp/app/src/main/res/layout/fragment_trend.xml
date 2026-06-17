@@ -50,6 +50,43 @@
             android:layout_marginBottom="24dp"
             android:visibility="visible" />
 
+        <!-- 时间范围选择器 -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_time_range"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedChip="@id/chip_7days">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_1day"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1天"
+                android:textAppearance="@style/iOSBody.Secondary" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_7days"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7天"
+                android:checked="true"
+                android:textAppearance="@style/iOSBody.Secondary" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_30days"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="30天"
+                android:textAppearance="@style/iOSBody.Secondary" />
+
+        </com.google.android.material.chip.ChipGroup>
+
         <!-- 健康度趋势卡片 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
