@@ -87,8 +87,7 @@
                     android:layout_marginTop="24dp"
                     android:progress="0"
                     android:max="100"
-                    android:progressDrawable="@drawable/progress_health"
-                    android:animationResolution="1000" />
+                    android:progressDrawable="@drawable/progress_health" />
 
             </LinearLayout>
 
