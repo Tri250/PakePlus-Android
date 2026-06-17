@@ -11,8 +11,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -46,8 +44,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     
     private static final String TAG = "MainActivity";
-    private static final int PERMISSION_REQUEST_CODE = 100;
-    
+
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNavigation;
     
@@ -80,23 +77,27 @@ public class MainActivity extends AppCompatActivity {
             
             // 初始化管理器（带异常处理）
             try {
-                batteryDataManager = new BatteryDataManager(this);
-                Log.d(TAG, "BatteryDataManager created");
-            } catch (Exception e) {
-                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage(), e);
-                batteryDataManager = null;
-            }
-            
-            try {
                 deviceInfoManager = new DeviceInfoManager(this);
                 Log.d(TAG, "DeviceInfoManager created");
             } catch (Exception e) {
                 Log.e(TAG, "Error creating DeviceInfoManager: " + e.getMessage(), e);
                 deviceInfoManager = null;
             }
-            
-            // 检查权限
-            checkPermissions();
+
+            try {
+                batteryDataManager = new BatteryDataManager(this);
+                // 将设备使用天数同步给电池管理器，用于健康度物理估算
+                if (deviceInfoManager != null) {
+                    batteryDataManager.setUsageDays(deviceInfoManager.getUsageDays());
+                }
+                Log.d(TAG, "BatteryDataManager created");
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage(), e);
+                batteryDataManager = null;
+            }
+
+            // 检查权限（统一使用 PermissionManager）
+            PermissionManager.checkAndRequestPermissions(this, getRequiredPermissions());
             
             // 注意：电池广播由BatteryMonitorService统一处理
             // 不再在MainActivity中注册电池广播接收器，避免重复监听
@@ -268,51 +269,36 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 检查权限
+     * 返回应用运行所需权限列表（按 Android 版本区分）
      */
-    private void checkPermissions() {
+    private String[] getRequiredPermissions() {
         List<String> permissions = new ArrayList<>();
-        
+
         // Android 13+ 通知权限（前台服务必需）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS);
-            }
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS);
         }
-        
+
         // Android 13+ 使用新的媒体权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
-            }
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-            }
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
-        
+
         // 设备信息权限 - Android 10+ 需要特殊处理
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_PHONE_STATE);
-            }
+            permissions.add(Manifest.permission.READ_PHONE_STATE);
         }
-        
-        if (!permissions.isEmpty()) {
-            ActivityCompat.requestPermissions(this, 
-                    permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE);
-        }
+
+        return permissions.toArray(new String[0]);
     }
-    
+
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, 
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE) {
+        if (requestCode == PermissionManager.PERMISSION_REQUEST_CODE) {
             boolean allGranted = true;
             for (int result : grantResults) {
                 if (result != PackageManager.PERMISSION_GRANTED) {

@@ -43,7 +43,10 @@ public interface BatteryInfoDao {
     
     @Query("SELECT AVG(health_percentage) FROM battery_info WHERE timestamp >= :startTime")
     float getAverageHealthSince(long startTime);
-    
+
+    @Query("SELECT COUNT(*) FROM battery_info WHERE timestamp >= :startTime")
+    int getCountSince(long startTime);
+
     @Query("SELECT * FROM battery_info ORDER BY timestamp DESC LIMIT 1")
     BatteryInfo getLatest();
     

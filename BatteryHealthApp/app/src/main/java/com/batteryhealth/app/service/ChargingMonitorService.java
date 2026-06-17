@@ -27,7 +27,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -57,7 +60,11 @@ public class ChargingMonitorService extends Service {
     private float avgPower = 0;
     private int powerSampleCount = 0;
     private float totalPower = 0;
-    
+
+    // 用于智能充电阶段判断的滑动窗口（最近 30 个采样点，约 90 秒）
+    private static final int MAX_SAMPLES = 30;
+    private final LinkedList<PowerSample> powerSamples = new LinkedList<>();
+
     private OnChargingDataListener dataListener;
     
     // 电池广播接收器
@@ -107,12 +114,31 @@ public class ChargingMonitorService extends Service {
         public float maxPower;
         public float avgPower;
         public float totalEnergy; // 充电能量 (Wh)
-        
+
         public ChargingSummary() {
             this.startTime = System.currentTimeMillis();
         }
     }
-    
+
+    /**
+     * 充电采样点，用于 dI/dt、dV/dt 分析。
+     */
+    private static class PowerSample {
+        long timestamp;
+        float voltage;
+        float current;
+        float power;
+        int level;
+
+        PowerSample(long timestamp, float voltage, float current, float power, int level) {
+            this.timestamp = timestamp;
+            this.voltage = voltage;
+            this.current = current;
+            this.power = power;
+            this.level = level;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -221,7 +247,8 @@ public class ChargingMonitorService extends Service {
         avgPower = 0;
         powerSampleCount = 0;
         totalPower = 0;
-        
+        powerSamples.clear();
+
         Log.d(TAG, "Charging session started: " + currentSessionId);
         
         if (dataListener != null) {
@@ -283,9 +310,12 @@ public class ChargingMonitorService extends Service {
             // 读取电池温度
             history.setBatteryTemp(readBatteryTemperature());
             
+            // 记录采样点用于智能阶段判断
+            addPowerSample(voltage, current, history.getPower(), history.getBatteryLevel());
+
             // 判断充电阶段
             history.setChargingPhase(detectChargingPhase(history));
-            
+
             // 判断充电类型
             history.setChargeType(detectChargeType(history.getPower()));
             
@@ -404,15 +434,59 @@ public class ChargingMonitorService extends Service {
     }
     
     /**
-     * 检测充电阶段
+     * 记录充电采样点，维护固定长度滑动窗口。
+     */
+    private void addPowerSample(float voltage, float current, float power, int level) {
+        long now = System.currentTimeMillis();
+        powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
+        while (powerSamples.size() > MAX_SAMPLES) {
+            powerSamples.removeFirst();
+        }
+    }
+
+    /**
+     * 智能检测充电阶段。
+     *
+     * 策略：
+     * 1. 电量 >= 99% -> 充满/涓流（trickle/full）
+     * 2. 电量 >= 80% 且电流明显下降（dI/dt 负向）-> 恒压阶段（constant_voltage）
+     * 3. 大功率稳定输出 -> 恒流阶段（constant_current）
+     * 4. 低功率且电量低 -> 涓流（trickle）
      */
     private String detectChargingPhase(PowerHistory history) {
         int level = history.getBatteryLevel();
         float power = history.getPower();
-        
+
         if (level >= 99) {
             return "full";
-        } else if (level >= 80) {
+        }
+
+        // 当样本足够时，计算电流变化趋势和电压变化趋势
+        if (powerSamples.size() >= 10) {
+            PowerSample first = powerSamples.getFirst();
+            PowerSample last = powerSamples.getLast();
+            long timeDiff = last.timestamp - first.timestamp; // ms
+            if (timeDiff > 10_000) { // 至少 10 秒数据
+                float currentDiff = last.current - first.current; // A
+                float voltageDiff = last.voltage - first.voltage; // V
+                float hours = timeDiff / (1000.0f * 60 * 60);
+                float didt = currentDiff / hours; // A/h
+                float dvdt = voltageDiff / hours; // V/h
+
+                // 恒压阶段特征：电流快速下降，电压基本稳定
+                if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
+                    return "constant_voltage";
+                }
+
+                // 恒流阶段特征：电流稳定或缓慢下降，电压上升
+                if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
+                    return "constant_current";
+                }
+            }
+        }
+
+        // 兜底逻辑
+        if (level >= 80) {
             return "constant_voltage";
         } else if (power > 5) {
             return "constant_current";

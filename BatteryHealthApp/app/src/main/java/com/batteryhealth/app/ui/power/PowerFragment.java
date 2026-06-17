@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.LinkedList;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -38,9 +40,25 @@ public class PowerFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvChargeType;
-    
+
     private Handler mainHandler;
     private boolean isRunning = false;
+
+    // 本地滑动窗口，用于在 UI 层辅助判断充电阶段
+    private static final int MAX_SAMPLES = 20;
+    private final LinkedList<PowerSample> samples = new LinkedList<>();
+
+    private static class PowerSample {
+        long time;
+        float voltage;
+        float current;
+        float power;
+        int level;
+        PowerSample(long time, float voltage, float current, float power, int level) {
+            this.time = time; this.voltage = voltage; this.current = current;
+            this.power = power; this.level = level;
+        }
+    }
     
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -134,7 +152,11 @@ public class PowerFragment extends Fragment {
             float voltage = readVoltage();
             float current = readCurrent();
             float power = voltage * current;
-            
+            int level = readBatteryLevel();
+
+            // 记录样本用于阶段判断
+            addSample(voltage, current, power, level);
+
             if (tvVoltage != null) {
                 tvVoltage.setText(String.format("%.2f V", voltage));
             }
@@ -145,11 +167,74 @@ public class PowerFragment extends Fragment {
                 tvPower.setText(String.format("%.1f W", power));
             }
             if (tvChargeType != null) {
-                tvChargeType.setText(getChargeTypeDescription(power));
+                String chargeType = getChargeTypeDescription(power);
+                String phase = detectChargingPhase(level, power);
+                if (power > 0) {
+                    tvChargeType.setText(chargeType + " · " + phase);
+                } else {
+                    tvChargeType.setText(chargeType);
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating power data: " + e.getMessage());
         }
+    }
+
+    private void addSample(float voltage, float current, float power, int level) {
+        long now = System.currentTimeMillis();
+        samples.addLast(new PowerSample(now, voltage, current, power, level));
+        while (samples.size() > MAX_SAMPLES) {
+            samples.removeFirst();
+        }
+    }
+
+    private String detectChargingPhase(int level, float power) {
+        if (level >= 99) return "已充满";
+
+        if (samples.size() >= 8) {
+            PowerSample first = samples.getFirst();
+            PowerSample last = samples.getLast();
+            long timeDiff = last.time - first.time;
+            if (timeDiff > 8_000) {
+                float hours = timeDiff / (1000.0f * 60 * 60);
+                float didt = (last.current - first.current) / hours;
+                float dvdt = (last.voltage - first.voltage) / hours;
+
+                if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
+                    return "恒压充电";
+                }
+                if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
+                    return "恒流充电";
+                }
+            }
+        }
+
+        if (level >= 80) return "恒压充电";
+        if (power > 5) return "恒流充电";
+        return "涓流充电";
+    }
+
+    private int readBatteryLevel() {
+        try {
+            if (getContext() == null) return 0;
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                batteryStatus = getContext().registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                batteryStatus = getContext().registerReceiver(null, filter);
+            }
+            if (batteryStatus != null) {
+                int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (level != -1 && scale != -1) {
+                    return (int) ((level / (float) scale) * 100);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading battery level: " + e.getMessage());
+        }
+        return 0;
     }
     
     private float readVoltage() {

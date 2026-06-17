@@ -93,6 +93,30 @@ public class BatteryInfo {
     @ColumnInfo(name = "cycle_count_estimated")
     private boolean cycleCountEstimated; // 循环次数是否为估算值
 
+    @ColumnInfo(name = "cycle_count_source")
+    private String cycleCountSource; // 循环次数来源
+
+    @ColumnInfo(name = "design_capacity_source")
+    private String designCapacitySource; // 设计容量来源
+
+    @ColumnInfo(name = "current_capacity_source")
+    private String currentCapacitySource; // 当前容量来源
+
+    @ColumnInfo(name = "health_data_source")
+    private String healthDataSource; // 健康度数据来源
+
+    @ColumnInfo(name = "health_confidence")
+    private float healthConfidence; // 健康度置信度 0-1
+
+    @ColumnInfo(name = "system_health")
+    private int systemHealth; // 系统 BATTERY_HEALTH 状态
+
+    @ColumnInfo(name = "energy_counter")
+    private int energyCounter; // 能量计数器 (uWh)
+
+    @ColumnInfo(name = "battery_source_confidence")
+    private float batterySourceConfidence; // 电池来源置信度 0-1
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -280,6 +304,70 @@ public class BatteryInfo {
 
     public void setCycleCountEstimated(boolean cycleCountEstimated) {
         this.cycleCountEstimated = cycleCountEstimated;
+    }
+
+    public String getCycleCountSource() {
+        return cycleCountSource;
+    }
+
+    public void setCycleCountSource(String cycleCountSource) {
+        this.cycleCountSource = cycleCountSource;
+    }
+
+    public String getDesignCapacitySource() {
+        return designCapacitySource;
+    }
+
+    public void setDesignCapacitySource(String designCapacitySource) {
+        this.designCapacitySource = designCapacitySource;
+    }
+
+    public String getCurrentCapacitySource() {
+        return currentCapacitySource;
+    }
+
+    public void setCurrentCapacitySource(String currentCapacitySource) {
+        this.currentCapacitySource = currentCapacitySource;
+    }
+
+    public String getHealthDataSource() {
+        return healthDataSource;
+    }
+
+    public void setHealthDataSource(String healthDataSource) {
+        this.healthDataSource = healthDataSource;
+    }
+
+    public float getHealthConfidence() {
+        return healthConfidence;
+    }
+
+    public void setHealthConfidence(float healthConfidence) {
+        this.healthConfidence = healthConfidence;
+    }
+
+    public int getSystemHealth() {
+        return systemHealth;
+    }
+
+    public void setSystemHealth(int systemHealth) {
+        this.systemHealth = systemHealth;
+    }
+
+    public int getEnergyCounter() {
+        return energyCounter;
+    }
+
+    public void setEnergyCounter(int energyCounter) {
+        this.energyCounter = energyCounter;
+    }
+
+    public float getBatterySourceConfidence() {
+        return batterySourceConfidence;
+    }
+
+    public void setBatterySourceConfidence(float batterySourceConfidence) {
+        this.batterySourceConfidence = batterySourceConfidence;
     }
 
     /**

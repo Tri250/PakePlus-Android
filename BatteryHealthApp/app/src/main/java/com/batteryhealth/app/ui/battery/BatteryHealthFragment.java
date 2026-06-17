@@ -200,9 +200,14 @@ public class BatteryHealthFragment extends Fragment {
                 }
                 
                 if (tvHealthStatus != null) {
-                    tvHealthStatus.setText(info.getHealthDescription());
+                    String source = batteryDataManager.getHealthSourceText();
+                    float confidence = info.getHealthConfidence();
+                    String confidenceText = confidence > 0
+                            ? String.format(" (可信度 %.0f%%)", confidence * 100)
+                            : "";
+                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source + confidenceText);
                 }
-                
+
                 if (progressHealth != null) {
                     if (info.hasValidHealthData()) {
                         progressHealth.setProgress((int) healthPercentage);
@@ -235,10 +240,11 @@ public class BatteryHealthFragment extends Fragment {
                         tvCapacity.setText("无法读取");
                     }
                 }
-                
+
                 if (tvCycleCount != null) {
                     if (info.hasValidCycleCount()) {
-                        tvCycleCount.setText(String.format("%d 次", info.getCycleCount()));
+                        String estimatedMark = info.isCycleCountEstimated() ? " · 估算" : "";
+                        tvCycleCount.setText(String.format("%d 次%s", info.getCycleCount(), estimatedMark));
                     } else {
                         tvCycleCount.setText("无法读取");
                     }

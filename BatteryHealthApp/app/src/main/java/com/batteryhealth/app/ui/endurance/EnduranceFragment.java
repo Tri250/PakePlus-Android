@@ -15,9 +15,15 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 续航分析Fragment
@@ -103,12 +109,60 @@ public class EnduranceFragment extends Fragment {
             }
             
             initViews(view);
+            loadHistoricalDischargeRate();
             updateUI();
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
         }
     }
-    
+
+    /**
+     * 从历史数据库加载平均放电速率作为初始值，避免首次进入显示“计算中...”。
+     */
+    private void loadHistoricalDischargeRate() {
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+                if (app == null) return;
+                AppDatabase db = app.getDatabase();
+                if (db == null) return;
+
+                // 取最近 24 小时内至少 10 条记录计算放电速率
+                long oneDayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
+                List<BatteryInfo> records = db.batteryInfoDao().getSince(oneDayAgo);
+                if (records == null || records.size() < 5) return;
+
+                // 按时间排序
+                Collections.sort(records, (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+
+                float totalRate = 0;
+                int sampleCount = 0;
+                for (int i = 1; i < records.size(); i++) {
+                    BatteryInfo prev = records.get(i - 1);
+                    BatteryInfo curr = records.get(i);
+                    int levelDiff = prev.getLevel() - curr.getLevel();
+                    long timeDiff = curr.getTimestamp() - prev.getTimestamp();
+                    if (levelDiff > 0 && timeDiff > 60_000) {
+                        float hours = timeDiff / (1000.0f * 60 * 60);
+                        totalRate += levelDiff / hours;
+                        sampleCount++;
+                    }
+                }
+
+                if (sampleCount > 0) {
+                    float avgRate = totalRate / sampleCount;
+                    // 限制在合理范围
+                    if (avgRate > 0.1f && avgRate < 100) {
+                        dischargeRate = avgRate;
+                        Log.d(TAG, "Loaded historical discharge rate: " + avgRate + "%/h");
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading historical discharge rate: " + e.getMessage());
+            }
+        }).start();
+    }
+
     @Override
     public void onResume() {
         super.onResume();

@@ -137,10 +137,17 @@ dependencies {
     // Room数据库 (用于历史数据存储)
     implementation 'androidx.room:room-runtime:2.6.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
-    
+
+    // SQLCipher 数据库加密
+    implementation 'net.zetetic:android-database-sqlcipher:4.5.4'
+    implementation 'androidx.sqlite:sqlite:2.4.0'
+
+    // EncryptedSharedPreferences 安全存储加密密钥
+    implementation 'androidx.security:security-crypto:1.0.0'
+
     // Gson
     implementation 'com.google.code.gson:gson:2.10.1'
-    
+
     // 权限管理
     implementation 'com.guolindev.permissionx:permissionx:1.7.1'
 
