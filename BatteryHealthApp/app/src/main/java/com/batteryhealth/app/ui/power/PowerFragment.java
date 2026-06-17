@@ -70,8 +70,8 @@ public class PowerFragment extends Fragment {
             mainHandler = new Handler(Looper.getMainLooper());
             
             tvPower = view.findViewById(R.id.tv_power);
-            tvVoltage = view.findViewById(R.id.tv_voltage);
-            tvCurrent = view.findViewById(R.id.tv_current);
+            tvVoltage = view.findViewById(R.id.tv_power_voltage);
+            tvCurrent = view.findViewById(R.id.tv_power_current);
             tvChargeType = view.findViewById(R.id.tv_charge_type);
             
             // 设置默认值

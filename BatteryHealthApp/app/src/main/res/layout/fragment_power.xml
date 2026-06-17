@@ -112,7 +112,7 @@
                         android:letterSpacing="0"
                         android:lineSpacingExtra="2dp" />
                     <TextView
-                        android:id="@+id/tv_voltage"
+                        android:id="@+id/tv_power_voltage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0.00 V"
@@ -136,7 +136,7 @@
                         android:letterSpacing="0"
                         android:lineSpacingExtra="2dp" />
                     <TextView
-                        android:id="@+id/tv_current"
+                        android:id="@+id/tv_power_current"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0.00 A"

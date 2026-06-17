@@ -22,6 +22,5 @@
     <!-- Plus sign -->
     <path
         android:fillColor="#FFFFFF"
-        android:strokeWidth="3"
         android:pathData="M54,45v20M44,55h20"/>
 </vector>
