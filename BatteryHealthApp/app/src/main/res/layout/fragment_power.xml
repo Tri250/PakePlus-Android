@@ -22,7 +22,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="充电功率"
+            android:text="充电续航"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -71,10 +71,59 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- 详细信息卡片 - iOS 2026风格 -->
+        <!-- 续航估算卡片 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="预计续航时间"
+                    android:textAppearance="@style/iOSBody.Secondary"
+                    android:letterSpacing="0"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/tv_endurance_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-- 小时"
+                    android:textAppearance="@style/iOSLargeNumber"
+                    android:textColor="@color/ios_green"
+                    android:letterSpacing="-0.05"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:id="@+id/tv_endurance_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="正在计算..."
+                    android:textAppearance="@style/iOSCaption"
+                    android:letterSpacing="0.01"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 充电详细信息卡片 - iOS 2026风格 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             app:cardBackgroundColor="@color/ios_secondary_background"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
@@ -89,7 +138,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="详细信息"
+                    android:text="充电详情"
                     android:textAppearance="@style/iOSSubtitle"
                     android:letterSpacing="-0.01"
                     android:lineSpacingExtra="3dp"
@@ -125,8 +174,7 @@
 
                 <!-- 电流 -->
                 <LinearLayout style="@style/iOSListItem"
-                    android:minHeight="48dp"
-                    android:paddingBottom="20dp">
+                    android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -143,6 +191,145 @@
                         android:textAppearance="@style/iOSBody.Secondary"
                         android:letterSpacing="0"
                         android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 预计充满时间 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="20dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="预计充满"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="2dp" />
+                    <TextView
+                        android:id="@+id/tv_full_charge_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0"
+                        android:lineSpacingExtra="1dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 电池使用详情卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardPreventCornerOverlap="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="电池使用详情"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="8dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp" />
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 当前电量 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="当前电量"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0" />
+                    <TextView
+                        android:id="@+id/tv_current_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 放电速率 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="放电速率"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0" />
+                    <TextView
+                        android:id="@+id/tv_discharge_rate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%/h"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 充电状态 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="充电状态"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0" />
+                    <TextView
+                        android:id="@+id/tv_charge_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池温度 -->
+                <LinearLayout style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="20dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池温度"
+                        android:textAppearance="@style/iOSBody"
+                        android:letterSpacing="0" />
+                    <TextView
+                        android:id="@+id/tv_battery_temp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°C"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:letterSpacing="0" />
                 </LinearLayout>
 
             </LinearLayout>

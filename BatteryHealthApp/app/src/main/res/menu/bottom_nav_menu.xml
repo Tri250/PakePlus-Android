@@ -17,11 +17,6 @@
         android:title="性能" />
 
     <item
-        android:id="@+id/nav_endurance"
-        android:icon="@drawable/ic_endurance"
-        android:title="续航" />
-
-    <item
         android:id="@+id/nav_trend"
         android:icon="@drawable/ic_trend"
         android:title="趋势" />
