@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView 
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -18,7 +18,6 @@
         android:paddingStart="20dp"
         android:paddingEnd="20dp">
 
-        <!-- 页面标题 - iOS 2026风格 -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -28,128 +27,115 @@
             android:lineSpacingExtra="6dp"
             android:layout_marginBottom="32dp" />
 
-        <!-- CPU使用率卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="26dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CPU使用率"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp" />
+                    android:textAppearance="@style/iOSSubtitle" />
 
-                <!-- CPU数值 - iOS 2026风格 -->
                 <TextView
                     android:id="@+id/tv_cpu_usage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0%"
                     android:textAppearance="@style/iOSMediumNumber"
-                    android:textColor="@color/ios_blue"
-                    android:letterSpacing="-0.03"
-                    android:layout_marginTop="16dp" />
+                    android:layout_marginTop="18dp" />
 
-                <!-- CPU进度条 -->
                 <ProgressBar
                     android:id="@+id/progress_cpu"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:progress="0"
                     android:max="100"
                     android:progressDrawable="@drawable/progress_health" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- 内存使用率卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="26dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="内存使用率"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp" />
+                    android:textAppearance="@style/iOSSubtitle" />
 
-                <!-- 内存数值 - iOS 2026风格 -->
                 <TextView
                     android:id="@+id/tv_memory_usage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0%"
                     android:textAppearance="@style/iOSMediumNumber"
-                    android:textColor="@color/ios_green"
-                    android:letterSpacing="-0.03"
-                    android:layout_marginTop="16dp" />
+                    android:layout_marginTop="18dp" />
 
-                <!-- 内存进度条 -->
                 <ProgressBar
                     android:id="@+id/progress_memory"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:progress="0"
                     android:max="100"
                     android:progressDrawable="@drawable/progress_health" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- 性能评分卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="26dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="性能评分"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp" />
+                    android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_performance_score"
@@ -157,47 +143,43 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textAppearance="@style/iOSMediumNumber"
-                    android:textColor="@color/ios_green"
-                    android:letterSpacing="-0.03"
-                    android:layout_marginTop="16dp" />
+                    android:layout_marginTop="18dp" />
 
                 <ProgressBar
                     android:id="@+id/progress_score"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:progress="0"
                     android:max="100"
                     android:progressDrawable="@drawable/progress_health" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- 存储使用率卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="26dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="存储使用率"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp" />
+                    android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_storage_usage"
@@ -205,32 +187,30 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textAppearance="@style/iOSMediumNumber"
-                    android:textColor="@color/ios_orange"
-                    android:letterSpacing="-0.03"
-                    android:layout_marginTop="16dp" />
+                    android:layout_marginTop="18dp" />
 
                 <ProgressBar
                     android:id="@+id/progress_storage"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:progress="0"
                     android:max="100"
                     android:progressDrawable="@drawable/progress_health" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- GPU信息卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -242,39 +222,39 @@
                     android:layout_height="wrap_content"
                     android:text="GPU信息"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:paddingTop="20dp"
-                    android:paddingBottom="8dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp" />
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
 
                 <View style="@style/iOSSeparator" />
 
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp"
-                    android:paddingBottom="20dp">
+                    android:paddingBottom="22dp">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="GPU渲染器"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
+
                     <TextView
                         android:id="@+id/tv_gpu_info"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
+
                 </LinearLayout>
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

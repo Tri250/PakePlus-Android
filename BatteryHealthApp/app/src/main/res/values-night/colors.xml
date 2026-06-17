@@ -1,58 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- iOS 2026系统颜色 - 深色模式 -->
+    <!-- 液态玻璃系统颜色 - 深色模式 -->
     <color name="ios_background">#000000</color>
     <color name="ios_secondary_background">#1C1C1E</color>
     <color name="ios_tertiary_background">#2C2C2E</color>
-    <color name="ios_grouped_background">#1C1C1E</color>
-    
+    <color name="ios_grouped_background">#000000</color>
+
+    <!-- 液态玻璃半透明叠加色 - 深色 -->
+    <color name="liquid_glass_surface">#BF1C1C1E</color>
+    <color name="liquid_glass_surface_subtle">#991C1C1E</color>
+    <color name="liquid_glass_border">#33FFFFFF</color>
+    <color name="liquid_glass_highlight">#26FFFFFF</color>
+    <color name="liquid_glass_shadow">#14000000</color>
+    <color name="liquid_glass_glow">#330A84FF</color>
+
     <color name="ios_label">#FFFFFF</color>
     <color name="ios_secondary_label">#EBEBF599</color>
-    <color name="ios_tertiary_label">#EBEBF54D</color>
+    <color name="ios_tertiary_label">#EBEBF566</color>
     <color name="ios_quaternary_label">#EBEBF52E</color>
-    
+
     <color name="ios_separator">#38383A</color>
     <color name="ios_opaque_separator">#38383A</color>
-    
-    <!-- iOS 2026系统色板 - 深色 -->
+
+    <!-- 液态玻璃强调色板 - 深色（更高亮度） -->
     <color name="ios_red">#FF453A</color>
     <color name="ios_orange">#FF9F0A</color>
     <color name="ios_yellow">#FFD60A</color>
-    <color name="ios_green">#30D158</color>
-    <color name="ios_mint">#63E6E2</color>
-    <color name="ios_teal">#40C8E0</color>
+    <color name="ios_green">#32D74B</color>
+    <color name="ios_mint">#66D4CF</color>
+    <color name="ios_teal">#5AC8FA</color>
     <color name="ios_cyan">#64D2FF</color>
     <color name="ios_blue">#0A84FF</color>
     <color name="ios_indigo">#5E5CE6</color>
     <color name="ios_purple">#BF5AF2</color>
     <color name="ios_pink">#FF375F</color>
     <color name="ios_brown">#AC8E68</color>
-    
-    <!-- 电池状态颜色 - 深色模式 -->
-    <color name="battery_excellent">#30D158</color>
-    <color name="battery_good">#30D158</color>
+
+    <!-- 电池状态颜色 -->
+    <color name="battery_excellent">#32D74B</color>
+    <color name="battery_good">#32D74B</color>
     <color name="battery_normal">#FFD60A</color>
     <color name="battery_warning">#FF9F0A</color>
     <color name="battery_poor">#FF453A</color>
-    
+
     <!-- 充电功率颜色 -->
     <color name="power_super">#BF5AF2</color>
     <color name="power_fast">#0A84FF</color>
-    <color name="power_normal">#30D158</color>
+    <color name="power_normal">#32D74B</color>
     <color name="power_slow">#FF9F0A</color>
     <color name="power_wireless">#FFD60A</color>
-    
+
+    <!-- 通用颜色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- 渐变颜色 - 深色液态玻璃 -->
+    <color name="gradient_blue_start">#0A84FF</color>
+    <color name="gradient_blue_end">#5E5CE6</color>
+    <color name="gradient_green_start">#32D74B</color>
+    <color name="gradient_green_end">#66D4CF</color>
+    <color name="gradient_purple_start">#BF5AF2</color>
+    <color name="gradient_purple_end">#5E5CE6</color>
+    <color name="gradient_glass_start">#2C2C2E</color>
+    <color name="gradient_glass_end">#1C2A3A</color>
+
+    <!-- 图表颜色 -->
+    <color name="chart_line">#0A84FF</color>
+    <color name="chart_fill">#1A0A84FF</color>
+    <color name="chart_grid">#38383A</color>
+
     <!-- 健康度等级颜色 -->
-    <color name="health_a_plus">#30D158</color>
-    <color name="health_a">#30D158</color>
+    <color name="health_a_plus">#32D74B</color>
+    <color name="health_a">#32D74B</color>
     <color name="health_b_plus">#64D2FF</color>
     <color name="health_b">#5E5CE6</color>
     <color name="health_c">#FFD60A</color>
     <color name="health_d">#FF9F0A</color>
     <color name="health_e">#FF453A</color>
-    
-    <!-- 图表颜色 -->
-    <color name="chart_line">#0A84FF</color>
-    <color name="chart_fill">#1A0A84FF</color>
-    <color name="chart_grid">#38383A</color>
+
+    <!-- 卡片阴影颜色 -->
+    <color name="card_shadow_light">#0A000000</color>
+    <color name="card_shadow_dark">#14FFFFFF</color>
+
+    <!-- 动画渐变颜色 -->
+    <color name="anim_fade_start">#80FFFFFF</color>
+    <color name="anim_fade_end">#00FFFFFF</color>
 </resources>

@@ -1,221 +1,252 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- 应用主题 - iOS 2026风格 -->
+    <!-- 应用主题 - 液态玻璃风格 -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- 主色调 -->
         <item name="colorPrimary">@color/ios_blue</item>
-        <item name="colorPrimaryDark">@color/ios_blue_dark</item>
+        <item name="colorPrimaryDark">@color/ios_blue</item>
         <item name="colorAccent">@color/ios_green</item>
-        
+        <item name="colorSecondary">@color/ios_blue</item>
+
         <!-- 背景色 -->
         <item name="android:windowBackground">@color/ios_background</item>
         <item name="android:colorBackground">@color/ios_background</item>
-        
+
         <!-- 文字颜色 -->
         <item name="android:textColorPrimary">@color/ios_label</item>
         <item name="android:textColorSecondary">@color/ios_secondary_label</item>
-        
-        <!-- 状态栏 -->
-        <item name="android:statusBarColor">@color/ios_background</item>
+        <item name="android:textColorTertiary">@color/ios_tertiary_label</item>
+
+        <!-- 状态栏 - 液态玻璃 -->
+        <item name="android:statusBarColor">@color/liquid_glass_surface</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
-        
-        <!-- 导航栏 -->
-        <item name="android:navigationBarColor">@color/ios_background</item>
+
+        <!-- 导航栏 - 液态玻璃 -->
+        <item name="android:navigationBarColor">@color/liquid_glass_surface</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
-        
+
         <!-- 禁用默认ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        
-        <!-- iOS 2026动画效果 -->
-        <item name="android:windowAnimationStyle">@style/iOSWindowAnimation</item>
-        
+
+        <!-- 液态玻璃窗口动画 -->
+        <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
+
         <!-- Android 15 临时禁用强制edge-to-edge，避免系统栏覆盖内容 -->
         <item name="android:windowOptOutEdgeToEdge">true</item>
     </style>
-    
+
     <!-- 无ActionBar主题 - 继承自主主题，确保所有属性完整 -->
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
-    
-    <!-- iOS 2026窗口动画 -->
-    <style name="iOSWindowAnimation" parent="@android:style/Animation.Activity">
+
+    <!-- 液态玻璃窗口动画 -->
+    <style name="LiquidGlassWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
         <item name="android:activityOpenExitAnimation">@anim/ios_slide_out_left</item>
         <item name="android:activityCloseEnterAnimation">@anim/ios_slide_in_left</item>
         <item name="android:activityCloseExitAnimation">@anim/ios_slide_out_right</item>
     </style>
-    
-    <!-- iOS 2026风格卡片 -->
-    <style name="iOSCard" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@color/ios_secondary_background</item>
-        <item name="cardCornerRadius">16dp</item>
+
+    <!-- 液态玻璃卡片 -->
+    <style name="LiquidGlassCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/liquid_glass_surface</item>
+        <item name="cardCornerRadius">28dp</item>
         <item name="cardElevation">0dp</item>
-        <item name="strokeWidth">0dp</item>
-        <item name="contentPadding">20dp</item>
-        <item name="rippleColor">@color/ios_blue</item>
+        <item name="strokeWidth">0.5dp</item>
+        <item name="strokeColor">@color/liquid_glass_border</item>
+        <item name="contentPadding">0dp</item>
+        <item name="rippleColor">@color/liquid_glass_glow</item>
     </style>
-    
-    <!-- iOS 2026风格按钮 -->
-    <style name="iOSButton" parent="Widget.MaterialComponents.Button">
+
+    <!-- 液态玻璃按钮 -->
+    <style name="LiquidGlassButton" parent="Widget.MaterialComponents.Button">
         <item name="android:textSize">17sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
-        <item name="android:paddingTop">14dp</item>
-        <item name="android:paddingBottom">14dp</item>
-        <item name="android:paddingStart">20dp</item>
-        <item name="android:paddingEnd">20dp</item>
-        <item name="cornerRadius">12dp</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="backgroundTint">@color/liquid_glass_surface</item>
+        <item name="strokeWidth">0.5dp</item>
+        <item name="strokeColor">@color/liquid_glass_border</item>
     </style>
-    
-    <!-- iOS 2026风格主按钮 -->
-    <style name="iOSButton.Primary">
-        <item name="android:backgroundTint">@color/ios_blue</item>
+
+    <!-- 液态玻璃主按钮 -->
+    <style name="LiquidGlassButton.Primary">
+        <item name="backgroundTint">@color/ios_blue</item>
         <item name="android:textColor">@color/white</item>
+        <item name="strokeWidth">0dp</item>
     </style>
-    
-    <!-- iOS 2026风格次要按钮 -->
-    <style name="iOSButton.Secondary">
-        <item name="android:backgroundTint">@color/ios_secondary_background</item>
+
+    <!-- 液态玻璃次要按钮 -->
+    <style name="LiquidGlassButton.Secondary">
+        <item name="backgroundTint">@color/liquid_glass_surface</item>
         <item name="android:textColor">@color/ios_blue</item>
     </style>
-    
-    <!-- iOS 2026风格标题文字 -->
-    <style name="iOSTitle">
-        <item name="android:textSize">28sp</item>
+
+    <!-- 液态玻璃标题文字 -->
+    <style name="LiquidGlassTitle">
+        <item name="android:textSize">30sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
-    
-    <!-- iOS 2026风格大标题 -->
-    <style name="iOSTitle.Large">
-        <item name="android:textSize">34sp</item>
-        <item name="android:letterSpacing">-0.03</item>
+
+    <!-- 液态玻璃大标题 -->
+    <style name="LiquidGlassTitle.Large">
+        <item name="android:textSize">36sp</item>
+        <item name="android:letterSpacing">-0.035</item>
         <item name="android:lineSpacingExtra">6dp</item>
     </style>
-    
-    <!-- iOS 2026风格副标题 -->
-    <style name="iOSSubtitle">
+
+    <!-- 液态玻璃副标题 -->
+    <style name="LiquidGlassSubtitle">
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
-    
-    <!-- iOS 2026风格正文 -->
-    <style name="iOSBody">
-        <item name="android:textSize">17sp</item>
+
+    <!-- 液态玻璃正文 -->
+    <style name="LiquidGlassBody">
+        <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
-    
-    <!-- iOS 2026风格次要文字 -->
-    <style name="iOSBody.Secondary">
+
+    <!-- 液态玻璃次要文字 -->
+    <style name="LiquidGlassBody.Secondary">
         <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/ios_secondary_label</item>
-        <item name="android:lineSpacingExtra">1dp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:lineSpacingExtra">2dp</item>
     </style>
-    
-    <!-- iOS 2026风格小字 -->
-    <style name="iOSCaption">
+
+    <!-- 液态玻璃小字 -->
+    <style name="LiquidGlassCaption">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ios_tertiary_label</item>
-        <item name="android:letterSpacing">0.01</item>
-        <item name="android:lineSpacingExtra">0dp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">1dp</item>
     </style>
-    
-    <!-- iOS 2026风格大数字 -->
-    <style name="iOSLargeNumber">
-        <item name="android:textSize">56sp</item>
+
+    <!-- 液态玻璃大数字 -->
+    <style name="LiquidGlassLargeNumber">
+        <item name="android:textSize">60sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
         <item name="android:letterSpacing">-0.05</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
-    
-    <!-- iOS 2026风格中等数字 -->
-    <style name="iOSMediumNumber">
-        <item name="android:textSize">34sp</item>
+
+    <!-- 液态玻璃中等数字 -->
+    <style name="LiquidGlassMediumNumber">
+        <item name="android:textSize">36sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
-    
-    <!-- iOS 2026风格列表项 -->
-    <style name="iOSListItem">
-        <item name="android:background">@color/ios_secondary_background</item>
-        <item name="android:paddingStart">20dp</item>
-        <item name="android:paddingEnd">20dp</item>
-        <item name="android:paddingTop">14dp</item>
-        <item name="android:paddingBottom">14dp</item>
-        <item name="android:minHeight">44dp</item>
+
+    <!-- 液态玻璃列表项 -->
+    <style name="LiquidGlassListItem">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:paddingStart">22dp</item>
+        <item name="android:paddingEnd">22dp</item>
+        <item name="android:paddingTop">15dp</item>
+        <item name="android:paddingBottom">15dp</item>
+        <item name="android:minHeight">48dp</item>
     </style>
-    
-    <!-- iOS 2026风格分隔线 -->
-    <style name="iOSSeparator">
+
+    <!-- 液态玻璃分隔线 -->
+    <style name="LiquidGlassSeparator">
         <item name="android:background">@color/ios_separator</item>
         <item name="android:layout_height">0.5dp</item>
-        <item name="android:layout_marginStart">20dp</item>
+        <item name="android:layout_marginStart">22dp</item>
     </style>
-    
-    <!-- iOS 2026风格TabLayout -->
-    <style name="iOSTabLayout" parent="Widget.MaterialComponents.TabLayout">
-        <item name="tabBackground">@color/ios_secondary_background</item>
+
+    <!-- 液态玻璃TabLayout -->
+    <style name="LiquidGlassTabLayout" parent="Widget.MaterialComponents.TabLayout">
+        <item name="tabBackground">@color/liquid_glass_surface</item>
         <item name="tabIndicatorColor">@color/ios_blue</item>
         <item name="tabSelectedTextColor">@color/ios_blue</item>
         <item name="tabTextColor">@color/ios_secondary_label</item>
         <item name="tabIndicatorHeight">3dp</item>
-        <item name="tabTextAppearance">@style/iOSTabText</item>
+        <item name="tabTextAppearance">@style/LiquidGlassTabText</item>
         <item name="tabIndicatorAnimationDuration">300</item>
     </style>
-    
-    <!-- iOS 2026风格Tab文字 -->
-    <style name="iOSTabText">
-        <item name="android:textSize">13sp</item>
-        <item name="android:textStyle">normal</item>
+
+    <!-- 液态玻璃Tab文字 -->
+    <style name="LiquidGlassTabText">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">medium</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
     </style>
-    
-    <!-- iOS 2026风格进度条 -->
-    <style name="iOSProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
+
+    <!-- 液态玻璃进度条 -->
+    <style name="LiquidGlassProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
         <item name="android:progressDrawable">@drawable/progress_health</item>
         <item name="android:minHeight">8dp</item>
         <item name="android:maxHeight">8dp</item>
     </style>
-    
-    <!-- iOS 2026风格圆形进度条 -->
-    <style name="iOSCircularProgress">
+
+    <!-- 液态玻璃圆形进度条 -->
+    <style name="LiquidGlassCircularProgress">
         <item name="android:indeterminateTint">@color/ios_blue</item>
     </style>
-    
-    <!-- iOS 2026风格底部导航 -->
-    <style name="iOSBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="itemIconSize">28dp</item>
+
+    <!-- 液态玻璃底部导航 -->
+    <style name="LiquidGlassBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemIconSize">26dp</item>
         <item name="itemIconTint">@color/bottom_nav_color</item>
         <item name="itemTextColor">@color/bottom_nav_color</item>
-        <item name="itemTextAppearanceActive">@style/iOSTabText</item>
-        <item name="itemTextAppearanceInactive">@style/iOSTabText</item>
+        <item name="itemTextAppearanceActive">@style/LiquidGlassTabText</item>
+        <item name="itemTextAppearanceInactive">@style/LiquidGlassTabText</item>
         <item name="itemActiveIndicatorStyle">@null</item>
         <item name="labelVisibilityMode">labeled</item>
-        <item name="backgroundTint">@color/ios_secondary_background</item>
+        <item name="backgroundTint">@color/liquid_glass_surface</item>
     </style>
 
-    <!-- iOS 2026风格开关 -->
-    <style name="iOSSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
+    <!-- 液态玻璃开关 -->
+    <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
         <item name="android:thumbTint">@color/white</item>
         <item name="android:trackTint">@color/ios_tertiary_background</item>
         <item name="android:backgroundTint">@color/ios_blue</item>
     </style>
+
+    <!-- 保持旧名称兼容（避免布局大量改动） -->
+    <style name="iOSTitle" parent="LiquidGlassTitle" />
+    <style name="iOSTitle.Large" parent="LiquidGlassTitle.Large" />
+    <style name="iOSSubtitle" parent="LiquidGlassSubtitle" />
+    <style name="iOSBody" parent="LiquidGlassBody" />
+    <style name="iOSBody.Secondary" parent="LiquidGlassBody.Secondary" />
+    <style name="iOSCaption" parent="LiquidGlassCaption" />
+    <style name="iOSLargeNumber" parent="LiquidGlassLargeNumber" />
+    <style name="iOSMediumNumber" parent="LiquidGlassMediumNumber" />
+    <style name="iOSListItem" parent="LiquidGlassListItem" />
+    <style name="iOSSeparator" parent="LiquidGlassSeparator" />
+    <style name="iOSCard" parent="LiquidGlassCard" />
+    <style name="iOSButton" parent="LiquidGlassButton" />
+    <style name="iOSButton.Primary" parent="LiquidGlassButton.Primary" />
+    <style name="iOSButton.Secondary" parent="LiquidGlassButton.Secondary" />
+    <style name="iOSProgressBar" parent="LiquidGlassProgressBar" />
+    <style name="iOSCircularProgress" parent="LiquidGlassCircularProgress" />
+    <style name="iOSBottomNav" parent="LiquidGlassBottomNav" />
+    <style name="iOSSwitch" parent="LiquidGlassSwitch" />
+    <style name="iOSTabLayout" parent="LiquidGlassTabLayout" />
+    <style name="iOSTabText" parent="LiquidGlassTabText" />
+    <style name="iOSWindowAnimation" parent="LiquidGlassWindowAnimation" />
 </resources>

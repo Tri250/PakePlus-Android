@@ -4,25 +4,26 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background">
+        android:background="@color/ios_background"
+        android:fitsSystemWindows="true">
 
     <!-- 主内容区域 -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="84dp" />
+        android:layout_marginBottom="80dp" />
 
     <!-- 底部导航栏 - iOS 2026风格 -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="84dp"
+        android:layout_height="80dp"
         android:layout_gravity="bottom"
-        android:background="@color/ios_secondary_background"
+        android:background="@drawable/bottom_nav_glass_bg"
         android:paddingTop="8dp"
-        android:paddingBottom="24dp"
-        app:itemIconSize="28dp"
+        android:paddingBottom="16dp"
+        app:itemIconSize="26dp"
         app:itemIconTint="@color/bottom_nav_color"
         app:itemTextColor="@color/bottom_nav_color"
         app:itemTextAppearanceActive="@style/iOSTabText"

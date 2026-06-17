@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView 
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -18,7 +18,6 @@
         android:paddingStart="20dp"
         android:paddingEnd="20dp">
 
-        <!-- 页面标题 - iOS 2026风格 -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -28,37 +27,35 @@
             android:lineSpacingExtra="6dp"
             android:layout_marginBottom="32dp" />
 
-        <!-- 设备信息卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- 标题 -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="设备信息"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:paddingTop="20dp"
-                    android:paddingBottom="8dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp" />
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 设备名称 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -66,22 +63,20 @@
                         android:layout_weight="1"
                         android:text="设备名称"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_device_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- Android版本 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -89,22 +84,20 @@
                         android:layout_weight="1"
                         android:text="Android版本"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_android_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 处理器 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -112,22 +105,20 @@
                         android:layout_weight="1"
                         android:text="处理器"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_processor"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 内存 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -135,22 +126,20 @@
                         android:layout_weight="1"
                         android:text="内存"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_memory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 存储 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -158,22 +147,20 @@
                         android:layout_weight="1"
                         android:text="存储"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_storage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 屏幕 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -181,22 +168,20 @@
                         android:layout_weight="1"
                         android:text="屏幕"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_screen"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 激活日期 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -204,22 +189,20 @@
                         android:layout_weight="1"
                         android:text="激活日期"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_activation"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 使用天数 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -227,22 +210,20 @@
                         android:layout_weight="1"
                         android:text="使用天数"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_usage_days"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 激活来源 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -250,22 +231,20 @@
                         android:layout_weight="1"
                         android:text="激活来源"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_activation_source"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 可用内存 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -273,22 +252,20 @@
                         android:layout_weight="1"
                         android:text="可用内存"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_available_memory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 可用存储 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
@@ -296,70 +273,64 @@
                         android:layout_weight="1"
                         android:text="可用存储"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_available_storage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
-                <!-- 网络类型 -->
-                <LinearLayout style="@style/iOSListItem"
+                <LinearLayout
+                    style="@style/iOSListItem"
                     android:minHeight="48dp"
-                    android:paddingBottom="20dp">
+                    android:paddingBottom="22dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="网络类型"
                         android:textAppearance="@style/iOSBody"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="2dp" />
+                        android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_network_type"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/iOSBody.Secondary"
-                        android:letterSpacing="0"
-                        android:lineSpacingExtra="1dp" />
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- 预警设置卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="22dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="预警设置"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -390,12 +361,13 @@
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch_health_alert"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        style="@style/iOSSwitch" />
                 </LinearLayout>
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

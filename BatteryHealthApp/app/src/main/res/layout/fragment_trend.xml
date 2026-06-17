@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView 
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -35,7 +35,6 @@
             android:layout_height="wrap_content"
             android:text="暂无数据"
             android:textAppearance="@style/iOSCaption"
-            android:letterSpacing="0.01"
             android:layout_marginBottom="24dp" />
 
         <!-- 无数据提示 -->
@@ -45,9 +44,8 @@
             android:layout_height="wrap_content"
             android:text="使用应用一段时间后，这里将显示电池数据的趋势变化图表"
             android:textAppearance="@style/iOSBody.Secondary"
-            android:letterSpacing="0"
             android:gravity="center"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             android:visibility="visible" />
 
         <!-- 时间范围选择器 -->
@@ -58,7 +56,10 @@
             android:layout_marginBottom="16dp"
             app:singleSelection="true"
             app:selectionRequired="true"
-            app:checkedChip="@id/chip_7days">
+            app:checkedChip="@id/chip_7days"
+            app:chipStrokeWidth="0.5dp"
+            app:chipStrokeColor="@color/liquid_glass_border"
+            app:chipBackgroundColor="@color/liquid_glass_surface_subtle">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_1day"
@@ -88,28 +89,28 @@
         </com.google.android.material.chip.ChipGroup>
 
         <!-- 健康度趋势卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp">
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="22dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="健康度趋势"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/chart_health"
@@ -118,31 +119,31 @@
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- 电量趋势卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp">
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="22dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="电量趋势"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/chart_level"
@@ -151,31 +152,31 @@
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- 温度趋势卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp">
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="22dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="温度趋势"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/chart_temperature"
@@ -184,30 +185,30 @@
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- 充电功率趋势卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/ios_secondary_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp">
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="22dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="充电功率趋势"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:letterSpacing="-0.01"
-                    android:lineSpacingExtra="3dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/chart_power"
@@ -216,7 +217,7 @@
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

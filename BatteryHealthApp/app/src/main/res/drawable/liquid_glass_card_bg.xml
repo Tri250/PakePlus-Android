@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 底部柔和阴影 -->
+    <item
+        android:left="2dp"
+        android:top="4dp"
+        android:right="2dp"
+        android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <solid android:color="@color/liquid_glass_shadow" />
+        </shape>
+    </item>
+
+    <!-- 主玻璃表面 -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <solid android:color="@color/liquid_glass_surface" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/liquid_glass_border" />
+        </shape>
+    </item>
+
+    <!-- 顶部高光 - 模拟玻璃反光 -->
+    <item
+        android:left="0.5dp"
+        android:top="0.5dp"
+        android:right="0.5dp"
+        android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="28dp"
+                android:topRightRadius="28dp"
+                android:bottomLeftRadius="4dp"
+                android:bottomRightRadius="4dp" />
+            <gradient
+                android:startColor="@color/liquid_glass_highlight"
+                android:endColor="@android:color/transparent"
+                android:angle="270"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>

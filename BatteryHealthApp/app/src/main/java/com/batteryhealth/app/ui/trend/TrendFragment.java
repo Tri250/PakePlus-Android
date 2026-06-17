@@ -105,18 +105,23 @@ public class TrendFragment extends Fragment {
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
                 View child = root.getChildAt(i);
+                if (child.getId() == R.id.view_pager) continue;
                 child.setAlpha(0f);
-                child.setTranslationY(30f);
+                child.setTranslationY(60f);
+                child.setScaleX(0.94f);
+                child.setScaleY(0.94f);
                 child.animate()
                     .alpha(1f)
                     .translationY(0f)
-                    .setDuration(400)
-                    .setStartDelay(i * 80L)
-                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(650)
+                    .setStartDelay(i * 100L)
+                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
                     .start();
             }
         } catch (Exception e) {
-            Log.d(TAG, "Card animation skipped: " + e.getMessage());
+            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
         }
     }
 
