@@ -12,7 +12,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.0'
+        // 升级到AGP 8.7.3以支持Android 15 (SDK 35)
+        classpath 'com.android.tools.build:gradle:8.7.3'
     }
 }
 

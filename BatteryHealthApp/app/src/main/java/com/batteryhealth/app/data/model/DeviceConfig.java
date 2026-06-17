@@ -62,6 +62,7 @@ public class DeviceConfig {
     private String activationDateStr; // 激活日期字符串
     private int usageDays; // 使用天数
     private String activationSource; // 激活日期来源
+    private float activationConfidence; // 激活日期可信度 0-1
     
     public DeviceConfig() {
         // 初始化基本信息
@@ -375,6 +376,14 @@ public class DeviceConfig {
 
     public void setActivationSource(String activationSource) {
         this.activationSource = activationSource;
+    }
+
+    public float getActivationConfidence() {
+        return activationConfidence;
+    }
+
+    public void setActivationConfidence(float activationConfidence) {
+        this.activationConfidence = activationConfidence;
     }
 
     /**

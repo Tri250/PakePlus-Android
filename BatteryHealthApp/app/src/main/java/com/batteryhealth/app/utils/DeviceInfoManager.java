@@ -262,29 +262,47 @@ public class DeviceInfoManager {
     }
     
     /**
-     * 加载激活信息
-     * 
-     * 尝试多种方式获取设备首次激活日期：
-     * 1. 从系统设置读取首次启动时间
-     * 2. 从应用数据目录创建时间推断
-     * 3. 使用设备构建时间作为最后备选
+     * 加载激活信息（2026 旗舰版）
+     *
+     * 尝试多种方式获取设备首次激活日期，并按可信度排序：
+     * 1. 系统设置 first_boot_time（最可信，但极少 ROM 提供）
+     * 2. 应用首次安装时间 PackageInfo.firstInstallTime（较可信）
+     * 3. 应用数据目录创建时间（较可信，但可能被清除数据影响）
+     * 4. Android ID + Build.TIME 估算（粗略估算）
+     * 5. 设备构建时间（最后备选）
+     *
+     * 每次结果都会标注来源与可信度，UI 可据此向用户说明是否为估算值。
      */
     private void loadActivationInfo() {
         long activationTime = 0;
-        String source = "";
-        
+        String source = "unknown";
+        float confidence = 0.0f;
+
         try {
-            // 方法1: 尝试读取系统设置中的首次启动时间
-            // 某些定制ROM会存储这个信息
+            // 方法1: 系统设置中的首次启动时间（最可信）
             try {
                 String firstBoot = Settings.Global.getString(context.getContentResolver(), "first_boot_time");
                 if (firstBoot != null && !firstBoot.isEmpty()) {
                     activationTime = Long.parseLong(firstBoot);
                     source = "system";
+                    confidence = 0.95f;
                 }
             } catch (Exception ignored) {}
-            
-            // 方法2: 从应用数据目录的修改时间推断
+
+            // 方法2: 应用首次安装时间
+            if (activationTime == 0) {
+                try {
+                    android.content.pm.PackageInfo packageInfo = context.getPackageManager()
+                            .getPackageInfo(context.getPackageName(), 0);
+                    if (packageInfo != null && packageInfo.firstInstallTime > 0) {
+                        activationTime = packageInfo.firstInstallTime;
+                        source = "package_install";
+                        confidence = 0.75f;
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // 方法3: 从应用数据目录的修改时间推断
             if (activationTime == 0) {
                 try {
                     File dataDir = context.getDataDir();
@@ -292,56 +310,76 @@ public class DeviceInfoManager {
                         activationTime = dataDir.lastModified();
                         if (activationTime > 0) {
                             source = "datadir";
+                            confidence = 0.55f;
                         }
                     }
                 } catch (Exception ignored) {}
             }
-            
-            // 方法3: 从Android ID的生成时间推断
-            // 使用ANDROID_ID的hash值作为伪随机种子，结合构建时间
+
+            // 方法4: 从Android ID的生成时间推断（粗略估算）
             if (activationTime == 0) {
                 try {
-                    String androidId = Settings.Secure.getString(context.getContentResolver(), 
+                    String androidId = Settings.Secure.getString(context.getContentResolver(),
                             Settings.Secure.ANDROID_ID);
                     if (androidId != null && !androidId.isEmpty()) {
-                        // Android ID通常在首次启动时生成
-                        // 使用构建时间加上一个基于ID的偏移量来估算
                         long buildTime = Build.TIME;
                         int idHash = androidId.hashCode();
-                        // 偏移量在0-30天之间
                         long offset = Math.abs(idHash % (30L * 24 * 60 * 60 * 1000));
                         activationTime = buildTime + offset;
                         source = "android_id";
+                        confidence = 0.30f;
                     }
                 } catch (Exception ignored) {}
             }
-            
-            // 方法4: 使用设备构建时间作为最后备选
+
+            // 方法5: 使用设备构建时间作为最后备选
             if (activationTime == 0) {
                 activationTime = Build.TIME;
                 source = "build_time";
+                confidence = 0.15f;
             }
-            
+
             deviceConfig.setActivationDate(activationTime);
             deviceConfig.setActivationSource(source);
-            
+            deviceConfig.setActivationConfidence(confidence);
+
             // 计算使用天数
             long currentTime = System.currentTimeMillis();
             long usageDays = (currentTime - activationTime) / (1000 * 60 * 60 * 24);
             deviceConfig.setUsageDays((int) Math.max(0, usageDays));
-            
+
             // 格式化日期
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             deviceConfig.setActivationDateStr(sdf.format(new java.util.Date(activationTime)));
-            
+
         } catch (Exception e) {
             e.printStackTrace();
-            // 使用默认值
             deviceConfig.setActivationDate(Build.TIME);
             deviceConfig.setUsageDays(0);
             deviceConfig.setActivationDateStr("未知");
             deviceConfig.setActivationSource("unknown");
+            deviceConfig.setActivationConfidence(0.0f);
         }
+    }
+
+    /**
+     * 获取激活日期来源文本
+     */
+    public String getActivationSourceText() {
+        String source = deviceConfig.getActivationSource();
+        if ("system".equals(source)) return "系统记录";
+        if ("package_install".equals(source)) return "应用安装时间";
+        if ("datadir".equals(source)) return "应用数据目录";
+        if ("android_id".equals(source)) return "Android ID 估算";
+        if ("build_time".equals(source)) return "设备构建时间估算";
+        return "未知";
+    }
+
+    /**
+     * 获取激活日期可信度 0-1
+     */
+    public float getActivationConfidence() {
+        return deviceConfig.getActivationConfidence();
     }
     
     /**

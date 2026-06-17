@@ -1,11 +1,6 @@
 package com.batteryhealth.app.ui.endurance;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,11 +12,18 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 续航分析Fragment
@@ -31,10 +33,13 @@ import com.batteryhealth.app.utils.BatteryDataManager;
  * 2. 放电速率监测
  * 3. 充电状态分析
  * 4. 预计充满时间计算
+ * 
+ * 注意：电池广播由BatteryMonitorService统一处理，此Fragment使用定时轮询
  */
 public class EnduranceFragment extends Fragment {
     
     private static final String TAG = "EnduranceFragment";
+    private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
     
     private TextView tvEnduranceTime;
     private TextView tvEnduranceStatus;
@@ -46,18 +51,26 @@ public class EnduranceFragment extends Fragment {
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
-    private boolean isReceiverRegistered = false;
+    private boolean isRunning = false;
     
     // 放电速率计算
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0; // %/h
     
-    private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+    private Runnable updateRunnable = new Runnable() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && isAdded() && !isDetached()) {
-                updateUI();
+        public void run() {
+            if (!isRunning) return;
+
+            // 刷新基本电池信息
+            if (batteryDataManager != null) {
+                batteryDataManager.refreshFromStickyIntent();
+            }
+
+            updateUI();
+            if (mainHandler != null) {
+                mainHandler.postDelayed(this, UPDATE_INTERVAL);
             }
         }
     };
@@ -69,9 +82,19 @@ public class EnduranceFragment extends Fragment {
         try {
             return inflater.inflate(R.layout.fragment_endurance, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            return new View(requireContext());
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override
@@ -86,23 +109,84 @@ public class EnduranceFragment extends Fragment {
             }
             
             initViews(view);
-            registerBatteryReceiver();
+            loadHistoricalDischargeRate();
             updateUI();
         } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
+            Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 从历史数据库加载平均放电速率作为初始值，避免首次进入显示“计算中...”。
+     */
+    private void loadHistoricalDischargeRate() {
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+                if (app == null) return;
+                AppDatabase db = app.getDatabase();
+                if (db == null) return;
+
+                // 取最近 24 小时内至少 10 条记录计算放电速率
+                long oneDayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
+                List<BatteryInfo> records = db.batteryInfoDao().getSince(oneDayAgo);
+                if (records == null || records.size() < 5) return;
+
+                // 按时间排序
+                Collections.sort(records, (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+
+                float totalRate = 0;
+                int sampleCount = 0;
+                for (int i = 1; i < records.size(); i++) {
+                    BatteryInfo prev = records.get(i - 1);
+                    BatteryInfo curr = records.get(i);
+                    int levelDiff = prev.getLevel() - curr.getLevel();
+                    long timeDiff = curr.getTimestamp() - prev.getTimestamp();
+                    if (levelDiff > 0 && timeDiff > 60_000) {
+                        float hours = timeDiff / (1000.0f * 60 * 60);
+                        totalRate += levelDiff / hours;
+                        sampleCount++;
+                    }
+                }
+
+                if (sampleCount > 0) {
+                    float avgRate = totalRate / sampleCount;
+                    // 限制在合理范围
+                    if (avgRate > 0.1f && avgRate < 100) {
+                        dischargeRate = avgRate;
+                        Log.d(TAG, "Loaded historical discharge rate: " + avgRate + "%/h");
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading historical discharge rate: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isRunning = true;
+        if (mainHandler != null) {
+            mainHandler.post(updateRunnable);
+        }
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
         }
     }
     
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        try {
-            if (isReceiverRegistered && getContext() != null) {
-                getContext().unregisterReceiver(batteryReceiver);
-                isReceiverRegistered = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
         }
     }
     
@@ -114,26 +198,6 @@ public class EnduranceFragment extends Fragment {
         tvChargeStatus = view.findViewById(R.id.tv_charge_status);
         tvBatteryTemp = view.findViewById(R.id.tv_battery_temp);
         tvFullChargeTime = view.findViewById(R.id.tv_full_charge_time);
-    }
-    
-    private void registerBatteryReceiver() {
-        try {
-            if (getContext() != null) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-                filter.addAction(Intent.ACTION_POWER_CONNECTED);
-                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-                
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    getContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(batteryReceiver, filter);
-                }
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering receiver: " + e.getMessage());
-        }
     }
     
     private void updateUI() {
@@ -183,7 +247,7 @@ public class EnduranceFragment extends Fragment {
                 if (tvEnduranceTime != null) {
                     if (isCharging) {
                         tvEnduranceTime.setText("充电中");
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_blue));
+                        tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_blue));
                     } else if (dischargeRate > 0 && level > 0) {
                         float remainingHours = level / dischargeRate;
                         if (remainingHours >= 24) {
@@ -191,7 +255,7 @@ public class EnduranceFragment extends Fragment {
                         } else {
                             tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
                         }
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_green));
+                        tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                     } else {
                         tvEnduranceTime.setText("-- 小时");
                     }

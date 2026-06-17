@@ -1,5 +1,7 @@
 package com.batteryhealth.app.ui.config;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,11 +11,13 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 
 /**
@@ -27,15 +31,24 @@ public class DeviceConfigFragment extends Fragment {
     
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, 
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         try {
             return inflater.inflate(R.layout.fragment_device_config, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            View errorView = new View(requireContext());
-            return errorView;
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override
@@ -99,9 +112,34 @@ public class DeviceConfigFragment extends Fragment {
             if (tvUsageDays != null) {
                 tvUsageDays.setText(config.getUsageDays() + " 天");
             }
+
+            initHealthAlertSwitch(view);
         } catch (Exception e) {
             Log.e(TAG, "Error initializing views: " + e.getMessage());
             setDefaultValues(view);
+        }
+    }
+
+    /**
+     * 初始化健康度衰减预警开关
+     */
+    private void initHealthAlertSwitch(View view) {
+        try {
+            SwitchCompat switchAlert = view.findViewById(R.id.switch_health_alert);
+            if (switchAlert == null) {
+                return;
+            }
+
+            SharedPreferences prefs = requireContext().getSharedPreferences(
+                    BatteryMonitorService.PREFS_NAME, Context.MODE_PRIVATE);
+            boolean enabled = prefs.getBoolean(BatteryMonitorService.PREF_ALERT_ENABLED, true);
+            switchAlert.setChecked(enabled);
+
+            switchAlert.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                prefs.edit().putBoolean(BatteryMonitorService.PREF_ALERT_ENABLED, isChecked).apply();
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing health alert switch: " + e.getMessage());
         }
     }
     

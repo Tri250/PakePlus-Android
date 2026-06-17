@@ -57,7 +57,7 @@
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
         android:name=".BatteryHealthApplication"
-        tools:targetApi="34">
+        tools:targetApi="35">
         
         <activity
             android:name=".MainActivity"
@@ -72,7 +72,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- Android 15+ 预测性返回手势 - 仅在高版本启用 -->
+            <!-- Android 15+ 预测性返回手势 -->
             <meta-data
                 android:name="android.window.enableOnBackInvokedCallback"
                 android:value="true"

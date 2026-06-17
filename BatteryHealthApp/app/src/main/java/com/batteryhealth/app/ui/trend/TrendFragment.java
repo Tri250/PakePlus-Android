@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -57,9 +58,19 @@ public class TrendFragment extends Fragment {
         try {
             return inflater.inflate(R.layout.fragment_trend, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            return new View(requireContext());
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override
@@ -105,9 +116,9 @@ public class TrendFragment extends Fragment {
         chart.setDrawGridBackground(false);
         chart.setExtraOffsets(8, 8, 8, 8);
         
-        // 获取颜色（兼容API 23以下）
-        int secondaryLabelColor = getResources().getColor(R.color.ios_secondary_label);
-        int separatorColor = getResources().getColor(R.color.ios_separator);
+        // 获取颜色
+        int secondaryLabelColor = ContextCompat.getColor(requireContext(), R.color.ios_secondary_label);
+        int separatorColor = ContextCompat.getColor(requireContext(), R.color.ios_separator);
         
         // X轴 - 时间
         XAxis xAxis = chart.getXAxis();
@@ -169,33 +180,36 @@ public class TrendFragment extends Fragment {
     
     private void updateCharts(List<BatteryInfo> batteryData, List<PowerHistory> powerData) {
         try {
-            boolean hasData = batteryData != null && !batteryData.isEmpty();
-            
-            if (tvNoData != null) {
-                tvNoData.setVisibility(hasData ? View.GONE : View.VISIBLE);
+            int recordCount = batteryData != null ? batteryData.size() : 0;
+            boolean hasEnoughData = recordCount >= 10;
+
+            // 无数据或数据不足时显示友好引导
+            if (!hasEnoughData) {
+                showEmptyState(recordCount);
+                return;
             }
+
+            showCharts();
             if (tvDataCount != null) {
-                tvDataCount.setText(hasData ? batteryData.size() + " 条记录" : "暂无数据");
+                tvDataCount.setText(recordCount + " 条记录");
             }
-            
-            if (!hasData) return;
-            
+
             // 健康度趋势
             List<Entry> healthEntries = new ArrayList<>();
             List<Entry> levelEntries = new ArrayList<>();
             List<Entry> tempEntries = new ArrayList<>();
-            
+
             for (BatteryInfo info : batteryData) {
                 float time = info.getTimestamp();
                 healthEntries.add(new Entry(time, info.getHealthPercentage()));
                 levelEntries.add(new Entry(time, info.getLevel()));
                 tempEntries.add(new Entry(time, info.getTemperature()));
             }
-            
+
             setChartData(chartHealth, "健康度", healthEntries, R.color.ios_green);
             setChartData(chartLevel, "电量", levelEntries, R.color.ios_blue);
             setChartData(chartTemperature, "温度", tempEntries, R.color.ios_orange);
-            
+
             // 充电功率趋势
             if (powerData != null && !powerData.isEmpty()) {
                 List<Entry> powerEntries = new ArrayList<>();
@@ -203,18 +217,46 @@ public class TrendFragment extends Fragment {
                     powerEntries.add(new Entry(ph.getTimestamp(), ph.getPower()));
                 }
                 setChartData(chartPower, "功率", powerEntries, R.color.ios_purple);
+            } else {
+                clearChart(chartPower, "暂无充电记录");
             }
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Error updating charts: " + e.getMessage());
         }
+    }
+
+    private void showEmptyState(int recordCount) {
+        if (tvNoData != null) {
+            tvNoData.setVisibility(View.VISIBLE);
+            if (recordCount == 0) {
+                tvNoData.setText("数据收集中\n\n趋势图表需要至少 10 条记录。保持应用在后台运行约 10 分钟后即可查看。");
+            } else {
+                tvNoData.setText(String.format("已收集 %d 条记录\n\n继续监测约 %d 分钟后即可生成趋势图表。", recordCount, (10 - recordCount) * 1));
+            }
+        }
+        if (tvDataCount != null) tvDataCount.setText("暂无数据");
+        if (chartHealth != null) chartHealth.setNoDataText("数据收集中");
+        if (chartLevel != null) chartLevel.setNoDataText("数据收集中");
+        if (chartTemperature != null) chartTemperature.setNoDataText("数据收集中");
+        if (chartPower != null) chartPower.setNoDataText("数据收集中");
+    }
+
+    private void showCharts() {
+        if (tvNoData != null) tvNoData.setVisibility(View.GONE);
+    }
+
+    private void clearChart(LineChart chart, String text) {
+        if (chart == null) return;
+        chart.setNoDataText(text);
+        chart.clear();
     }
     
     private void setChartData(LineChart chart, String label, List<Entry> entries, int colorRes) {
         if (chart == null || entries == null || entries.isEmpty()) return;
         
         LineDataSet dataSet = new LineDataSet(entries, label);
-        int color = getResources().getColor(colorRes);
+        int color = ContextCompat.getColor(requireContext(), colorRes);
         dataSet.setColor(color);
         dataSet.setLineWidth(2.5f);
         dataSet.setCircleColor(color);

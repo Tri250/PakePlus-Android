@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -19,8 +20,10 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
 import java.io.BufferedReader;
@@ -44,12 +47,26 @@ public class BatteryMonitorService extends Service {
     private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
     private static final long SAVE_INTERVAL = 60000; // 60秒保存一次到数据库
     private static final long DATA_CLEANUP_INTERVAL = 86400000; // 24小时清理一次旧数据
-    
+
+    // 健康度衰减预警配置
+    private static final String HEALTH_ALERT_CHANNEL_ID = "battery_health_alert_channel";
+    private static final int HEALTH_ALERT_NOTIFICATION_ID = 1002;
+    private static final long HEALTH_CHECK_INTERVAL = 24L * 60 * 60 * 1000; // 24小时
+    private static final long MIN_TIME_BETWEEN_ALERTS = 7L * 24 * 60 * 60 * 1000; // 7天
+    private static final int MIN_RECORDS_FOR_DEGRADATION = 10;
+    private static final float DEFAULT_DEGRADATION_THRESHOLD = 2.0f;
+    public static final String PREFS_NAME = "battery_health_prefs";
+    public static final String PREF_ALERT_ENABLED = "health_alert_enabled";
+    public static final String PREF_LAST_ALERT_TIME = "last_health_alert_time";
+    public static final String PREF_DEGRADATION_THRESHOLD = "degradation_threshold";
+
     private Handler handler;
     private BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
     private boolean isRunning = false;
     private long lastSaveTime = 0;
+    private SharedPreferences prefs;
+    private boolean healthCheckScheduled = false;
     
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -87,6 +104,24 @@ public class BatteryMonitorService extends Service {
             }
         }
     };
+
+    // 健康度衰减预警检查任务（每24小时执行一次）
+    private Runnable healthCheckTask = new Runnable() {
+        @Override
+        public void run() {
+            if (!isRunning) return;
+            
+            try {
+                checkHealthDegradation();
+            } catch (Exception e) {
+                Log.e(TAG, "Error in health check task: " + e.getMessage());
+            }
+            
+            if (handler != null) {
+                handler.postDelayed(this, HEALTH_CHECK_INTERVAL);
+            }
+        }
+    };
     
     public interface OnBatteryDataListener {
         void onBatteryDataUpdated(BatteryInfo info);
@@ -98,8 +133,10 @@ public class BatteryMonitorService extends Service {
         try {
             handler = new Handler(Looper.getMainLooper());
             currentBatteryInfo = new BatteryInfo();
-            
+            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
             createNotificationChannel();
+            createHealthAlertChannel();
             registerBatteryReceiver();
         } catch (Exception e) {
             Log.e(TAG, "Error in onCreate: " + e.getMessage());
@@ -116,6 +153,12 @@ public class BatteryMonitorService extends Service {
                 // 启动定时更新
                 if (handler != null) {
                     handler.post(updateTask);
+                }
+
+                // 启动健康度衰减预警检查（延迟1分钟，待数据稳定后执行）
+                if (handler != null && !healthCheckScheduled) {
+                    healthCheckScheduled = true;
+                    handler.postDelayed(healthCheckTask, 60_000);
                 }
             }
         } catch (Exception e) {
@@ -141,9 +184,10 @@ public class BatteryMonitorService extends Service {
         }
         if (handler != null) {
             handler.removeCallbacks(updateTask);
+            handler.removeCallbacks(healthCheckTask);
         }
     }
-    
+
     /**
      * 注册电池广播接收器
      */
@@ -427,7 +471,122 @@ public class BatteryMonitorService extends Service {
             }
         }
     }
-    
+
+    /**
+     * 创建健康度衰减预警通知渠道
+     */
+    private void createHealthAlertChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                NotificationChannel channel = new NotificationChannel(
+                        HEALTH_ALERT_CHANNEL_ID,
+                        getString(R.string.health_alert_channel_name),
+                        NotificationManager.IMPORTANCE_HIGH
+                );
+                channel.setDescription(getString(R.string.health_alert_channel_description));
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    manager.createNotificationChannel(channel);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating health alert channel: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 检查电池健康度是否出现显著衰减（基于近30天历史均值）
+     */
+    private void checkHealthDegradation() {
+        if (prefs == null) {
+            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        }
+
+        boolean enabled = prefs.getBoolean(PREF_ALERT_ENABLED, true);
+        if (!enabled) {
+            return;
+        }
+
+        final float threshold = prefs.getFloat(PREF_DEGRADATION_THRESHOLD, DEFAULT_DEGRADATION_THRESHOLD);
+        final float currentHealth = currentBatteryInfo.getHealthPercentage();
+        if (currentHealth <= 0.0f || currentHealth > 100.0f) {
+            return;
+        }
+
+        final long now = System.currentTimeMillis();
+        long lastAlertTime = prefs.getLong(PREF_LAST_ALERT_TIME, 0);
+        if (now - lastAlertTime < MIN_TIME_BETWEEN_ALERTS) {
+            return;
+        }
+
+        // 数据库查询在后台线程执行，避免阻塞服务主线程
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) getApplicationContext();
+                AppDatabase db = app.getDatabase();
+                if (db == null) {
+                    return;
+                }
+
+                long monthAgo = now - 30L * 24 * 60 * 60 * 1000;
+                int recordCount = db.batteryInfoDao().getCountSince(monthAgo);
+                if (recordCount < MIN_RECORDS_FOR_DEGRADATION) {
+                    return;
+                }
+
+                float averageHealth = db.batteryInfoDao().getAverageHealthSince(monthAgo);
+                if (averageHealth <= 0.0f) {
+                    return;
+                }
+
+                float drop = averageHealth - currentHealth;
+                if (drop >= threshold) {
+                    sendHealthAlertNotification(drop, averageHealth, currentHealth);
+                    prefs.edit().putLong(PREF_LAST_ALERT_TIME, now).apply();
+                    Log.d(TAG, "Health degradation alert sent: drop=" + drop + "%");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error checking health degradation: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    /**
+     * 发送健康度衰减预警通知
+     */
+    private void sendHealthAlertNotification(float drop, float historicalHealth, float currentHealth) {
+        try {
+            Intent intent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 1, intent, PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String content = getString(
+                    R.string.health_alert_content,
+                    drop,
+                    historicalHealth,
+                    currentHealth
+            );
+
+            Notification notification = new NotificationCompat.Builder(this, HEALTH_ALERT_CHANNEL_ID)
+                    .setContentTitle(getString(R.string.health_alert_title))
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_battery_health)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .build();
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.notify(HEALTH_ALERT_NOTIFICATION_ID, notification);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending health alert notification: " + e.getMessage());
+        }
+    }
+
     /**
      * 构建通知
      */

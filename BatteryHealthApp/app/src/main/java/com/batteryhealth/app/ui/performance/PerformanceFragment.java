@@ -41,15 +41,24 @@ public class PerformanceFragment extends Fragment {
     
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, 
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         try {
             return inflater.inflate(R.layout.fragment_performance, container, false);
         } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            View errorView = new View(requireContext());
-            return errorView;
+            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
+            return createErrorView("界面加载失败，请重启应用");
         }
+    }
+
+    private View createErrorView(String message) {
+        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        errorView.setText(message);
+        errorView.setTextColor(0xFF000000);
+        errorView.setTextSize(16);
+        errorView.setPadding(40, 100, 40, 40);
+        errorView.setBackgroundColor(0xFFF2F2F7);
+        return errorView;
     }
     
     @Override
@@ -64,10 +73,9 @@ public class PerformanceFragment extends Fragment {
             
             // 设置默认值
             setDefaultValues();
-            
+
             handler = new Handler(Looper.getMainLooper());
-            isRunning = true;
-            
+
             updateTask = new Runnable() {
                 @Override
                 public void run() {
@@ -78,25 +86,41 @@ public class PerformanceFragment extends Fragment {
                     }
                 }
             };
-            
-            handler.post(updateTask);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
-    
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isRunning = true;
+        if (handler != null && updateTask != null) {
+            handler.post(updateTask);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isRunning = false;
+        if (handler != null && updateTask != null) {
+            handler.removeCallbacks(updateTask);
+        }
+    }
+
     private void setDefaultValues() {
         if (tvCpuUsage != null) tvCpuUsage.setText("0%");
         if (tvMemoryUsage != null) tvMemoryUsage.setText("0%");
         if (progressCpu != null) progressCpu.setProgress(0);
         if (progressMemory != null) progressMemory.setProgress(0);
     }
-    
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         isRunning = false;
-        if (handler != null) {
+        if (handler != null && updateTask != null) {
             handler.removeCallbacks(updateTask);
         }
     }
