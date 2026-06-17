@@ -268,18 +268,13 @@ public class DeviceInfoManager {
                 }
             } catch (Exception ignored) {}
             
-            // 方法2: 从应用数据目录的创建时间推断
-            // 系统应用通常会在首次启动时创建
+            // 方法2: 从应用数据目录的修改时间推断
             if (activationTime == 0) {
                 try {
-                    File dataDir = new File("/data/system");
-                    if (dataDir.exists()) {
-                        java.lang.Process process = Runtime.getRuntime().exec("stat -c %Y /data/system");
-                        BufferedReader reader = new BufferedReader(new FileReader(process.getInputStream().toString()));
-                        String line = reader.readLine();
-                        reader.close();
-                        if (line != null && !line.isEmpty()) {
-                            activationTime = Long.parseLong(line.trim()) * 1000;
+                    File dataDir = context.getDataDir();
+                    if (dataDir != null && dataDir.exists()) {
+                        activationTime = dataDir.lastModified();
+                        if (activationTime > 0) {
                             source = "datadir";
                         }
                     }

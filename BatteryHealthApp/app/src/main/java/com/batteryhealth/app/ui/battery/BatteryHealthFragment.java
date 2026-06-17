@@ -51,7 +51,7 @@ public class BatteryHealthFragment extends Fragment {
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent != null) {
+            if (intent != null && isAdded() && !isDetached()) {
                 updateUI();
             }
         }

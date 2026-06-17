@@ -447,11 +447,15 @@ public class ChargingMonitorService extends Service {
      * 保存功率历史记录
      */
     private void savePowerHistory(PowerHistory history) {
-        // 使用线程保存到数据库
         new Thread(() -> {
             try {
-                // 这里应该调用数据库DAO保存数据
-                // 为简化代码，暂时省略具体实现
+                com.batteryhealth.app.BatteryHealthApplication app = 
+                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                if (db != null) {
+                    db.powerHistoryDao().insert(history);
+                    Log.d(TAG, "Power history saved: " + history.getPower() + "W");
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error saving power history: " + e.getMessage());
             }

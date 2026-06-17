@@ -29,7 +29,7 @@ import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
-import com.batteryhealth.app.ui.trend.TrendFragment;
+import com.batteryhealth.app.ui.endurance.EnduranceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -124,7 +124,8 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigation = findViewById(R.id.bottom_navigation);
         
         if (viewPager == null || bottomNavigation == null) {
-            throw new RuntimeException("Required views not found in layout");
+            Log.e(TAG, "Required views not found in layout");
+            return;
         }
         
         // 设置ViewPager
@@ -142,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         fragments.add(new BatteryHealthFragment());
         fragments.add(new DeviceConfigFragment());
         fragments.add(new PerformanceFragment());
-        fragments.add(new TrendFragment());
+        fragments.add(new EnduranceFragment());
         fragments.add(new PowerFragment());
         
         viewPager.setAdapter(new FragmentStateAdapter(this) {
@@ -192,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
             return 1;
         } else if (menuId == R.id.nav_performance) {
             return 2;
-        } else if (menuId == R.id.nav_trend) {
+        } else if (menuId == R.id.nav_endurance) {
             return 3;
         } else if (menuId == R.id.nav_power) {
             return 4;
@@ -216,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
                 menuId = R.id.nav_performance;
                 break;
             case 3:
-                menuId = R.id.nav_trend;
+                menuId = R.id.nav_endurance;
                 break;
             case 4:
                 menuId = R.id.nav_power;
@@ -232,6 +233,14 @@ public class MainActivity extends AppCompatActivity {
      */
     private void checkPermissions() {
         List<String> permissions = new ArrayList<>();
+        
+        // Android 13+ 通知权限（前台服务必需）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
         
         // Android 13+ 使用新的媒体权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -314,13 +323,19 @@ public class MainActivity extends AppCompatActivity {
                 startService(batteryServiceIntent);
             }
             
-            // 启动充电监测服务
-            Intent chargingServiceIntent = new Intent(this, ChargingMonitorService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(chargingServiceIntent);
-            } else {
-                startService(chargingServiceIntent);
-            }
+            // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
+            mainHandler.postDelayed(() -> {
+                try {
+                    Intent chargingServiceIntent = new Intent(this, ChargingMonitorService.class);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(chargingServiceIntent);
+                    } else {
+                        startService(chargingServiceIntent);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error starting charging service: " + e.getMessage());
+                }
+            }, 1000);
             
             servicesStarted = true;
         } catch (Exception e) {
