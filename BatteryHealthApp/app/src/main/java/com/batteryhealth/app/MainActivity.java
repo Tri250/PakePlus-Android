@@ -78,19 +78,13 @@ public class MainActivity extends AppCompatActivity {
             
             mainHandler = new Handler(Looper.getMainLooper());
             
-            // 初始化视图 - 必须先于其他操作
-            initViews();
-            
-            // 检查视图是否成功初始化
-            if (viewPager == null || bottomNavigation == null) {
-                Log.e(TAG, "Critical views not initialized");
-                Toast.makeText(this, "界面初始化失败", Toast.LENGTH_LONG).show();
-                return;
-            }
-            
-            // 初始化管理器（带异常处理）
+            // 初始化管理器 - 必须在initViews之前，Fragment需要这些数据
             try {
                 batteryDataManager = new BatteryDataManager(this);
+                batteryDataManager.setOnDataChangedCallback(() -> refreshFragments());
+                batteryDataManager.readCycleCountAsync();
+                batteryDataManager.readBatteryCapacityAsync();
+                batteryDataManager.detectBatterySourceAsync();
             } catch (Exception e) {
                 Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage());
                 batteryDataManager = null;
@@ -103,11 +97,32 @@ public class MainActivity extends AppCompatActivity {
                 deviceInfoManager = null;
             }
             
+            // 初始化视图
+            initViews();
+            
+            // 检查视图是否成功初始化
+            if (viewPager == null || bottomNavigation == null) {
+                Log.e(TAG, "Critical views not initialized");
+                Toast.makeText(this, "界面初始化失败", Toast.LENGTH_LONG).show();
+                return;
+            }
+            
             // 检查权限
             checkPermissions();
             
             // 注册电池广播
             registerBatteryReceiver();
+            
+            // 延迟刷新Fragment数据（等待异步方法完成）
+            mainHandler.postDelayed(() -> {
+                try {
+                    if (!isFinishing() && !isDestroyed()) {
+                        refreshFragments();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error refreshing fragments: " + e.getMessage());
+                }
+            }, 3000);
             
             // 延迟启动服务，避免启动时闪退
             mainHandler.postDelayed(() -> {
@@ -421,5 +436,31 @@ public class MainActivity extends AppCompatActivity {
      */
     public DeviceInfoManager getDeviceInfoManager() {
         return deviceInfoManager;
+    }
+    
+    /**
+     * 刷新所有Fragment数据
+     */
+    private void refreshFragments() {
+        try {
+            if (viewPager != null && viewPager.getAdapter() != null) {
+                // 通知当前可见的Fragment刷新
+                FragmentStateAdapter adapter = (FragmentStateAdapter) viewPager.getAdapter();
+                for (int i = 0; i < adapter.getItemCount(); i++) {
+                    Fragment fragment = getSupportFragmentManager().findFragmentByTag("f" + i);
+                    if (fragment != null && fragment.isAdded() && !fragment.isDetached()) {
+                        if (fragment instanceof BatteryHealthFragment) {
+                            ((BatteryHealthFragment) fragment).refreshData();
+                        } else if (fragment instanceof DeviceConfigFragment) {
+                            ((DeviceConfigFragment) fragment).refreshData();
+                        } else if (fragment instanceof PowerFragment) {
+                            ((PowerFragment) fragment).refreshData();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error refreshing fragments: " + e.getMessage());
+        }
     }
 }

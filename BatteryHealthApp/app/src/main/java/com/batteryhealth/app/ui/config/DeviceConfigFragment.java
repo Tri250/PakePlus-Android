@@ -53,6 +53,30 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 重新获取manager并刷新数据
+        if (getView() != null) {
+            if (getActivity() instanceof MainActivity) {
+                deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
+            }
+            initViews(getView());
+        }
+    }
+    
+    /**
+     * 供MainActivity调用的刷新方法
+     */
+    public void refreshData() {
+        if (getView() != null) {
+            if (getActivity() instanceof MainActivity) {
+                deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
+            }
+            initViews(getView());
+        }
+    }
+    
     private void initViews(View view) {
         try {
             if (deviceInfoManager == null) {

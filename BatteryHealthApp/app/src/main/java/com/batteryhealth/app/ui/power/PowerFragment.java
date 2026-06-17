@@ -95,10 +95,6 @@ public class PowerFragment extends Fragment {
         try {
             mainHandler = new Handler(Looper.getMainLooper());
             
-            if (getActivity() instanceof MainActivity) {
-                batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
-            }
-            
             // 充电功率相关视图
             tvPower = view.findViewById(R.id.tv_power);
             tvVoltage = view.findViewById(R.id.tv_power_voltage);
@@ -122,6 +118,26 @@ public class PowerFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 重新获取manager并刷新数据
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        updateAllData();
+    }
+    
+    /**
+     * 供MainActivity调用的刷新方法
+     */
+    public void refreshData() {
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        updateAllData();
     }
     
     private void setDefaultValues() {
@@ -200,6 +216,11 @@ public class PowerFragment extends Fragment {
     }
     
     private void updateEnduranceData() {
+        // 如果manager为空，尝试重新获取
+        if (batteryDataManager == null && getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        
         if (batteryDataManager == null) return;
         
         try {

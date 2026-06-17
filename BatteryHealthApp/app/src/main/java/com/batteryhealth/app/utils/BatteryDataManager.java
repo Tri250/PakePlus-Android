@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.batteryhealth.app.data.model.BatteryInfo;
@@ -29,6 +31,7 @@ public class BatteryDataManager {
     private Context context;
     private BatteryInfo currentBatteryInfo;
     private Boolean hasRootAccess = null; // 缓存root检测结果
+    private Runnable onDataChangedCallback;
     
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
@@ -43,6 +46,22 @@ public class BatteryDataManager {
         currentBatteryInfo.setBatterySource("unknown");
         
         loadBatteryInfo();
+    }
+    
+    /**
+     * 设置数据变更回调
+     */
+    public void setOnDataChangedCallback(Runnable callback) {
+        this.onDataChangedCallback = callback;
+    }
+    
+    /**
+     * 通知数据变更
+     */
+    private void notifyDataChanged() {
+        if (onDataChangedCallback != null) {
+            new Handler(Looper.getMainLooper()).post(onDataChangedCallback);
+        }
     }
     
     /**
@@ -186,6 +205,7 @@ public class BatteryDataManager {
                 }
 
                 currentBatteryInfo.setCycleCount(Math.max(0, cycleCount));
+                notifyDataChanged();
 
             } catch (Exception e) {
                 Log.e(TAG, "Error reading cycle count: " + e.getMessage());
@@ -223,6 +243,7 @@ public class BatteryDataManager {
                 
                 // 计算健康度
                 calculateHealth();
+                notifyDataChanged();
             } catch (Exception e) {
                 Log.e(TAG, "Error reading battery capacity: " + e.getMessage());
             }
@@ -293,6 +314,7 @@ public class BatteryDataManager {
                         }
                     }
                 }
+                notifyDataChanged();
             } catch (Exception e) {
                 Log.e(TAG, "Error detecting battery source: " + e.getMessage());
             }
