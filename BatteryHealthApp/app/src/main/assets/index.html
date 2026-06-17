@@ -2,765 +2,807 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;">
-    <title>电池健康度分析</title>
-
-    <link rel="stylesheet" href="lib/font-awesome.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>电池健康分析</title>
     <link rel="stylesheet" href="css/style.css">
-
 </head>
 <body>
+    <!-- 启动画面 -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <svg viewBox="0 0 100 100" class="battery-icon">
+                    <rect x="20" y="30" width="56" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="4"/>
+                    <rect x="76" y="42" width="8" height="16" rx="2" fill="currentColor"/>
+                    <rect x="28" y="38" width="20" height="24" rx="2" fill="currentColor" class="battery-fill"/>
+                </svg>
+            </div>
+            <h1 class="splash-title">电池健康分析</h1>
+            <p class="splash-subtitle">专业级电池诊断工具</p>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
 
-    <!-- ============================================
-         页面1: 分析
-         ============================================ -->
-    <div class="ios-page active" id="page-analyze">
-        <h1 class="ios-large-title">电池分析</h1>
-        <p class="ios-subtitle">上传设备诊断文件，获取电池健康度详细分析</p>
+    <!-- 主应用容器 -->
+    <div id="app" class="app-container hidden">
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <span class="status-time" id="status-time">12:00</span>
+            <div class="status-icons">
+                <span class="signal-icon">📶</span>
+                <span class="wifi-icon">📡</span>
+                <span class="battery-status" id="status-battery">🔋</span>
+            </div>
+        </div>
 
-        <!-- 品牌选择 - iOS 分段控制器 -->
-        <nav class="ios-segmented" role="tablist">
-            <button class="ios-segmented-btn brand-tab active ripple" data-brand="xiaomi" role="tab" aria-selected="true">小米/红米</button>
-            <button class="ios-segmented-btn brand-tab ripple" data-brand="vivo" role="tab" aria-selected="false">vivo/iQOO</button>
-            <button class="ios-segmented-btn brand-tab ripple" data-brand="oppo" role="tab" aria-selected="false">OPPO/一加</button>
-            <button class="ios-segmented-btn brand-tab ripple" data-brand="huawei" role="tab" aria-selected="false">华为/荣耀</button>
+        <!-- 导航栏 -->
+        <nav class="nav-bar" id="nav-bar">
+            <div class="nav-large-title">
+                <h1 id="page-title">概览</h1>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn" id="btn-import">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="btn-share">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"/>
+                        <circle cx="6" cy="12" r="3"/>
+                        <circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                </button>
+            </div>
         </nav>
 
-        <!-- 小米/红米说明 -->
-        <div class="brand-content active" id="xiaomi-content" role="tabpanel">
-            <div class="ios-steps">
-                <div class="ios-step">
-                    <div class="ios-step-num">1</div>
-                    <div class="ios-step-content">
-                        <h4>生成诊断文件</h4>
-                        <p>打开【设置】→【我的设备】→【全部参数与信息】，快速连续点击【处理器】信息区域，直到出现"已生成bug报告"提示</p>
+        <!-- 内容区域 -->
+        <main class="content-area" id="content-area">
+            <!-- Tab 1: 概览 -->
+            <section id="tab-overview" class="tab-content active">
+                <div class="hero-section">
+                    <div class="health-ring-container">
+                        <svg class="health-ring" viewBox="0 0 200 200">
+                            <defs>
+                                <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#34C759"/>
+                                    <stop offset="100%" style="stop-color:#30D158"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="ring-bg" cx="100" cy="100" r="85"/>
+                            <circle class="ring-progress" id="health-ring" cx="100" cy="100" r="85"/>
+                        </svg>
+                        <div class="ring-content">
+                            <span class="health-percentage" id="health-percentage">--</span>
+                            <span class="health-label">电池健康</span>
+                        </div>
+                    </div>
+                    <div class="health-grade" id="health-grade">
+                        <span class="grade-badge">--</span>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">2</div>
-                    <div class="ios-step-content">
-                        <h4>导出压缩文件</h4>
-                        <p>等待系统生成bug报告压缩包，文件会自动保存到：<code>MIUI/debug_log/</code> 目录下</p>
+
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔋</div>
+                        <div class="stat-value" id="current-capacity">--</div>
+                        <div class="stat-label">当前容量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-value" id="cycle-count">--</div>
+                        <div class="stat-label">循环次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌡️</div>
+                        <div class="stat-value" id="temperature">--</div>
+                        <div class="stat-label">电池温度</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-value" id="voltage">--</div>
+                        <div class="stat-label">电压</div>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">3</div>
-                    <div class="ios-step-content">
-                        <h4>上传分析</h4>
-                        <p>点击下方"选择文件"，找到MIUI/debug_log目录，选择以bugreport开头的ZIP文件</p>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>设备信息</h3>
+                    </div>
+                    <div class="device-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">型号</span>
+                            <span class="info-value" id="device-model">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">品牌</span>
+                            <span class="info-value" id="device-brand">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Android</span>
+                            <span class="info-value" id="device-android">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">电池状态</span>
+                            <span class="info-value" id="battery-status-text">--</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- vivo/iQOO说明 -->
-        <div class="brand-content" id="vivo-content" role="tabpanel">
-            <div class="ios-steps">
-                <div class="ios-step">
-                    <div class="ios-step-num">1</div>
-                    <div class="ios-step-content">
-                        <h4>生成诊断文件</h4>
-                        <p>打开电话拨打 <code>*#*#112#*#*</code> 调出日志采集页</p>
-                        <p>若无法调出该页面，请参考荣耀教程</p>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>维护建议</h3>
+                    </div>
+                    <div class="recommendations-list" id="recommendations-list">
+                        <div class="recommendation-item">
+                            <span class="rec-icon">💡</span>
+                            <span class="rec-text">导入诊断文件以获取建议</span>
+                        </div>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">2</div>
-                    <div class="ios-step-content">
-                        <h4>导出压缩文件</h4>
-                        <p>点右上角 <strong>"..."</strong> → 选择 <strong>"更多"</strong> → 点击 <strong>"生成错误报告"</strong></p>
-                        <p>报告可能需要几分钟生成，通知栏会显示进度，请耐心等待</p>
+            </section>
+
+            <!-- Tab 2: 健康 -->
+            <section id="tab-health" class="tab-content">
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>电池健康详情</h3>
+                        <span class="card-badge" id="health-status-badge">--</span>
+                    </div>
+                    <div class="health-details">
+                        <div class="detail-row">
+                            <span class="detail-label">设计容量</span>
+                            <span class="detail-value" id="design-capacity">-- mAh</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">实际容量</span>
+                            <span class="detail-value" id="actual-capacity">-- mAh</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">容量损耗</span>
+                            <span class="detail-value" id="capacity-loss">--%</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">电池化学年龄</span>
+                            <span class="detail-value" id="battery-age">-- 个月</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">预计剩余寿命</span>
+                            <span class="detail-value" id="estimated-life">-- 个月</span>
+                        </div>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">3</div>
-                    <div class="ios-step-content">
-                        <h4>上传分析</h4>
-                        <p>日志是以 <code>bugreport</code> 开头的 .zip 文件，选择该文件进行分析</p>
-                        <p>若点击选择按钮无反应，请用 QQ/微信电脑端打开小程序操作</p>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>健康度评估</h3>
+                    </div>
+                    <div class="grade-assessment">
+                        <div class="grade-scale">
+                            <div class="grade-item" data-grade="A+">
+                                <span class="grade-mark">A+</span>
+                                <span class="grade-range">95-100%</span>
+                                <span class="grade-status" id="grade-a-plus"></span>
+                            </div>
+                            <div class="grade-item" data-grade="A">
+                                <span class="grade-mark">A</span>
+                                <span class="grade-range">90-94%</span>
+                                <span class="grade-status" id="grade-a"></span>
+                            </div>
+                            <div class="grade-item" data-grade="B">
+                                <span class="grade-mark">B</span>
+                                <span class="grade-range">80-89%</span>
+                                <span class="grade-status" id="grade-b"></span>
+                            </div>
+                            <div class="grade-item" data-grade="C">
+                                <span class="grade-mark">C</span>
+                                <span class="grade-range">70-79%</span>
+                                <span class="grade-status" id="grade-c"></span>
+                            </div>
+                            <div class="grade-item" data-grade="D">
+                                <span class="grade-mark">D</span>
+                                <span class="grade-range">60-69%</span>
+                                <span class="grade-status" id="grade-d"></span>
+                            </div>
+                            <div class="grade-item" data-grade="E">
+                                <span class="grade-mark">E</span>
+                                <span class="grade-range">&lt;60%</span>
+                                <span class="grade-status" id="grade-e"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="ios-info-box">
-                <p><i class="fas fa-lightbulb"></i> <strong>建议</strong>：从 0% 连续充到 100% 再充 30分钟后，再生成日志，结果更准确</p>
-                <p><i class="fas fa-info-circle"></i> <strong>vivo系统设置查看</strong>：部分机型可在【设置】→【电池】→【电池健康与充电】中直接查看</p>
-            </div>
-        </div>
 
-        <!-- OPPO/一加/realme说明 -->
-        <div class="brand-content" id="oppo-content" role="tabpanel">
-            <div class="ios-steps">
-                <div class="ios-step">
-                    <div class="ios-step-num">1</div>
-                    <div class="ios-step-content">
-                        <h4>开启开发者选项</h4>
-                        <p>打开【设置】→【关于手机】，连续点击【版本号】7次开启开发者选项</p>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>趋势追踪</h3>
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" data-period="week">周</button>
+                            <button class="chart-tab" data-period="month">月</button>
+                            <button class="chart-tab" data-period="year">年</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trend-chart" class="trend-chart"></canvas>
+                    </div>
+                    <div class="trend-stats">
+                        <div class="trend-stat">
+                            <span class="trend-label">平均衰减</span>
+                            <span class="trend-value" id="avg-degradation">--%/月</span>
+                        </div>
+                        <div class="trend-stat">
+                            <span class="trend-label">预计更换</span>
+                            <span class="trend-value" id="replace-estimate">--</span>
+                        </div>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">2</div>
-                    <div class="ios-step-content">
-                        <h4>生成错误报告</h4>
-                        <p>前往【开发人员选项】→ 点击【提交错误报告】→ 选择【完整报告】</p>
-                        <p>手机会震动一下，几分钟后会提示完成</p>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>容量变化</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="capacity-chart" class="capacity-chart"></canvas>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">3</div>
-                    <div class="ios-step-content">
-                        <h4>上传分析</h4>
-                        <p>日志是以 <code>bugreport</code> 开头的 .zip 文件，选择该文件进行分析</p>
-                        <p>若点击选择按钮无反应，请用 QQ/微信电脑端打开小程序操作</p>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>循环次数趋势</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="cycle-chart" class="cycle-chart"></canvas>
                     </div>
                 </div>
-            </div>
-            <div class="ios-info-box">
-                <p><i class="fas fa-lightbulb"></i> <strong>建议</strong>：从 0% 连续充到 100% 再充 30分钟后，再生成日志，结果更准确</p>
-                <p><i class="fas fa-info-circle"></i> <strong>ColorOS系统查看</strong>：ColorOS 7.0+可在【设置】→【电池】→【电池健康】中直接查看</p>
-            </div>
-        </div>
 
-        <!-- 华为/荣耀说明 -->
-        <div class="brand-content" id="huawei-content" role="tabpanel">
-            <div class="ios-steps">
-                <div class="ios-step">
-                    <div class="ios-step-num">1</div>
-                    <div class="ios-step-content">
-                        <h4>开启开发者选项</h4>
-                        <p>打开【设置】→【关于手机】，连续点击【版本号】7次开启开发者选项</p>
-                        <p>本教程也适用于努比亚子品牌红魔</p>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>温度历史</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="temp-chart" class="temp-chart"></canvas>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">2</div>
-                    <div class="ios-step-content">
-                        <h4>生成错误报告</h4>
-                        <p>前往【开发人员选项】→ 点击【提交错误报告】→ 选择【完整报告】</p>
-                        <p>手机会震动一下，几分钟后会提示完成</p>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>报告生成</h3>
+                    </div>
+                    <div class="report-actions">
+                        <button class="report-btn" id="btn-weekly-report">
+                            <span class="btn-icon">📊</span>
+                            <span class="btn-text">生成周报</span>
+                        </button>
+                        <button class="report-btn" id="btn-monthly-report">
+                            <span class="btn-icon">📈</span>
+                            <span class="btn-text">生成月报</span>
+                        </button>
                     </div>
                 </div>
-                <div class="ios-step">
-                    <div class="ios-step-num">3</div>
-                    <div class="ios-step-content">
-                        <h4>上传分析</h4>
-                        <p>日志是以 <code>bugreport</code> 开头的 .zip 文件，选择该文件进行分析</p>
-                        <p>若点击选择按钮无反应，请用 QQ/微信电脑端打开小程序操作</p>
+            </section>
+
+            <!-- Tab 3: 性能 -->
+            <section id="tab-performance" class="tab-content">
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>性能概览</h3>
+                    </div>
+                    <div class="performance-gauges">
+                        <div class="gauge-item">
+                            <div class="gauge-ring" id="cpu-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="40"/>
+                                </svg>
+                                <div class="gauge-value">
+                                    <span id="cpu-usage">--</span>
+                                    <small>CPU</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gauge-item">
+                            <div class="gauge-ring" id="memory-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="40"/>
+                                </svg>
+                                <div class="gauge-value">
+                                    <span id="memory-usage">--</span>
+                                    <small>内存</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gauge-item">
+                            <div class="gauge-ring" id="storage-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="40"/>
+                                </svg>
+                                <div class="gauge-value">
+                                    <span id="storage-usage">--</span>
+                                    <small>存储</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="ios-info-box">
-                <p><i class="fas fa-lightbulb"></i> <strong>建议</strong>：从 0% 连续充到 100% 再充 30分钟后，再生成日志，结果更准确</p>
-                <p><i class="fas fa-info-circle"></i> <strong>华为/荣耀系统查看</strong>：可在【设置】→【电池】→【电池健康】中查看，或使用【手机管家】</p>
-            </div>
-        </div>
 
-        <!-- 电池容量数据库搜索 -->
-        <div class="ios-search-group">
-            <div class="ios-search-group-header">不知道初始容量？搜索手机型号</div>
-            <div class="ios-search-card">
-                <div class="ios-db-stats">
-                    <span><i class="fas fa-mobile-alt"></i> <span id="db-model-count">500+</span> 款机型</span>
-                    <span><i class="fas fa-building"></i> <span id="db-brand-count">15+</span> 个品牌</span>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>应用卡顿分析</h3>
+                    </div>
+                    <div class="app-lag-list" id="app-lag-list">
+                        <div class="lag-item placeholder">
+                            <span>暂无数据，请导入诊断文件</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="ios-quick-brands" role="group" aria-label="快捷品牌选择">
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="小米">小米</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="华为">华为</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="荣耀">荣耀</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="vivo">vivo</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="iQOO">iQOO</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="OPPO">OPPO</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="一加">一加</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="realme">realme</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="红魔">红魔</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="三星">三星</button>
-                    <button class="ios-quick-brand brand-quick-btn" data-brand="苹果">苹果</button>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>性能瓶颈</h3>
+                    </div>
+                    <div class="bottleneck-list" id="bottleneck-list">
+                        <div class="bottleneck-item placeholder">
+                            <span>暂无数据</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="ios-search-bar">
-                    <input type="text" id="capacity-search-input" placeholder="输入手机型号，如：小米14、华为P60" aria-label="搜索手机型号">
-                    <button id="capacity-search-btn"><i class="fas fa-search"></i></button>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>内存使用分析</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="memory-chart" class="memory-chart"></canvas>
+                    </div>
+                    <div class="memory-details" id="memory-details">
+                        <div class="memory-item">
+                            <span class="mem-label">总内存</span>
+                            <span class="mem-value" id="total-memory">--</span>
+                        </div>
+                        <div class="memory-item">
+                            <span class="mem-label">可用内存</span>
+                            <span class="mem-value" id="available-memory">--</span>
+                        </div>
+                        <div class="memory-item">
+                            <span class="mem-label">应用占用</span>
+                            <span class="mem-value" id="app-memory">--</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="capacity-search-result" class="ios-search-result" role="listbox"></div>
-            </div>
-        </div>
 
-        <!-- 文件上传 -->
-        <div class="ios-group">
-            <div class="ios-group-header">诊断文件</div>
-            <div class="ios-upload-area" id="drop-area" role="button" tabindex="0" aria-label="点击或拖放上传文件">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>拖放文件到此处 或 <strong style="color: var(--ios-blue);">点击选择文件</strong></p>
-                <small>支持小米、vivo、OPPO、华为等安卓手机诊断文件（ZIP格式）</small>
-            </div>
-            <div id="file-name-display" class="ios-file-name">
-                <i class="fas fa-check-circle"></i>
-                <span id="selected-file-name">未选择文件</span>
-            </div>
-            <div id="file-validation-error" class="ios-file-error" role="alert">
-                <i class="fas fa-exclamation-circle"></i>
-                <span id="validation-error-text"></span>
-            </div>
-            <input type="file" id="zip-file" accept=".zip,application/zip,application/x-zip-compressed" aria-hidden="true" class="hidden-input">
-        </div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>续航分析</h3>
+                    </div>
+                    <div class="battery-life-stats">
+                        <div class="life-stat">
+                            <span class="life-icon">📱</span>
+                            <div class="life-info">
+                                <span class="life-value" id="screen-on-time">--</span>
+                                <span class="life-label">亮屏时间</span>
+                            </div>
+                        </div>
+                        <div class="life-stat">
+                            <span class="life-icon">😴</span>
+                            <div class="life-info">
+                                <span class="life-value" id="standby-time">--</span>
+                                <span class="life-label">待机时间</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- 初始容量输入 -->
-        <div class="ios-input-group">
-            <label for="initial-capacity">设备初始电池容量 (mAh)</label>
-            <input type="number" id="initial-capacity" class="ios-input" placeholder="例如: 5000" min="1000" max="10000" aria-describedby="capacity-hint">
-            <div class="ios-input-hint" id="capacity-hint">可在上方搜索框查找您的手机型号获取初始容量</div>
-        </div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>耗电排行</h3>
+                    </div>
+                    <div class="power-usage-list" id="power-usage-list">
+                        <div class="power-item placeholder">
+                            <span>暂无数据</span>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- 分析按钮 -->
-        <button id="calculate-btn" class="ios-btn-primary ripple" aria-label="开始分析电池健康度">
-            <i class="fas fa-search-plus"></i>
-            <span>分析电池健康度</span>
-        </button>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>优化建议</h3>
+                    </div>
+                    <div class="optimization-list" id="optimization-list">
+                        <div class="opt-item">
+                            <span class="opt-icon">🚀</span>
+                            <div class="opt-content">
+                                <span class="opt-title">清理后台应用</span>
+                                <span class="opt-desc">关闭不必要的后台应用以节省电量</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <!-- 进度条 -->
-        <div id="progress-container" class="ios-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-            <div class="ios-progress-bar">
-                <div id="progress-fill" class="ios-progress-fill"></div>
-            </div>
-            <div id="progress-text" class="ios-progress-text">准备中...</div>
-        </div>
+            <!-- Tab 4: 设备 -->
+            <section id="tab-device" class="tab-content">
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>设备配置</h3>
+                    </div>
+                    <div class="device-config-list">
+                        <div class="config-group">
+                            <span class="config-title">基本信息</span>
+                            <div class="config-item">
+                                <span class="config-label">型号</span>
+                                <span class="config-value" id="config-model">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">品牌</span>
+                                <span class="config-value" id="config-brand">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">设备代号</span>
+                                <span class="config-value" id="config-codename">--</span>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <span class="config-title">系统信息</span>
+                            <div class="config-item">
+                                <span class="config-label">Android 版本</span>
+                                <span class="config-value" id="config-android">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">安全补丁</span>
+                                <span class="config-value" id="config-security">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">内核版本</span>
+                                <span class="config-value" id="config-kernel">--</span>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <span class="config-title">硬件规格</span>
+                            <div class="config-item">
+                                <span class="config-label">处理器</span>
+                                <span class="config-value" id="config-cpu">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">RAM</span>
+                                <span class="config-value" id="config-ram">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">存储</span>
+                                <span class="config-value" id="config-storage">--</span>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <span class="config-title">屏幕</span>
+                            <div class="config-item">
+                                <span class="config-label">分辨率</span>
+                                <span class="config-value" id="config-resolution">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">像素密度</span>
+                                <span class="config-value" id="config-density">--</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">刷新率</span>
+                                <span class="config-value" id="config-refresh">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- 状态消息 -->
-        <div id="status" class="ios-status" role="status" aria-live="polite"></div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>电池规格</h3>
+                    </div>
+                    <div class="battery-specs" id="battery-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">标称容量</span>
+                            <span class="spec-value" id="spec-nominal">-- mAh</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">典型容量</span>
+                            <span class="spec-value" id="spec-typical">-- mAh</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">额定电压</span>
+                            <span class="spec-value" id="spec-voltage">-- V</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">电池技术</span>
+                            <span class="spec-value" id="spec-tech">锂离子</span>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- 参考表格 - 可折叠 -->
-        <div class="ios-collapsible">
-            <div class="ios-collapsible-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open');">
-                <span><i class="fas fa-chart-bar" style="color:var(--ios-blue);margin-right:6px;"></i>电池健康度参考标准</span>
-                <i class="fas fa-chevron-right chevron"></i>
-            </div>
-            <div class="ios-collapsible-body">
-                <table class="ios-table">
-                    <thead>
-                        <tr>
-                            <th>电池最大容量</th>
-                            <th>电池状态</th>
-                            <th>续航表现</th>
-                            <th>处理建议</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="status-good">90%~100%</span></td>
-                            <td>全新/状态优秀</td>
-                            <td>续航正常，电量稳定</td>
-                            <td>正常使用，坚持保养</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-normal">80%~89%</span></td>
-                            <td>正常衰减</td>
-                            <td>续航小幅下降</td>
-                            <td>继续保养，无需更换</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-warning">75%~79%</span></td>
-                            <td>轻度老化</td>
-                            <td>续航明显变短</td>
-                            <td>按需备用，可暂不换</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-danger">&lt; 75%</span></td>
-                            <td>重度老化</td>
-                            <td>续航断崖下跌、跳电</td>
-                            <td><strong>建议尽快更换</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>出厂激活信息</h3>
+                    </div>
+                    <div class="activation-info">
+                        <div class="activation-item">
+                            <span class="activation-label">激活日期</span>
+                            <span class="activation-value" id="activation-date">--</span>
+                        </div>
+                        <div class="activation-item">
+                            <span class="activation-label">保修状态</span>
+                            <span class="activation-value" id="warranty-status">--</span>
+                        </div>
+                        <div class="activation-item">
+                            <span class="activation-label">保修到期</span>
+                            <span class="activation-value" id="warranty-end">--</span>
+                        </div>
+                        <div class="activation-item">
+                            <span class="activation-label">服务资格</span>
+                            <span class="activation-value" id="service-eligible">--</span>
+                        </div>
+                        <div class="activation-item">
+                            <span class="activation-label">生产日期</span>
+                            <span class="activation-value" id="manufacture-date">--</span>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="ios-collapsible">
-            <div class="ios-collapsible-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open');">
-                <span><i class="fas fa-sync-alt" style="color:var(--ios-green);margin-right:6px;"></i>充电循环次数参考</span>
-                <i class="fas fa-chevron-right chevron"></i>
-            </div>
-            <div class="ios-collapsible-body">
-                <table class="ios-table">
-                    <thead>
-                        <tr>
-                            <th>循环次数</th>
-                            <th>预估健康度</th>
-                            <th>补充说明</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>0~300次</td>
-                            <td><span class="status-good">90%+</span></td>
-                            <td>新机/使用半年内</td>
-                        </tr>
-                        <tr>
-                            <td>300~500次</td>
-                            <td><span class="status-normal">80%~89%</span></td>
-                            <td>常规使用1~2年</td>
-                        </tr>
-                        <tr>
-                            <td>500~800次</td>
-                            <td><span class="status-warning">75%~79%</span></td>
-                            <td>使用2~3年，老化显现</td>
-                        </tr>
-                        <tr>
-                            <td>&gt; 800次</td>
-                            <td><span class="status-danger">&lt; 75%</span></td>
-                            <td>损耗严重，体验下降</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>电池溯源</h3>
+                    </div>
+                    <div class="origin-info">
+                        <div class="origin-status" id="origin-status">
+                            <div class="origin-icon">🔍</div>
+                            <div class="origin-text">等待分析</div>
+                        </div>
+                        <div class="origin-details" id="origin-details">
+                            <div class="origin-item">
+                                <span class="origin-label">电池类型</span>
+                                <span class="origin-value" id="battery-type">--</span>
+                            </div>
+                            <div class="origin-item">
+                                <span class="origin-label">制造商</span>
+                                <span class="origin-value" id="battery-manufacturer">--</span>
+                            </div>
+                            <div class="origin-item">
+                                <span class="origin-label">生产日期</span>
+                                <span class="origin-value" id="battery-production">--</span>
+                            </div>
+                            <div class="origin-item">
+                                <span class="origin-label">序列号</span>
+                                <span class="origin-value" id="battery-serial">--</span>
+                            </div>
+                            <div class="origin-item">
+                                <span class="origin-label">真伪验证</span>
+                                <span class="origin-value" id="battery-authenticity">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="ios-collapsible">
-            <div class="ios-collapsible-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open');">
-                <span><i class="fas fa-exclamation-circle" style="color:var(--ios-orange);margin-right:6px;"></i>异常现象判断与处理</span>
-                <i class="fas fa-chevron-right chevron"></i>
-            </div>
-            <div class="ios-collapsible-body">
-                <table class="ios-table">
-                    <thead>
-                        <tr>
-                            <th>异常现象</th>
-                            <th>严重程度</th>
-                            <th>结论与做法</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>轻度耗电变快</td>
-                            <td><span style="color: var(--ios-gray);">轻微</span></td>
-                            <td>电池正常老化，优化设置</td>
-                        </tr>
-                        <tr>
-                            <td>电量忽高忽低</td>
-                            <td><span style="color: var(--ios-orange); font-weight: 600;">中等</span></td>
-                            <td>电芯老化，酌情换电池</td>
-                        </tr>
-                        <tr>
-                            <td>充电时异常发烫</td>
-                            <td><span style="color: var(--ios-orange); font-weight: 600;">中等</span></td>
-                            <td>损耗加剧，避免边充边玩</td>
-                        </tr>
-                        <tr>
-                            <td>低温自动关机</td>
-                            <td><span style="color: #e67e22; font-weight: 600;">较重</span></td>
-                            <td>电池衰退，建议更换</td>
-                        </tr>
-                        <tr>
-                            <td>机身鼓包/异味</td>
-                            <td><span style="color: var(--ios-red); font-weight: 700;">高危</span></td>
-                            <td><strong>立即停用，存在安全隐患</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="ios-table-note"><i class="fas fa-info-circle" style="color:var(--ios-blue);"></i> 以上数据仅供参考，实际状况可能因使用习惯、环境温度等因素有所差异</div>
-            </div>
-        </div>
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>大数据分析</h3>
+                    </div>
+                    <div class="big-data-insights" id="big-data-insights">
+                        <div class="insight-item">
+                            <span class="insight-label">同型号平均健康度</span>
+                            <span class="insight-value" id="avg-health-same-model">--%</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">同型号平均循环</span>
+                            <span class="insight-value" id="avg-cycles-same-model">-- 次</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">您的排名</span>
+                            <span class="insight-value" id="health-ranking">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <!-- 隐私声明 -->
-        <div class="ios-privacy">
-            <p><i class="fas fa-shield-alt"></i> <strong>隐私保护</strong>：所有分析均在本地完成，数据不上传服务器</p>
-            <p><i class="fas fa-exclamation-triangle"></i> <strong>免责声明</strong>：本工具信息仅供参考，不构成专业建议</p>
+            <!-- Tab 5: 充电 -->
+            <section id="tab-charging" class="tab-content">
+                <div class="section-card charging-card">
+                    <div class="charging-visual">
+                        <div class="charging-bolt" id="charging-bolt">⚡</div>
+                        <div class="charging-status" id="charging-status">未充电</div>
+                        <div class="charging-power" id="charging-power">0 W</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>实时充电功率</h3>
+                    </div>
+                    <div class="power-metrics">
+                        <div class="power-metric">
+                            <span class="metric-label">电压</span>
+                            <span class="metric-value" id="charge-voltage">-- V</span>
+                        </div>
+                        <div class="power-metric">
+                            <span class="metric-label">电流</span>
+                            <span class="metric-value" id="charge-current">-- mA</span>
+                        </div>
+                        <div class="power-metric">
+                            <span class="metric-label">功率</span>
+                            <span class="metric-value" id="charge-wattage">-- W</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="charging-chart" class="charging-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>充电速度</h3>
+                    </div>
+                    <div class="charging-speed">
+                        <div class="speed-indicator">
+                            <div class="speed-bar" id="speed-bar"></div>
+                            <div class="speed-labels">
+                                <span>慢速</span>
+                                <span>正常</span>
+                                <span>快速</span>
+                                <span>超快</span>
+                            </div>
+                        </div>
+                        <div class="speed-status" id="speed-status">--</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>充电预估</h3>
+                    </div>
+                    <div class="charge-estimates">
+                        <div class="estimate-item">
+                            <span class="estimate-percent">50%</span>
+                            <span class="estimate-time" id="time-to-50">--</span>
+                        </div>
+                        <div class="estimate-item">
+                            <span class="estimate-percent">80%</span>
+                            <span class="estimate-time" id="time-to-80">--</span>
+                        </div>
+                        <div class="estimate-item">
+                            <span class="estimate-percent">100%</span>
+                            <span class="estimate-time" id="time-to-100">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>充电器信息</h3>
+                    </div>
+                    <div class="charger-info" id="charger-info">
+                        <div class="charger-item">
+                            <span class="charger-label">充电器类型</span>
+                            <span class="charger-value" id="charger-type">--</span>
+                        </div>
+                        <div class="charger-item">
+                            <span class="charger-label">最大输出</span>
+                            <span class="charger-value" id="charger-max">--</span>
+                        </div>
+                        <div class="charger-item">
+                            <span class="charger-label">充电协议</span>
+                            <span class="charger-value" id="charger-protocol">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>充电曲线</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="charge-curve-chart" class="charge-curve-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header">
+                        <h3>充电历史</h3>
+                    </div>
+                    <div class="charge-history" id="charge-history">
+                        <div class="history-item placeholder">
+                            <span>暂无充电记录</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部标签栏 -->
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-tab="overview">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">概览</span>
+            </button>
+            <button class="tab-btn" data-tab="health">
+                <span class="tab-icon">❤️</span>
+                <span class="tab-label">健康</span>
+            </button>
+            <button class="tab-btn" data-tab="performance">
+                <span class="tab-icon">🚀</span>
+                <span class="tab-label">性能</span>
+            </button>
+            <button class="tab-btn" data-tab="device">
+                <span class="tab-icon">📱</span>
+                <span class="tab-label">设备</span>
+            </button>
+            <button class="tab-btn" data-tab="charging">
+                <span class="tab-icon">⚡</span>
+                <span class="tab-label">充电</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- 文件选择模态框 -->
+    <div class="modal" id="file-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>导入诊断文件</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-drop-zone" id="file-drop-zone">
+                    <div class="drop-icon">📁</div>
+                    <p class="drop-text">点击选择或拖拽ZIP文件到此处</p>
+                    <p class="drop-hint">支持 bugreport、电池诊断等ZIP文件</p>
+                    <input type="file" id="file-input" accept=".zip" hidden>
+                </div>
+                <div class="file-progress" id="file-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span class="progress-text" id="progress-text">0%</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ============================================
-         页面2: 报告
-         ============================================ -->
-    <div class="ios-page" id="page-report">
-        <h1 class="ios-large-title">电池报告</h1>
-        <p class="ios-subtitle">详细分析与健康度评估</p>
-
-        <!-- 无结果提示 -->
-        <div id="report-empty" style="text-align:center; padding:60px 20px; color:var(--ios-tertiary-label);">
-            <i class="fas fa-file-alt" style="font-size:48px; color:var(--ios-gray5); margin-bottom:16px; display:block;"></i>
-            <p style="font-size:17px; margin-bottom:4px;">暂无分析报告</p>
-            <p style="font-size:14px;">请先在"分析"页面完成电池健康度分析</p>
-        </div>
-
-        <!-- 结果区域 -->
-        <section id="result" class="ios-result" aria-labelledby="result-title">
-            <!-- 圆环电池健康度 -->
-            <div class="ios-ring-section">
-                <div class="ios-ring-container">
-                    <svg viewBox="0 0 200 200">
-                        <circle class="ios-ring-bg" id="health-ring-bg" cx="100" cy="100" r="85"></circle>
-                        <circle class="ios-ring-fill" id="health-ring-circle" cx="100" cy="100" r="85"
-                            stroke-dasharray="534.07"
-                            stroke-dashoffset="534.07"></circle>
-                    </svg>
-                    <div class="ios-ring-center">
-                        <div class="ios-ring-percent" id="health-ring-text">-</div>
-                        <div class="ios-ring-label" id="health-ring-label">电池健康度</div>
-                    </div>
-                </div>
-                <div class="ios-ring-status good" id="health-ring-status">等待分析</div>
+    <!-- 报告模态框 -->
+    <div class="modal" id="report-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content report-modal-content">
+            <div class="modal-header">
+                <h3 id="report-title">分析报告</h3>
+                <button class="modal-close" id="report-modal-close">&times;</button>
             </div>
-
-            <!-- 统计网格 -->
-            <div class="ios-stats-grid" role="group" aria-label="电池统计数据">
-                <div class="ios-stat-item">
-                    <div class="value" id="initial-capacity-value">-</div>
-                    <div class="unit">mAh</div>
-                    <div class="label">初始容量</div>
-                </div>
-                <div class="ios-stat-item">
-                    <div class="value" id="current-capacity-value">-</div>
-                    <div class="unit">mAh</div>
-                    <div class="label">当前容量</div>
-                </div>
-                <div class="ios-stat-item">
-                    <div class="value" id="health-percentage">-</div>
-                    <div class="unit">%</div>
-                    <div class="label">健康度</div>
-                </div>
-                <div class="ios-stat-item">
-                    <div class="value" id="cycle-count">-</div>
-                    <div class="unit">次</div>
-                    <div class="label">循环次数</div>
-                </div>
-                <div class="ios-stat-item">
-                    <div class="value" id="battery-temp">-</div>
-                    <div class="unit">°C</div>
-                    <div class="label">电池温度</div>
-                </div>
-                <div class="ios-stat-item">
-                    <div class="value" id="battery-voltage">-</div>
-                    <div class="unit">V</div>
-                    <div class="label">电压</div>
+            <div class="modal-body">
+                <div class="report-content" id="report-content">
+                    <!-- 报告内容动态生成 -->
                 </div>
             </div>
-
-            <!-- 电池状态条 -->
-            <div class="ios-battery-bar">
-                <div class="ios-battery-bar-label">电池健康状态</div>
-                <div class="ios-battery-bar-track">
-                    <div class="ios-battery-bar-fill" id="battery-level" style="width: 0%;"></div>
-                </div>
-                <div class="quality-indicator" id="quality-indicator" aria-live="polite" style="margin-top:8px; font-size:15px; font-weight:600; text-align:center;"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="btn-close-report">关闭</button>
+                <button class="btn-primary" id="btn-export-report">导出报告</button>
             </div>
-
-            <!-- 健康等级评估 -->
-            <div id="health-grade-section" style="margin:0 20px 16px; padding:16px; background:var(--ios-card); border-radius:var(--ios-radius-lg); text-align:center;">
-                <div style="font-size:13px; font-weight:600; color:var(--ios-gray); margin-bottom:8px;">
-                    <i class="fas fa-medal" style="color:var(--ios-orange);margin-right:4px;"></i>电池健康等级评估
-                </div>
-                <div class="ios-grade-badge health-grade-badge" id="health-grade-badge">-</div>
-                <div class="ios-grade-desc health-grade-description" id="health-grade-description">-</div>
-                <div class="ios-grade-estimated health-grade-estimated" id="health-grade-estimated">-</div>
-                <div class="ios-grade-cycle-info">
-                    <div class="ios-grade-cycle-item">
-                        <div class="label">循环次数</div>
-                        <div class="val" id="grade-cycle-count">-</div>
-                    </div>
-                    <div class="ios-grade-cycle-item">
-                        <div class="label">预估健康度</div>
-                        <div class="val" id="grade-estimated-health">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 保养建议 -->
-            <div class="ios-maintenance" id="maintenance-section">
-                <div class="ios-group-header">电池保养建议</div>
-                <div class="ios-maintenance-card">
-                    <div class="maintenance-list" id="maintenance-list"></div>
-                </div>
-            </div>
-
-            <!-- 原始数据 -->
-            <div class="ios-raw-toggle">
-                <div class="ios-raw-toggle-header" id="toggle-text" aria-expanded="false" aria-controls="original-text">
-                    <span><i class="fas fa-code" style="margin-right:4px;"></i>原始诊断数据</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="ios-raw-content" id="original-text" aria-hidden="true"></div>
-            </div>
-
-            <!-- 分享/保存按钮 -->
-            <div class="ios-share-row">
-                <button class="ios-share-btn ripple" onclick="BatteryHealthApp.shareReport()" aria-label="分享报告">
-                    <i class="fas fa-share-alt"></i>
-                    <span>分享报告</span>
-                </button>
-                <button class="ios-share-btn ripple" onclick="BatteryHealthApp.saveReport()" aria-label="保存报告">
-                    <i class="fas fa-download"></i>
-                    <span>保存报告</span>
-                </button>
-            </div>
-        </section>
-    </div>
-
-    <!-- ============================================
-         页面3: 历史
-         ============================================ -->
-    <div class="ios-page" id="page-history">
-        <h1 class="ios-large-title">分析历史</h1>
-        <p class="ios-subtitle">查看历史分析记录与健康度趋势</p>
-
-        <!-- 趋势图表 -->
-        <div class="ios-trend-section" id="trend-section">
-            <div class="ios-trend-title"><i class="fas fa-chart-line" style="color:var(--ios-blue);margin-right:4px;"></i>健康度趋势</div>
-            <div id="trend-chart" class="ios-trend-chart">
-                <div class="ios-trend-empty">暂无足够数据显示趋势</div>
-            </div>
-        </div>
-
-        <!-- 历史列表 -->
-        <div class="ios-group">
-            <div class="ios-group-header">历史记录</div>
-            <div class="ios-group-card">
-                <div id="history-list" class="history-list" role="list">
-                    <div class="ios-history-empty" role="listitem">暂无历史记录</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 清空历史 -->
-        <button class="ios-btn-destructive" onclick="BatteryHealthApp.clearHistory()" aria-label="清空所有历史记录">
-            <i class="fas fa-trash" style="margin-right:4px;"></i>清空所有历史记录
-        </button>
-    </div>
-
-    <!-- ============================================
-         页面4: 设置
-         ============================================ -->
-    <div class="ios-page" id="page-settings">
-        <h1 class="ios-large-title">设置</h1>
-
-        <!-- 外观 -->
-        <div class="ios-group">
-            <div class="ios-group-header">外观</div>
-            <div class="ios-group-card">
-                <div class="ios-settings-row">
-                    <div class="ios-row-icon" style="background:var(--ios-blue);"><i class="fas fa-moon"></i></div>
-                    <span class="ios-row-label">深色模式</span>
-                    <label class="ios-toggle">
-                        <input type="checkbox" id="dark-mode-toggle">
-                        <span class="ios-toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- 数据 -->
-        <div class="ios-group">
-            <div class="ios-group-header">数据</div>
-            <div class="ios-group-card">
-                <div class="ios-settings-row">
-                    <div class="ios-row-icon" style="background:var(--ios-green);"><i class="fas fa-database"></i></div>
-                    <span class="ios-row-label">电池容量数据库</span>
-                    <span class="ios-row-value"><span id="db-model-count-settings">500+</span> 款机型 <i class="fas fa-chevron-right ios-row-chevron"></i></span>
-                </div>
-                <div class="ios-settings-row" id="clear-cache-row" style="cursor:pointer;">
-                    <div class="ios-row-icon" style="background:var(--ios-orange);"><i class="fas fa-broom"></i></div>
-                    <span class="ios-row-label">清除缓存</span>
-                    <span class="ios-row-value" id="settings-cache-size">-</span>
-                    <i class="fas fa-chevron-right ios-row-chevron"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 隐私 -->
-        <div class="ios-group">
-            <div class="ios-group-header">隐私</div>
-            <div class="ios-group-card">
-                <div class="ios-settings-row">
-                    <div class="ios-row-icon" style="background:var(--ios-purple);"><i class="fas fa-shield-alt"></i></div>
-                    <span class="ios-row-label">隐私保护</span>
-                    <span class="ios-row-value">所有数据本地处理 <i class="fas fa-chevron-right ios-row-chevron"></i></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 关于 -->
-        <div class="ios-group">
-            <div class="ios-group-header">关于</div>
-            <div class="ios-group-card">
-                <div class="ios-settings-row">
-                    <div class="ios-row-icon" style="background:var(--ios-teal);"><i class="fas fa-info-circle"></i></div>
-                    <span class="ios-row-label">关于本工具</span>
-                    <span class="ios-row-value">安卓电池健康度分析 <i class="fas fa-chevron-right ios-row-chevron"></i></span>
-                </div>
-                <div class="ios-settings-row">
-                    <div class="ios-row-icon" style="background:#8E8E93;"><i class="fas fa-code-branch"></i></div>
-                    <span class="ios-row-label">版本</span>
-                    <span class="ios-row-value" id="settings-version">2.0.0</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ios-settings-footer">
-            安卓手机电池健康度分析工具<br>
-            数据本地处理 · 保护隐私<br>
-            抖音：带娃的小陈工
         </div>
     </div>
-
-    <!-- ============================================
-         iOS 底部标签栏
-         ============================================ -->
-    <nav class="ios-tab-bar">
-        <button class="ios-tab-item active" id="tab-analyze" data-page="page-analyze" aria-label="分析">
-            <i class="fas fa-search"></i>
-            <span>分析</span>
-        </button>
-        <button class="ios-tab-item" id="tab-report" data-page="page-report" aria-label="报告">
-            <i class="fas fa-file-alt"></i>
-            <span>报告</span>
-        </button>
-        <button class="ios-tab-item" id="tab-history" data-page="page-history" aria-label="历史">
-            <i class="fas fa-clock"></i>
-            <span>历史</span>
-        </button>
-        <button class="ios-tab-item" id="tab-settings" data-page="page-settings" aria-label="设置">
-            <i class="fas fa-cog"></i>
-            <span>设置</span>
-        </button>
-    </nav>
 
     <!-- Toast 提示 -->
-    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
-
-    <!-- 首次使用引导 -->
-    <div id="guide-overlay" class="guide-overlay" aria-hidden="true">
-        <div class="guide-card">
-            <div class="guide-icon"><i class="fas fa-battery-full"></i></div>
-            <div class="guide-title">欢迎使用电池健康度分析工具</div>
-            <div class="guide-text">
-                本工具可以帮助您分析安卓手机的电池健康状态。<br>
-                只需上传诊断文件，即可获取详细的电池健康报告。<br>
-                所有数据均在本地处理，保护您的隐私安全。
-            </div>
-            <button class="guide-btn" onclick="BatteryHealthApp.closeGuide()">开始使用</button>
-        </div>
+    <div class="toast" id="toast">
+        <span class="toast-icon" id="toast-icon">✓</span>
+        <span class="toast-message" id="toast-message">操作成功</span>
     </div>
 
-    <!-- 本地脚本 -->
-    <script src="lib/zip.min.js"></script>
-    <script src="js/batteryDatabase.js"></script>
-    <script src="js/parsers.js"></script>
-    <script src="js/history.js"></script>
+    <!-- 加载指示器 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <span class="loading-text" id="loading-text">分析中...</span>
+    </div>
+
+    <!-- 外部库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/app.js"></script>
-
-    <!-- iOS 风格交互脚本 -->
-    <script>
-        // 原始数据切换
-        const toggleBtn = document.getElementById('toggle-text');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function() {
-                this.classList.toggle('open');
-                const textDiv = document.getElementById('original-text');
-                textDiv.classList.toggle('show');
-
-                if (textDiv.classList.contains('show')) {
-                    this.querySelector('span').innerHTML = '<i class="fas fa-code" style="margin-right:4px;"></i>隐藏原始数据';
-                } else {
-                    this.querySelector('span').innerHTML = '<i class="fas fa-code" style="margin-right:4px;"></i>原始诊断数据';
-                }
-            });
-        }
-
-        // 健康度圆环动画更新
-        function updateHealthRing(percentage) {
-            const ring = document.getElementById('health-ring-circle');
-            const percentText = document.getElementById('health-ring-text');
-            const statusText = document.getElementById('health-ring-status');
-            const circumference = 2 * Math.PI * 85; // ~534.07
-
-            if (!ring) return;
-
-            const pct = parseFloat(percentage) || 0;
-            const offset = circumference - (pct / 100) * circumference;
-            ring.style.strokeDashoffset = offset;
-
-            // 根据健康度设置颜色
-            let color = '#34C759'; // green
-            let statusClass = 'good';
-            let statusLabel = '电池状态良好';
-
-            if (pct < 75) {
-                color = '#FF3B30'; // red
-                statusClass = 'poor';
-                statusLabel = '电池状态较差，建议更换';
-            } else if (pct < 85) {
-                color = '#FF9500'; // orange
-                statusClass = 'fair';
-                statusLabel = '电池状态一般';
-            }
-
-            ring.style.stroke = color;
-            if (percentText) percentText.textContent = pct + '%';
-            if (statusText) {
-                statusText.textContent = statusLabel;
-                statusText.className = 'ios-ring-status ' + statusClass;
-            }
-
-            // 更新电池条颜色
-            const barFill = document.getElementById('battery-level');
-            if (barFill) {
-                barFill.style.width = Math.min(pct, 100) + '%';
-                barFill.className = 'ios-battery-bar-fill';
-                if (pct < 75) barFill.classList.add('poor');
-                else if (pct < 85) barFill.classList.add('fair');
-            }
-        }
-
-        // 监听结果展示，隐藏空状态
-        const origDisplayResult = BatteryHealthApp.displayResult.bind(BatteryHealthApp);
-        BatteryHealthApp.displayResult = function(result, initialCapacity) {
-            origDisplayResult(result, initialCapacity);
-
-            // 隐藏空状态
-            const emptyEl = document.getElementById('report-empty');
-            if (emptyEl) emptyEl.style.display = 'none';
-        };
-
-        // 监听历史渲染，更新趋势图样式
-        const origRenderHistory = BatteryHealthApp.renderHistory.bind(BatteryHealthApp);
-        BatteryHealthApp.renderHistory = function() {
-            origRenderHistory();
-            // 重新应用iOS历史列表样式
-            const historyList = document.getElementById('history-list');
-            if (historyList) {
-                historyList.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.add('ios-history-item');
-                });
-            }
-        };
-
-        // 监听趋势图表渲染
-        const origRenderTrend = BatteryHealthApp.renderTrendChart.bind(BatteryHealthApp);
-        BatteryHealthApp.renderTrendChart = function() {
-            origRenderTrend();
-            const trendChart = document.getElementById('trend-chart');
-            if (trendChart) {
-                trendChart.querySelectorAll('.trend-bar').forEach(bar => {
-                    bar.classList.add('ios-trend-bar');
-                });
-            }
-        };
-
-        // 设置页数据库统计同步
-        const origUpdateDbStats = BatteryHealthApp.updateDatabaseStats.bind(BatteryHealthApp);
-        BatteryHealthApp.updateDatabaseStats = function() {
-            origUpdateDbStats();
-            const stats = BatteryDatabase.getStats();
-            const settingsCount = document.getElementById('db-model-count-settings');
-            if (settingsCount) settingsCount.textContent = stats.totalModels;
-        };
-
-        // 深色模式切换
-        const darkToggle = document.getElementById('dark-mode-toggle');
-        if (darkToggle) {
-            darkToggle.addEventListener('click', function() {
-                if (typeof BatteryHealthApp !== 'undefined' && BatteryHealthApp.toggleDarkMode) {
-                    BatteryHealthApp.toggleDarkMode();
-                }
-            });
-        }
-    </script>
 </body>
 </html>
