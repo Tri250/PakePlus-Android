@@ -125,26 +125,80 @@ public class PerformanceFragment extends Fragment {
         }
     }
     
+    // 用于存储上一次CPU统计信息
+    private long lastUser = 0;
+    private long lastNice = 0;
+    private long lastSystem = 0;
+    private long lastIdle = 0;
+    private long lastIowait = 0;
+    private long lastIrq = 0;
+    private long lastSoftirq = 0;
+    private long lastSteal = 0;
+    private boolean hasLastStat = false;
+
     private float readCpuUsage() {
         try {
             BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
             String line = reader.readLine();
             reader.close();
-            
+
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
+                if (parts.length < 5) return 0;
+
                 long user = Long.parseLong(parts[1]);
                 long nice = Long.parseLong(parts[2]);
                 long system = Long.parseLong(parts[3]);
                 long idle = Long.parseLong(parts[4]);
-                
-                long total = user + nice + system + idle;
-                long used = user + nice + system;
-                
-                return (used * 100.0f) / total;
+                long iowait = parts.length > 5 ? Long.parseLong(parts[5]) : 0;
+                long irq = parts.length > 6 ? Long.parseLong(parts[6]) : 0;
+                long softirq = parts.length > 7 ? Long.parseLong(parts[7]) : 0;
+                long steal = parts.length > 8 ? Long.parseLong(parts[8]) : 0;
+
+                if (!hasLastStat) {
+                    // 第一次读取，只保存数据
+                    lastUser = user;
+                    lastNice = nice;
+                    lastSystem = system;
+                    lastIdle = idle;
+                    lastIowait = iowait;
+                    lastIrq = irq;
+                    lastSoftirq = softirq;
+                    lastSteal = steal;
+                    hasLastStat = true;
+                    return 0;
+                }
+
+                // 计算差值
+                long userDiff = user - lastUser;
+                long niceDiff = nice - lastNice;
+                long systemDiff = system - lastSystem;
+                long idleDiff = idle - lastIdle;
+                long iowaitDiff = iowait - lastIowait;
+                long irqDiff = irq - lastIrq;
+                long softirqDiff = softirq - lastSoftirq;
+                long stealDiff = steal - lastSteal;
+
+                // 保存当前值
+                lastUser = user;
+                lastNice = nice;
+                lastSystem = system;
+                lastIdle = idle;
+                lastIowait = iowait;
+                lastIrq = irq;
+                lastSoftirq = softirq;
+                lastSteal = steal;
+
+                // 计算使用率
+                long totalDiff = userDiff + niceDiff + systemDiff + idleDiff + iowaitDiff + irqDiff + softirqDiff + stealDiff;
+                long usedDiff = userDiff + niceDiff + systemDiff + irqDiff + softirqDiff + stealDiff;
+
+                if (totalDiff > 0) {
+                    return (usedDiff * 100.0f) / totalDiff;
+                }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error reading CPU usage: " + e.getMessage());
         }
         return 0;
     }

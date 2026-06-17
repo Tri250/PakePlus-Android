@@ -88,7 +88,11 @@ public class BatteryInfo {
     
     @ColumnInfo(name = "device_brand")
     private String deviceBrand; // 设备品牌
-    
+
+    // 数据来源标记
+    @ColumnInfo(name = "cycle_count_estimated")
+    private boolean cycleCountEstimated; // 循环次数是否为估算值
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -269,7 +273,15 @@ public class BatteryInfo {
     public void setDeviceBrand(String deviceBrand) {
         this.deviceBrand = deviceBrand;
     }
-    
+
+    public boolean isCycleCountEstimated() {
+        return cycleCountEstimated;
+    }
+
+    public void setCycleCountEstimated(boolean cycleCountEstimated) {
+        this.cycleCountEstimated = cycleCountEstimated;
+    }
+
     /**
      * 计算健康度
      */

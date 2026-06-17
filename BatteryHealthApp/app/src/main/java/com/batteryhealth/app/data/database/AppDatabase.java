@@ -19,7 +19,7 @@ import com.batteryhealth.app.data.model.PowerHistory;
         PerformanceData.class,
         PowerHistory.class
     },
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters({Converters.class})

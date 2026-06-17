@@ -61,6 +61,7 @@ public class DeviceConfig {
     private long activationDate; // 激活日期 (时间戳)
     private String activationDateStr; // 激活日期字符串
     private int usageDays; // 使用天数
+    private String activationSource; // 激活日期来源
     
     public DeviceConfig() {
         // 初始化基本信息
@@ -367,7 +368,15 @@ public class DeviceConfig {
     public void setUsageDays(int usageDays) {
         this.usageDays = usageDays;
     }
-    
+
+    public String getActivationSource() {
+        return activationSource;
+    }
+
+    public void setActivationSource(String activationSource) {
+        this.activationSource = activationSource;
+    }
+
     /**
      * 获取格式化的品牌名
      */
