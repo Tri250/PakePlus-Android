@@ -13,6 +13,7 @@ import android.os.StatFs;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.WindowManager;
 
 import com.batteryhealth.app.data.model.DeviceConfig;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
 
 /**
  * 设备信息管理器
- * 
+ *
  * 功能：
  * 1. 获取设备硬件信息
  * 2. 获取系统配置
@@ -40,7 +41,8 @@ import java.util.regex.Pattern;
  * 4. 分析设备性能
  */
 public class DeviceInfoManager {
-    
+
+    private static final String TAG = "DeviceInfoManager";
     private Context context;
     private DeviceConfig deviceConfig;
     
@@ -125,6 +127,11 @@ public class DeviceInfoManager {
     private void loadMemoryInfo() {
         try {
             ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            if (activityManager == null) {
+                Log.w(TAG, "ActivityManager is null");
+                return;
+            }
+            
             ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
             activityManager.getMemoryInfo(memoryInfo);
             
@@ -137,7 +144,7 @@ public class DeviceInfoManager {
             deviceConfig.setAvailableMemory(availableMemory);
             
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error loading memory info: " + e.getMessage());
         }
     }
     
@@ -171,6 +178,11 @@ public class DeviceInfoManager {
     private void loadDisplayInfo() {
         try {
             WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            if (windowManager == null) {
+                Log.w(TAG, "WindowManager is null");
+                return;
+            }
+            
             DisplayMetrics metrics = new DisplayMetrics();
             windowManager.getDefaultDisplay().getMetrics(metrics);
             
@@ -180,13 +192,15 @@ public class DeviceInfoManager {
             deviceConfig.setScreenDpi(metrics.densityDpi);
             
             // 计算屏幕尺寸 (英寸)
-            float widthInches = metrics.widthPixels / metrics.xdpi;
-            float heightInches = metrics.heightPixels / metrics.ydpi;
-            double screenSize = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
-            deviceConfig.setScreenSize((float) screenSize);
+            if (metrics.xdpi > 0 && metrics.ydpi > 0) {
+                float widthInches = metrics.widthPixels / metrics.xdpi;
+                float heightInches = metrics.heightPixels / metrics.ydpi;
+                double screenSize = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
+                deviceConfig.setScreenSize((float) screenSize);
+            }
             
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error loading display info: " + e.getMessage());
         }
     }
     
@@ -229,9 +243,11 @@ public class DeviceInfoManager {
         try {
             // 获取网络类型
             ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            if (activeNetwork != null) {
-                deviceConfig.setNetworkType(getNetworkTypeString(activeNetwork.getType()));
+            if (cm != null) {
+                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                if (activeNetwork != null) {
+                    deviceConfig.setNetworkType(getNetworkTypeString(activeNetwork.getType()));
+                }
             }
             
             // 获取IP地址
@@ -241,7 +257,7 @@ public class DeviceInfoManager {
             deviceConfig.setMacAddress(getMacAddress());
             
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error loading network info: " + e.getMessage());
         }
     }
     

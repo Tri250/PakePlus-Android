@@ -105,12 +105,16 @@ public class TrendFragment extends Fragment {
         chart.setDrawGridBackground(false);
         chart.setExtraOffsets(8, 8, 8, 8);
         
+        // 获取颜色（兼容API 23以下）
+        int secondaryLabelColor = getResources().getColor(R.color.ios_secondary_label);
+        int separatorColor = getResources().getColor(R.color.ios_separator);
+        
         // X轴 - 时间
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setGranularity(1f);
-        xAxis.setTextColor(getResources().getColor(R.color.ios_secondary_label, null));
+        xAxis.setTextColor(secondaryLabelColor);
         xAxis.setTextSize(11f);
         xAxis.setValueFormatter(new ValueFormatter() {
             private final SimpleDateFormat sdf = new SimpleDateFormat("MM/dd", Locale.getDefault());
@@ -123,8 +127,8 @@ public class TrendFragment extends Fragment {
         // Y轴 - 左侧
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
-        leftAxis.setGridColor(getResources().getColor(R.color.ios_separator, null));
-        leftAxis.setTextColor(getResources().getColor(R.color.ios_secondary_label, null));
+        leftAxis.setGridColor(separatorColor);
+        leftAxis.setTextColor(secondaryLabelColor);
         leftAxis.setTextSize(11f);
         
         // Y轴 - 右侧禁用
@@ -132,7 +136,7 @@ public class TrendFragment extends Fragment {
         
         // 图例
         chart.getLegend().setEnabled(true);
-        chart.getLegend().setTextColor(getResources().getColor(R.color.ios_secondary_label, null));
+        chart.getLegend().setTextColor(secondaryLabelColor);
         chart.getLegend().setTextSize(12f);
         
         // 动画
@@ -207,10 +211,10 @@ public class TrendFragment extends Fragment {
     }
     
     private void setChartData(LineChart chart, String label, List<Entry> entries, int colorRes) {
-        if (chart == null || entries.isEmpty()) return;
+        if (chart == null || entries == null || entries.isEmpty()) return;
         
         LineDataSet dataSet = new LineDataSet(entries, label);
-        int color = getResources().getColor(colorRes, null);
+        int color = getResources().getColor(colorRes);
         dataSet.setColor(color);
         dataSet.setLineWidth(2.5f);
         dataSet.setCircleColor(color);

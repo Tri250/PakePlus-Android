@@ -230,15 +230,15 @@ public class BatteryHealthFragment extends Fragment {
     private int getHealthColor(float percentage) {
         try {
             if (percentage >= 90) {
-                return getResources().getColor(R.color.health_a_plus, null);
+                return getResources().getColor(R.color.health_a_plus);
             } else if (percentage >= 80) {
-                return getResources().getColor(R.color.health_a, null);
+                return getResources().getColor(R.color.health_a);
             } else if (percentage >= 70) {
-                return getResources().getColor(R.color.health_c, null);
+                return getResources().getColor(R.color.health_c);
             } else if (percentage >= 60) {
-                return getResources().getColor(R.color.health_d, null);
+                return getResources().getColor(R.color.health_d);
             } else {
-                return getResources().getColor(R.color.health_e, null);
+                return getResources().getColor(R.color.health_e);
             }
         } catch (Exception e) {
             // 返回默认颜色

@@ -66,6 +66,11 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     
+    // 禁用JDK镜像转换
+    tasks.withType(JavaCompile) {
+        options.fork = false
+    }
+    
     buildFeatures {
         viewBinding true
     }

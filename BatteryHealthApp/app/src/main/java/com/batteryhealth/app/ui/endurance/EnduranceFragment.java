@@ -183,7 +183,7 @@ public class EnduranceFragment extends Fragment {
                 if (tvEnduranceTime != null) {
                     if (isCharging) {
                         tvEnduranceTime.setText("充电中");
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_blue, null));
+                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_blue));
                     } else if (dischargeRate > 0 && level > 0) {
                         float remainingHours = level / dischargeRate;
                         if (remainingHours >= 24) {
@@ -191,7 +191,7 @@ public class EnduranceFragment extends Fragment {
                         } else {
                             tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
                         }
-                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_green, null));
+                        tvEnduranceTime.setTextColor(getResources().getColor(R.color.ios_green));
                     } else {
                         tvEnduranceTime.setText("-- 小时");
                     }

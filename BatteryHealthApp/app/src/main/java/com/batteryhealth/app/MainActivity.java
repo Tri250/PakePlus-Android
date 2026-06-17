@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         try {
             setContentView(R.layout.activity_main);
             
@@ -81,9 +82,27 @@ public class MainActivity extends AppCompatActivity {
             // 初始化视图 - 必须先于其他操作
             initViews();
             
-            // 初始化管理器
-            batteryDataManager = new BatteryDataManager(this);
-            deviceInfoManager = new DeviceInfoManager(this);
+            // 检查视图是否成功初始化
+            if (viewPager == null || bottomNavigation == null) {
+                Log.e(TAG, "Critical views not initialized");
+                Toast.makeText(this, "界面初始化失败", Toast.LENGTH_LONG).show();
+                return;
+            }
+            
+            // 初始化管理器（带异常处理）
+            try {
+                batteryDataManager = new BatteryDataManager(this);
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage());
+                batteryDataManager = null;
+            }
+            
+            try {
+                deviceInfoManager = new DeviceInfoManager(this);
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating DeviceInfoManager: " + e.getMessage());
+                deviceInfoManager = null;
+            }
             
             // 检查权限
             checkPermissions();
@@ -93,8 +112,12 @@ public class MainActivity extends AppCompatActivity {
             
             // 延迟启动服务，避免启动时闪退
             mainHandler.postDelayed(() -> {
-                if (!isFinishing() && !isDestroyed()) {
-                    startMonitorServices();
+                try {
+                    if (!isFinishing() && !isDestroyed()) {
+                        startMonitorServices();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error starting services: " + e.getMessage());
                 }
             }, 2000);
             
@@ -102,8 +125,15 @@ public class MainActivity extends AppCompatActivity {
             loadInitialData();
             
         } catch (Exception e) {
-            Log.e(TAG, "Error in onCreate: " + e.getMessage(), e);
-            Toast.makeText(this, "应用初始化失败，请重启", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Critical error in onCreate: " + e.getMessage(), e);
+            Toast.makeText(this, "应用初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // 记录详细错误信息
+            StringBuilder errorDetail = new StringBuilder();
+            errorDetail.append("Error: ").append(e.getMessage()).append("\n");
+            for (StackTraceElement element : e.getStackTrace()) {
+                errorDetail.append(element.toString()).append("\n");
+            }
+            Log.e(TAG, "Stack trace:\n" + errorDetail.toString());
         }
     }
     
