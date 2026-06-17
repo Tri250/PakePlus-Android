@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- iOS系统颜色 - 浅色模式 -->
+    <!-- iOS 2026系统颜色 - 浅色模式 -->
     <color name="ios_background">#F2F2F7</color>
     <color name="ios_secondary_background">#FFFFFF</color>
     <color name="ios_tertiary_background">#F2F2F7</color>
+    <color name="ios_grouped_background">#F2F2F7</color>
     
     <color name="ios_label">#000000</color>
     <color name="ios_secondary_label">#3C3C4399</color>
@@ -17,6 +18,7 @@
     <color name="ios_background_dark">#000000</color>
     <color name="ios_secondary_background_dark">#1C1C1E</color>
     <color name="ios_tertiary_background_dark">#2C2C2E</color>
+    <color name="ios_grouped_background_dark">#1C1C1E</color>
     
     <color name="ios_label_dark">#FFFFFF</color>
     <color name="ios_secondary_label_dark">#EBEBF599</color>
@@ -26,7 +28,7 @@
     <color name="ios_separator_dark">#38383A</color>
     <color name="ios_opaque_separator_dark">#38383A</color>
     
-    <!-- iOS系统色板 -->
+    <!-- iOS 2026系统色板 -->
     <color name="ios_red">#FF3B30</color>
     <color name="ios_orange">#FF9500</color>
     <color name="ios_yellow">#FFCC00</color>
@@ -40,7 +42,7 @@
     <color name="ios_pink">#FF2D55</color>
     <color name="ios_brown">#A2845E</color>
     
-    <!-- iOS系统色板 - 深色 -->
+    <!-- iOS 2026系统色板 - 深色 -->
     <color name="ios_red_dark">#FF453A</color>
     <color name="ios_orange_dark">#FF9F0A</color>
     <color name="ios_yellow_dark">#FFD60A</color>
@@ -54,40 +56,59 @@
     <color name="ios_pink_dark">#FF375F</color>
     <color name="ios_brown_dark">#AC8E68</color>
     
-    <!-- 电池状态颜色 -->
-    <color name="battery_excellent">#34C759</color>
-    <color name="battery_good">#30B0C7</color>
-    <color name="battery_normal">#FFCC00</color>
-    <color name="battery_warning">#FF9500</color>
-    <color name="battery_poor">#FF3B30</color>
+    <!-- iOS 2026新增颜色 -->
+    <color name="ios_infrared">#FF3B30</color>
+    <color name="ios_fluorescent_green">#CCFF00</color>
+    <color name="ios_fluorescent_orange">#FF6600</color>
+    <color name="ios_fluorescent_pink">#FF00FF</color>
     
-    <!-- 充电功率颜色 -->
-    <color name="power_super">#AF52DE</color>
-    <color name="power_fast">#007AFF</color>
-    <color name="power_normal">#34C759</color>
-    <color name="power_slow">#FF9500</color>
-    <color name="power_wireless">#FFCC00</color>
+    <!-- 电池状态颜色 - iOS 2026风格 -->
+    <color name="battery_excellent">#30D158</color>
+    <color name="battery_good">#34C759</color>
+    <color name="battery_normal">#FFD60A</color>
+    <color name="battery_warning">#FF9F0A</color>
+    <color name="battery_poor">#FF453A</color>
+    
+    <!-- 充电功率颜色 - iOS 2026风格 -->
+    <color name="power_super">#BF5AF2</color>
+    <color name="power_fast">#0A84FF</color>
+    <color name="power_normal">#30D158</color>
+    <color name="power_slow">#FF9F0A</color>
+    <color name="power_wireless">#FFD60A</color>
     
     <!-- 通用颜色 -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
     
-    <!-- 渐变颜色 -->
-    <color name="gradient_start">#007AFF</color>
-    <color name="gradient_end">#5856D6</color>
+    <!-- 渐变颜色 - iOS 2026风格 -->
+    <color name="gradient_blue_start">#0A84FF</color>
+    <color name="gradient_blue_end">#5E5CE6</color>
+    <color name="gradient_green_start">#30D158</color>
+    <color name="gradient_green_end">#63E6E2</color>
+    <color name="gradient_purple_start">#BF5AF2</color>
+    <color name="gradient_purple_end">#5856D6</color>
     
     <!-- 图表颜色 -->
-    <color name="chart_line">#007AFF</color>
-    <color name="chart_fill">#1A007AFF</color>
+    <color name="chart_line">#0A84FF</color>
+    <color name="chart_fill">#1A0A84FF</color>
     <color name="chart_grid">#E5E5EA</color>
+    <color name="chart_grid_dark">#38383A</color>
     
-    <!-- 健康度等级颜色 -->
-    <color name="health_a_plus">#34C759</color>
-    <color name="health_a">#30D158</color>
+    <!-- 健康度等级颜色 - iOS 2026风格 -->
+    <color name="health_a_plus">#30D158</color>
+    <color name="health_a">#34C759</color>
     <color name="health_b_plus">#64D2FF</color>
     <color name="health_b">#5E5CE6</color>
-    <color name="health_c">#FFCC00</color>
-    <color name="health_d">#FF9500</color>
+    <color name="health_c">#FFD60A</color>
+    <color name="health_d">#FF9F0A</color>
     <color name="health_e">#FF453A</color>
+    
+    <!-- 卡片阴影颜色 -->
+    <color name="card_shadow_light">#10000000</color>
+    <color name="card_shadow_dark">#10FFFFFF</color>
+    
+    <!-- 动画渐变颜色 -->
+    <color name="anim_fade_start">#80000000</color>
+    <color name="anim_fade_end">#00000000</color>
 </resources>

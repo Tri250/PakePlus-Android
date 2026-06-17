@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 应用主题 - iOS风格 -->
+    <!-- 应用主题 - iOS 2026风格 -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- 主色调 -->
         <item name="colorPrimary">@color/ios_blue</item>
@@ -26,6 +26,9 @@
         <!-- 禁用默认ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        
+        <!-- iOS 2026动画效果 -->
+        <item name="android:windowAnimationStyle">@style/iOSWindowAnimation</item>
     </style>
     
     <!-- 无ActionBar主题 -->
@@ -34,104 +37,136 @@
         <item name="windowNoTitle">true</item>
     </style>
     
-    <!-- iOS风格卡片 -->
-    <style name="iOSCard" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@color/ios_secondary_background</item>
-        <item name="cardCornerRadius">12dp</item>
-        <item name="cardElevation">0dp</item>
-        <item name="strokeWidth">0dp</item>
-        <item name="contentPadding">16dp</item>
+    <!-- iOS 2026窗口动画 -->
+    <style name="iOSWindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
+        <item name="android:activityOpenExitAnimation">@anim/ios_slide_out_left</item>
+        <item name="android:activityCloseEnterAnimation">@anim/ios_slide_in_left</item>
+        <item name="android:activityCloseExitAnimation">@anim/ios_slide_out_right</item>
     </style>
     
-    <!-- iOS风格按钮 -->
+    <!-- iOS 2026风格卡片 -->
+    <style name="iOSCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/ios_secondary_background</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="contentPadding">20dp</item>
+        <item name="rippleColor">@color/ios_blue</item>
+    </style>
+    
+    <!-- iOS 2026风格按钮 -->
     <style name="iOSButton" parent="Widget.MaterialComponents.Button">
         <item name="android:textSize">17sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
-        <item name="cornerRadius">10dp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="cornerRadius">12dp</item>
     </style>
     
-    <!-- iOS风格主按钮 -->
+    <!-- iOS 2026风格主按钮 -->
     <style name="iOSButton.Primary">
         <item name="android:backgroundTint">@color/ios_blue</item>
         <item name="android:textColor">@color/white</item>
     </style>
     
-    <!-- iOS风格次要按钮 -->
+    <!-- iOS 2026风格次要按钮 -->
     <style name="iOSButton.Secondary">
         <item name="android:backgroundTint">@color/ios_secondary_background</item>
         <item name="android:textColor">@color/ios_blue</item>
     </style>
     
-    <!-- iOS风格标题文字 -->
+    <!-- iOS 2026风格标题文字 -->
     <style name="iOSTitle">
         <item name="android:textSize">28sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:lineSpacingExtra">4dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <!-- iOS风格大标题 -->
+    <!-- iOS 2026风格大标题 -->
     <style name="iOSTitle.Large">
         <item name="android:textSize">34sp</item>
+        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:lineSpacingExtra">6dp</item>
     </style>
     
-    <!-- iOS风格副标题 -->
+    <!-- iOS 2026风格副标题 -->
     <style name="iOSSubtitle">
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <!-- iOS风格正文 -->
+    <!-- iOS 2026风格正文 -->
     <style name="iOSBody">
         <item name="android:textSize">17sp</item>
         <item name="android:textColor">@color/ios_label</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     
-    <!-- iOS风格次要文字 -->
+    <!-- iOS 2026风格次要文字 -->
     <style name="iOSBody.Secondary">
         <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/ios_secondary_label</item>
+        <item name="android:lineSpacingExtra">1dp</item>
     </style>
     
-    <!-- iOS风格小字 -->
+    <!-- iOS 2026风格小字 -->
     <style name="iOSCaption">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ios_tertiary_label</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:lineSpacingExtra">0dp</item>
     </style>
     
-    <!-- iOS风格大数字 -->
+    <!-- iOS 2026风格大数字 -->
     <style name="iOSLargeNumber">
-        <item name="android:textSize">48sp</item>
+        <item name="android:textSize">56sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
+        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <!-- iOS风格中等数字 -->
+    <!-- iOS 2026风格中等数字 -->
     <style name="iOSMediumNumber">
-        <item name="android:textSize">32sp</item>
+        <item name="android:textSize">34sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
+        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <!-- iOS风格列表项 -->
+    <!-- iOS 2026风格列表项 -->
     <style name="iOSListItem">
         <item name="android:background">@color/ios_secondary_background</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:minHeight">44dp</item>
     </style>
     
-    <!-- iOS风格分隔线 -->
+    <!-- iOS 2026风格分隔线 -->
     <style name="iOSSeparator">
         <item name="android:background">@color/ios_separator</item>
         <item name="android:layout_height">0.5dp</item>
+        <item name="android:layout_marginStart">20dp</item>
     </style>
     
-    <!-- iOS风格TabLayout -->
+    <!-- iOS 2026风格TabLayout -->
     <style name="iOSTabLayout" parent="Widget.MaterialComponents.TabLayout">
         <item name="tabBackground">@color/ios_secondary_background</item>
         <item name="tabIndicatorColor">@color/ios_blue</item>
@@ -139,12 +174,38 @@
         <item name="tabTextColor">@color/ios_secondary_label</item>
         <item name="tabIndicatorHeight">3dp</item>
         <item name="tabTextAppearance">@style/iOSTabText</item>
+        <item name="tabIndicatorAnimationDuration">300</item>
     </style>
     
-    <!-- iOS风格Tab文字 -->
+    <!-- iOS 2026风格Tab文字 -->
     <style name="iOSTabText">
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+    
+    <!-- iOS 2026风格进度条 -->
+    <style name="iOSProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/progress_health</item>
+        <item name="android:minHeight">8dp</item>
+        <item name="android:maxHeight">8dp</item>
+    </style>
+    
+    <!-- iOS 2026风格圆形进度条 -->
+    <style name="iOSCircularProgress">
+        <item name="android:indeterminateTint">@color/ios_blue</item>
+    </style>
+    
+    <!-- iOS 2026风格底部导航 -->
+    <style name="iOSBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemIconSize">28dp</item>
+        <item name="itemIconTint">@color/bottom_nav_color</item>
+        <item name="itemTextColor">@color/bottom_nav_color</item>
+        <item name="itemTextAppearanceActive">@style/iOSTabText</item>
+        <item name="itemTextAppearanceInactive">@style/iOSTabText</item>
+        <item name="itemActiveIndicatorStyle">@null</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="backgroundTint">@color/ios_secondary_background</item>
     </style>
 </resources>

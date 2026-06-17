@@ -3,8 +3,9 @@ package com.batteryhealth.app.utils;
 import android.content.Context;
 import android.content.Intent;
 import android.os.BatteryManager;
+import android.os.Build;
+import android.util.Log;
 
-import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
 import java.io.BufferedReader;
@@ -22,12 +23,22 @@ import java.io.FileReader;
  */
 public class BatteryDataManager {
     
+    private static final String TAG = "BatteryDataManager";
     private Context context;
     private BatteryInfo currentBatteryInfo;
     
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.currentBatteryInfo = new BatteryInfo();
+        // 设置默认值，防止空指针
+        currentBatteryInfo.setLevel(0);
+        currentBatteryInfo.setTemperature(25.0f);
+        currentBatteryInfo.setVoltage(3700);
+        currentBatteryInfo.setTechnology("Li-ion");
+        currentBatteryInfo.setHealthPercentage(100.0f);
+        currentBatteryInfo.setHealthStatus("good");
+        currentBatteryInfo.setBatterySource("unknown");
+        
         loadBatteryInfo();
     }
     
@@ -37,179 +48,134 @@ public class BatteryDataManager {
     public void updateFromIntent(Intent intent) {
         if (intent == null) return;
         
-        // 电量百分比
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        if (level != -1 && scale != -1) {
-            currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+        try {
+            // 电量百分比
+            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            if (level != -1 && scale != -1 && scale > 0) {
+                currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+            }
+            
+            // 电池状态
+            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            currentBatteryInfo.setStatus(status);
+            
+            // 充电方式
+            int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+            currentBatteryInfo.setPlugged(plugged);
+            
+            // 电池温度
+            int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+            if (temperature != -1) {
+                currentBatteryInfo.setTemperature(temperature / 10.0f);
+            }
+            
+            // 电池电压
+            int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+            if (voltage != -1) {
+                currentBatteryInfo.setVoltage(voltage);
+            }
+            
+            // 电池技术
+            String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
+            if (technology != null) {
+                currentBatteryInfo.setTechnology(technology);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating from intent: " + e.getMessage());
         }
-        
-        // 电池状态
-        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        currentBatteryInfo.setStatus(status);
-        
-        // 充电方式
-        int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-        currentBatteryInfo.setPlugged(plugged);
-        
-        // 电池温度
-        int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-        if (temperature != -1) {
-            currentBatteryInfo.setTemperature(temperature / 10.0f);
-        }
-        
-        // 电池电压
-        int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-        if (voltage != -1) {
-            currentBatteryInfo.setVoltage(voltage);
-        }
-        
-        // 电池技术
-        String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
-        if (technology != null) {
-            currentBatteryInfo.setTechnology(technology);
-        }
-        
-        // 读取高级信息
-        readAdvancedInfo();
     }
     
     /**
      * 加载电池信息
      */
     private void loadBatteryInfo() {
-        // 从系统读取电池信息
-        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-        if (batteryManager != null) {
-            int level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-            currentBatteryInfo.setLevel(level);
-            
-            int currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-            currentBatteryInfo.setCurrentNow(currentNow);
-        }
-        
-        readAdvancedInfo();
-    }
-    
-    /**
-     * 读取高级电池信息
-     */
-    private void readAdvancedInfo() {
-        readCycleCount();
-        readBatteryCapacity();
-        detectBatterySource();
-    }
-    
-    /**
-     * 读取充电循环次数
-     */
-    private void readCycleCount() {
         try {
-            String[] paths = {
-                "/sys/class/power_supply/battery/cycle_count",
-                "/sys/class/power_supply/bms/cycle_count",
-                "/sys/class/power_supply/maxfg/cycle_count",
-                "/sys/class/power_supply/battery/battery_cycle"
-            };
-            
-            for (String path : paths) {
-                File file = new File(path);
-                if (file.exists()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(file));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null) {
-                        int cycleCount = Integer.parseInt(line.trim());
-                        currentBatteryInfo.setCycleCount(cycleCount);
-                        return;
+            // 从系统读取电池信息
+            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            if (batteryManager != null) {
+                int level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                if (level >= 0) {
+                    currentBatteryInfo.setLevel(level);
+                }
+                
+                int currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                currentBatteryInfo.setCurrentNow(currentNow);
+                
+                // 尝试获取容量信息
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    long chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                    if (chargeCounter != Long.MIN_VALUE && chargeCounter > 0) {
+                        currentBatteryInfo.setChargeCounter((int) chargeCounter);
+                        currentBatteryInfo.setCurrentCapacity((int) (chargeCounter / 1000));
                     }
                 }
             }
         } catch (Exception e) {
-            // 读取失败，使用估算值
-            estimateCycleCount();
+            Log.e(TAG, "Error loading battery info: " + e.getMessage());
         }
     }
     
     /**
-     * 估算充电循环次数
+     * 读取充电循环次数 (异步)
      */
-    private void estimateCycleCount() {
-        // 基于使用时间和充电模式估算
-        int estimatedCycles = 0;
-        
-        // 读取charge_counter估算
-        try {
-            File counterFile = new File("/sys/class/power_supply/battery/charge_counter");
-            if (counterFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(counterFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    long counter = Long.parseLong(line.trim());
-                    // 估算循环次数 (假设每次完整充电为一次循环)
-                    estimatedCycles = (int) (counter / 1000000 / 100); // 粗略估算
+    public void readCycleCountAsync() {
+        new Thread(() -> {
+            try {
+                String[] paths = {
+                    "/sys/class/power_supply/battery/cycle_count",
+                    "/sys/class/power_supply/bms/cycle_count",
+                    "/sys/class/power_supply/maxfg/cycle_count",
+                    "/sys/class/power_supply/battery/battery_cycle"
+                };
+                
+                for (String path : paths) {
+                    File file = new File(path);
+                    if (file.exists() && file.canRead()) {
+                        BufferedReader reader = new BufferedReader(new FileReader(file));
+                        String line = reader.readLine();
+                        reader.close();
+                        if (line != null && !line.isEmpty()) {
+                            try {
+                                int cycleCount = Integer.parseInt(line.trim());
+                                currentBatteryInfo.setCycleCount(Math.max(0, cycleCount));
+                                return;
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading cycle count: " + e.getMessage());
             }
-        } catch (Exception ignored) {
-        }
-        
-        currentBatteryInfo.setCycleCount(estimatedCycles);
+        }).start();
     }
     
     /**
-     * 读取电池容量
+     * 读取电池容量 (异步)
      */
-    private void readBatteryCapacity() {
-        try {
-            // 读取当前容量
-            File counterFile = new File("/sys/class/power_supply/battery/charge_counter");
-            if (counterFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(counterFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int chargeCounter = Integer.parseInt(line.trim());
-                    currentBatteryInfo.setChargeCounter(chargeCounter);
-                    currentBatteryInfo.setCurrentCapacity(Math.abs(chargeCounter) / 1000);
+    public void readBatteryCapacityAsync() {
+        new Thread(() -> {
+            try {
+                // 读取设计容量
+                File fullFile = new File("/sys/class/power_supply/battery/charge_full");
+                if (fullFile.exists() && fullFile.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(fullFile));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) {
+                        try {
+                            int chargeFull = Integer.parseInt(line.trim());
+                            currentBatteryInfo.setDesignCapacity(Math.abs(chargeFull) / 1000);
+                        } catch (NumberFormatException ignored) {}
+                    }
                 }
+                
+                // 计算健康度
+                calculateHealth();
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading battery capacity: " + e.getMessage());
             }
-            
-            // 读取设计容量
-            File fullFile = new File("/sys/class/power_supply/battery/charge_full");
-            if (fullFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(fullFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int chargeFull = Integer.parseInt(line.trim());
-                    currentBatteryInfo.setDesignCapacity(chargeFull / 1000);
-                }
-            }
-            
-            // 计算健康度
-            calculateHealth();
-            
-        } catch (Exception e) {
-            // 使用系统API获取
-            getCapacityFromBatteryManager();
-        }
-    }
-    
-    /**
-     * 从BatteryManager获取容量
-     */
-    private void getCapacityFromBatteryManager() {
-        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-        if (batteryManager != null) {
-            long chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-            long capacity = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-            
-            if (chargeCounter != Long.MIN_VALUE && capacity != Long.MIN_VALUE) {
-                currentBatteryInfo.setChargeCounter((int) chargeCounter);
-                currentBatteryInfo.setCurrentCapacity((int) (chargeCounter / 1000));
-            }
-        }
+        }).start();
     }
     
     /**
@@ -220,7 +186,7 @@ public class BatteryDataManager {
         int currentCapacity = currentBatteryInfo.getCurrentCapacity();
         
         if (designCapacity > 0 && currentCapacity > 0) {
-            float healthPercentage = (currentCapacity * 100.0f) / designCapacity;
+            float healthPercentage = Math.min(100.0f, (currentCapacity * 100.0f) / designCapacity);
             currentBatteryInfo.setHealthPercentage(healthPercentage);
             
             // 设置健康状态
@@ -233,35 +199,38 @@ public class BatteryDataManager {
             } else {
                 currentBatteryInfo.setHealthStatus("poor");
             }
+        } else {
+            // 如果无法获取真实数据，使用默认值
+            currentBatteryInfo.setHealthPercentage(100.0f);
+            currentBatteryInfo.setHealthStatus("good");
         }
     }
     
     /**
      * 判断电池来源
      */
-    private void detectBatterySource() {
-        try {
-            File serialFile = new File("/sys/class/power_supply/battery/serial_number");
-            if (serialFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(serialFile));
-                String serial = reader.readLine();
-                reader.close();
-                if (serial != null) {
-                    currentBatteryInfo.setBatterySerial(serial);
-                    
-                    // 判断来源
-                    if (isOriginalBattery(serial)) {
-                        currentBatteryInfo.setBatterySource("original");
-                    } else {
-                        currentBatteryInfo.setBatterySource("third_party");
+    public void detectBatterySourceAsync() {
+        new Thread(() -> {
+            try {
+                File serialFile = new File("/sys/class/power_supply/battery/serial_number");
+                if (serialFile.exists() && serialFile.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(serialFile));
+                    String serial = reader.readLine();
+                    reader.close();
+                    if (serial != null && !serial.isEmpty()) {
+                        currentBatteryInfo.setBatterySerial(serial);
+                        
+                        if (isOriginalBattery(serial)) {
+                            currentBatteryInfo.setBatterySource("original");
+                        } else {
+                            currentBatteryInfo.setBatterySource("third_party");
+                        }
                     }
-                    return;
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error detecting battery source: " + e.getMessage());
             }
-        } catch (Exception ignored) {
-        }
-        
-        currentBatteryInfo.setBatterySource("unknown");
+        }).start();
     }
     
     /**
@@ -270,24 +239,28 @@ public class BatteryDataManager {
     private boolean isOriginalBattery(String serial) {
         if (serial == null || serial.isEmpty()) return false;
         
-        String brand = android.os.Build.BRAND.toLowerCase();
+        String brand = Build.BRAND.toLowerCase();
         
-        switch (brand) {
-            case "xiaomi":
-            case "redmi":
-                return serial.matches("^[A-Z0-9]{10,20}$");
-            case "huawei":
-            case "honor":
-                return serial.matches("^[A-Z0-9]{8,16}$");
-            case "oppo":
-            case "realme":
-            case "oneplus":
-                return serial.matches("^[A-Z0-9]{10,18}$");
-            case "vivo":
-            case "iqoo":
-                return serial.matches("^[A-Z0-9]{8,15}$");
-            default:
-                return serial.length() >= 8 && serial.matches("^[A-Z0-9]+$");
+        try {
+            switch (brand) {
+                case "xiaomi":
+                case "redmi":
+                    return serial.matches("^[A-Z0-9]{10,20}$");
+                case "huawei":
+                case "honor":
+                    return serial.matches("^[A-Z0-9]{8,16}$");
+                case "oppo":
+                case "realme":
+                case "oneplus":
+                    return serial.matches("^[A-Z0-9]{10,18}$");
+                case "vivo":
+                case "iqoo":
+                    return serial.matches("^[A-Z0-9]{8,15}$");
+                default:
+                    return serial.length() >= 8 && serial.matches("^[A-Z0-9]+$");
+            }
+        } catch (Exception e) {
+            return false;
         }
     }
     

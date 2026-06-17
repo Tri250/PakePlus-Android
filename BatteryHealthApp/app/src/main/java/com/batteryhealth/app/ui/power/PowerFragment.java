@@ -5,7 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,15 +30,22 @@ import java.io.FileReader;
  */
 public class PowerFragment extends Fragment {
     
+    private static final String TAG = "PowerFragment";
+    
     private TextView tvPower;
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvChargeType;
     
+    private Handler mainHandler;
+    private boolean isReceiverRegistered = false;
+    
     private BroadcastReceiver powerReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updatePowerData();
+            if (intent != null && mainHandler != null) {
+                mainHandler.post(() -> updatePowerData());
+            }
         }
     };
     
@@ -42,49 +53,99 @@ public class PowerFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, 
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_power, container, false);
+        try {
+            return inflater.inflate(R.layout.fragment_power, container, false);
+        } catch (Exception e) {
+            Log.e(TAG, "Error inflating layout: " + e.getMessage());
+            View errorView = new View(requireContext());
+            return errorView;
+        }
     }
     
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        tvPower = view.findViewById(R.id.tv_power);
-        tvVoltage = view.findViewById(R.id.tv_voltage);
-        tvCurrent = view.findViewById(R.id.tv_current);
-        tvChargeType = view.findViewById(R.id.tv_charge_type);
-        
-        registerPowerReceiver();
-        updatePowerData();
+        try {
+            mainHandler = new Handler(Looper.getMainLooper());
+            
+            tvPower = view.findViewById(R.id.tv_power);
+            tvVoltage = view.findViewById(R.id.tv_voltage);
+            tvCurrent = view.findViewById(R.id.tv_current);
+            tvChargeType = view.findViewById(R.id.tv_charge_type);
+            
+            // 设置默认值
+            setDefaultValues();
+            
+            registerPowerReceiver();
+            updatePowerData();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
+        }
+    }
+    
+    private void setDefaultValues() {
+        if (tvPower != null) tvPower.setText("0.0 W");
+        if (tvVoltage != null) tvVoltage.setText("0.00 V");
+        if (tvCurrent != null) tvCurrent.setText("0.00 A");
+        if (tvChargeType != null) tvChargeType.setText("未充电");
     }
     
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (getContext() != null) {
-            getContext().unregisterReceiver(powerReceiver);
+        try {
+            if (isReceiverRegistered && getContext() != null) {
+                getContext().unregisterReceiver(powerReceiver);
+                isReceiverRegistered = false;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
         }
     }
     
     private void registerPowerReceiver() {
-        if (getContext() != null) {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-            filter.addAction(Intent.ACTION_POWER_CONNECTED);
-            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            getContext().registerReceiver(powerReceiver, filter);
+        try {
+            if (getContext() != null) {
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+                filter.addAction(Intent.ACTION_POWER_CONNECTED);
+                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+                
+                // Android 14+ 需要指定导出标志
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    getContext().registerReceiver(powerReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                } else {
+                    getContext().registerReceiver(powerReceiver, filter);
+                }
+                isReceiverRegistered = true;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering power receiver: " + e.getMessage());
         }
     }
     
     private void updatePowerData() {
-        float voltage = readVoltage();
-        float current = readCurrent();
-        float power = voltage * current;
-        
-        tvVoltage.setText(String.format("%.2f V", voltage));
-        tvCurrent.setText(String.format("%.2f A", current));
-        tvPower.setText(String.format("%.1f W", power));
-        tvChargeType.setText(getChargeTypeDescription(power));
+        try {
+            float voltage = readVoltage();
+            float current = readCurrent();
+            float power = voltage * current;
+            
+            if (tvVoltage != null) {
+                tvVoltage.setText(String.format("%.2f V", voltage));
+            }
+            if (tvCurrent != null) {
+                tvCurrent.setText(String.format("%.2f A", current));
+            }
+            if (tvPower != null) {
+                tvPower.setText(String.format("%.1f W", power));
+            }
+            if (tvChargeType != null) {
+                tvChargeType.setText(getChargeTypeDescription(power));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating power data: " + e.getMessage());
+        }
     }
     
     private float readVoltage() {

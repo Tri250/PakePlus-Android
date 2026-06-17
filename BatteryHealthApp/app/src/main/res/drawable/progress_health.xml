@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 背景 -->
+    <!-- 背景 - iOS 2026风格 -->
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
-            <corners android:radius="4dp" />
+            <corners android:radius="5dp" />
             <solid android:color="@color/ios_tertiary_background" />
         </shape>
     </item>
     
-    <!-- 进度 -->
+    <!-- 进度 - iOS 2026风格渐变 -->
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <corners android:radius="4dp" />
-                <solid android:color="@color/ios_green" />
+                <corners android:radius="5dp" />
+                <gradient
+                    android:startColor="@color/ios_green"
+                    android:endColor="@color/ios_mint"
+                    android:angle="0"
+                    android:type="linear" />
             </shape>
         </clip>
     </item>

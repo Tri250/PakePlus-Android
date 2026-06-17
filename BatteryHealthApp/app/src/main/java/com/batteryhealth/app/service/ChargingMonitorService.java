@@ -145,19 +145,35 @@ public class ChargingMonitorService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(chargingReceiver);
-        handler.removeCallbacks(updateTask);
+        try {
+            unregisterReceiver(chargingReceiver);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
+        }
+        if (handler != null) {
+            handler.removeCallbacks(updateTask);
+        }
     }
     
     /**
      * 注册充电广播接收器
      */
     private void registerChargingReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-        registerReceiver(chargingReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_POWER_CONNECTED);
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+            
+            // Android 14+ 需要指定导出标志
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                registerReceiver(chargingReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(chargingReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering charging receiver: " + e.getMessage());
+        }
     }
     
     /**

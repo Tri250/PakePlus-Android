@@ -4,24 +4,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background">
+    android:background="@color/ios_background"
+    android:fitsSystemWindows="true">
 
     <!-- 主内容区域 -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="80dp" />
+        android:layout_marginBottom="84dp"
+        android:clipToPadding="false"
+        android:overScrollMode="never" />
 
-    <!-- 底部导航栏 - iOS风格 -->
+    <!-- 底部导航栏 - iOS 2026风格 -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="84dp"
         android:layout_gravity="bottom"
         android:background="@color/ios_secondary_background"
-        android:elevation="8dp"
-        app:itemIconSize="24dp"
+        android:elevation="0dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="24dp"
+        app:itemIconSize="28dp"
         app:itemIconTint="@color/bottom_nav_color"
         app:itemTextColor="@color/bottom_nav_color"
         app:itemTextAppearanceActive="@style/iOSTabText"
@@ -29,5 +34,12 @@
         app:itemActiveIndicatorStyle="@null"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
+
+    <!-- 顶部安全区域分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_gravity="top"
+        android:background="@color/ios_separator" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

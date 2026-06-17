@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- iOS风格从左侧滑入动画 -->
+    <translate
+        android:fromXDelta="-25%"
+        android:toXDelta="0%"
+        android:duration="350"
+        android:interpolator="@android:interpolator/decelerate_quad" />
+    
+    <!-- 轻微的淡入效果 -->
+    <alpha
+        android:fromAlpha="0.8"
+        android:toAlpha="1.0"
+        android:duration="350"
+        android:interpolator="@android:interpolator/decelerate_quad" />
+</set>

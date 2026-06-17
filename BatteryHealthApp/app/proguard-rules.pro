@@ -3,6 +3,15 @@
 # 保留类名和方法名
 -keep public class com.batteryhealth.app.** { *; }
 
+# OkHttp - 忽略缺失的平台类
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+-dontwarn okhttp3.internal.platform.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-keepclassmembers class okhttp3.** { *; }
+
 # Room数据库
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
