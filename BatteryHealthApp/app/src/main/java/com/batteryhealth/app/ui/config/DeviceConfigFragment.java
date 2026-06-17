@@ -11,19 +11,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.AppManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 
-/**
- * 设备配置Fragment
- */
 public class DeviceConfigFragment extends Fragment {
     
     private static final String TAG = "DeviceConfigFragment";
     
     private DeviceInfoManager deviceInfoManager;
+    private boolean initialized = false;
+    
+    private final Runnable dataChangeListener = () -> {
+        if (getView() != null) {
+            initViews(getView());
+        }
+    };
     
     @Nullable
     @Override
@@ -33,52 +37,47 @@ public class DeviceConfigFragment extends Fragment {
             return inflater.inflate(R.layout.fragment_device_config, container, false);
         } catch (Exception e) {
             Log.e(TAG, "Error inflating layout: " + e.getMessage());
-            View errorView = new View(requireContext());
-            return errorView;
+            return new View(requireContext());
         }
     }
     
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        try {
-            if (getActivity() instanceof MainActivity) {
-                deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
-            }
-            
-            initViews(view);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
-        }
+        deviceInfoManager = AppManager.getInstance().getDeviceInfoManager();
+        AppManager.getInstance().addDataChangeListener(dataChangeListener);
+        initViews(view);
     }
     
     @Override
     public void onResume() {
         super.onResume();
-        // 重新获取manager并刷新数据
+        deviceInfoManager = AppManager.getInstance().getDeviceInfoManager();
         if (getView() != null) {
-            if (getActivity() instanceof MainActivity) {
-                deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
-            }
             initViews(getView());
         }
     }
     
-    /**
-     * 供MainActivity调用的刷新方法
-     */
-    public void refreshData() {
-        if (getView() != null) {
-            if (getActivity() instanceof MainActivity) {
-                deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
-            }
-            initViews(getView());
-        }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        AppManager.getInstance().removeDataChangeListener(dataChangeListener);
     }
     
     private void initViews(View view) {
         try {
+            // 每次都从单例获取
+            deviceInfoManager = AppManager.getInstance().getDeviceInfoManager();
+            
+            TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
+            TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
+            TextView tvProcessor = view.findViewById(R.id.tv_processor);
+            TextView tvMemory = view.findViewById(R.id.tv_memory);
+            TextView tvStorage = view.findViewById(R.id.tv_storage);
+            TextView tvScreen = view.findViewById(R.id.tv_screen);
+            TextView tvActivation = view.findViewById(R.id.tv_activation);
+            TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
+            
             if (deviceInfoManager == null) {
                 setDefaultValues(view);
                 return;
@@ -89,15 +88,6 @@ public class DeviceConfigFragment extends Fragment {
                 setDefaultValues(view);
                 return;
             }
-            
-            TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
-            TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
-            TextView tvProcessor = view.findViewById(R.id.tv_processor);
-            TextView tvMemory = view.findViewById(R.id.tv_memory);
-            TextView tvStorage = view.findViewById(R.id.tv_storage);
-            TextView tvScreen = view.findViewById(R.id.tv_screen);
-            TextView tvActivation = view.findViewById(R.id.tv_activation);
-            TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
             
             if (tvDeviceName != null) {
                 tvDeviceName.setText(config.getFullModelName());
@@ -118,11 +108,13 @@ public class DeviceConfigFragment extends Fragment {
                 tvScreen.setText(config.getScreenResolution());
             }
             if (tvActivation != null) {
-                tvActivation.setText(config.getActivationDateStr() != null ? config.getActivationDateStr() : "--");
+                String act = config.getActivationDateStr();
+                tvActivation.setText(act != null && !act.isEmpty() ? act : "--");
             }
             if (tvUsageDays != null) {
                 tvUsageDays.setText(config.getUsageDays() + " 天");
             }
+            initialized = true;
         } catch (Exception e) {
             Log.e(TAG, "Error initializing views: " + e.getMessage());
             setDefaultValues(view);
@@ -130,22 +122,26 @@ public class DeviceConfigFragment extends Fragment {
     }
     
     private void setDefaultValues(View view) {
-        TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
-        TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
-        TextView tvProcessor = view.findViewById(R.id.tv_processor);
-        TextView tvMemory = view.findViewById(R.id.tv_memory);
-        TextView tvStorage = view.findViewById(R.id.tv_storage);
-        TextView tvScreen = view.findViewById(R.id.tv_screen);
-        TextView tvActivation = view.findViewById(R.id.tv_activation);
-        TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
-        
-        if (tvDeviceName != null) tvDeviceName.setText("--");
-        if (tvAndroidVersion != null) tvAndroidVersion.setText("--");
-        if (tvProcessor != null) tvProcessor.setText("--");
-        if (tvMemory != null) tvMemory.setText("--");
-        if (tvStorage != null) tvStorage.setText("--");
-        if (tvScreen != null) tvScreen.setText("--");
-        if (tvActivation != null) tvActivation.setText("--");
-        if (tvUsageDays != null) tvUsageDays.setText("--");
+        try {
+            TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
+            TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
+            TextView tvProcessor = view.findViewById(R.id.tv_processor);
+            TextView tvMemory = view.findViewById(R.id.tv_memory);
+            TextView tvStorage = view.findViewById(R.id.tv_storage);
+            TextView tvScreen = view.findViewById(R.id.tv_screen);
+            TextView tvActivation = view.findViewById(R.id.tv_activation);
+            TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
+            
+            if (tvDeviceName != null) tvDeviceName.setText(BuildInfoHelper.getDeviceName());
+            if (tvAndroidVersion != null) tvAndroidVersion.setText(BuildInfoHelper.getAndroidVersion());
+            if (tvProcessor != null) tvProcessor.setText(BuildInfoHelper.getProcessorInfo());
+            if (tvMemory != null) tvMemory.setText(BuildInfoHelper.getMemoryInfo());
+            if (tvStorage != null) tvStorage.setText(BuildInfoHelper.getStorageInfo());
+            if (tvScreen != null) tvScreen.setText(BuildInfoHelper.getScreenInfo());
+            if (tvActivation != null) tvActivation.setText("--");
+            if (tvUsageDays != null) tvUsageDays.setText("--");
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting default values: " + e.getMessage());
+        }
     }
 }
