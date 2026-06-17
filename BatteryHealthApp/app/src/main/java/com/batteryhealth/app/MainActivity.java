@@ -11,8 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.MenuItem;
-import android.view.View;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -34,7 +33,6 @@ import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
-import com.batteryhealth.app.utils.PermissionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
@@ -61,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private DeviceInfoManager deviceInfoManager;
     
     private Handler mainHandler;
+    private boolean servicesStarted = false;
     
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -73,34 +72,48 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        
-        mainHandler = new Handler(Looper.getMainLooper());
-        
-        // 初始化管理器
-        batteryDataManager = new BatteryDataManager(this);
-        deviceInfoManager = new DeviceInfoManager(this);
-        
-        // 初始化视图
-        initViews();
-        
-        // 检查权限
-        checkPermissions();
-        
-        // 注册电池广播
-        registerBatteryReceiver();
-        
-        // 启动监测服务
-        startMonitorServices();
-        
-        // 加载初始数据
-        loadInitialData();
+        try {
+            setContentView(R.layout.activity_main);
+            
+            mainHandler = new Handler(Looper.getMainLooper());
+            
+            // 初始化视图 - 必须先于其他操作
+            initViews();
+            
+            // 初始化管理器
+            batteryDataManager = new BatteryDataManager(this);
+            deviceInfoManager = new DeviceInfoManager(this);
+            
+            // 检查权限
+            checkPermissions();
+            
+            // 注册电池广播
+            registerBatteryReceiver();
+            
+            // 延迟启动服务，避免启动时闪退
+            mainHandler.postDelayed(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    startMonitorServices();
+                }
+            }, 2000);
+            
+            // 加载初始数据
+            loadInitialData();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate: " + e.getMessage(), e);
+            Toast.makeText(this, "应用初始化失败，请重启", Toast.LENGTH_LONG).show();
+        }
     }
     
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(batteryReceiver);
+        try {
+            unregisterReceiver(batteryReceiver);
+        } catch (Exception e) {
+            // 接收器可能未注册
+        }
     }
     
     /**
@@ -109,6 +122,10 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         viewPager = findViewById(R.id.view_pager);
         bottomNavigation = findViewById(R.id.bottom_navigation);
+        
+        if (viewPager == null || bottomNavigation == null) {
+            throw new RuntimeException("Required views not found in layout");
+        }
         
         // 设置ViewPager
         setupViewPager();
@@ -216,10 +233,11 @@ public class MainActivity extends AppCompatActivity {
     private void checkPermissions() {
         List<String> permissions = new ArrayList<>();
         
+        // Android 13+ 使用新的媒体权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) 
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) 
                     != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_VIDEO);
+                permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
             }
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
@@ -228,9 +246,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) 
-                != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.READ_PHONE_STATE);
+        // 设备信息权限 - Android 10+ 需要特殊处理
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.READ_PHONE_STATE);
+            }
         }
         
         if (!permissions.isEmpty()) {
@@ -261,31 +282,49 @@ public class MainActivity extends AppCompatActivity {
      * 注册电池广播接收器
      */
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-        registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+            filter.addAction(Intent.ACTION_POWER_CONNECTED);
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+            
+            // Android 14+ 需要指定导出标志
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering battery receiver: " + e.getMessage());
+        }
     }
     
     /**
      * 启动监测服务
      */
     private void startMonitorServices() {
-        // 启动电池监测服务
-        Intent batteryServiceIntent = new Intent(this, BatteryMonitorService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(batteryServiceIntent);
-        } else {
-            startService(batteryServiceIntent);
-        }
+        if (servicesStarted) return;
         
-        // 启动充电监测服务
-        Intent chargingServiceIntent = new Intent(this, ChargingMonitorService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(chargingServiceIntent);
-        } else {
-            startService(chargingServiceIntent);
+        try {
+            // 启动电池监测服务
+            Intent batteryServiceIntent = new Intent(this, BatteryMonitorService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(batteryServiceIntent);
+            } else {
+                startService(batteryServiceIntent);
+            }
+            
+            // 启动充电监测服务
+            Intent chargingServiceIntent = new Intent(this, ChargingMonitorService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(chargingServiceIntent);
+            } else {
+                startService(chargingServiceIntent);
+            }
+            
+            servicesStarted = true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting services: " + e.getMessage());
         }
     }
     
@@ -295,16 +334,20 @@ public class MainActivity extends AppCompatActivity {
     private void loadInitialData() {
         // 在后台线程加载数据
         new Thread(() -> {
-            // 获取电池信息
-            BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
-            
-            // 获取设备配置
-            DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
-            
-            // 在主线程更新UI
-            mainHandler.post(() -> {
-                // 数据已加载，Fragment会自行获取
-            });
+            try {
+                // 获取电池信息
+                BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
+                
+                // 获取设备配置
+                DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
+                
+                // 在主线程更新UI
+                mainHandler.post(() -> {
+                    // 数据已加载，Fragment会自行获取
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading initial data: " + e.getMessage());
+            }
         }).start();
     }
     

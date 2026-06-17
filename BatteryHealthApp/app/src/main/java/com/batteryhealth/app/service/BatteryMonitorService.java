@@ -26,9 +26,6 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.RandomAccessFile;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 电池监测服务
@@ -49,6 +46,7 @@ public class BatteryMonitorService extends Service {
     private Handler handler;
     private BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
+    private boolean isRunning = false;
     
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -62,12 +60,21 @@ public class BatteryMonitorService extends Service {
     private Runnable updateTask = new Runnable() {
         @Override
         public void run() {
-            readAdvancedBatteryInfo();
-            if (dataListener != null && currentBatteryInfo != null) {
-                dataListener.onBatteryDataUpdated(currentBatteryInfo);
+            if (!isRunning) return;
+            
+            try {
+                readAdvancedBatteryInfo();
+                if (dataListener != null && currentBatteryInfo != null) {
+                    dataListener.onBatteryDataUpdated(currentBatteryInfo);
+                }
+                updateNotification();
+            } catch (Exception e) {
+                Log.e(TAG, "Error in update task: " + e.getMessage());
             }
-            updateNotification();
-            handler.postDelayed(this, UPDATE_INTERVAL);
+            
+            if (handler != null) {
+                handler.postDelayed(this, UPDATE_INTERVAL);
+            }
         }
     };
     
@@ -78,19 +85,32 @@ public class BatteryMonitorService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        handler = new Handler(Looper.getMainLooper());
-        currentBatteryInfo = new BatteryInfo();
-        
-        createNotificationChannel();
-        registerBatteryReceiver();
-        
-        // 启动定时更新
-        handler.post(updateTask);
+        try {
+            handler = new Handler(Looper.getMainLooper());
+            currentBatteryInfo = new BatteryInfo();
+            
+            createNotificationChannel();
+            registerBatteryReceiver();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate: " + e.getMessage());
+        }
     }
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForeground(NOTIFICATION_ID, buildNotification());
+        try {
+            if (!isRunning) {
+                isRunning = true;
+                startForeground(NOTIFICATION_ID, buildNotification());
+                
+                // 启动定时更新
+                if (handler != null) {
+                    handler.post(updateTask);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onStartCommand: " + e.getMessage());
+        }
         return START_STICKY;
     }
     
@@ -103,19 +123,36 @@ public class BatteryMonitorService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(batteryReceiver);
-        handler.removeCallbacks(updateTask);
+        isRunning = false;
+        try {
+            unregisterReceiver(batteryReceiver);
+        } catch (Exception e) {
+            // 接收器可能未注册
+        }
+        if (handler != null) {
+            handler.removeCallbacks(updateTask);
+        }
     }
     
     /**
      * 注册电池广播接收器
      */
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-        registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+            filter.addAction(Intent.ACTION_POWER_CONNECTED);
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+            
+            // Android 14+ 需要指定导出标志
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering receiver: " + e.getMessage());
+        }
     }
     
     /**
@@ -124,43 +161,47 @@ public class BatteryMonitorService extends Service {
     private void updateBatteryData(Intent intent) {
         if (intent == null) return;
         
-        String action = intent.getAction();
-        if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-            // 电量百分比
-            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            if (level != -1 && scale != -1) {
-                currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+        try {
+            String action = intent.getAction();
+            if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+                // 电量百分比
+                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (level != -1 && scale != -1) {
+                    currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+                }
+                
+                // 电池状态
+                int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                currentBatteryInfo.setStatus(status);
+                
+                // 充电方式
+                int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+                currentBatteryInfo.setPlugged(plugged);
+                
+                // 电池温度 (单位是0.1°C)
+                int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+                if (temperature != -1) {
+                    currentBatteryInfo.setTemperature(temperature / 10.0f);
+                }
+                
+                // 电池电压 (单位是mV)
+                int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                if (voltage != -1) {
+                    currentBatteryInfo.setVoltage(voltage);
+                }
+                
+                // 电池技术
+                String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
+                if (technology != null) {
+                    currentBatteryInfo.setTechnology(technology);
+                }
+                
+                // 读取电流
+                readBatteryCurrent();
             }
-            
-            // 电池状态
-            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            currentBatteryInfo.setStatus(status);
-            
-            // 充电方式
-            int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-            currentBatteryInfo.setPlugged(plugged);
-            
-            // 电池温度 (单位是0.1°C)
-            int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-            if (temperature != -1) {
-                currentBatteryInfo.setTemperature(temperature / 10.0f);
-            }
-            
-            // 电池电压 (单位是mV)
-            int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-            if (voltage != -1) {
-                currentBatteryInfo.setVoltage(voltage);
-            }
-            
-            // 电池技术
-            String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
-            if (technology != null) {
-                currentBatteryInfo.setTechnology(technology);
-            }
-            
-            // 读取电流
-            readBatteryCurrent();
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating battery data: " + e.getMessage());
         }
     }
     
@@ -168,14 +209,18 @@ public class BatteryMonitorService extends Service {
      * 读取高级电池信息
      */
     private void readAdvancedBatteryInfo() {
-        // 读取充电循环次数
-        readCycleCount();
-        
-        // 读取电池容量
-        readBatteryCapacity();
-        
-        // 判断电池来源
-        detectBatterySource();
+        try {
+            // 读取充电循环次数
+            readCycleCount();
+            
+            // 读取电池容量
+            readBatteryCapacity();
+            
+            // 判断电池来源
+            detectBatterySource();
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading advanced info: " + e.getMessage());
+        }
     }
     
     /**
@@ -304,7 +349,6 @@ public class BatteryMonitorService extends Service {
                     currentBatteryInfo.setBatterySerial(serial);
                     
                     // 根据序列号判断来源
-                    // 原装电池通常有特定的序列号格式
                     if (isOriginalBattery(serial)) {
                         currentBatteryInfo.setBatterySource("original");
                     } else {
@@ -326,7 +370,7 @@ public class BatteryMonitorService extends Service {
         
         // 原装电池序列号通常有特定格式
         // 这里根据常见品牌进行判断
-        String brand = Build.BRAND.toLowerCase();
+        String brand = android.os.Build.BRAND.toLowerCase();
         
         switch (brand) {
             case "xiaomi":
@@ -357,15 +401,19 @@ public class BatteryMonitorService extends Service {
      */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "电池监测",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("实时监测电池状态");
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+            try {
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID,
+                        "电池监测",
+                        NotificationManager.IMPORTANCE_LOW
+                );
+                channel.setDescription("实时监测电池状态");
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    manager.createNotificationChannel(channel);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel: " + e.getMessage());
             }
         }
     }
@@ -374,33 +422,47 @@ public class BatteryMonitorService extends Service {
      * 构建通知
      */
     private Notification buildNotification() {
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_IMMUTABLE
-        );
-        
-        String content = String.format("电量: %d%% | 温度: %.1f°C | 健康度: %.1f%%",
-                currentBatteryInfo.getLevel(),
-                currentBatteryInfo.getTemperature(),
-                currentBatteryInfo.getHealthPercentage());
-        
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("电池监测中")
-                .setContentText(content)
-                .setSmallIcon(R.drawable.ic_battery)
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .build();
+        try {
+            Intent intent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            );
+            
+            String content = String.format("电量: %d%% | 温度: %.1f°C | 健康度: %.1f%%",
+                    currentBatteryInfo.getLevel(),
+                    currentBatteryInfo.getTemperature(),
+                    currentBatteryInfo.getHealthPercentage());
+            
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("电池监测中")
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_battery)
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error building notification: " + e.getMessage());
+            // 返回一个基本通知
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("电池监测")
+                    .setContentText("监测服务运行中")
+                    .setSmallIcon(R.drawable.ic_battery)
+                    .build();
+        }
     }
     
     /**
      * 更新通知
      */
     private void updateNotification() {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.notify(NOTIFICATION_ID, buildNotification());
+        try {
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.notify(NOTIFICATION_ID, buildNotification());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating notification: " + e.getMessage());
         }
     }
     

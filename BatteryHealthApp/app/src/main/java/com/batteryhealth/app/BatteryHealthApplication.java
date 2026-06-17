@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.room.Room;
 
@@ -19,6 +20,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
  */
 public class BatteryHealthApplication extends Application {
     
+    private static final String TAG = "BatteryHealthApp";
     private static BatteryHealthApplication instance;
     private AppDatabase database;
     private Handler mainHandler;
@@ -26,24 +28,41 @@ public class BatteryHealthApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        instance = this;
-        mainHandler = new Handler(Looper.getMainLooper());
-        
-        // 初始化数据库
-        initDatabase();
+        try {
+            instance = this;
+            mainHandler = new Handler(Looper.getMainLooper());
+            
+            // 初始化数据库
+            initDatabase();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
+        }
     }
     
     /**
      * 初始化Room数据库
      */
     private void initDatabase() {
-        database = Room.databaseBuilder(
-                getApplicationContext(),
-                AppDatabase.class,
-                "battery_health_db"
-        )
-        .fallbackToDestructiveMigration()
-        .build();
+        try {
+            database = Room.databaseBuilder(
+                    getApplicationContext(),
+                    AppDatabase.class,
+                    "battery_health_db"
+            )
+            .fallbackToDestructiveMigration()
+            .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing database: " + e.getMessage(), e);
+            // 数据库初始化失败，使用内存数据库作为后备
+            try {
+                database = Room.inMemoryDatabaseBuilder(
+                        getApplicationContext(),
+                        AppDatabase.class
+                ).build();
+            } catch (Exception e2) {
+                Log.e(TAG, "Failed to create in-memory database: " + e2.getMessage());
+            }
+        }
     }
     
     /**
