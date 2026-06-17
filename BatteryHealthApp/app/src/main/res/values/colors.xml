@@ -1,10 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#3498db</color>
-    <color name="primary_dark">#2980b9</color>
-    <color name="secondary">#2ecc71</color>
-    <color name="secondary_dark">#27ae60</color>
-    <color name="accent">#3498db</color>
+    <!-- iOS系统颜色 - 浅色模式 -->
+    <color name="ios_background">#F2F2F7</color>
+    <color name="ios_secondary_background">#FFFFFF</color>
+    <color name="ios_tertiary_background">#F2F2F7</color>
+    
+    <color name="ios_label">#000000</color>
+    <color name="ios_secondary_label">#3C3C4399</color>
+    <color name="ios_tertiary_label">#3C3C434D</color>
+    <color name="ios_quaternary_label">#3C3C432E</color>
+    
+    <color name="ios_separator">#C6C6C8</color>
+    <color name="ios_opaque_separator">#C6C6C8</color>
+    
+    <!-- iOS系统颜色 - 深色模式 -->
+    <color name="ios_background_dark">#000000</color>
+    <color name="ios_secondary_background_dark">#1C1C1E</color>
+    <color name="ios_tertiary_background_dark">#2C2C2E</color>
+    
+    <color name="ios_label_dark">#FFFFFF</color>
+    <color name="ios_secondary_label_dark">#EBEBF599</color>
+    <color name="ios_tertiary_label_dark">#EBEBF54D</color>
+    <color name="ios_quaternary_label_dark">#EBEBF52E</color>
+    
+    <color name="ios_separator_dark">#38383A</color>
+    <color name="ios_opaque_separator_dark">#38383A</color>
+    
+    <!-- iOS系统色板 -->
+    <color name="ios_red">#FF3B30</color>
+    <color name="ios_orange">#FF9500</color>
+    <color name="ios_yellow">#FFCC00</color>
+    <color name="ios_green">#34C759</color>
+    <color name="ios_mint">#00C7BE</color>
+    <color name="ios_teal">#30B0C7</color>
+    <color name="ios_cyan">#32ADE6</color>
+    <color name="ios_blue">#007AFF</color>
+    <color name="ios_indigo">#5856D6</color>
+    <color name="ios_purple">#AF52DE</color>
+    <color name="ios_pink">#FF2D55</color>
+    <color name="ios_brown">#A2845E</color>
+    
+    <!-- iOS系统色板 - 深色 -->
+    <color name="ios_red_dark">#FF453A</color>
+    <color name="ios_orange_dark">#FF9F0A</color>
+    <color name="ios_yellow_dark">#FFD60A</color>
+    <color name="ios_green_dark">#30D158</color>
+    <color name="ios_mint_dark">#63E6E2</color>
+    <color name="ios_teal_dark">#40C8E0</color>
+    <color name="ios_cyan_dark">#64D2FF</color>
+    <color name="ios_blue_dark">#0A84FF</color>
+    <color name="ios_indigo_dark">#5E5CE6</color>
+    <color name="ios_purple_dark">#BF5AF2</color>
+    <color name="ios_pink_dark">#FF375F</color>
+    <color name="ios_brown_dark">#AC8E68</color>
+    
+    <!-- 电池状态颜色 -->
+    <color name="battery_excellent">#34C759</color>
+    <color name="battery_good">#30B0C7</color>
+    <color name="battery_normal">#FFCC00</color>
+    <color name="battery_warning">#FF9500</color>
+    <color name="battery_poor">#FF3B30</color>
+    
+    <!-- 充电功率颜色 -->
+    <color name="power_super">#AF52DE</color>
+    <color name="power_fast">#007AFF</color>
+    <color name="power_normal">#34C759</color>
+    <color name="power_slow">#FF9500</color>
+    <color name="power_wireless">#FFCC00</color>
+    
+    <!-- 通用颜色 -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- 渐变颜色 -->
+    <color name="gradient_start">#007AFF</color>
+    <color name="gradient_end">#5856D6</color>
+    
+    <!-- 图表颜色 -->
+    <color name="chart_line">#007AFF</color>
+    <color name="chart_fill">#1A007AFF</color>
+    <color name="chart_grid">#E5E5EA</color>
+    
+    <!-- 健康度等级颜色 -->
+    <color name="health_a_plus">#34C759</color>
+    <color name="health_a">#30D158</color>
+    <color name="health_b_plus">#64D2FF</color>
+    <color name="health_b">#5E5CE6</color>
+    <color name="health_c">#FFCC00</color>
+    <color name="health_d">#FF9500</color>
+    <color name="health_e">#FF453A</color>
 </resources>

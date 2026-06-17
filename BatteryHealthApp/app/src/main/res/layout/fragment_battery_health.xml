@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ios_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 页面标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="电池健康"
+            android:textAppearance="@style/iOSTitle.Large"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 健康度卡片 -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_health"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:gravity="center">
+
+                <!-- 健康度百分比 -->
+                <TextView
+                    android:id="@+id/tv_health_percentage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textAppearance="@style/iOSLargeNumber"
+                    android:textColor="@color/ios_green" />
+
+                <!-- 健康等级 -->
+                <TextView
+                    android:id="@+id/tv_health_grade"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textColor="@color/ios_secondary_label"
+                    android:layout_marginTop="8dp" />
+
+                <!-- 健康状态描述 -->
+                <TextView
+                    android:id="@+id/tv_health_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="正在检测..."
+                    android:textAppearance="@style/iOSBody.Secondary"
+                    android:layout_marginTop="8dp" />
+
+                <!-- 进度条 -->
+                <ProgressBar
+                    android:id="@+id/progress_health"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:layout_marginTop="16dp"
+                    android:progress="0"
+                    android:max="100"
+                    android:progressDrawable="@drawable/progress_health" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 详细信息卡片 -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- 标题 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="详细信息"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:padding="16dp" />
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池容量 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池容量"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_capacity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 循环次数 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="循环次数"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_cycle_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池温度 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池温度"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_temperature"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池电压 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池电压"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_voltage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池来源 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池来源"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_battery_source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <!-- 电池技术 -->
+                <LinearLayout style="@style/iOSListItem">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="电池技术"
+                        android:textAppearance="@style/iOSBody" />
+                    <TextView
+                        android:id="@+id/tv_technology"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

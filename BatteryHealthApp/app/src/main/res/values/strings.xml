@@ -1,4 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">电池健康度分析</string>
+    <string name="app_name">电池健康</string>
+    
+    <!-- 导航标签 -->
+    <string name="nav_battery">电池健康</string>
+    <string name="nav_config">配置</string>
+    <string name="nav_performance">性能</string>
+    <string name="nav_trend">趋势</string>
+    <string name="nav_power">充电</string>
+    
+    <!-- 电池状态 -->
+    <string name="battery_status_good">电池状态良好</string>
+    <string name="battery_status_normal">电池状态一般</string>
+    <string name="battery_status_warning">建议关注</string>
+    <string name="battery_status_poor">建议更换</string>
+    
+    <!-- 充电状态 -->
+    <string name="charging">充电中</string>
+    <string name="discharging">放电中</string>
+    <string name="not_charging">未充电</string>
+    <string name="full">已充满</string>
+    
+    <!-- 电池来源 -->
+    <string name="battery_original">原装电池</string>
+    <string name="battery_third_party">第三方电池</string>
+    <string name="battery_unknown">未知来源</string>
+    
+    <!-- 充电类型 -->
+    <string name="charge_super">超快闪充</string>
+    <string name="charge_fast">快速充电</string>
+    <string name="charge_normal">标准充电</string>
+    <string name="charge_slow">慢速充电</string>
+    <string name="charge_wireless">无线充电</string>
 </resources>
