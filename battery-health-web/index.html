@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>电池健康 - Battery Health</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-label: #000000;
+            --ios-secondary: #3C3C4399;
+            --ios-tertiary: #3C3C434D;
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-red: #FF3B30;
+            --ios-purple: #AF52DE;
+            --ios-teal: #30B0C7;
+            --ios-yellow: #FFCC00;
+            --ios-separator: #C6C6C8;
+            --health-excellent: #34C759;
+            --health-good: #30B0C7;
+            --health-normal: #FFCC00;
+            --health-warning: #FF9500;
+            --health-poor: #FF3B30;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+            background: var(--ios-bg);
+            color: var(--ios-label);
+            line-height: 1.5;
+            overflow-x: hidden;
+            padding-bottom: 100px;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            height: 44px;
+            background: var(--ios-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 15px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .status-time {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            padding: 0 16px 100px;
+        }
+
+        .page-title {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 8px 0 24px;
+            letter-spacing: -0.5px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--ios-card);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .card-header {
+            padding: 16px 16px 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 0 16px 16px;
+        }
+
+        /* 健康度大卡片 */
+        .health-card {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+        .health-percentage {
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--ios-green) 0%, var(--ios-teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .health-grade {
+            font-size: 48px;
+            font-weight: 600;
+            color: var(--ios-secondary);
+            margin-bottom: 8px;
+        }
+
+        .health-status {
+            font-size: 17px;
+            color: var(--ios-secondary);
+            margin-bottom: 20px;
+        }
+
+        .health-progress {
+            width: 100%;
+            height: 8px;
+            background: var(--ios-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .health-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ios-green) 0%, var(--ios-teal) 100%);
+            border-radius: 4px;
+            transition: width 1s ease;
+            width: 92%;
+        }
+
+        /* 列表项 */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 0.5px solid var(--ios-separator);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-label {
+            font-size: 17px;
+            color: var(--ios-label);
+        }
+
+        .list-value {
+            font-size: 17px;
+            color: var(--ios-secondary);
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 84px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 8px;
+            border-top: 0.5px solid var(--ios-separator);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active .nav-icon,
+        .nav-item.active .nav-label {
+            color: var(--ios-blue);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--ios-secondary);
+            transition: color 0.2s;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: var(--ios-secondary);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        /* 页面切换 */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 功率显示 */
+        .power-display {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+        .power-value {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--ios-blue);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .power-label {
+            font-size: 17px;
+            color: var(--ios-secondary);
+        }
+
+        /* 性能图表 */
+        .performance-chart {
+            padding: 16px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chart-label {
+            width: 60px;
+            font-size: 15px;
+            color: var(--ios-secondary);
+        }
+
+        .chart-progress {
+            flex: 1;
+            height: 8px;
+            background: var(--ios-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .chart-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .chart-fill.cpu {
+            background: var(--ios-blue);
+            width: 45%;
+        }
+
+        .chart-fill.memory {
+            background: var(--ios-purple);
+            width: 68%;
+        }
+
+        .chart-value {
+            width: 50px;
+            text-align: right;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ios-label);
+        }
+
+        /* 趋势图表 */
+        .trend-chart {
+            padding: 16px;
+            height: 200px;
+            position: relative;
+        }
+
+        .trend-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 续航统计 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .stat-item {
+            background: var(--ios-bg);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--ios-label);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--ios-secondary);
+        }
+
+        /* 充电状态 */
+        .charging-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--ios-green);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .charging-indicator.pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 电池溯源 */
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .source-badge.original {
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--ios-green);
+        }
+
+        .source-badge.third-party {
+            background: rgba(255, 149, 0, 0.15);
+            color: var(--ios-orange);
+        }
+
+        /* 响应式 */
+        @media (max-width: 375px) {
+            .health-percentage {
+                font-size: 60px;
+            }
+            .health-grade {
+                font-size: 40px;
+            }
+            .power-value {
+                font-size: 56px;
+            }
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <span class="status-time"></span>
+        <div class="status-icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+                <path d="M1 4h2v4H1V4zm3.5 0h2v4h-2V4zM8 4h2v4H8V4zm3.5 0h2v4h-2V4zM14 4h2v4h-2V4z"/>
+            </svg>
+            <svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor">
+                <path d="M7 0L0 4v4l7 4 7-4V4L7 0z"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+                <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor" fill="none"/>
+                <rect x="2" y="2" width="18" height="8" rx="1.5" fill="currentColor"/>
+                <path d="M23 4v4a2 2 0 0 0 0-4z" fill="currentColor"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+        <!-- 电池健康页面 -->
+        <div class="page active" id="page-battery">
+            <h1 class="page-title">电池健康</h1>
+            
+            <div class="card">
+                <div class="health-card">
+                    <div class="health-percentage">92.4%</div>
+                    <div class="health-grade">A+</div>
+                    <div class="health-status">电池状态极佳</div>
+                    <div class="health-progress">
+                        <div class="health-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">详细信息</div>
+                <div class="list-item">
+                    <span class="list-label">电池容量</span>
+                    <span class="list-value">4,352 / 4,687 mAh</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">循环次数</span>
+                    <span class="list-value">287 次</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">电池温度</span>
+                    <span class="list-value">32.5°C</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">电池电压</span>
+                    <span class="list-value">4,287 mV</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">电池来源</span>
+                    <span class="list-value">
+                        <span class="source-badge original">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            原装电池
+                        </span>
+                    </span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">电池技术</span>
+                    <span class="list-value">Li-ion</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配置页面 -->
+        <div class="page" id="page-config">
+            <h1 class="page-title">设备配置</h1>
+            
+            <div class="card">
+                <div class="card-header">设备信息</div>
+                <div class="list-item">
+                    <span class="list-label">设备名称</span>
+                    <span class="list-value">Xiaomi 14 Pro</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">Android版本</span>
+                    <span class="list-value">Android 14</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">处理器</span>
+                    <span class="list-value">8核 3300MHz</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">内存</span>
+                    <span class="list-value">12 GB</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">存储</span>
+                    <span class="list-value">256 GB</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">屏幕</span>
+                    <span class="list-value">1200 x 2670</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">激活日期</span>
+                    <span class="list-value">2024-01-15</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">使用天数</span>
+                    <span class="list-value">154 天</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 性能页面 -->
+        <div class="page" id="page-performance">
+            <h1 class="page-title">性能分析</h1>
+            
+            <div class="card">
+                <div class="card-header">实时性能</div>
+                <div class="performance-chart">
+                    <div class="chart-bar">
+                        <span class="chart-label">CPU</span>
+                        <div class="chart-progress">
+                            <div class="chart-fill cpu"></div>
+                        </div>
+                        <span class="chart-value">45%</span>
+                    </div>
+                    <div class="chart-bar">
+                        <span class="chart-label">内存</span>
+                        <div class="chart-progress">
+                            <div class="chart-fill memory"></div>
+                        </div>
+                        <span class="chart-value">68%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">应用性能</div>
+                <div class="list-item">
+                    <span class="list-label">前台应用</span>
+                    <span class="list-value">电池健康</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">CPU占用</span>
+                    <span class="list-value">2.3%</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">内存占用</span>
+                    <span class="list-value">156 MB</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">运行时间</span>
+                    <span class="list-value">2小时34分</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 趋势页面 -->
+        <div class="page" id="page-trend">
+            <h1 class="page-title">趋势追踪</h1>
+            
+            <div class="card">
+                <div class="card-header">健康度变化</div>
+                <div class="trend-chart">
+                    <svg class="trend-svg" viewBox="0 0 350 180">
+                        <!-- 网格线 -->
+                        <line x1="0" y1="45" x2="350" y2="45" stroke="#E5E5EA" stroke-width="1"/>
+                        <line x1="0" y1="90" x2="350" y2="90" stroke="#E5E5EA" stroke-width="1"/>
+                        <line x1="0" y1="135" x2="350" y2="135" stroke="#E5E5EA" stroke-width="1"/>
+                        
+                        <!-- 趋势线 -->
+                        <path d="M 0 30 Q 50 35, 100 40 T 200 50 T 300 60 L 350 65" 
+                              fill="none" stroke="#007AFF" stroke-width="3" stroke-linecap="round"/>
+                        
+                        <!-- 填充区域 -->
+                        <path d="M 0 30 Q 50 35, 100 40 T 200 50 T 300 60 L 350 65 L 350 180 L 0 180 Z" 
+                              fill="url(#gradient)" opacity="0.2"/>
+                        
+                        <!-- 数据点 -->
+                        <circle cx="0" cy="30" r="4" fill="#007AFF"/>
+                        <circle cx="100" cy="40" r="4" fill="#007AFF"/>
+                        <circle cx="200" cy="50" r="4" fill="#007AFF"/>
+                        <circle cx="300" cy="60" r="4" fill="#007AFF"/>
+                        <circle cx="350" cy="65" r="6" fill="#007AFF" stroke="white" stroke-width="2"/>
+                        
+                        <!-- 渐变定义 -->
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#007AFF;stop-opacity:0.5" />
+                                <stop offset="100%" style="stop-color:#007AFF;stop-opacity:0" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0 16px 16px; font-size: 12px; color: var(--ios-secondary);">
+                    <span>1月</span>
+                    <span>2月</span>
+                    <span>3月</span>
+                    <span>4月</span>
+                    <span>5月</span>
+                    <span>6月</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">统计数据</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">96.2%</div>
+                        <div class="stat-label">初始健康度</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">92.4%</div>
+                        <div class="stat-label">当前健康度</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">-3.8%</div>
+                        <div class="stat-label">总衰减</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">0.63%</div>
+                        <div class="stat-label">月均衰减</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 充电页面 -->
+        <div class="page" id="page-power">
+            <h1 class="page-title">充电功率</h1>
+            
+            <div class="card">
+                <div class="power-display">
+                    <div class="power-value">67.5W</div>
+                    <div class="power-label">超级快充</div>
+                    <div class="charging-indicator pulse">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+                        </svg>
+                        快速充电中
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">充电详情</div>
+                <div class="list-item">
+                    <span class="list-label">电压</span>
+                    <span class="list-value">9.02 V</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">电流</span>
+                    <span class="list-value">7.48 A</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">充电阶段</span>
+                    <span class="list-value">恒流充电</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">当前电量</span>
+                    <span class="list-value">68%</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">预计充满</span>
+                    <span class="list-value">18 分钟</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">充电历史</div>
+                <div class="list-item">
+                    <span class="list-label">今日充电</span>
+                    <span class="list-value">2 次</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">平均功率</span>
+                    <span class="list-value">58.3 W</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-label">充电时长</span>
+                    <span class="list-value">42 分钟</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-page="page-battery">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <path d="M12 18h.01" stroke-linecap="round"/>
+                <path d="M11 6h2" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-label">电池健康</span>
+        </div>
+        <div class="nav-item" data-page="page-config">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-label">配置</span>
+        </div>
+        <div class="nav-item" data-page="page-performance">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 20V10"/>
+                <path d="M12 20V4"/>
+                <path d="M6 20v-6"/>
+            </svg>
+            <span class="nav-label">性能</span>
+        </div>
+        <div class="nav-item" data-page="page-trend">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+            </svg>
+            <span class="nav-label">趋势</span>
+        </div>
+        <div class="nav-item" data-page="page-power">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span class="nav-label">充电</span>
+        </div>
+    </nav>
+
+    <script>
+        // 页面切换
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const targetPage = this.dataset.page;
+                
+                // 更新导航状态
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 切换页面
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                document.getElementById(targetPage).classList.add('active');
+            });
+        });
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.querySelector('.status-bar span:first-child').textContent = `${hours}:${minutes}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 模拟实时数据更新
+        setInterval(() => {
+            // 更新CPU使用率
+            const cpuValue = Math.floor(Math.random() * 30) + 30;
+            const cpuFill = document.querySelector('.chart-fill.cpu');
+            const cpuText = document.querySelector('.chart-fill.cpu').parentElement.nextElementSibling;
+            if (cpuFill && cpuText) {
+                cpuFill.style.width = cpuValue + '%';
+                cpuText.textContent = cpuValue + '%';
+            }
+
+            // 更新内存使用率
+            const memValue = Math.floor(Math.random() * 15) + 60;
+            const memFill = document.querySelector('.chart-fill.memory');
+            const memText = document.querySelector('.chart-fill.memory').parentElement.nextElementSibling;
+            if (memFill && memText) {
+                memFill.style.width = memValue + '%';
+                memText.textContent = memValue + '%';
+            }
+
+            // 更新功率
+            const powerValue = (Math.random() * 5 + 65).toFixed(1);
+            const powerDisplay = document.querySelector('.power-value');
+            if (powerDisplay) {
+                powerDisplay.textContent = powerValue + 'W';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
