@@ -32,6 +32,7 @@ public class DeviceConfig {
     private String cpuAbi2; // 第二CPU架构
     private String[] supportedAbis; // 支持的架构列表
     private int cpuCores; // CPU核心数
+    private int cpuFreqMax; // CPU最大频率 (MHz)
     private String cpuInfo; // CPU详细信息
     
     // 内存信息
@@ -210,15 +211,23 @@ public class DeviceConfig {
     public int getCpuCores() {
         return cpuCores;
     }
-    
+
     public void setCpuCores(int cpuCores) {
         this.cpuCores = cpuCores;
     }
-    
+
+    public int getCpuFreqMax() {
+        return cpuFreqMax;
+    }
+
+    public void setCpuFreqMax(int cpuFreqMax) {
+        this.cpuFreqMax = cpuFreqMax;
+    }
+
     public String getCpuInfo() {
         return cpuInfo;
     }
-    
+
     public void setCpuInfo(String cpuInfo) {
         this.cpuInfo = cpuInfo;
     }

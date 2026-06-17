@@ -1,106 +1,99 @@
-# Battery Health App ProGuard Rules
-# 电池健康度分析工具 ProGuard 配置
+# ProGuard规则 for Battery Health App
 
-# ==================== 基础配置 ====================
--optimizationpasses 5
--dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
--verbose
+# 保留类名和方法名
+-keep public class com.batteryhealth.app.** { *; }
 
-# ==================== 优化选项 ====================
--optimizations !code/simplification/arithmetic,!field/*,!class/merging/*,!code/allocation/variable
--allowaccessmodification
--repackageclasses ''
--adaptclassstrings
-
-# ==================== 保留关键类 ====================
-# 保留Application和Activity
--keep public class * extends android.app.Activity
--keep public class * extends android.app.Application
--keep public class * extends android.app.Service
--keep public class * extends android.content.BroadcastReceiver
--keep public class * extends android.content.ContentProvider
-
-# 保留WebView相关
--keep class android.webkit.** { *; }
--keepclassmembers class * extends android.webkit.WebViewClient {
-    public void *(android.webkit.WebView, ...);
+# Room数据库
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-keepclassmembers @androidx.room.Entity class * {
+    @androidx.room.PrimaryKey <fields>;
+    @androidx.room.ColumnInfo <fields>;
+    @androidx.room.Embedded <fields>;
+    <init>();
 }
--keepclassmembers class * extends android.webkit.WebChromeClient {
-    public void *(android.webkit.WebView, ...);
-}
-
-# ==================== 保留JavaScript接口 ====================
-# 保留所有JavaScript接口方法
 -keepclassmembers class * {
-    @android.webkit.JavascriptInterface <methods>;
+    @androidx.room.Dao <methods>;
+    @androidx.room.Query <methods>;
+    @androidx.room.Insert <methods>;
+    @androidx.room.Update <methods>;
+    @androidx.room.Delete <methods>;
 }
 
-# ==================== 保留资源 ====================
--keepclassmembers class **.R$* {
-    public static <fields>;
+# Gson
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn sun.misc.**
+-keep class com.google.gson.** { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+# Retrofit
+-keepattributes Signature
+-keepattributes Exceptions
+-keepattributes *Annotation*
+-keep class retrofit2.** { *; }
+-dontwarn retrofit2.**
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
 }
 
-# ==================== 保留native方法 ====================
--keepclasseswithmembernames class * {
-    native <methods>;
+# Glide
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep class * extends com.bumptech.glide.module.AppGlideModule {
+    <init>(...);
+}
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+    **[] $VALUES;
+    public *;
 }
 
-# ==================== 保留自定义View ====================
--keep public class * extends android.view.View {
-    public <init>(android.content.Context);
-    public <init>(android.content.Context, android.util.AttributeSet);
-    public <init>(android.content.Context, android.util.AttributeSet, int);
-}
+# MPAndroidChart
+-keep class com.github.mikephil.charting.** { *; }
 
-# ==================== 保留Parcelable ====================
--keepclassmembers class * implements android.os.Parcelable {
-    public static final android.os.Parcelable$Creator CREATOR;
-}
+# Lottie
+-keep class com.airbnb.lottie.** { *; }
+-dontwarn com.airbnb.lottie.**
 
-# ==================== 保留Serializable ====================
+# 保留序列化类
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
     private static final java.io.ObjectStreamField[] serialPersistentFields;
-    !static !transient <fields>;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
 
-# ==================== 保留枚举 ====================
+# 保留Parcelable类
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+# 保留枚举类
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
-# ==================== 移除日志 ====================
-# 移除调试日志（Release版本）
+# 保留R类
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+
+# 移除日志
 -assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
-    public static int d(...);
     public static int i(...);
     public static int w(...);
+    public static int d(...);
     public static int e(...);
 }
 
-# ==================== 保留异常处理 ====================
--keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
-
-# ==================== 混淆配置 ====================
-# 不混淆特定包
--keep class com.batteryhealth.app.** { *; }
-
-# ==================== 第三方库保留 ====================
-# AndroidX
--keep class androidx.** { *; }
--keep interface androidx.** { *; }
-
-# Material Design
--keep class com.google.android.material.** { *; }
-
-# ==================== 警告抑制 ====================
--dontwarn android.webkit.**
--dontwarn androidx.**
--dontwarn com.google.android.material.**
+# 优化
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
+-dontpreverify
