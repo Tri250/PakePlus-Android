@@ -304,7 +304,9 @@ public class BatteryInfo {
      * 获取健康等级
      */
     public String getHealthGrade() {
-        if (healthPercentage >= 90) {
+        if (healthPercentage < 0) {
+            return "--";
+        } else if (healthPercentage >= 90) {
             return "A+";
         } else if (healthPercentage >= 85) {
             return "A";
@@ -325,7 +327,9 @@ public class BatteryInfo {
      * 获取健康描述
      */
     public String getHealthDescription() {
-        if (healthPercentage >= 90) {
+        if (healthPercentage < 0) {
+            return "无法获取电池健康数据";
+        } else if (healthPercentage >= 90) {
             return "电池状态极佳";
         } else if (healthPercentage >= 80) {
             return "电池状态良好";
@@ -334,5 +338,19 @@ public class BatteryInfo {
         } else {
             return "建议更换电池";
         }
+    }
+    
+    /**
+     * 是否有有效的健康度数据
+     */
+    public boolean hasValidHealthData() {
+        return healthPercentage >= 0;
+    }
+    
+    /**
+     * 是否有有效的循环次数数据
+     */
+    public boolean hasValidCycleCount() {
+        return cycleCount >= 0;
     }
 }

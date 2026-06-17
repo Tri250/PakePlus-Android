@@ -1,10 +1,5 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,7 +12,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
@@ -27,10 +21,14 @@ import com.batteryhealth.app.utils.BatteryDataManager;
 
 /**
  * 电池健康Fragment
+ * 
+ * 注意：电池数据由BatteryMonitorService统一处理并通过BatteryDataManager获取
+ * 不再在此Fragment中注册广播接收器，避免重复监听
  */
 public class BatteryHealthFragment extends Fragment {
     
     private static final String TAG = "BatteryHealthFragment";
+    private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次UI
     
     private TextView tvHealthPercentage;
     private TextView tvHealthGrade;
@@ -46,13 +44,16 @@ public class BatteryHealthFragment extends Fragment {
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
-    private boolean isReceiverRegistered = false;
+    private boolean isRunning = false;
     
-    private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+    // 定时更新UI的Runnable
+    private Runnable updateRunnable = new Runnable() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && isAdded() && !isDetached()) {
-                updateUI();
+        public void run() {
+            if (!isRunning) return;
+            updateUI();
+            if (mainHandler != null) {
+                mainHandler.postDelayed(this, UPDATE_INTERVAL);
             }
         }
     };
@@ -84,7 +85,6 @@ public class BatteryHealthFragment extends Fragment {
             }
             
             initViews(view);
-            registerBatteryReceiver();
             updateUI();
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
@@ -92,15 +92,31 @@ public class BatteryHealthFragment extends Fragment {
     }
     
     @Override
+    public void onResume() {
+        super.onResume();
+        isRunning = true;
+        // 启动定时更新
+        if (mainHandler != null) {
+            mainHandler.post(updateRunnable);
+        }
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        isRunning = false;
+        // 停止定时更新
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
+        }
+    }
+    
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        try {
-            if (isReceiverRegistered && getContext() != null) {
-                getContext().unregisterReceiver(batteryReceiver);
-                isReceiverRegistered = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
         }
     }
     
@@ -139,25 +155,6 @@ public class BatteryHealthFragment extends Fragment {
         if (tvTechnology != null) tvTechnology.setText("--");
     }
     
-    private void registerBatteryReceiver() {
-        try {
-            if (getContext() != null) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-                
-                // Android 14+ 需要指定导出标志
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    getContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(batteryReceiver, filter);
-                }
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering battery receiver: " + e.getMessage());
-        }
-    }
-    
     private void updateUI() {
         if (batteryDataManager == null || mainHandler == null) return;
         
@@ -169,7 +166,11 @@ public class BatteryHealthFragment extends Fragment {
                 // 更新健康度
                 float healthPercentage = info.getHealthPercentage();
                 if (tvHealthPercentage != null) {
-                    tvHealthPercentage.setText(String.format("%.1f%%", healthPercentage));
+                    if (info.hasValidHealthData()) {
+                        tvHealthPercentage.setText(String.format("%.1f%%", healthPercentage));
+                    } else {
+                        tvHealthPercentage.setText("--");
+                    }
                 }
                 
                 if (tvHealthGrade != null) {
@@ -181,11 +182,15 @@ public class BatteryHealthFragment extends Fragment {
                 }
                 
                 if (progressHealth != null) {
-                    progressHealth.setProgress((int) healthPercentage);
+                    if (info.hasValidHealthData()) {
+                        progressHealth.setProgress((int) healthPercentage);
+                    } else {
+                        progressHealth.setProgress(0);
+                    }
                 }
                 
                 // 设置健康度颜色
-                if (tvHealthPercentage != null && progressHealth != null) {
+                if (tvHealthPercentage != null && progressHealth != null && info.hasValidHealthData()) {
                     int healthColor = getHealthColor(healthPercentage);
                     tvHealthPercentage.setTextColor(healthColor);
                     try {
@@ -193,16 +198,28 @@ public class BatteryHealthFragment extends Fragment {
                     } catch (Exception e) {
                         // 某些设备可能不支持setColorFilter
                     }
+                } else if (tvHealthPercentage != null) {
+                    // 未知状态使用灰色
+                    tvHealthPercentage.setTextColor(0xFF8E8E93);
                 }
                 
                 // 更新详细信息
                 if (tvCapacity != null) {
-                    tvCapacity.setText(String.format("%d / %d mAh", 
-                            info.getCurrentCapacity(), info.getDesignCapacity()));
+                    int currentCap = info.getCurrentCapacity();
+                    int designCap = info.getDesignCapacity();
+                    if (currentCap > 0 && designCap > 0) {
+                        tvCapacity.setText(String.format("%d / %d mAh", currentCap, designCap));
+                    } else {
+                        tvCapacity.setText("无法读取");
+                    }
                 }
                 
                 if (tvCycleCount != null) {
-                    tvCycleCount.setText(String.format("%d 次", info.getCycleCount()));
+                    if (info.hasValidCycleCount()) {
+                        tvCycleCount.setText(String.format("%d 次", info.getCycleCount()));
+                    } else {
+                        tvCycleCount.setText("无法读取");
+                    }
                 }
                 
                 if (tvTemperature != null) {

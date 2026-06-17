@@ -1,34 +1,46 @@
 apply plugin: 'com.android.application'
 
+// 从 keystore.properties 读取签名配置（安全做法）
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.batteryhealth.app'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.batteryhealth.app"
         minSdk 24
-        targetSdk 34
-        versionCode 36
-        versionName "4.0.1"
+        targetSdk 35
+        versionCode 37
+        versionName "4.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // 性能优化配置
         resConfigs "zh"
         
-        // 支持Android 15+的16KB页面大小
+        // 仅支持ARM架构，减少APK体积
         ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
     }
 
-    // 签名配置
+    // 签名配置 - 从keystore.properties读取，不再硬编码
     signingConfigs {
         release {
-            storeFile file('release-keystore.jks')
-            storePassword 'batteryhealth123'
-            keyAlias 'batteryhealth'
-            keyPassword 'batteryhealth123'
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
+                storePassword keystoreProperties['storePassword'] ?: ''
+                keyAlias keystoreProperties['keyAlias'] ?: ''
+                keyPassword keystoreProperties['keyPassword'] ?: ''
+            }
+        }
+        debug {
+            // Debug使用默认调试签名
         }
     }
 

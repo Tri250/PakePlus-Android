@@ -38,9 +38,11 @@ public class BatteryDataManager {
         currentBatteryInfo.setTemperature(25.0f);
         currentBatteryInfo.setVoltage(3700);
         currentBatteryInfo.setTechnology("Li-ion");
-        currentBatteryInfo.setHealthPercentage(100.0f);
-        currentBatteryInfo.setHealthStatus("good");
+        // 默认设置为未知状态，而不是100%
+        currentBatteryInfo.setHealthPercentage(-1.0f); // -1表示未知
+        currentBatteryInfo.setHealthStatus("unknown");
         currentBatteryInfo.setBatterySource("unknown");
+        currentBatteryInfo.setCycleCount(-1); // -1表示未知
         
         loadBatteryInfo();
     }
@@ -138,14 +140,23 @@ public class BatteryDataManager {
                         BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                         if (batteryManager != null) {
                             // 使用反射获取cycle_count属性
-                            java.lang.reflect.Method method = BatteryManager.class.getMethod("getIntProperty", int.class);
                             // BATTERY_PROPERTY_CYCLE_COUNT = 7 (隐藏API)
+                            // 注意：此API在Android 14+可能被Greylist限制
+                            java.lang.reflect.Method method = BatteryManager.class.getMethod("getIntProperty", int.class);
                             Integer result = (Integer) method.invoke(batteryManager, 7);
                             if (result != null && result > 0) {
                                 cycleCount = result;
+                                Log.d(TAG, "Cycle count from API: " + cycleCount);
                             }
                         }
-                    } catch (Exception ignored) {}
+                    } catch (NoSuchMethodException e) {
+                        Log.d(TAG, "getIntProperty method not available");
+                    } catch (java.lang.reflect.InvocationTargetException e) {
+                        // API被Greylist拦截，返回-1或抛出异常
+                        Log.d(TAG, "Cycle count API blocked by Greylist: " + e.getCause());
+                    } catch (Exception e) {
+                        Log.d(TAG, "Error accessing cycle count API: " + e.getMessage());
+                    }
                 }
 
                 // 方法2: 从sysfs读取（使用安全读取方法）
@@ -168,6 +179,7 @@ public class BatteryDataManager {
                                 int count = Integer.parseInt(value);
                                 if (count >= 0) {
                                     cycleCount = count;
+                                    Log.d(TAG, "Cycle count from sysfs: " + cycleCount);
                                     break;
                                 }
                             } catch (NumberFormatException ignored) {}
@@ -175,21 +187,21 @@ public class BatteryDataManager {
                     }
                 }
 
-                // 方法3: 根据使用天数估算 (如果无法读取真实值)
+                // 方法3: 如果无法获取真实值，保持-1表示未知
+                // 不再使用无意义的估算值
                 if (cycleCount < 0) {
-                    // 估算公式：假设每天完整充放电0.8次
-                    int estimatedDays = currentBatteryInfo.getLevel() > 0 ? 365 : 0;
-                    cycleCount = (int) (estimatedDays * 0.8);
+                    cycleCount = -1; // 表示无法获取
                     currentBatteryInfo.setCycleCountEstimated(true);
+                    Log.d(TAG, "Cycle count unavailable, marking as unknown");
                 } else {
                     currentBatteryInfo.setCycleCountEstimated(false);
                 }
 
-                currentBatteryInfo.setCycleCount(Math.max(0, cycleCount));
+                currentBatteryInfo.setCycleCount(cycleCount);
 
             } catch (Exception e) {
                 Log.e(TAG, "Error reading cycle count: " + e.getMessage());
-                currentBatteryInfo.setCycleCount(0);
+                currentBatteryInfo.setCycleCount(-1);
                 currentBatteryInfo.setCycleCountEstimated(true);
             }
         }).start();
@@ -251,9 +263,10 @@ public class BatteryDataManager {
                 currentBatteryInfo.setHealthStatus("poor");
             }
         } else {
-            // 如果无法获取真实数据，使用默认值
-            currentBatteryInfo.setHealthPercentage(100.0f);
-            currentBatteryInfo.setHealthStatus("good");
+            // 如果无法获取真实数据，设置为未知状态
+            // 不再显示100%的假数据
+            currentBatteryInfo.setHealthPercentage(-1.0f);
+            currentBatteryInfo.setHealthStatus("unknown");
         }
     }
     

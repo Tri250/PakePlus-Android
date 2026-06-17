@@ -1,12 +1,7 @@
 package com.batteryhealth.app;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -47,6 +42,8 @@ import java.util.List;
  * 2. 协调各Fragment
  * 3. 启动监测服务
  * 4. 处理权限请求
+ * 
+ * 注意：电池广播由BatteryMonitorService统一处理，避免重复监听
  */
 public class MainActivity extends AppCompatActivity {
     
@@ -61,14 +58,6 @@ public class MainActivity extends AppCompatActivity {
     
     private Handler mainHandler;
     private boolean servicesStarted = false;
-    
-    // 电池广播接收器
-    private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            updateBatteryData(intent);
-        }
-    };
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,8 +96,8 @@ public class MainActivity extends AppCompatActivity {
             // 检查权限
             checkPermissions();
             
-            // 注册电池广播
-            registerBatteryReceiver();
+            // 注意：电池广播由BatteryMonitorService统一处理
+            // 不再在MainActivity中注册电池广播接收器，避免重复监听
             
             // 延迟启动服务，避免启动时闪退
             mainHandler.postDelayed(() -> {
@@ -140,11 +129,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        try {
-            unregisterReceiver(batteryReceiver);
-        } catch (Exception e) {
-            // 接收器可能未注册
-        }
+        // 不再需要注销广播接收器，因为已经移除了
     }
     
     /**
@@ -325,27 +310,6 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 注册电池广播接收器
-     */
-    private void registerBatteryReceiver() {
-        try {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-            filter.addAction(Intent.ACTION_POWER_CONNECTED);
-            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            
-            // Android 14+ 需要指定导出标志
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(batteryReceiver, filter);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering battery receiver: " + e.getMessage());
-        }
-    }
-    
-    /**
      * 启动监测服务
      */
     private void startMonitorServices() {
@@ -353,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
         
         try {
             // 启动电池监测服务
-            Intent batteryServiceIntent = new Intent(this, BatteryMonitorService.class);
+            android.content.Intent batteryServiceIntent = new android.content.Intent(this, BatteryMonitorService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(batteryServiceIntent);
             } else {
@@ -363,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
             // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
             mainHandler.postDelayed(() -> {
                 try {
-                    Intent chargingServiceIntent = new Intent(this, ChargingMonitorService.class);
+                    android.content.Intent chargingServiceIntent = new android.content.Intent(this, ChargingMonitorService.class);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(chargingServiceIntent);
                     } else {
@@ -388,10 +352,14 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 // 获取电池信息
-                BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
+                if (batteryDataManager != null) {
+                    BatteryInfo batteryInfo = batteryDataManager.getCurrentBatteryInfo();
+                }
                 
                 // 获取设备配置
-                DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
+                if (deviceInfoManager != null) {
+                    DeviceConfig deviceConfig = deviceInfoManager.getDeviceConfig();
+                }
                 
                 // 在主线程更新UI
                 mainHandler.post(() -> {
@@ -401,19 +369,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "Error loading initial data: " + e.getMessage());
             }
         }).start();
-    }
-    
-    /**
-     * 更新电池数据
-     */
-    private void updateBatteryData(Intent intent) {
-        if (intent == null) return;
-        
-        String action = intent.getAction();
-        if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-            // 更新电池数据管理器
-            batteryDataManager.updateFromIntent(intent);
-        }
     }
     
     /**
