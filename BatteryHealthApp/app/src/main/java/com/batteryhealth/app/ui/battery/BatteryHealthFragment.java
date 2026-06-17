@@ -1,10 +1,5 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -43,18 +38,8 @@ public class BatteryHealthFragment extends Fragment {
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
-    private boolean isReceiverRegistered = false;
     
     private final Runnable dataChangeListener = this::updateUI;
-    
-    private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && isAdded() && !isDetached()) {
-                updateUI();
-            }
-        }
-    };
     
     @Nullable
     @Override
@@ -76,9 +61,8 @@ public class BatteryHealthFragment extends Fragment {
         batteryDataManager = AppManager.getInstance().getBatteryDataManager();
         
         initViews(view);
-        registerBatteryReceiver();
         
-        // 监听数据变化
+        // 监听数据变化（由 AppManager / BatteryMonitorService 统一驱动）
         AppManager.getInstance().addDataChangeListener(dataChangeListener);
         
         Log.d(TAG, "onViewCreated, dataManager=" + batteryDataManager);
@@ -102,14 +86,6 @@ public class BatteryHealthFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         AppManager.getInstance().removeDataChangeListener(dataChangeListener);
-        try {
-            if (isReceiverRegistered && getContext() != null) {
-                getContext().unregisterReceiver(batteryReceiver);
-                isReceiverRegistered = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
-        }
     }
     
     private void initViews(View view) {
@@ -142,23 +118,6 @@ public class BatteryHealthFragment extends Fragment {
         }
     }
     
-    private void registerBatteryReceiver() {
-        try {
-            if (getContext() != null && !isReceiverRegistered) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    getContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(batteryReceiver, filter);
-                }
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering battery receiver: " + e.getMessage());
-        }
-    }
-    
     private void updateUI() {
         if (mainHandler == null || getView() == null) return;
         
@@ -172,8 +131,16 @@ public class BatteryHealthFragment extends Fragment {
                 if (info == null) return;
                 
                 float healthPercentage = info.getHealthPercentage();
-                if (tvHealthPercentage != null) {
-                    tvHealthPercentage.setText(String.format("%.1f%%", healthPercentage));
+                if (info.isHealthUnknown()) {
+                    if (tvHealthPercentage != null) tvHealthPercentage.setText("--");
+                    if (progressHealth != null) progressHealth.setProgress(0);
+                } else {
+                    if (tvHealthPercentage != null) {
+                        tvHealthPercentage.setText(String.format("%.1f%%", healthPercentage));
+                    }
+                    if (progressHealth != null) {
+                        progressHealth.setProgress((int) healthPercentage);
+                    }
                 }
                 if (tvHealthGrade != null) {
                     tvHealthGrade.setText(info.getHealthGrade());
@@ -181,10 +148,7 @@ public class BatteryHealthFragment extends Fragment {
                 if (tvHealthStatus != null) {
                     tvHealthStatus.setText(info.getHealthDescription());
                 }
-                if (progressHealth != null) {
-                    progressHealth.setProgress((int) healthPercentage);
-                }
-                if (tvHealthPercentage != null && progressHealth != null) {
+                if (tvHealthPercentage != null && progressHealth != null && !info.isHealthUnknown()) {
                     int healthColor = getHealthColor(healthPercentage);
                     tvHealthPercentage.setTextColor(healthColor);
                     try {
@@ -192,11 +156,25 @@ public class BatteryHealthFragment extends Fragment {
                     } catch (Exception ignored) {}
                 }
                 if (tvCapacity != null) {
-                    tvCapacity.setText(String.format("%d / %d mAh", 
-                            info.getCurrentCapacity(), info.getDesignCapacity()));
+                    int currentCap = info.getCurrentCapacity();
+                    int designCap = info.getDesignCapacity();
+                    if (currentCap > 0 && designCap > 0) {
+                        tvCapacity.setText(String.format("%d / %d mAh", currentCap, designCap));
+                    } else if (designCap > 0) {
+                        tvCapacity.setText(String.format("-- / %d mAh", designCap));
+                    } else {
+                        tvCapacity.setText("-- mAh");
+                    }
                 }
                 if (tvCycleCount != null) {
-                    tvCycleCount.setText(String.format("%d 次", info.getCycleCount()));
+                    int cycleCount = info.getCycleCount();
+                    if (cycleCount > 0 && !info.isCycleCountEstimated()) {
+                        tvCycleCount.setText(String.format("%d 次", cycleCount));
+                    } else if (cycleCount > 0 && info.isCycleCountEstimated()) {
+                        tvCycleCount.setText(String.format("估算 %d 次", cycleCount));
+                    } else {
+                        tvCycleCount.setText("-- 次");
+                    }
                 }
                 if (tvTemperature != null) {
                     tvTemperature.setText(String.format("%.1f°C", info.getTemperature()));

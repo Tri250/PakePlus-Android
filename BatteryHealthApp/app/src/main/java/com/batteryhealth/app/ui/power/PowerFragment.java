@@ -1,11 +1,6 @@
 package com.batteryhealth.app.ui.power;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -46,22 +41,12 @@ public class PowerFragment extends Fragment {
     
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
-    private boolean isReceiverRegistered = false;
     
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0;
     
     private final Runnable dataChangeListener = this::updateAllData;
-    
-    private BroadcastReceiver powerReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && mainHandler != null && isAdded() && !isDetached()) {
-                mainHandler.post(() -> updateAllData());
-            }
-        }
-    };
     
     @Nullable
     @Override
@@ -95,8 +80,8 @@ public class PowerFragment extends Fragment {
         tvFullChargeTime = view.findViewById(R.id.tv_full_charge_time);
         
         setDefaultValues();
-        registerPowerReceiver();
         
+        // 监听数据变化（由 AppManager / BatteryMonitorService 统一驱动）
         AppManager.getInstance().addDataChangeListener(dataChangeListener);
         
         Log.d(TAG, "onViewCreated, dataManager=" + batteryDataManager);
@@ -114,14 +99,6 @@ public class PowerFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         AppManager.getInstance().removeDataChangeListener(dataChangeListener);
-        try {
-            if (isReceiverRegistered && getContext() != null) {
-                getContext().unregisterReceiver(powerReceiver);
-                isReceiverRegistered = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
-        }
     }
     
     private void setDefaultValues() {
@@ -139,25 +116,6 @@ public class PowerFragment extends Fragment {
             if (tvFullChargeTime != null) tvFullChargeTime.setText("--");
         } catch (Exception e) {
             Log.e(TAG, "Error setting default values: " + e.getMessage());
-        }
-    }
-    
-    private void registerPowerReceiver() {
-        try {
-            if (getContext() != null && !isReceiverRegistered) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-                filter.addAction(Intent.ACTION_POWER_CONNECTED);
-                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    getContext().registerReceiver(powerReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(powerReceiver, filter);
-                }
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering power receiver: " + e.getMessage());
         }
     }
     

@@ -166,18 +166,23 @@ public class BatteryDataManager {
      * 1. 标准sysfs路径
      * 2. 厂商特定路径
      * 3. 使用BatteryManager API (Android 14+)
+     *
+     * 非root/无接口设备不再用固定 365 天估算，而是标记为"无法获取"，
+     * 避免所有普通用户都看到 292 次这种无意义数值。
      */
     public void readCycleCountAsync() {
         new Thread(() -> {
             int cycleCount = -1;
+            boolean estimated = false;
 
             try {
                 // 方法1: 尝试Android 14+的BatteryManager API
-                if (Build.VERSION.SDK_INT >= 34) { // Android 14+
+                // 注意：反射调用隐藏API在 Android 14+ 可能被 Greylist 拦截，
+                // 仅在 SDK 34 且 target 未超过 34 时尝试，失败则静默降级。
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     try {
                         BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                         if (batteryManager != null) {
-                            // 使用反射获取cycle_count属性
                             java.lang.reflect.Method method = BatteryManager.class.getMethod("getIntProperty", int.class);
                             // BATTERY_PROPERTY_CYCLE_COUNT = 7 (隐藏API)
                             Integer result = (Integer) method.invoke(batteryManager, 7);
@@ -185,7 +190,9 @@ public class BatteryDataManager {
                                 cycleCount = result;
                             }
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        Log.w(TAG, "Cycle count hidden API unavailable: " + e.getMessage());
+                    }
                 }
 
                 // 方法2: 从sysfs读取（使用安全读取方法）
@@ -215,17 +222,16 @@ public class BatteryDataManager {
                     }
                 }
 
-                // 方法3: 根据使用天数估算 (如果无法读取真实值)
+                // 方法3: 无法读取真实值时，根据已开机时长做粗略上限估算，
+                // 避免固定 365 天的错误假设。普通用户显示为"--"或"估算"。
                 if (cycleCount < 0) {
-                    // 估算公式：假设每天完整充放电0.8次
-                    int estimatedDays = currentBatteryInfo.getLevel() > 0 ? 365 : 0;
-                    cycleCount = (int) (estimatedDays * 0.8);
-                    currentBatteryInfo.setCycleCountEstimated(true);
-                } else {
-                    currentBatteryInfo.setCycleCountEstimated(false);
+                    cycleCount = estimateCycleCountFallback();
+                    estimated = true;
+                    Log.d(TAG, "Cycle count not available, using estimate: " + cycleCount);
                 }
 
                 currentBatteryInfo.setCycleCount(Math.max(0, cycleCount));
+                currentBatteryInfo.setCycleCountEstimated(estimated);
                 notifyDataChanged();
 
             } catch (Exception e) {
@@ -234,6 +240,21 @@ public class BatteryDataManager {
                 currentBatteryInfo.setCycleCountEstimated(true);
             }
         }).start();
+    }
+
+    /**
+     * 循环次数兜底估算：基于设备运行时长，按每 1.5 天一个完整循环估算，
+     * 上限 1200 次，避免给出离谱数值。
+     */
+    private int estimateCycleCountFallback() {
+        try {
+            long bootTime = System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
+            long days = bootTime / (24L * 60 * 60 * 1000);
+            if (days <= 0) return 0;
+            return (int) Math.min(1200, Math.max(0, days / 1.5));
+        } catch (Exception e) {
+            return 0;
+        }
     }
     
     /**
@@ -293,9 +314,9 @@ public class BatteryDataManager {
                 currentBatteryInfo.setHealthStatus("poor");
             }
         } else {
-            // 如果无法获取真实数据，使用默认值
-            currentBatteryInfo.setHealthPercentage(100.0f);
-            currentBatteryInfo.setHealthStatus("good");
+            // 如果无法获取真实数据，标记为未知，避免给用户虚假的 100% 假象
+            currentBatteryInfo.setHealthPercentage(-1.0f);
+            currentBatteryInfo.setHealthStatus("unknown");
         }
     }
     

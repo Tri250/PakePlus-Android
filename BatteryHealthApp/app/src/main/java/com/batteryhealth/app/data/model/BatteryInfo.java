@@ -301,9 +301,19 @@ public class BatteryInfo {
     }
     
     /**
+     * 判断健康度是否为未知
+     */
+    public boolean isHealthUnknown() {
+        return healthPercentage < 0 || "unknown".equals(healthStatus);
+    }
+
+    /**
      * 获取健康等级
      */
     public String getHealthGrade() {
+        if (isHealthUnknown()) {
+            return "--";
+        }
         if (healthPercentage >= 90) {
             return "A+";
         } else if (healthPercentage >= 85) {
@@ -325,6 +335,9 @@ public class BatteryInfo {
      * 获取健康描述
      */
     public String getHealthDescription() {
+        if (isHealthUnknown()) {
+            return "无法获取真实健康度";
+        }
         if (healthPercentage >= 90) {
             return "电池状态极佳";
         } else if (healthPercentage >= 80) {
