@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView 
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/ios_background"
@@ -17,7 +18,7 @@
         android:paddingStart="20dp"
         android:paddingEnd="20dp">
 
-        <!-- 页面标题 - iOS 2026风格 -->
+        <!-- 页面标题 -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -25,42 +26,156 @@
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="8dp" />
 
-        <!-- 开发中提示卡片 - iOS 2026风格 -->
-        <androidx.cardview.widget.CardView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
+        <!-- 数据统计 -->
+        <TextView
+            android:id="@+id/tv_data_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="暂无数据"
+            android:textAppearance="@style/iOSCaption"
+            android:letterSpacing="0.01"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 无数据提示 -->
+        <TextView
+            android:id="@+id/tv_no_data"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="使用应用一段时间后，这里将显示电池数据的趋势变化图表"
+            android:textAppearance="@style/iOSBody.Secondary"
+            android:letterSpacing="0"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"
+            android:visibility="visible" />
+
+        <!-- 健康度趋势卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/ios_secondary_background"
             app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:cardPreventCornerOverlap="true">
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="32dp"
-                android:gravity="center">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="功能开发中..."
-                    android:textAppearance="@style/iOSBody.Secondary"
-                    android:letterSpacing="0"
-                    android:lineSpacingExtra="1dp"
-                    android:gravity="center" />
+                    android:text="健康度趋势"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_health"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 电量趋势卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="即将支持电池健康趋势图表"
-                    android:textAppearance="@style/iOSCaption"
-                    android:letterSpacing="0.01"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center" />
+                    android:text="电量趋势"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_level"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 温度趋势卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="温度趋势"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_temperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 充电功率趋势卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/ios_secondary_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="充电功率趋势"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_power"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
 
             </LinearLayout>
 

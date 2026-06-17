@@ -30,6 +30,7 @@ import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;
+import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -144,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
         fragments.add(new DeviceConfigFragment());
         fragments.add(new PerformanceFragment());
         fragments.add(new EnduranceFragment());
+        fragments.add(new TrendFragment());
         fragments.add(new PowerFragment());
         
         viewPager.setAdapter(new FragmentStateAdapter(this) {
@@ -159,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         
-        viewPager.setOffscreenPageLimit(4);
+        viewPager.setOffscreenPageLimit(5);
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -195,8 +197,10 @@ public class MainActivity extends AppCompatActivity {
             return 2;
         } else if (menuId == R.id.nav_endurance) {
             return 3;
-        } else if (menuId == R.id.nav_power) {
+        } else if (menuId == R.id.nav_trend) {
             return 4;
+        } else if (menuId == R.id.nav_power) {
+            return 5;
         }
         return -1;
     }
@@ -220,6 +224,9 @@ public class MainActivity extends AppCompatActivity {
                 menuId = R.id.nav_endurance;
                 break;
             case 4:
+                menuId = R.id.nav_trend;
+                break;
+            case 5:
                 menuId = R.id.nav_power;
                 break;
             default:

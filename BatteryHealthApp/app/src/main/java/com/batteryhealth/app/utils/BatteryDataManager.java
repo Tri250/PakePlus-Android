@@ -11,6 +11,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 
 /**
  * 电池数据管理器
@@ -20,12 +21,14 @@ import java.io.FileReader;
  * 2. 计算电池健康度
  * 3. 读取电池循环次数
  * 4. 判断电池来源
+ * 5. 支持root和非root设备
  */
 public class BatteryDataManager {
     
     private static final String TAG = "BatteryDataManager";
     private Context context;
     private BatteryInfo currentBatteryInfo;
+    private Boolean hasRootAccess = null; // 缓存root检测结果
     
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
@@ -145,7 +148,7 @@ public class BatteryDataManager {
                     } catch (Exception ignored) {}
                 }
 
-                // 方法2: 从sysfs读取
+                // 方法2: 从sysfs读取（使用安全读取方法）
                 if (cycleCount < 0) {
                     String[] paths = {
                         "/sys/class/power_supply/battery/cycle_count",
@@ -159,20 +162,15 @@ public class BatteryDataManager {
                     };
 
                     for (String path : paths) {
-                        File file = new File(path);
-                        if (file.exists() && file.canRead()) {
+                        String value = readSysfsFile(path);
+                        if (value != null && !value.isEmpty()) {
                             try {
-                                BufferedReader reader = new BufferedReader(new FileReader(file));
-                                String line = reader.readLine();
-                                reader.close();
-                                if (line != null && !line.isEmpty()) {
-                                    int count = Integer.parseInt(line.trim());
-                                    if (count >= 0) {
-                                        cycleCount = count;
-                                        break;
-                                    }
+                                int count = Integer.parseInt(value);
+                                if (count >= 0) {
+                                    cycleCount = count;
+                                    break;
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (NumberFormatException ignored) {}
                         }
                     }
                 }
@@ -203,16 +201,22 @@ public class BatteryDataManager {
     public void readBatteryCapacityAsync() {
         new Thread(() -> {
             try {
-                // 读取设计容量
-                File fullFile = new File("/sys/class/power_supply/battery/charge_full");
-                if (fullFile.exists() && fullFile.canRead()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(fullFile));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null && !line.isEmpty()) {
+                // 读取设计容量 - 使用安全读取方法
+                String chargeFullStr = readSysfsFile("/sys/class/power_supply/battery/charge_full");
+                if (chargeFullStr != null && !chargeFullStr.isEmpty()) {
+                    try {
+                        int chargeFull = Integer.parseInt(chargeFullStr);
+                        currentBatteryInfo.setDesignCapacity(Math.abs(chargeFull) / 1000);
+                    } catch (NumberFormatException ignored) {}
+                }
+                
+                // 读取charge_full_design作为备选
+                if (currentBatteryInfo.getDesignCapacity() <= 0) {
+                    String designStr = readSysfsFile("/sys/class/power_supply/battery/charge_full_design");
+                    if (designStr != null && !designStr.isEmpty()) {
                         try {
-                            int chargeFull = Integer.parseInt(line.trim());
-                            currentBatteryInfo.setDesignCapacity(Math.abs(chargeFull) / 1000);
+                            int designFull = Integer.parseInt(designStr);
+                            currentBatteryInfo.setDesignCapacity(Math.abs(designFull) / 1000);
                         } catch (NumberFormatException ignored) {}
                     }
                 }
@@ -259,18 +263,33 @@ public class BatteryDataManager {
     public void detectBatterySourceAsync() {
         new Thread(() -> {
             try {
-                File serialFile = new File("/sys/class/power_supply/battery/serial_number");
-                if (serialFile.exists() && serialFile.canRead()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(serialFile));
-                    String serial = reader.readLine();
-                    reader.close();
-                    if (serial != null && !serial.isEmpty()) {
-                        currentBatteryInfo.setBatterySerial(serial);
-                        
-                        if (isOriginalBattery(serial)) {
-                            currentBatteryInfo.setBatterySource("original");
-                        } else {
-                            currentBatteryInfo.setBatterySource("third_party");
+                // 使用安全读取方法
+                String serial = readSysfsFile("/sys/class/power_supply/battery/serial_number");
+                if (serial != null && !serial.isEmpty()) {
+                    currentBatteryInfo.setBatterySerial(serial);
+                    
+                    if (isOriginalBattery(serial)) {
+                        currentBatteryInfo.setBatterySource("original");
+                    } else {
+                        currentBatteryInfo.setBatterySource("third_party");
+                    }
+                } else {
+                    // 尝试其他路径
+                    String[] serialPaths = {
+                        "/sys/class/power_supply/bms/serial_number",
+                        "/sys/class/power_supply/maxfg/serial_number",
+                        "/sys/class/power_supply/battery/batt_serial_num"
+                    };
+                    for (String path : serialPaths) {
+                        serial = readSysfsFile(path);
+                        if (serial != null && !serial.isEmpty()) {
+                            currentBatteryInfo.setBatterySerial(serial);
+                            if (isOriginalBattery(serial)) {
+                                currentBatteryInfo.setBatterySource("original");
+                            } else {
+                                currentBatteryInfo.setBatterySource("third_party");
+                            }
+                            break;
                         }
                     }
                 }
@@ -425,5 +444,100 @@ public class BatteryDataManager {
         } else {
             return "未知来源";
         }
+    }
+    
+    /**
+     * 检测设备是否已root
+     */
+    public boolean hasRootAccess() {
+        if (hasRootAccess != null) return hasRootAccess;
+        
+        try {
+            // 方法1: 检查su命令
+            Process process = Runtime.getRuntime().exec("which su");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            reader.close();
+            process.waitFor();
+            
+            if (line != null && !line.isEmpty()) {
+                // 尝试执行su
+                Process suProcess = Runtime.getRuntime().exec(new String[]{"su", "-c", "id"});
+                BufferedReader suReader = new BufferedReader(new InputStreamReader(suProcess.getInputStream()));
+                String suLine = suReader.readLine();
+                suReader.close();
+                suProcess.waitFor();
+                
+                if (suLine != null && suLine.contains("uid=0")) {
+                    hasRootAccess = true;
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        
+        // 方法2: 检查Superuser.apk
+        File superuser = new File("/system/app/Superuser.apk");
+        if (superuser.exists()) {
+            hasRootAccess = true;
+            return true;
+        }
+        
+        // 方法3: 检查常用root路径
+        String[] rootPaths = {"/sbin/su", "/system/bin/su", "/system/xbin/su", 
+                             "/data/local/xbin/su", "/data/local/bin/su"};
+        for (String path : rootPaths) {
+            if (new File(path).exists()) {
+                hasRootAccess = true;
+                return true;
+            }
+        }
+        
+        hasRootAccess = false;
+        return false;
+    }
+    
+    /**
+     * 使用root权限读取sysfs文件
+     */
+    private String readSysfsWithRoot(String path) {
+        try {
+            Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", "cat " + path});
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            reader.close();
+            process.waitFor();
+            return line;
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to read " + path + " with root: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 安全读取sysfs文件，先尝试普通读取，失败后尝试root
+     */
+    private String readSysfsFile(String path) {
+        // 先尝试普通读取
+        File file = new File(path);
+        if (file.exists() && file.canRead()) {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(file));
+                String line = reader.readLine();
+                reader.close();
+                if (line != null && !line.isEmpty()) {
+                    return line.trim();
+                }
+            } catch (Exception ignored) {}
+        }
+        
+        // 如果文件存在但不可读，尝试root
+        if (file.exists() && hasRootAccess()) {
+            String result = readSysfsWithRoot(path);
+            if (result != null && !result.isEmpty()) {
+                return result.trim();
+            }
+        }
+        
+        return null;
     }
 }

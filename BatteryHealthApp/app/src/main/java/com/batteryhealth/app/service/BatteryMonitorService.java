@@ -42,11 +42,14 @@ public class BatteryMonitorService extends Service {
     private static final String CHANNEL_ID = "battery_monitor_channel";
     private static final int NOTIFICATION_ID = 1001;
     private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
+    private static final long SAVE_INTERVAL = 60000; // 60秒保存一次到数据库
+    private static final long DATA_CLEANUP_INTERVAL = 86400000; // 24小时清理一次旧数据
     
     private Handler handler;
     private BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
     private boolean isRunning = false;
+    private long lastSaveTime = 0;
     
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -68,6 +71,13 @@ public class BatteryMonitorService extends Service {
                     dataListener.onBatteryDataUpdated(currentBatteryInfo);
                 }
                 updateNotification();
+                
+                // 定时保存数据到数据库
+                long now = System.currentTimeMillis();
+                if (now - lastSaveTime >= SAVE_INTERVAL) {
+                    saveBatteryData();
+                    lastSaveTime = now;
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error in update task: " + e.getMessage());
             }
@@ -478,5 +488,48 @@ public class BatteryMonitorService extends Service {
      */
     public BatteryInfo getCurrentBatteryInfo() {
         return currentBatteryInfo;
+    }
+    
+    /**
+     * 保存电池数据到数据库
+     */
+    private void saveBatteryData() {
+        new Thread(() -> {
+            try {
+                com.batteryhealth.app.BatteryHealthApplication app = 
+                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                if (db != null && currentBatteryInfo != null) {
+                    // 创建新的BatteryInfo记录
+                    BatteryInfo record = new BatteryInfo();
+                    record.setTimestamp(System.currentTimeMillis());
+                    record.setLevel(currentBatteryInfo.getLevel());
+                    record.setTemperature(currentBatteryInfo.getTemperature());
+                    record.setVoltage(currentBatteryInfo.getVoltage());
+                    record.setCurrentNow(currentBatteryInfo.getCurrentNow());
+                    record.setStatus(currentBatteryInfo.getStatus());
+                    record.setPlugged(currentBatteryInfo.getPlugged());
+                    record.setTechnology(currentBatteryInfo.getTechnology());
+                    record.setHealthPercentage(currentBatteryInfo.getHealthPercentage());
+                    record.setHealthStatus(currentBatteryInfo.getHealthStatus());
+                    record.setCycleCount(currentBatteryInfo.getCycleCount());
+                    record.setDesignCapacity(currentBatteryInfo.getDesignCapacity());
+                    record.setCurrentCapacity(currentBatteryInfo.getCurrentCapacity());
+                    record.setBatterySource(currentBatteryInfo.getBatterySource());
+                    record.setBatterySerial(currentBatteryInfo.getBatterySerial());
+                    record.setDeviceModel(android.os.Build.MODEL);
+                    record.setDeviceBrand(android.os.Build.BRAND);
+                    
+                    db.batteryInfoDao().insert(record);
+                    Log.d(TAG, "Battery data saved: level=" + record.getLevel() + "% health=" + record.getHealthPercentage() + "%");
+                    
+                    // 清理30天前的旧数据
+                    long thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
+                    db.batteryInfoDao().deleteOlderThan(thirtyDaysAgo);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error saving battery data: " + e.getMessage());
+            }
+        }).start();
     }
 }
