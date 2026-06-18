@@ -325,7 +325,8 @@ public class BatteryDataManager {
             try {
                 BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                 if (bm != null) {
-                    long chargeFullEstimate = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
+                    int propChargeFull = getBatteryManagerProperty("BATTERY_PROPERTY_CHARGE_FULL", 5);
+                    long chargeFullEstimate = bm.getLongProperty(propChargeFull);
                     if (chargeFullEstimate != Long.MIN_VALUE && chargeFullEstimate > 0) {
                         designCapacity = (int) (chargeFullEstimate / 1000);
                         source = SOURCE_BATTERY_MANAGER;
@@ -412,8 +413,10 @@ public class BatteryDataManager {
             try {
                 BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                 if (bm != null) {
-                    long chargeFull = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
-                    long chargeFullDesign = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL_DESIGN);
+                    int propChargeFull = getBatteryManagerProperty("BATTERY_PROPERTY_CHARGE_FULL", 5);
+                    int propChargeFullDesign = getBatteryManagerProperty("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 6);
+                    long chargeFull = bm.getLongProperty(propChargeFull);
+                    long chargeFullDesign = bm.getLongProperty(propChargeFullDesign);
                     if (chargeFull != Long.MIN_VALUE && chargeFull > 0 &&
                         chargeFullDesign != Long.MIN_VALUE && chargeFullDesign > 0) {
                         float health = Math.min(100.0f, (chargeFull * 100.0f) / chargeFullDesign);
@@ -827,5 +830,16 @@ public class BatteryDataManager {
         }
 
         return null;
+    }
+
+    /**
+     * 通过反射读取 BatteryManager 中可能隐藏的常量，避免编译 SDK stub 中缺少符号。
+     */
+    private int getBatteryManagerProperty(String name, int fallback) {
+        try {
+            return BatteryManager.class.getField(name).getInt(null);
+        } catch (Exception ignored) {
+            return fallback;
+        }
     }
 }

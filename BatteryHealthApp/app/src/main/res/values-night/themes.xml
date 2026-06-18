@@ -32,8 +32,6 @@
         <!-- 液态玻璃窗口动画 -->
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
 
-        <!-- Android 15 临时禁用强制edge-to-edge -->
-        <item name="android:windowOptOutEdgeToEdge">true</item>
     </style>
 
     <!-- 无ActionBar主题 - 继承自主主题 -->
@@ -191,7 +189,7 @@
     <!-- 液态玻璃Tab文字 -->
     <style name="LiquidGlassTabText">
         <item name="android:textSize">12sp</item>
-        <item name="android:textStyle">medium</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
     </style>

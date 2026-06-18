@@ -6,7 +6,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKey;
+import androidx.security.crypto.MasterKeys;
 
 import java.io.File;
 import java.security.SecureRandom;
@@ -187,13 +187,12 @@ public class DatabaseEncryptionHelper {
 
     private static SharedPreferences getEncryptedSharedPreferences(Context context) {
         try {
-            MasterKey masterKey = new MasterKey.Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
+            android.security.keystore.KeyGenParameterSpec spec = MasterKeys.AES256_GCM_SPEC;
+            String masterKeyAlias = MasterKeys.getOrCreate(spec);
             return EncryptedSharedPreferences.create(
-                    context,
                     PREFS_FILE,
-                    masterKey,
+                    masterKeyAlias,
+                    context,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
