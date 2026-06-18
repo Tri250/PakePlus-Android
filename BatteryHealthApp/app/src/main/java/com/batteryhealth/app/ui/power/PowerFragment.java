@@ -186,8 +186,9 @@ public class PowerFragment extends Fragment {
     
     private void updatePowerData() {
         try {
+            boolean isCharging = isCharging();
             float voltage = readVoltage();
-            float current = readCurrent();
+            float current = isCharging ? readCurrent() : 0;
             float power = voltage * current;
             int level = readBatteryLevel();
 
@@ -250,6 +251,27 @@ public class PowerFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error updating power data: " + e.getMessage());
         }
+    }
+
+    private boolean isCharging() {
+        try {
+            if (getContext() == null) return false;
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                batteryStatus = getContext().registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                batteryStatus = getContext().registerReceiver(null, filter);
+            }
+            if (batteryStatus != null) {
+                int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                return status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                       status == BatteryManager.BATTERY_STATUS_FULL;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking charging status: " + e.getMessage());
+        }
+        return false;
     }
 
     private void addSample(float voltage, float current, float power, int level) {

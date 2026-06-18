@@ -61,6 +61,11 @@
 # MPAndroidChart
 -keep class com.github.mikephil.charting.** { *; }
 
+# SQLCipher
+-keep class net.sqlcipher.** { *; }
+-keepclassmembers class net.sqlcipher.** { *; }
+-dontwarn net.sqlcipher.**
+
 # Lottie
 -keep class com.airbnb.lottie.** { *; }
 -dontwarn com.airbnb.lottie.**

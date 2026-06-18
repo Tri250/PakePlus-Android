@@ -120,7 +120,46 @@ public class BatteryInfo {
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
-    
+
+    /**
+     * 创建当前对象的深拷贝副本，用于多线程安全地返回快照。
+     */
+    public BatteryInfo copy() {
+        BatteryInfo copy = new BatteryInfo();
+        copy.setId(this.id);
+        copy.setTimestamp(this.timestamp);
+        copy.setDesignCapacity(this.designCapacity);
+        copy.setCurrentCapacity(this.currentCapacity);
+        copy.setChargeCounter(this.chargeCounter);
+        copy.setHealthPercentage(this.healthPercentage);
+        copy.setHealthStatus(this.healthStatus);
+        copy.setCycleCount(this.cycleCount);
+        copy.setTemperature(this.temperature);
+        copy.setVoltage(this.voltage);
+        copy.setCurrentNow(this.currentNow);
+        copy.setStatus(this.status);
+        copy.setPlugged(this.plugged);
+        copy.setLevel(this.level);
+        copy.setTechnology(this.technology);
+        copy.setBatterySource(this.batterySource);
+        copy.setBatterySerial(this.batterySerial);
+        copy.setChargingPower(this.chargingPower);
+        copy.setChargingVoltage(this.chargingVoltage);
+        copy.setChargingCurrent(this.chargingCurrent);
+        copy.setDeviceModel(this.deviceModel);
+        copy.setDeviceBrand(this.deviceBrand);
+        copy.setCycleCountEstimated(this.cycleCountEstimated);
+        copy.setCycleCountSource(this.cycleCountSource);
+        copy.setDesignCapacitySource(this.designCapacitySource);
+        copy.setCurrentCapacitySource(this.currentCapacitySource);
+        copy.setHealthDataSource(this.healthDataSource);
+        copy.setHealthConfidence(this.healthConfidence);
+        copy.setSystemHealth(this.systemHealth);
+        copy.setEnergyCounter(this.energyCounter);
+        copy.setBatterySourceConfidence(this.batterySourceConfidence);
+        return copy;
+    }
+
     // Getters and Setters
     public long getId() {
         return id;

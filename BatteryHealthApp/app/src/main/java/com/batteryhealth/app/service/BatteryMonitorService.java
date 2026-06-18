@@ -65,6 +65,8 @@ public class BatteryMonitorService extends Service {
     private OnBatteryDataListener dataListener;
     private boolean isRunning = false;
     private long lastSaveTime = 0;
+    private long lastFullRefreshTime = 0;
+    private static final long FULL_REFRESH_INTERVAL = 60000; // 60秒完整刷新一次
     private SharedPreferences prefs;
     private boolean healthCheckScheduled = false;
     
@@ -272,7 +274,11 @@ public class BatteryMonitorService extends Service {
         try {
             if (batteryDataManager != null) {
                 batteryDataManager.refreshFromStickyIntent();
-                batteryDataManager.refreshAllDataAsync();
+                long now = System.currentTimeMillis();
+                if (now - lastFullRefreshTime >= FULL_REFRESH_INTERVAL) {
+                    batteryDataManager.refreshAllDataAsync();
+                    lastFullRefreshTime = now;
+                }
                 BatteryInfo latest = batteryDataManager.getCurrentBatteryInfo();
                 if (latest != null) {
                     syncFromBatteryDataManager(latest);

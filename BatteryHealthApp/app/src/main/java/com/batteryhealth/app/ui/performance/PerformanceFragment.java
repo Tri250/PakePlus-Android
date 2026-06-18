@@ -93,6 +93,9 @@ public class PerformanceFragment extends Fragment {
 
             handler = new Handler(Looper.getMainLooper());
 
+            // 预热 CPU 采样基线，避免首次显示 0%
+            readCpuUsage();
+
             updateTask = new Runnable() {
                 @Override
                 public void run() {

@@ -44,6 +44,7 @@ public class BatteryDataManager {
 
     private final Context context;
     private BatteryInfo currentBatteryInfo;
+    private final Object dataLock = new Object();
     private Boolean hasRootAccess = null;
 
     // 用于健康度估算的上下文
@@ -57,17 +58,19 @@ public class BatteryDataManager {
     }
 
     private void setSafeDefaults() {
-        currentBatteryInfo.setLevel(0);
-        currentBatteryInfo.setTemperature(25.0f);
-        currentBatteryInfo.setVoltage(3700);
-        currentBatteryInfo.setTechnology("Li-ion");
-        currentBatteryInfo.setHealthPercentage(-1.0f);
-        currentBatteryInfo.setHealthStatus("unknown");
-        currentBatteryInfo.setHealthDataSource(SOURCE_UNKNOWN);
-        currentBatteryInfo.setBatterySource(BATTERY_SOURCE_UNKNOWN);
-        currentBatteryInfo.setBatterySourceConfidence(0.0f);
-        currentBatteryInfo.setCycleCount(-1);
-        currentBatteryInfo.setCycleCountEstimated(true);
+        synchronized (dataLock) {
+            currentBatteryInfo.setLevel(0);
+            currentBatteryInfo.setTemperature(25.0f);
+            currentBatteryInfo.setVoltage(3700);
+            currentBatteryInfo.setTechnology("Li-ion");
+            currentBatteryInfo.setHealthPercentage(-1.0f);
+            currentBatteryInfo.setHealthStatus("unknown");
+            currentBatteryInfo.setHealthDataSource(SOURCE_UNKNOWN);
+            currentBatteryInfo.setBatterySource(BATTERY_SOURCE_UNKNOWN);
+            currentBatteryInfo.setBatterySourceConfidence(0.0f);
+            currentBatteryInfo.setCycleCount(-1);
+            currentBatteryInfo.setCycleCountEstimated(true);
+        }
     }
 
     /**
@@ -83,33 +86,35 @@ public class BatteryDataManager {
     public void updateFromIntent(Intent intent) {
         if (intent == null) return;
         try {
-            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            if (level != -1 && scale != -1 && scale > 0) {
-                currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+            synchronized (dataLock) {
+                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (level != -1 && scale != -1 && scale > 0) {
+                    currentBatteryInfo.setLevel((int) ((level / (float) scale) * 100));
+                }
+
+                currentBatteryInfo.setStatus(intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1));
+                currentBatteryInfo.setPlugged(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));
+
+                int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+                if (temperature != -1) {
+                    currentBatteryInfo.setTemperature(temperature / 10.0f);
+                }
+
+                int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                if (voltage != -1) {
+                    currentBatteryInfo.setVoltage(voltage);
+                }
+
+                String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
+                if (technology != null) {
+                    currentBatteryInfo.setTechnology(technology);
+                }
+
+                // 系统健康状态（Hardware 层面）
+                int health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
+                currentBatteryInfo.setSystemHealth(health);
             }
-
-            currentBatteryInfo.setStatus(intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1));
-            currentBatteryInfo.setPlugged(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));
-
-            int temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-            if (temperature != -1) {
-                currentBatteryInfo.setTemperature(temperature / 10.0f);
-            }
-
-            int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-            if (voltage != -1) {
-                currentBatteryInfo.setVoltage(voltage);
-            }
-
-            String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
-            if (technology != null) {
-                currentBatteryInfo.setTechnology(technology);
-            }
-
-            // 系统健康状态（Hardware 层面）
-            int health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
-            currentBatteryInfo.setSystemHealth(health);
         } catch (Exception e) {
             Log.e(TAG, "Error updating from intent: " + e.getMessage());
         }
@@ -120,36 +125,38 @@ public class BatteryDataManager {
      */
     private void loadBatteryInfo() {
         try {
-            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-            if (batteryManager != null) {
-                int level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                if (level >= 0) currentBatteryInfo.setLevel(level);
+            synchronized (dataLock) {
+                BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+                if (batteryManager != null) {
+                    int level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                    if (level >= 0) currentBatteryInfo.setLevel(level);
 
-                int currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                currentBatteryInfo.setCurrentNow(currentNow);
+                    int currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                    currentBatteryInfo.setCurrentNow(currentNow);
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    long chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-                    if (chargeCounter != Long.MIN_VALUE && chargeCounter > 0) {
-                        currentBatteryInfo.setChargeCounter((int) chargeCounter);
-                        currentBatteryInfo.setCurrentCapacity((int) (chargeCounter / 1000));
-                    }
-                    long energyCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
-                    if (energyCounter != Long.MIN_VALUE && energyCounter > 0) {
-                        currentBatteryInfo.setEnergyCounter((int) energyCounter);
-                    }
-                }
-
-                // Android 14+ 循环次数（隐藏常量 7）
-                if (Build.VERSION.SDK_INT >= 34) {
-                    try {
-                        int cycleCount = batteryManager.getIntProperty(7);
-                        if (cycleCount >= 0) {
-                            currentBatteryInfo.setCycleCount(cycleCount);
-                            currentBatteryInfo.setCycleCountEstimated(false);
-                            currentBatteryInfo.setCycleCountSource(SOURCE_BATTERY_MANAGER);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        long chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                        if (chargeCounter != Long.MIN_VALUE && chargeCounter > 0) {
+                            currentBatteryInfo.setChargeCounter((int) chargeCounter);
+                            currentBatteryInfo.setCurrentCapacity((int) (chargeCounter / 1000));
                         }
-                    } catch (Exception ignored) {}
+                        long energyCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
+                        if (energyCounter != Long.MIN_VALUE && energyCounter > 0) {
+                            currentBatteryInfo.setEnergyCounter((int) energyCounter);
+                        }
+                    }
+
+                    // Android 14+ 循环次数（隐藏常量 7）
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        try {
+                            int cycleCount = batteryManager.getIntProperty(7);
+                            if (cycleCount >= 0) {
+                                currentBatteryInfo.setCycleCount(cycleCount);
+                                currentBatteryInfo.setCycleCountEstimated(false);
+                                currentBatteryInfo.setCycleCountSource(SOURCE_BATTERY_MANAGER);
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
             refreshFromStickyIntent();
@@ -236,9 +243,11 @@ public class BatteryDataManager {
                     }
                 }
 
-                currentBatteryInfo.setCycleCount(cycleCount);
-                currentBatteryInfo.setCycleCountEstimated(cycleCount < 0);
-                currentBatteryInfo.setCycleCountSource(source);
+                synchronized (dataLock) {
+                    currentBatteryInfo.setCycleCount(cycleCount);
+                    currentBatteryInfo.setCycleCountEstimated(cycleCount < 0);
+                    currentBatteryInfo.setCycleCountSource(source);
+                }
 
                 // 如果获得循环次数，可刷新基于循环次数的健康度估算
                 if (cycleCount >= 0) {
@@ -246,9 +255,11 @@ public class BatteryDataManager {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error reading cycle count: " + e.getMessage());
-                currentBatteryInfo.setCycleCount(-1);
-                currentBatteryInfo.setCycleCountEstimated(true);
-                currentBatteryInfo.setCycleCountSource(SOURCE_UNKNOWN);
+                synchronized (dataLock) {
+                    currentBatteryInfo.setCycleCount(-1);
+                    currentBatteryInfo.setCycleCountEstimated(true);
+                    currentBatteryInfo.setCycleCountSource(SOURCE_UNKNOWN);
+                }
             }
         }).start();
     }
@@ -335,8 +346,10 @@ public class BatteryDataManager {
             } catch (Exception ignored) {}
         }
 
-        currentBatteryInfo.setDesignCapacity(designCapacity);
-        currentBatteryInfo.setDesignCapacitySource(source);
+        synchronized (dataLock) {
+            currentBatteryInfo.setDesignCapacity(designCapacity);
+            currentBatteryInfo.setDesignCapacitySource(source);
+        }
     }
 
     /**
@@ -347,9 +360,11 @@ public class BatteryDataManager {
         String source = SOURCE_UNKNOWN;
 
         // 1. 已在构造函数中通过 BatteryManager 读取
-        if (currentBatteryInfo.getCurrentCapacity() > 0) {
-            currentCapacity = currentBatteryInfo.getCurrentCapacity();
-            source = SOURCE_BATTERY_MANAGER;
+        synchronized (dataLock) {
+            if (currentBatteryInfo.getCurrentCapacity() > 0) {
+                currentCapacity = currentBatteryInfo.getCurrentCapacity();
+                source = SOURCE_BATTERY_MANAGER;
+            }
         }
 
         // 2. sysfs charge_counter
@@ -382,8 +397,10 @@ public class BatteryDataManager {
             }
         }
 
-        currentBatteryInfo.setCurrentCapacity(currentCapacity);
-        currentBatteryInfo.setCurrentCapacitySource(source);
+        synchronized (dataLock) {
+            currentBatteryInfo.setCurrentCapacity(currentCapacity);
+            currentBatteryInfo.setCurrentCapacitySource(source);
+        }
     }
 
     /**
@@ -398,8 +415,12 @@ public class BatteryDataManager {
      * 每次计算都会更新 healthDataSource 与 healthConfidence。
      */
     private void calculateHealth() {
-        int designCapacity = currentBatteryInfo.getDesignCapacity();
-        int currentCapacity = currentBatteryInfo.getCurrentCapacity();
+        int designCapacity;
+        int currentCapacity;
+        synchronized (dataLock) {
+            designCapacity = currentBatteryInfo.getDesignCapacity();
+            currentCapacity = currentBatteryInfo.getCurrentCapacity();
+        }
 
         // 1. 真实容量比
         if (designCapacity > 0 && currentCapacity > 0) {
@@ -415,13 +436,15 @@ public class BatteryDataManager {
                 if (bm != null) {
                     int propChargeFull = getBatteryManagerProperty("BATTERY_PROPERTY_CHARGE_FULL", 5);
                     int propChargeFullDesign = getBatteryManagerProperty("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 6);
-                    long chargeFull = bm.getLongProperty(propChargeFull);
-                    long chargeFullDesign = bm.getLongProperty(propChargeFullDesign);
-                    if (chargeFull != Long.MIN_VALUE && chargeFull > 0 &&
-                        chargeFullDesign != Long.MIN_VALUE && chargeFullDesign > 0) {
-                        float health = Math.min(100.0f, (chargeFull * 100.0f) / chargeFullDesign);
-                        applyHealth(health, SOURCE_BATTERY_MANAGER, 0.85f);
-                        return;
+                    if (propChargeFull > 0 && propChargeFullDesign > 0) {
+                        long chargeFull = bm.getLongProperty(propChargeFull);
+                        long chargeFullDesign = bm.getLongProperty(propChargeFullDesign);
+                        if (chargeFull != Long.MIN_VALUE && chargeFull > 0 &&
+                            chargeFullDesign != Long.MIN_VALUE && chargeFullDesign > 0) {
+                            float health = Math.min(100.0f, (chargeFull * 100.0f) / chargeFullDesign);
+                            applyHealth(health, SOURCE_BATTERY_MANAGER, 0.85f);
+                            return;
+                        }
                     }
                 }
             } catch (Exception ignored) {}
@@ -434,15 +457,23 @@ public class BatteryDataManager {
      * 在容量不可用时，基于循环次数/使用天数重新估算健康度。
      */
     public void recalculateHealthIfNeeded() {
-        if (currentBatteryInfo.getHealthDataSource() != null &&
-            (currentBatteryInfo.getHealthDataSource().equals(SOURCE_SYSFS) ||
-             currentBatteryInfo.getHealthDataSource().equals(SOURCE_BATTERY_MANAGER))) {
+        String healthSource;
+        int cycleCount;
+        int systemHealth;
+        synchronized (dataLock) {
+            healthSource = currentBatteryInfo.getHealthDataSource();
+            cycleCount = currentBatteryInfo.getCycleCount();
+            systemHealth = currentBatteryInfo.getSystemHealth();
+        }
+
+        if (healthSource != null &&
+            (healthSource.equals(SOURCE_SYSFS) ||
+             healthSource.equals(SOURCE_BATTERY_MANAGER))) {
             // 已有真实容量数据，不再用估算覆盖
             return;
         }
 
         // 3. 基于循环次数的物理衰减模型（Li-ion 典型 500-800 次循环到 80%）
-        int cycleCount = currentBatteryInfo.getCycleCount();
         if (cycleCount > 0) {
             float health = estimateHealthByCycleCount(cycleCount);
             applyHealth(health, SOURCE_ESTIMATED_PHYSICAL, 0.60f);
@@ -457,7 +488,6 @@ public class BatteryDataManager {
         }
 
         // 5. 系统硬件健康状态兜底
-        int systemHealth = currentBatteryInfo.getSystemHealth();
         if (systemHealth != BatteryManager.BATTERY_HEALTH_UNKNOWN) {
             float health = mapSystemHealth(systemHealth);
             applyHealth(health, SOURCE_BATTERY_MANAGER, 0.35f);
@@ -511,23 +541,25 @@ public class BatteryDataManager {
     }
 
     private void applyHealth(float health, String source, float confidence) {
-        currentBatteryInfo.setHealthPercentage(health);
-        currentBatteryInfo.setHealthDataSource(source);
-        currentBatteryInfo.setHealthConfidence(confidence);
+        synchronized (dataLock) {
+            currentBatteryInfo.setHealthPercentage(health);
+            currentBatteryInfo.setHealthDataSource(source);
+            currentBatteryInfo.setHealthConfidence(confidence);
 
-        if (health < 0) {
-            currentBatteryInfo.setHealthStatus("unknown");
-            return;
-        }
+            if (health < 0) {
+                currentBatteryInfo.setHealthStatus("unknown");
+                return;
+            }
 
-        if (health >= 90) {
-            currentBatteryInfo.setHealthStatus("good");
-        } else if (health >= 80) {
-            currentBatteryInfo.setHealthStatus("normal");
-        } else if (health >= 70) {
-            currentBatteryInfo.setHealthStatus("warning");
-        } else {
-            currentBatteryInfo.setHealthStatus("poor");
+            if (health >= 90) {
+                currentBatteryInfo.setHealthStatus("good");
+            } else if (health >= 80) {
+                currentBatteryInfo.setHealthStatus("normal");
+            } else if (health >= 70) {
+                currentBatteryInfo.setHealthStatus("warning");
+            } else {
+                currentBatteryInfo.setHealthStatus("poor");
+            }
         }
     }
 
@@ -555,18 +587,24 @@ public class BatteryDataManager {
                     if (serial != null && !serial.isEmpty()) break;
                 }
 
-                if (serial != null && !serial.isEmpty()) {
-                    currentBatteryInfo.setBatterySerial(serial);
+                synchronized (dataLock) {
+                    if (serial != null && !serial.isEmpty()) {
+                        currentBatteryInfo.setBatterySerial(serial);
+                    }
                 }
 
                 SourceScore score = evaluateBatterySource(serial);
-                currentBatteryInfo.setBatterySource(score.result);
-                currentBatteryInfo.setBatterySourceConfidence(score.confidence);
+                synchronized (dataLock) {
+                    currentBatteryInfo.setBatterySource(score.result);
+                    currentBatteryInfo.setBatterySourceConfidence(score.confidence);
+                }
 
             } catch (Exception e) {
                 Log.e(TAG, "Error detecting battery source: " + e.getMessage());
-                currentBatteryInfo.setBatterySource(BATTERY_SOURCE_UNKNOWN);
-                currentBatteryInfo.setBatterySourceConfidence(0.0f);
+                synchronized (dataLock) {
+                    currentBatteryInfo.setBatterySource(BATTERY_SOURCE_UNKNOWN);
+                    currentBatteryInfo.setBatterySourceConfidence(0.0f);
+                }
             }
         }).start();
     }
@@ -590,7 +628,16 @@ public class BatteryDataManager {
         maxScore += 1 * 0.4f;
 
         // 2. 电池技术评分（权重 20%）
-        String tech = currentBatteryInfo.getTechnology();
+        String tech;
+        float voltage;
+        int designCapacity;
+        int currentCapacity;
+        synchronized (dataLock) {
+            tech = currentBatteryInfo.getTechnology();
+            voltage = currentBatteryInfo.getVoltage();
+            designCapacity = currentBatteryInfo.getDesignCapacity();
+            currentCapacity = currentBatteryInfo.getCurrentCapacity();
+        }
         int techScore = 0;
         if (tech != null) {
             String lower = tech.toLowerCase(Locale.ROOT);
@@ -602,14 +649,11 @@ public class BatteryDataManager {
         maxScore += 1 * 0.2f;
 
         // 3. 电压范围评分（权重 20%）
-        float voltage = currentBatteryInfo.getVoltage();
         int voltageScore = (voltage >= 3000 && voltage <= 4500) ? 1 : 0;
         totalScore += voltageScore * 0.2f;
         maxScore += 1 * 0.2f;
 
         // 4. 容量匹配评分（权重 20%）
-        int designCapacity = currentBatteryInfo.getDesignCapacity();
-        int currentCapacity = currentBatteryInfo.getCurrentCapacity();
         int capacityScore = 0;
         if (designCapacity > 0 && currentCapacity > 0) {
             float ratio = (float) currentCapacity / designCapacity;
@@ -691,11 +735,17 @@ public class BatteryDataManager {
     }
 
     public BatteryInfo getCurrentBatteryInfo() {
-        return currentBatteryInfo;
+        synchronized (dataLock) {
+            return currentBatteryInfo.copy();
+        }
     }
 
     public String getChargingStatusText() {
-        switch (currentBatteryInfo.getStatus()) {
+        int status;
+        synchronized (dataLock) {
+            status = currentBatteryInfo.getStatus();
+        }
+        switch (status) {
             case BatteryManager.BATTERY_STATUS_CHARGING:
                 return "充电中";
             case BatteryManager.BATTERY_STATUS_DISCHARGING:
@@ -710,7 +760,11 @@ public class BatteryDataManager {
     }
 
     public String getPlugTypeText() {
-        switch (currentBatteryInfo.getPlugged()) {
+        int plugged;
+        synchronized (dataLock) {
+            plugged = currentBatteryInfo.getPlugged();
+        }
+        switch (plugged) {
             case BatteryManager.BATTERY_PLUGGED_AC:
                 return "交流电源";
             case BatteryManager.BATTERY_PLUGGED_USB:
@@ -723,7 +777,10 @@ public class BatteryDataManager {
     }
 
     public String getBatterySourceText() {
-        String source = currentBatteryInfo.getBatterySource();
+        String source;
+        synchronized (dataLock) {
+            source = currentBatteryInfo.getBatterySource();
+        }
         if (BATTERY_SOURCE_ORIGINAL.equals(source)) {
             return "原装电池";
         } else if (BATTERY_SOURCE_THIRD_PARTY.equals(source)) {
@@ -737,7 +794,10 @@ public class BatteryDataManager {
      * 获取健康度数据来源描述文本
      */
     public String getHealthSourceText() {
-        String source = currentBatteryInfo.getHealthDataSource();
+        String source;
+        synchronized (dataLock) {
+            source = currentBatteryInfo.getHealthDataSource();
+        }
         if (SOURCE_SYSFS.equals(source)) {
             return "系统内核读取";
         } else if (SOURCE_BATTERY_MANAGER.equals(source)) {

@@ -57,6 +57,8 @@ public class EnduranceFragment extends Fragment {
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0; // %/h
+    private static final float MAX_DISCHARGE_RATE = 50.0f; // 合理上限 50%/h
+    private static final long MIN_TIME_DIFF_MS = 60_000; // 至少1分钟采样间隔
     
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -347,22 +349,29 @@ public class EnduranceFragment extends Fragment {
     }
     
     /**
-     * 计算放电速率
+     * 计算放电速率，带合理上限与最小采样间隔，避免瞬时跳变。
      */
     private void calculateDischargeRate(int currentLevel) {
         long currentTime = System.currentTimeMillis();
-        
+
         if (lastLevel >= 0 && lastLevelTime > 0 && currentLevel < lastLevel) {
             long timeDiff = currentTime - lastLevelTime; // 毫秒
             int levelDiff = lastLevel - currentLevel;
-            
-            if (timeDiff > 0 && levelDiff > 0) {
+
+            if (timeDiff >= MIN_TIME_DIFF_MS && levelDiff > 0) {
                 // 计算每小时放电百分比
                 float hoursDiff = timeDiff / (1000.0f * 60 * 60);
-                dischargeRate = levelDiff / hoursDiff;
+                float newRate = levelDiff / hoursDiff;
+                // 限制在合理范围并做简单平滑
+                newRate = Math.min(newRate, MAX_DISCHARGE_RATE);
+                if (dischargeRate > 0) {
+                    dischargeRate = (dischargeRate * 0.7f) + (newRate * 0.3f);
+                } else {
+                    dischargeRate = newRate;
+                }
             }
         }
-        
+
         lastLevel = currentLevel;
         lastLevelTime = currentTime;
     }
