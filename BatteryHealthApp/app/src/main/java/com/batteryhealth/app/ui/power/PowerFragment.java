@@ -325,17 +325,17 @@ public class PowerFragment extends Fragment {
     }
     
     private float readVoltage() {
+        BufferedReader reader = null;
         try {
             File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
             if (voltageFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(voltageFile));
+                reader = new BufferedReader(new FileReader(voltageFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     return Long.parseLong(line.trim()) / 1000000.0f;
                 }
             }
-            
+
             if (getContext() != null) {
                 IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                 Intent batteryStatus;
@@ -352,23 +352,27 @@ public class PowerFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error reading voltage: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return 0;
     }
-    
+
     private float readCurrent() {
+        BufferedReader reader = null;
         try {
             File currentFile = new File("/sys/class/power_supply/battery/current_now");
             if (currentFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(currentFile));
+                reader = new BufferedReader(new FileReader(currentFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     return Math.abs(Long.parseLong(line.trim())) / 1000000.0f;
                 }
             }
-            
+
             if (getContext() != null) {
                 BatteryManager batteryManager = (BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
                 if (batteryManager != null) {
@@ -377,7 +381,11 @@ public class PowerFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error reading current: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return 0;
     }

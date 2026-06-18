@@ -138,9 +138,19 @@ public class EnduranceFragment extends Fragment {
         new Thread(() -> {
             try {
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-                if (app == null) return;
+                if (app == null) {
+                    Log.w(TAG, "App is null, cannot load historical discharge rate");
+                    return;
+                }
                 AppDatabase db = app.getDatabase();
-                if (db == null) return;
+                if (db == null) {
+                    Log.w(TAG, "Database is null, cannot load historical discharge rate");
+                    return;
+                }
+                if (db.batteryInfoDao() == null) {
+                    Log.w(TAG, "BatteryInfoDao is null, cannot load historical discharge rate");
+                    return;
+                }
 
                 // 取最近 24 小时内至少 10 条记录计算放电速率
                 long oneDayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000;

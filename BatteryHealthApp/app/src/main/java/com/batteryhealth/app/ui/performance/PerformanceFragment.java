@@ -258,10 +258,10 @@ public class PerformanceFragment extends Fragment {
     private boolean hasLastStat = false;
 
     private float readCpuUsage() {
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
+            reader = new BufferedReader(new FileReader("/proc/stat"));
             String line = reader.readLine();
-            reader.close();
 
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
@@ -320,6 +320,10 @@ public class PerformanceFragment extends Fragment {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading CPU usage: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return 0;
     }
@@ -371,6 +375,7 @@ public class PerformanceFragment extends Fragment {
     }
 
     private String readGpuInfo() {
+        java.io.BufferedReader reader = null;
         try {
             String[] renderers = {
                 "/sys/class/kgsl/kgsl-3d0/gpu_model",
@@ -380,16 +385,26 @@ public class PerformanceFragment extends Fragment {
             for (String path : renderers) {
                 java.io.File file = new java.io.File(path);
                 if (file.exists() && file.canRead()) {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null && !line.isEmpty()) {
-                        return line.trim();
+                    try {
+                        reader = new java.io.BufferedReader(new java.io.FileReader(file));
+                        String line = reader.readLine();
+                        if (line != null && !line.isEmpty()) {
+                            return line.trim();
+                        }
+                    } finally {
+                        if (reader != null) {
+                            try { reader.close(); } catch (Exception ignored) {}
+                            reader = null;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             Log.d(TAG, "GPU info not available");
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return "不可用";
     }
@@ -398,9 +413,19 @@ public class PerformanceFragment extends Fragment {
         new Thread(() -> {
             try {
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-                if (app == null) return;
+                if (app == null) {
+                    Log.w(TAG, "App is null, cannot save performance data");
+                    return;
+                }
                 AppDatabase db = app.getDatabase();
-                if (db == null) return;
+                if (db == null) {
+                    Log.w(TAG, "Database is null, cannot save performance data");
+                    return;
+                }
+                if (db.performanceDataDao() == null) {
+                    Log.w(TAG, "PerformanceDataDao is null, cannot save performance data");
+                    return;
+                }
 
                 PerformanceData data = new PerformanceData();
                 data.setCpuUsage(cpuUsage);
@@ -423,6 +448,7 @@ public class PerformanceFragment extends Fragment {
 
     private long getTotalMemory() {
         try {
+            if (getContext() == null) return 0;
             ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
             if (am != null) {
                 ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
@@ -435,6 +461,7 @@ public class PerformanceFragment extends Fragment {
 
     private long getUsedMemory() {
         try {
+            if (getContext() == null) return 0;
             ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
             if (am != null) {
                 ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
@@ -447,6 +474,7 @@ public class PerformanceFragment extends Fragment {
 
     private long getFreeMemory() {
         try {
+            if (getContext() == null) return 0;
             ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
             if (am != null) {
                 ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();

@@ -129,15 +129,26 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
+        // 检查Fragment状态
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not attached, skipping onResume");
+            return;
+        }
+
         isRunning = true;
 
         // 进入页面时刷新一次完整数据（容量、循环次数、电池来源等）
         if (batteryDataManager != null) {
-            batteryDataManager.refreshAllDataAsync();
+            try {
+                batteryDataManager.refreshAllDataAsync();
+            } catch (Exception e) {
+                Log.e(TAG, "Error refreshing data: " + e.getMessage());
+            }
         }
 
         // 启动定时更新，刷新UI和基本电池信息
-        if (mainHandler != null) {
+        if (mainHandler != null && isAdded()) {
             mainHandler.post(updateRunnable);
         }
     }
@@ -204,9 +215,12 @@ public class BatteryHealthFragment extends Fragment {
     
     private void updateUI() {
         if (batteryDataManager == null || mainHandler == null) return;
-        
+        if (!isAdded() || getContext() == null) return;
+
         mainHandler.post(() -> {
             try {
+                if (!isAdded() || getContext() == null) return;
+
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info == null) return;
                 

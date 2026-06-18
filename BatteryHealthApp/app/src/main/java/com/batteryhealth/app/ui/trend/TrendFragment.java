@@ -215,22 +215,38 @@ public class TrendFragment extends Fragment {
         new Thread(() -> {
             try {
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-                if (app == null) return;
+                if (app == null) {
+                    Log.w(TAG, "BatteryHealthApplication is null");
+                    return;
+                }
                 AppDatabase db = app.getDatabase();
-                if (db == null) return;
-                
+                if (db == null) {
+                    Log.w(TAG, "AppDatabase is null");
+                    return;
+                }
+                if (db.batteryInfoDao() == null) {
+                    Log.w(TAG, "BatteryInfoDao is null");
+                    return;
+                }
+                if (db.powerHistoryDao() == null) {
+                    Log.w(TAG, "PowerHistoryDao is null");
+                    return;
+                }
+
                 // 获取最近7天的电池数据
                 long startTime = System.currentTimeMillis() - (long) selectedTimeRangeDays * 24 * 60 * 60 * 1000;
                 List<BatteryInfo> batteryData = db.batteryInfoDao().getSince(startTime);
 
                 // 获取充电功率历史
                 List<PowerHistory> powerData = db.powerHistoryDao().getSince(startTime);
-                
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> updateCharts(batteryData, powerData));
+
+                if (getActivity() != null && isAdded()) {
+                    getActivity().runOnUiThread(() -> {
+                        if (isAdded()) updateCharts(batteryData, powerData);
+                    });
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error loading trend data: " + e.getMessage());
+                Log.e(TAG, "Error loading trend data: " + e.getMessage(), e);
             }
         }).start();
     }
