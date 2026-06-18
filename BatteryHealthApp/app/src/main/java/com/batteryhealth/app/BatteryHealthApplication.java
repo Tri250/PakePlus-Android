@@ -13,6 +13,7 @@ import com.batteryhealth.app.data.database.DatabaseEncryptionHelper;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.utils.BatteryDataManager;
 
 import net.zetetic.database.sqlcipher.SupportFactory;
 
@@ -32,6 +33,7 @@ public class BatteryHealthApplication extends Application {
     private static final String TAG = "BatteryHealthApp";
     private static BatteryHealthApplication instance;
     private AppDatabase database;
+    private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
     
     @Override
@@ -43,6 +45,9 @@ public class BatteryHealthApplication extends Application {
             
             // 初始化数据库
             initDatabase();
+
+            // 初始化电池数据管理器（单例，统一多源读取与估算逻辑）
+            batteryDataManager = new BatteryDataManager(this);
         } catch (Exception e) {
             Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
         }
@@ -178,6 +183,13 @@ public class BatteryHealthApplication extends Application {
      */
     public AppDatabase getDatabase() {
         return database;
+    }
+
+    /**
+     * 获取电池数据管理器单例
+     */
+    public BatteryDataManager getBatteryDataManager() {
+        return batteryDataManager;
     }
     
     /**

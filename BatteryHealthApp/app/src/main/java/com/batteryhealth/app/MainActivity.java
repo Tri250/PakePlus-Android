@@ -1,6 +1,5 @@
 package com.batteryhealth.app;
 
-import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,7 +15,6 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.batteryhealth.app.service.BatteryMonitorService;
-import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
@@ -85,14 +83,15 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                batteryDataManager = new BatteryDataManager(this);
+                BatteryHealthApplication app = (BatteryHealthApplication) getApplication();
+                batteryDataManager = app.getBatteryDataManager();
                 // 将设备使用天数同步给电池管理器，用于健康度物理估算
-                if (deviceInfoManager != null) {
+                if (batteryDataManager != null && deviceInfoManager != null) {
                     batteryDataManager.setUsageDays(deviceInfoManager.getUsageDays());
                 }
-                Log.d(TAG, "BatteryDataManager created");
+                Log.d(TAG, "BatteryDataManager acquired");
             } catch (Exception e) {
-                Log.e(TAG, "Error creating BatteryDataManager: " + e.getMessage(), e);
+                Log.e(TAG, "Error acquiring BatteryDataManager: " + e.getMessage(), e);
                 batteryDataManager = null;
             }
 
@@ -281,7 +280,8 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 返回应用运行所需权限列表（按 Android 版本区分）
+     * 返回应用运行所需权限列表。
+     * 仅保留前台服务必需的通知权限，避免申请无法获取或无关权限导致上架/运行问题。
      */
     private String[] getRequiredPermissions() {
         List<String> permissions = new ArrayList<>();
@@ -289,18 +289,6 @@ public class MainActivity extends AppCompatActivity {
         // Android 13+ 通知权限（前台服务必需）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS);
-        }
-
-        // Android 13+ 使用新的媒体权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
-        } else {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
-
-        // 设备信息权限 - Android 10+ 需要特殊处理
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            permissions.add(Manifest.permission.READ_PHONE_STATE);
         }
 
         return permissions.toArray(new String[0]);
@@ -326,33 +314,22 @@ public class MainActivity extends AppCompatActivity {
     
     /**
      * 启动监测服务
+     *
+     * 仅启动常驻的 BatteryMonitorService；ChargingMonitorService 由
+     * ChargingServiceStarter 在设备接入电源时动态启停，避免两个前台服务
+     * 同时常驻导致 Android 12+ 限制与 ANR 风险。
      */
     private void startMonitorServices() {
         if (servicesStarted) return;
-        
+
         try {
-            // 启动电池监测服务
             android.content.Intent batteryServiceIntent = new android.content.Intent(this, BatteryMonitorService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(batteryServiceIntent);
             } else {
                 startService(batteryServiceIntent);
             }
-            
-            // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
-            mainHandler.postDelayed(() -> {
-                try {
-                    android.content.Intent chargingServiceIntent = new android.content.Intent(this, ChargingMonitorService.class);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(chargingServiceIntent);
-                    } else {
-                        startService(chargingServiceIntent);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error starting charging service: " + e.getMessage());
-                }
-            }, 1000);
-            
+
             servicesStarted = true;
         } catch (Exception e) {
             Log.e(TAG, "Error starting services: " + e.getMessage());

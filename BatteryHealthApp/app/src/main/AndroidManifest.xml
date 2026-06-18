@@ -2,48 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 电池相关权限 -->
-    <uses-permission android:name="android.permission.BATTERY_STATS" />
-    
     <!-- 网络权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <!-- 存储权限 - Android 13+使用新的媒体权限 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
-    
-    <!-- Android 13+ 媒体权限 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    
-    <!-- Android 14+ 部分媒体权限 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-    
-    <!-- 设备信息权限 -->
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    
+
     <!-- 前台服务权限 (用于实时监测) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    
-    <!-- Android 14+ 前台服务类型权限 -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    
-    <!-- 唤醒权限 -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
-    <!-- Android 13+ 通知权限 -->
+
+    <!-- Android 13+ 通知权限（前台服务必需） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    
-    <!-- Android 12+ 精确闹钟权限 -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    
-    <!-- Android 14+ 全屏通知权限 -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:allowBackup="true"
@@ -86,12 +54,23 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
         
-        <!-- 充电监测服务 -->
+        <!-- 充电监测服务：仅充电时由 ChargingServiceStarter 启动，不常驻 -->
         <service
             android:name=".service.ChargingMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-            
+
+        <!-- 充电广播接收器：根据电源插拔状态启停充电监测服务 -->
+        <receiver
+            android:name=".service.ChargingServiceStarter"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>

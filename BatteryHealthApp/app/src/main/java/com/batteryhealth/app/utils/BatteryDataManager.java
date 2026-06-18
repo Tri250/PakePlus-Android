@@ -623,12 +623,13 @@ public class BatteryDataManager {
             return score;
         }
 
-        // 当序列号匹配品牌规律且综合评分高时，判定为原装
+        // 仅当置信度足够高时才给出明确结论，否则标记为无法验证。
+        // 第三方电池判断需要更多强证据，避免仅因序列号格式不匹配就误判。
         if (serialScore == 1 && confidence >= 0.70f) {
             score.result = BATTERY_SOURCE_ORIGINAL;
             score.confidence = confidence;
-        } else if (serialScore == 0 && confidence >= 0.60f) {
-            // 序列号明显不匹配品牌规律，但其他指标正常，可能是第三方
+        } else if (serialScore == 0 && confidence >= 0.75f && capacityScore == 0) {
+            // 序列号格式不匹配且容量异常，才较有把握判断为第三方
             score.result = BATTERY_SOURCE_THIRD_PARTY;
             score.confidence = confidence;
         } else {
