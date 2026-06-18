@@ -96,6 +96,20 @@
     public static <fields>;
 }
 
+# 防止 shrinkResources 误删 XML 中引用的 style、drawable、color、anim 资源
+# 所有 iOS* / LiquidGlass* style 在布局中被大量引用，必须保留
+-keep class **.R$style { *; }
+-keep class **.R$drawable { *; }
+-keep class **.R$color { *; }
+-keep class **.R$anim { *; }
+-keep class **.R$menu { *; }
+-keep class **.R$mipmap { *; }
+-keep class **.R$xml { *; }
+-keep class **.R$string { *; }
+-keep class **.R$layout { *; }
+-keep class **.R$id { *; }
+-keep class **.R$attr { *; }
+
 # 移除日志
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
