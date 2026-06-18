@@ -478,24 +478,40 @@ public class BatteryDataManager {
 
     /**
      * 基于循环次数估算健康度。
-     * 模型：前 300 次衰减较慢，之后按指数衰减，到 800 次约 80%。
+     * 优先使用机型校准数据库，降级使用通用指数衰减模型。
      */
     private float estimateHealthByCycleCount(int cycleCount) {
         if (cycleCount <= 0) return -1.0f;
-        // 经验公式：健康度 = 100 * exp(-cycleCount / 1800)
+
+        // 优先使用机型校准数据库
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        if (db.isLoaded() && usageDays > 0) {
+            float years = usageDays / 365.0f;
+            float calibrated = db.calculateCalibratedHealth(years, cycleCount);
+            if (calibrated > 0) return calibrated;
+        }
+
+        // 降级：通用经验公式 健康度 = 100 * exp(-cycleCount / 1800)
         double health = 100.0 * Math.exp(-cycleCount / 1800.0);
-        // 限制在合理范围
         return (float) Math.max(60.0, Math.min(100.0, health));
     }
 
     /**
      * 基于使用天数估算健康度。
-     * 模型：首年衰减约 8%-10%，之后每年约 5%-7%。
+     * 优先使用机型校准数据库，降级使用通用线性衰减模型。
      */
     private float estimateHealthByUsageDays(int days) {
         if (days <= 0) return -1.0f;
         double years = days / 365.0;
-        // 保守模型：首年 9%，之后每年 6%
+
+        // 优先使用机型校准数据库
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        if (db.isLoaded()) {
+            float calibrated = db.calculateCalibratedHealth((float) years, 0);
+            if (calibrated > 0) return calibrated;
+        }
+
+        // 降级：保守模型 首年 9%，之后每年 6%
         double degradation = 0.09 * Math.min(years, 1.0) + 0.06 * Math.max(0.0, years - 1.0);
         double health = 100.0 * (1.0 - degradation);
         return (float) Math.max(60.0, Math.min(100.0, health));
@@ -618,6 +634,15 @@ public class BatteryDataManager {
 
         // 4. 容量匹配评分（权重 20%）
         int designCapacity = currentBatteryInfo.getDesignCapacity();
+        // 优先使用数据库中的设计容量
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        if (db.isLoaded() && designCapacity <= 0) {
+            int dbCapacity = db.getDesignCapacityMah();
+            if (dbCapacity > 0) {
+                designCapacity = dbCapacity;
+                currentBatteryInfo.setDesignCapacity(dbCapacity);
+            }
+        }
         int currentCapacity = currentBatteryInfo.getCurrentCapacity();
         int capacityScore = 0;
         if (designCapacity > 0 && currentCapacity > 0) {
@@ -652,10 +677,21 @@ public class BatteryDataManager {
     }
 
     /**
-     * 序列号格式评分：0=不匹配，1=匹配。
+     * 序列号格式评分：使用内置电池型号数据库 + 品牌正则匹配。
+     * 返回 0=不匹配，1=匹配。
      */
     private int scoreSerialFormat(String serial) {
         if (serial == null || serial.isEmpty()) return 0;
+
+        // 优先使用电池型号数据库精确匹配
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        if (db.isLoaded()) {
+            float dbScore = db.scoreSerialFormat(serial);
+            if (dbScore >= 0.85f) return 1;
+            if (dbScore >= 0.5f) return 1; // 部分匹配也视为有效
+        }
+
+        // 降级到通用品牌正则匹配
         String brand = Build.BRAND.toLowerCase(Locale.ROOT);
         switch (brand) {
             case "xiaomi":
@@ -675,6 +711,9 @@ public class BatteryDataManager {
             case "iqoo":
                 return serial.matches("^V[A-Z0-9]{7,14}$") ||
                        serial.matches("^[A-Z0-9]{8,15}$") ? 1 : 0;
+            case "nubia":
+            case "redmagic":
+                return serial.matches("^[A-Z]{2}[0-9]{3}[A-Z0-9]{4,8}$") ? 1 : 0;
             case "samsung":
                 return serial.matches("^[A-Z][A-Z0-9]{10}$") ? 1 : 0;
             default:
@@ -732,12 +771,26 @@ public class BatteryDataManager {
 
     public String getBatterySourceText() {
         String source = currentBatteryInfo.getBatterySource();
+        // 尝试从数据库获取机型名称和制造商
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        String modelInfo = "";
+        if (db.isLoaded()) {
+            String modelName = db.getModelName();
+            String manufacturer = db.getManufacturer();
+            if (!modelName.isEmpty()) {
+                modelInfo = " (" + modelName;
+                if (!manufacturer.isEmpty()) {
+                    modelInfo += " · " + manufacturer;
+                }
+                modelInfo += ")";
+            }
+        }
         if (BATTERY_SOURCE_ORIGINAL.equals(source)) {
-            return "原装电池";
+            return "原装电池" + modelInfo;
         } else if (BATTERY_SOURCE_THIRD_PARTY.equals(source)) {
             return "第三方电池";
         } else {
-            return "无法验证";
+            return "无法验证" + modelInfo;
         }
     }
 
@@ -751,6 +804,11 @@ public class BatteryDataManager {
         } else if (SOURCE_BATTERY_MANAGER.equals(source)) {
             return "系统电池服务";
         } else if (SOURCE_ESTIMATED_PHYSICAL.equals(source)) {
+            // 检查是否使用了机型校准
+            BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+            if (db.isLoaded() && !db.getModelName().isEmpty()) {
+                return "机型校准估算";
+            }
             return "物理模型估算";
         } else {
             return "未知";

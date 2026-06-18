@@ -440,6 +440,8 @@ public class DeviceConfig {
      */
     public String getAndroidCodename() {
         switch (sdkVersion) {
+            case 36: return "Android 16 (Baklava)";
+            case 35: return "Android 15 (Vanilla Ice Cream)";
             case Build.VERSION_CODES.UPSIDE_DOWN_CAKE: return "Android 14";
             case Build.VERSION_CODES.TIRAMISU: return "Android 13";
             case Build.VERSION_CODES.S_V2: return "Android 12L";

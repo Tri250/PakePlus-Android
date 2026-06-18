@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.utils.BatteryModelDatabase;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -468,18 +469,31 @@ public class PowerFragment extends Fragment {
     }
     
     private String getChargeTypeDescription(float power) {
-        if (power >= 60) {
-            return "超快闪充";
-        } else if (power >= 40) {
-            return "超级快充";
-        } else if (power >= 18) {
-            return "快速充电";
-        } else if (power >= 10) {
-            return "标准充电";
-        } else if (power > 0) {
-            return "慢速充电";
-        } else {
-            return "未充电";
+        // 使用数据库匹配充电协议名称
+        BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+        String protocol = null;
+        if (db.isLoaded()) {
+            protocol = db.matchChargingProtocol(power);
         }
+
+        String baseType;
+        if (power >= 60) {
+            baseType = "超快闪充";
+        } else if (power >= 40) {
+            baseType = "超级快充";
+        } else if (power >= 18) {
+            baseType = "快速充电";
+        } else if (power >= 10) {
+            baseType = "标准充电";
+        } else if (power > 0) {
+            baseType = "慢速充电";
+        } else {
+            return protocol != null ? "未充电 (" + protocol + ")" : "未充电";
+        }
+
+        if (protocol != null && !protocol.isEmpty()) {
+            return baseType + " · " + protocol;
+        }
+        return baseType;
     }
 }

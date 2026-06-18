@@ -1,0 +1,494 @@
+{
+  "version": "2026.06",
+  "description": "国内品牌电池型号数据库 - 覆盖 2024-2026 年主流机型，用于电池来源识别、健康度校准、续航估算",
+  "brands": {
+    "xiaomi": {
+      "models": {
+        "小米15 Ultra": {
+          "model_series": ["25010PN30C", "25010PN30G"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达/飞毛腿"
+          }
+        },
+        "小米15 Pro": {
+          "model_series": ["2410DPN6CC", "2410DPN6CG"],
+          "battery": {
+            "design_capacity_mah": 5400,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "小米15": {
+          "model_series": ["24129PN74C", "24129PN74G"],
+          "battery": {
+            "design_capacity_mah": 4800,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "小米14 Ultra": {
+          "model_series": ["24040PN64C", "24040PN64G"],
+          "battery": {
+            "design_capacity_mah": 5300,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "小米14 Pro": {
+          "model_series": ["23116PN5BC", "23116PN5BG"],
+          "battery": {
+            "design_capacity_mah": 4880,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "小米14": {
+          "model_series": ["23127PN0CC", "23127PN0CG"],
+          "battery": {
+            "design_capacity_mah": 4610,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "Redmi K70 Ultra": {
+          "model_series": ["2407FPN8EC", "2407FPN8EG"],
+          "battery": {
+            "design_capacity_mah": 5500,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "飞毛腿"
+          }
+        },
+        "Redmi K70 Pro": {
+          "model_series": ["24069RA21C", "24069RA21G"],
+          "battery": {
+            "design_capacity_mah": 5000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "飞毛腿"
+          }
+        },
+        "Redmi K70": {
+          "model_series": ["23113RKC6C", "23113RKC6G"],
+          "battery": {
+            "design_capacity_mah": 5000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 3.0,
+            "serial_format": "BN5[0-9]{2}",
+            "manufacturer": "飞毛腿"
+          }
+        }
+      },
+      "serial_formats": [
+        "BN5[0-9]{2}[A-Z0-9]{8,16}",
+        "BP5[0-9]{2}[A-Z0-9]{8,16}",
+        "BM5[0-9]{2}[A-Z0-9]{8,16}"
+      ],
+      "default_battery": {
+        "design_capacity_mah": 5000,
+        "technology": "Li-Polymer",
+        "typical_voltage_mv": 3850,
+        "cycle_life": 800,
+        "degradation_per_year_pct": 2.5
+      }
+    },
+    "oppo": {
+      "models": {
+        "OPPO Find X8 Ultra": {
+          "model_series": ["PKC110", "PKC130"],
+          "battery": {
+            "design_capacity_mah": 6100,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL/欣旺达"
+          }
+        },
+        "OPPO Find X8 Pro": {
+          "model_series": ["PKC100", "PKC120"],
+          "battery": {
+            "design_capacity_mah": 5630,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "OPPO Find X8": {
+          "model_series": ["PKC090", "PKC110"],
+          "battery": {
+            "design_capacity_mah": 5630,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "OPPO Find X7 Ultra": {
+          "model_series": ["PHY110", "PHY120"],
+          "battery": {
+            "design_capacity_mah": 5000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "OPPO Find X7": {
+          "model_series": ["PHZ110", "PHZ120"],
+          "battery": {
+            "design_capacity_mah": 5000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "OPPO Find N4": {
+          "model_series": ["PHN110", "PHN120"],
+          "battery": {
+            "design_capacity_mah": 4800,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "一加 13": {
+          "model_series": ["PJE110", "PJE120"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        },
+        "一加 Ace 5 Pro": {
+          "model_series": ["PJE130", "PJE140"],
+          "battery": {
+            "design_capacity_mah": 5800,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "BLP[0-9]{3}",
+            "manufacturer": "ATL"
+          }
+        }
+      },
+      "serial_formats": [
+        "BLP[0-9]{3}[A-Z0-9]{8,12}",
+        "BOP[0-9]{3}[A-Z0-9]{8,12}"
+      ],
+      "default_battery": {
+        "design_capacity_mah": 5000,
+        "technology": "Li-Polymer",
+        "typical_voltage_mv": 3850,
+        "cycle_life": 800,
+        "degradation_per_year_pct": 2.5
+      }
+    },
+    "vivo": {
+      "models": {
+        "vivo X200 Ultra": {
+          "model_series": ["V2405A", "V2405DA"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL/欣旺达"
+          }
+        },
+        "vivo X200 Pro": {
+          "model_series": ["V2405", "V2405D"],
+          "battery": {
+            "design_capacity_mah": 5800,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        },
+        "vivo X200": {
+          "model_series": ["V2403", "V2403D"],
+          "battery": {
+            "design_capacity_mah": 5400,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        },
+        "vivo X100 Ultra": {
+          "model_series": ["V2409", "V2409D"],
+          "battery": {
+            "design_capacity_mah": 5500,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        },
+        "vivo X100 Pro": {
+          "model_series": ["V2404", "V2404D"],
+          "battery": {
+            "design_capacity_mah": 5400,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        },
+        "iQOO 13": {
+          "model_series": ["V2408A", "V2408DA"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        },
+        "iQOO Neo10 Pro": {
+          "model_series": ["V2402A", "V2402DA"],
+          "battery": {
+            "design_capacity_mah": 5800,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "B-[0-9A-Z]{10}",
+            "manufacturer": "ATL"
+          }
+        }
+      },
+      "serial_formats": [
+        "B-[0-9A-Z]{10,16}",
+        "V[0-9]{2}B-[0-9A-Z]{10,16}"
+      ],
+      "default_battery": {
+        "design_capacity_mah": 5000,
+        "technology": "Li-Polymer",
+        "typical_voltage_mv": 3850,
+        "cycle_life": 800,
+        "degradation_per_year_pct": 2.5
+      }
+    },
+    "honor": {
+      "models": {
+        "荣耀 Magic7 Pro": {
+          "model_series": ["BVL-AN00", "BVL-AN10"],
+          "battery": {
+            "design_capacity_mah": 5850,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "HB[0-9]{4}[A-Z]{4}",
+            "manufacturer": "欣旺达/飞毛腿"
+          }
+        },
+        "荣耀 Magic7": {
+          "model_series": ["BVL-N00", "BVL-N10"],
+          "battery": {
+            "design_capacity_mah": 5650,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "HB[0-9]{4}[A-Z]{4}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "荣耀 Magic6 Pro": {
+          "model_series": ["BVL-AN00", "BVL-AN10"],
+          "battery": {
+            "design_capacity_mah": 5600,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "HB[0-9]{4}[A-Z]{4}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "荣耀 Magic6": {
+          "model_series": ["BVL-AN00", "BVL-AN10"],
+          "battery": {
+            "design_capacity_mah": 5450,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "HB[0-9]{4}[A-Z]{4}",
+            "manufacturer": "欣旺达"
+          }
+        },
+        "荣耀 Magic V3": {
+          "model_series": ["FLC-AN00", "FLC-AN10"],
+          "battery": {
+            "design_capacity_mah": 5150,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "HB[0-9]{4}[A-Z]{4}",
+            "manufacturer": "欣旺达"
+          }
+        }
+      },
+      "serial_formats": [
+        "HB[0-9]{4}[A-Z0-9]{4,8}",
+        "H[0-9]{2}A[0-9]{4}[A-Z0-9]{4}"
+      ],
+      "default_battery": {
+        "design_capacity_mah": 5000,
+        "technology": "Li-Polymer",
+        "typical_voltage_mv": 3850,
+        "cycle_life": 800,
+        "degradation_per_year_pct": 2.5
+      }
+    },
+    "nubia": {
+      "models": {
+        "努比亚 Z70 Ultra": {
+          "model_series": ["NX721J", "NX721J_V2"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "NZ[0-9]{3}[A-Z]{4}",
+            "manufacturer": "飞毛腿"
+          }
+        },
+        "红魔 10 Pro": {
+          "model_series": ["NX789J", "NX789J_V2"],
+          "battery": {
+            "design_capacity_mah": 6000,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 800,
+            "degradation_per_year_pct": 2.0,
+            "serial_format": "NZ[0-9]{3}[A-Z]{4}",
+            "manufacturer": "飞毛腿"
+          }
+        },
+        "红魔 9S Pro": {
+          "model_series": ["NX769J", "NX769J_V2"],
+          "battery": {
+            "design_capacity_mah": 5500,
+            "technology": "Li-Polymer",
+            "typical_voltage_mv": 3850,
+            "cycle_life": 700,
+            "degradation_per_year_pct": 2.5,
+            "serial_format": "NZ[0-9]{3}[A-Z]{4}",
+            "manufacturer": "飞毛腿"
+          }
+        }
+      },
+      "serial_formats": [
+        "NZ[0-9]{3}[A-Z0-9]{4,8}",
+        "NX[0-9]{3}[A-Z0-9]{4,8}"
+      ],
+      "default_battery": {
+        "design_capacity_mah": 5000,
+        "technology": "Li-Polymer",
+        "typical_voltage_mv": 3850,
+        "cycle_life": 800,
+        "degradation_per_year_pct": 2.5
+      }
+    }
+  },
+  "universal_battery_params": {
+    "Li-Polymer": {
+      "nominal_voltage_mv": 3850,
+      "max_voltage_mv": 4400,
+      "min_voltage_mv": 3200,
+      "cycle_life_standard": 800
+    },
+    "Li-ion": {
+      "nominal_voltage_mv": 3700,
+      "max_voltage_mv": 4200,
+      "min_voltage_mv": 3000,
+      "cycle_life_standard": 500
+    },
+    "LiFePO4": {
+      "nominal_voltage_mv": 3200,
+      "max_voltage_mv": 3650,
+      "min_voltage_mv": 2500,
+      "cycle_life_standard": 2000
+    }
+  },
+  "degradation_model": {
+    "description": "电池衰减模型 - 用于估算健康度",
+    "formula": "health_pct = 100 - (years * degradation_per_year) - (cycles / cycle_life * 100 * 0.3)",
+    "parameters": {
+      "cycle_weight": 0.3,
+      "time_weight": 0.7
+    }
+  }
+}

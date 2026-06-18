@@ -458,9 +458,27 @@ public class PerformanceFragment extends Fragment {
     private String readGpuInfo() {
         try {
             String[] renderers = {
+                // 高通 Adreno
                 "/sys/class/kgsl/kgsl-3d0/gpu_model",
+                "/sys/class/kgsl/kgsl-3d0/gpuclk",
                 "/sys/class/devfreq/gpu0/governor",
-                "/sys/devices/platform/soc/soc:qcom,kgsl-3d0/gpuclk"
+                "/sys/devices/platform/soc/soc:qcom,kgsl-3d0/gpuclk",
+                "/sys/kernel/gpu/gpu_model",
+                // ARM Mali
+                "/sys/class/misc/mali0/device/gpuinfo",
+                "/sys/devices/platform/mali0/gpuinfo",
+                "/sys/devices/platform/13000000.mali/gpuinfo",
+                "/sys/devices/platform/soc/13000000.mali/gpuinfo",
+                "/sys/class/devfreq/ff9a0000.gpu/governor",
+                // PowerVR
+                "/sys/devices/platform/pvrsrvkm/gpu_model",
+                "/sys/class/graphics/fb0/gpu_model",
+                // 华为海思（荣耀）
+                "/sys/devices/platform/e82c0000.mali/gpuinfo",
+                "/sys/class/devfreq/e82c0000.mali/gpuinfo",
+                // 联发科
+                "/sys/devices/platform/13000000.mali-freq/gpuinfo",
+                "/sys/devices/platform/soc/13000000.mali-freq/gpuinfo"
             };
             for (String path : renderers) {
                 java.io.File file = new java.io.File(path);
@@ -468,8 +486,18 @@ public class PerformanceFragment extends Fragment {
                     java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
                     String line = reader.readLine();
                     reader.close();
-                    if (line != null && !line.isEmpty()) {
-                        return line.trim();
+                    if (line != null && !line.isEmpty() && !line.equals("governor") && !line.equals("simple_ondemand")) {
+                        String result = line.trim();
+                        // 如果是频率值，添加单位
+                        if (result.matches("\\d+")) {
+                            long freq = Long.parseLong(result);
+                            if (freq > 1000000) {
+                                result = String.format("%.0f MHz", freq / 1000000.0);
+                            } else if (freq > 1000) {
+                                result = String.format("%.0f KHz", freq / 1000.0);
+                            }
+                        }
+                        return result;
                     }
                 }
             }

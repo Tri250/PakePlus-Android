@@ -22,6 +22,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.BatteryModelDatabase;
 
 import java.util.Collections;
 import java.util.List;
@@ -415,6 +416,13 @@ public class EnduranceFragment extends Fragment {
                         int currentNow = info.getCurrentNow();
                         if (currentNow > 0) {
                             int designCapacity = info.getDesignCapacity();
+                            // 优先使用数据库中的设计容量
+                            if (designCapacity <= 0) {
+                                BatteryModelDatabase db = BatteryModelDatabase.getInstance();
+                                if (db.isLoaded()) {
+                                    designCapacity = db.getDesignCapacityMah();
+                                }
+                            }
                             if (designCapacity > 0) {
                                 int remainingMah = (int) (designCapacity * (100 - level) / 100.0);
                                 float currentA = currentNow / 1000000.0f;

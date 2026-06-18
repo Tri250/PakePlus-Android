@@ -13,6 +13,7 @@ import com.batteryhealth.app.data.database.DatabaseEncryptionHelper;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.utils.BatteryModelDatabase;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -43,6 +44,9 @@ public class BatteryHealthApplication extends Application {
         try {
             instance = this;
             mainHandler = new Handler(Looper.getMainLooper());
+            
+            // 初始化电池型号数据库（从 assets 加载）
+            BatteryModelDatabase.getInstance().init(this);
             
             // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
             startDatabaseInitAsync();

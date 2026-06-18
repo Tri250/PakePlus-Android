@@ -1,0 +1,165 @@
+{
+  "version": "2026.06",
+  "description": "充电协议特征库 - 覆盖国内主流快充协议，用于精准识别充电类型",
+  "protocols": {
+    "xiaomi_surge": {
+      "name": "小米澎湃快充",
+      "brands": ["xiaomi", "redmi"],
+      "power_threshold_w": 60,
+      "max_power_w": 120,
+      "voltage_range_mv": [5000, 20000],
+      "current_range_ma": [3000, 6000],
+      "description": "小米私有快充协议，基于 USB PD 改造"
+    },
+    "xiaomi_hypercharge": {
+      "name": "小米 HyperCharge",
+      "brands": ["xiaomi", "redmi"],
+      "power_threshold_w": 40,
+      "max_power_w": 67,
+      "voltage_range_mv": [5000, 11000],
+      "current_range_ma": [3000, 6000],
+      "description": "小米标准快充协议"
+    },
+    "oppo_supervooc": {
+      "name": "OPPO SuperVOOC",
+      "brands": ["oppo", "realme", "oneplus"],
+      "power_threshold_w": 60,
+      "max_power_w": 240,
+      "voltage_range_mv": [5000, 11000],
+      "current_range_ma": [5000, 12500],
+      "description": "OPPO 超级闪充协议"
+    },
+    "oppo_vooc": {
+      "name": "OPPO VOOC",
+      "brands": ["oppo", "realme", "oneplus"],
+      "power_threshold_w": 30,
+      "max_power_w": 65,
+      "voltage_range_mv": [5000, 10000],
+      "current_range_ma": [3000, 6500],
+      "description": "OPPO 标准闪充协议"
+    },
+    "vivo_flashcharge": {
+      "name": "vivo FlashCharge",
+      "brands": ["vivo", "iqoo"],
+      "power_threshold_w": 40,
+      "max_power_w": 200,
+      "voltage_range_mv": [5000, 20000],
+      "current_range_ma": [4000, 10000],
+      "description": "vivo 双电芯闪充协议"
+    },
+    "vivo_dualcell": {
+      "name": "vivo 双电芯快充",
+      "brands": ["vivo", "iqoo"],
+      "power_threshold_w": 30,
+      "max_power_w": 44,
+      "voltage_range_mv": [5000, 11000],
+      "current_range_ma": [3000, 4000],
+      "description": "vivo 标准双电芯快充"
+    },
+    "honor_supercharge": {
+      "name": "荣耀 SuperCharge",
+      "brands": ["honor"],
+      "power_threshold_w": 40,
+      "max_power_w": 100,
+      "voltage_range_mv": [5000, 11000],
+      "current_range_ma": [4000, 8000],
+      "description": "荣耀 SCP 超级快充协议"
+    },
+    "honor_fastcharge": {
+      "name": "荣耀快速充电",
+      "brands": ["honor"],
+      "power_threshold_w": 18,
+      "max_power_w": 40,
+      "voltage_range_mv": [5000, 10000],
+      "current_range_ma": [2000, 4000],
+      "description": "荣耀 FCP 快速充电协议"
+    },
+    "nubia_neocharge": {
+      "name": "努比亚 NeoCharge",
+      "brands": ["nubia", "redmagic"],
+      "power_threshold_w": 40,
+      "max_power_w": 80,
+      "voltage_range_mv": [5000, 11000],
+      "current_range_ma": [4000, 7500],
+      "description": "努比亚/红魔快充协议"
+    },
+    "usb_pd_3_1": {
+      "name": "USB PD 3.1",
+      "brands": ["*"],
+      "power_threshold_w": 30,
+      "max_power_w": 240,
+      "voltage_range_mv": [5000, 48000],
+      "current_range_ma": [3000, 5000],
+      "description": "USB Power Delivery 3.1 标准协议"
+    },
+    "usb_pd": {
+      "name": "USB PD",
+      "brands": ["*"],
+      "power_threshold_w": 18,
+      "max_power_w": 100,
+      "voltage_range_mv": [5000, 20000],
+      "current_range_ma": [3000, 5000],
+      "description": "USB Power Delivery 标准协议"
+    },
+    "qualcomm_qc5": {
+      "name": "Qualcomm QC 5.0",
+      "brands": ["*"],
+      "power_threshold_w": 30,
+      "max_power_w": 100,
+      "voltage_range_mv": [3300, 20000],
+      "current_range_ma": [3000, 5000],
+      "description": "高通 Quick Charge 5.0"
+    },
+    "qualcomm_qc4": {
+      "name": "Qualcomm QC 4+",
+      "brands": ["*"],
+      "power_threshold_w": 18,
+      "max_power_w": 27,
+      "voltage_range_mv": [3300, 11000],
+      "current_range_ma": [2000, 3000],
+      "description": "高通 Quick Charge 4+"
+    },
+    "apple_mfi": {
+      "name": "Apple MFi 快充",
+      "brands": ["*"],
+      "power_threshold_w": 18,
+      "max_power_w": 30,
+      "voltage_range_mv": [5000, 15000],
+      "current_range_ma": [2000, 3000],
+      "description": "Apple MFi 认证快充（9V/2.2A）"
+    }
+  },
+  "charge_type_thresholds": {
+    "ultra_flash": { "min_power_w": 60, "label": "超快闪充", "color": "#FF3B30" },
+    "super_fast": { "min_power_w": 40, "label": "超级快充", "color": "#FF9500" },
+    "fast": { "min_power_w": 18, "label": "快速充电", "color": "#34C759" },
+    "standard": { "min_power_w": 10, "label": "标准充电", "color": "#007AFF" },
+    "slow": { "min_power_w": 0, "label": "慢速充电", "color": "#8E8E93" }
+  },
+  "charging_phases": {
+    "trickle": {
+      "name": "涓流充电",
+      "level_range": [0, 5],
+      "power_range_w": [0, 5],
+      "description": "电池电量极低时的小电流预充电"
+    },
+    "constant_current": {
+      "name": "恒流充电",
+      "level_range": [5, 80],
+      "power_range_w": [5, 240],
+      "description": "恒流快速充电，电流保持稳定，电压逐步上升"
+    },
+    "constant_voltage": {
+      "name": "恒压充电",
+      "level_range": [80, 99],
+      "power_range_w": [1, 60],
+      "description": "恒压充电，电压保持稳定，电流逐步衰减"
+    },
+    "full": {
+      "name": "已充满",
+      "level_range": [99, 100],
+      "power_range_w": [0, 1],
+      "description": "电池已充满，充电器断开或涓流维持"
+    }
+  }
+}
