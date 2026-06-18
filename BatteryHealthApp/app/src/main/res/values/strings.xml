@@ -2,13 +2,6 @@
 <resources>
     <string name="app_name">电池健康</string>
     
-    <!-- 导航标签 -->
-    <string name="nav_battery">电池健康</string>
-    <string name="nav_config">配置</string>
-    <string name="nav_performance">性能</string>
-    <string name="nav_trend">趋势</string>
-    <string name="nav_power">充电</string>
-    
     <!-- 电池状态 -->
     <string name="battery_status_good">电池状态良好</string>
     <string name="battery_status_normal">电池状态一般</string>

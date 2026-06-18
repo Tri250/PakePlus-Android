@@ -192,12 +192,14 @@
     </style>
 
     <!-- 关键修复：必须继承 TextAppearance，且 textStyle 仅允许 normal/bold/italic -->
+    <!-- 2026-06-18 修复：BottomNavigationView 需要 textColor 属性，否则在某些系统版本会抛 Resources$NotFoundException -->
     <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
+        <item name="android:textColor">@color/bottom_nav_color</item>
     </style>
 
     <!-- ============================== -->
@@ -216,12 +218,11 @@
     <!-- ============================== -->
     <!-- 液态玻璃底部导航 -->
     <!-- ============================== -->
+    <!-- 2026-06-18 重构：不在 style 中指定 itemTextAppearance，避免低版本 Material 组件崩溃 -->
     <style name="LiquidGlassBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="itemIconSize">26dp</item>
         <item name="itemIconTint">@color/bottom_nav_color</item>
         <item name="itemTextColor">@color/bottom_nav_color</item>
-        <item name="itemTextAppearanceActive">@style/LiquidGlassTabText</item>
-        <item name="itemTextAppearanceInactive">@style/LiquidGlassTabText</item>
         <item name="itemActiveIndicatorStyle">@null</item>
         <item name="labelVisibilityMode">labeled</item>
         <item name="backgroundTint">@color/liquid_glass_surface</item>

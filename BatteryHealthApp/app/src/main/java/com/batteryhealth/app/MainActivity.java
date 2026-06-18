@@ -26,7 +26,7 @@ import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PermissionManager;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private ViewPager2 viewPager;
-    private BottomNavigationView bottomNavigation;
-    
+    private CustomBottomNavigationView bottomNavigation;
+
     private BatteryDataManager batteryDataManager;
     private DeviceInfoManager deviceInfoManager;
     
@@ -221,64 +221,25 @@ public class MainActivity extends AppCompatActivity {
      * 设置底部导航
      */
     private void setupBottomNavigation() {
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int position = getPositionByMenuId(item.getItemId());
-            if (position != -1) {
-                viewPager.setCurrentItem(position, true);
-                return true;
-            }
-            return false;
+        List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
+        navItems.add(new CustomBottomNavigationView.NavItem("健康", R.drawable.ic_battery_health));
+        navItems.add(new CustomBottomNavigationView.NavItem("配置", R.drawable.ic_device));
+        navItems.add(new CustomBottomNavigationView.NavItem("性能", R.drawable.ic_performance));
+        navItems.add(new CustomBottomNavigationView.NavItem("续航", R.drawable.ic_endurance));
+        navItems.add(new CustomBottomNavigationView.NavItem("趋势", R.drawable.ic_trend));
+        navItems.add(new CustomBottomNavigationView.NavItem("充电", R.drawable.ic_power));
+
+        bottomNavigation.setItems(navItems);
+        bottomNavigation.setOnItemSelectedListener(position -> {
+            viewPager.setCurrentItem(position, true);
         });
     }
-    
-    /**
-     * 根据菜单ID获取位置
-     */
-    private int getPositionByMenuId(int menuId) {
-        if (menuId == R.id.nav_battery) {
-            return 0;
-        } else if (menuId == R.id.nav_config) {
-            return 1;
-        } else if (menuId == R.id.nav_performance) {
-            return 2;
-        } else if (menuId == R.id.nav_endurance) {
-            return 3;
-        } else if (menuId == R.id.nav_trend) {
-            return 4;
-        } else if (menuId == R.id.nav_power) {
-            return 5;
-        }
-        return -1;
-    }
-    
+
     /**
      * 更新底部导航状态
      */
     private void updateBottomNavigation(int position) {
-        int menuId;
-        switch (position) {
-            case 0:
-                menuId = R.id.nav_battery;
-                break;
-            case 1:
-                menuId = R.id.nav_config;
-                break;
-            case 2:
-                menuId = R.id.nav_performance;
-                break;
-            case 3:
-                menuId = R.id.nav_endurance;
-                break;
-            case 4:
-                menuId = R.id.nav_trend;
-                break;
-            case 5:
-                menuId = R.id.nav_power;
-                break;
-            default:
-                return;
-        }
-        bottomNavigation.setSelectedItemId(menuId);
+        bottomNavigation.setSelectedPosition(position);
     }
     
     /**
