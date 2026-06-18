@@ -7,7 +7,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -61,9 +66,12 @@ public class MainActivity extends AppCompatActivity {
         
         try {
             setContentView(R.layout.activity_main);
-            
+
+            // Android 15+ 强制 edge-to-edge：为根视图和底部导航栏动态应用系统栏内边距
+            applyEdgeToEdgeInsets();
+
             mainHandler = new Handler(Looper.getMainLooper());
-            
+
             // 初始化视图 - 必须先于其他操作
             initViews();
             
@@ -136,6 +144,24 @@ public class MainActivity extends AppCompatActivity {
         // 不再需要注销广播接收器，因为已经移除了
     }
     
+    /**
+     * Android 15+ 强制 edge-to-edge：为根视图和底部导航栏应用系统栏内边距，
+     * 避免底部导航被手势条遮挡。
+     */
+    private void applyEdgeToEdgeInsets() {
+        try {
+            View root = findViewById(android.R.id.content);
+            if (root == null) return;
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return WindowInsetsCompat.CONSUMED;
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying edge-to-edge insets: " + e.getMessage());
+        }
+    }
+
     /**
      * 初始化视图
      */

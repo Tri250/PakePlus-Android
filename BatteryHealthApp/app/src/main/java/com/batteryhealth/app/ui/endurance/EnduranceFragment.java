@@ -230,26 +230,29 @@ public class EnduranceFragment extends Fragment {
     
     private void updateUI() {
         if (batteryDataManager == null || mainHandler == null) return;
-        
+
         mainHandler.post(() -> {
             try {
                 com.batteryhealth.app.data.model.BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info == null) return;
-                
+
                 int level = info.getLevel();
                 float temperature = info.getTemperature();
                 int status = info.getStatus();
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                                   status == BatteryManager.BATTERY_STATUS_FULL;
-                
-                // 计算放电速率
+                        status == BatteryManager.BATTERY_STATUS_FULL;
+                int currentNowUa = info.getCurrentNow(); // 正值充电，负值放电
+                int designCapacity = info.getDesignCapacity();
+                int remainingCapacityMah = designCapacity > 0 ? (int) (designCapacity * level / 100.0) : -1;
+
+                // 计算放电速率（%/h）
                 calculateDischargeRate(level);
-                
+
                 // 更新当前电量
                 if (tvCurrentLevel != null) {
                     tvCurrentLevel.setText(level + "%");
                 }
-                
+
                 // 更新放电速率
                 if (tvDischargeRate != null) {
                     if (isCharging) {
@@ -260,35 +263,37 @@ public class EnduranceFragment extends Fragment {
                         tvDischargeRate.setText("计算中...");
                     }
                 }
-                
+
                 // 更新充电状态
                 if (tvChargeStatus != null) {
                     tvChargeStatus.setText(batteryDataManager.getChargingStatusText());
                 }
-                
+
                 // 更新电池温度
                 if (tvBatteryTemp != null) {
                     tvBatteryTemp.setText(String.format("%.1f°C", temperature));
                 }
-                
-                // 计算预计续航时间
+
+                // 计算预计续航时间：优先基于历史放电速率，其次基于实时电流
                 if (tvEnduranceTime != null) {
                     if (isCharging) {
                         tvEnduranceTime.setText("充电中");
                         tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_blue));
-                    } else if (dischargeRate > 0 && level > 0) {
-                        float remainingHours = level / dischargeRate;
-                        if (remainingHours >= 24) {
-                            tvEnduranceTime.setText(String.format("%.0f 天", remainingHours / 24));
-                        } else {
-                            tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
-                        }
-                        tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                     } else {
-                        tvEnduranceTime.setText("-- 小时");
+                        float remainingHours = estimateRemainingHours(level, currentNowUa, remainingCapacityMah);
+                        if (remainingHours > 0) {
+                            if (remainingHours >= 24) {
+                                tvEnduranceTime.setText(String.format("%.0f 天", remainingHours / 24));
+                            } else {
+                                tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
+                            }
+                            tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
+                        } else {
+                            tvEnduranceTime.setText("-- 小时");
+                        }
                     }
                 }
-                
+
                 // 更新续航状态描述
                 if (tvEnduranceStatus != null) {
                     if (isCharging) {
@@ -307,29 +312,16 @@ public class EnduranceFragment extends Fragment {
                         tvEnduranceStatus.setText("正在计算...");
                     }
                 }
-                
-                // 计算预计充满时间
+
+                // 计算预计充满时间：考虑恒压阶段（80% 后电流衰减）
                 if (tvFullChargeTime != null) {
                     if (isCharging && level < 100) {
-                        // 读取充电电流估算充满时间
-                        int currentNow = info.getCurrentNow();
-                        if (currentNow > 0) {
-                            int designCapacity = info.getDesignCapacity();
-                            if (designCapacity > 0) {
-                                int remainingMah = (int) (designCapacity * (100 - level) / 100.0);
-                                float currentA = currentNow / 1000000.0f;
-                                if (currentA > 0) {
-                                    float hoursNeeded = remainingMah / (currentA * 1000);
-                                    if (hoursNeeded < 1) {
-                                        tvFullChargeTime.setText(String.format("%.0f 分钟", hoursNeeded * 60));
-                                    } else {
-                                        tvFullChargeTime.setText(String.format("%.1f 小时", hoursNeeded));
-                                    }
-                                } else {
-                                    tvFullChargeTime.setText("计算中...");
-                                }
+                        float fullChargeHours = estimateFullChargeHours(level, currentNowUa, designCapacity);
+                        if (fullChargeHours > 0) {
+                            if (fullChargeHours < 1) {
+                                tvFullChargeTime.setText(String.format("%.0f 分钟", fullChargeHours * 60));
                             } else {
-                                tvFullChargeTime.setText("计算中...");
+                                tvFullChargeTime.setText(String.format("%.1f 小时", fullChargeHours));
                             }
                         } else {
                             tvFullChargeTime.setText("计算中...");
@@ -340,11 +332,47 @@ public class EnduranceFragment extends Fragment {
                         tvFullChargeTime.setText("未充电");
                     }
                 }
-                
+
             } catch (Exception e) {
                 Log.e(TAG, "Error updating UI: " + e.getMessage());
             }
         });
+    }
+
+    /**
+     * 综合历史放电速率和实时电流估算剩余续航时间。
+     */
+    private float estimateRemainingHours(int level, int currentNowUa, int remainingCapacityMah) {
+        // 方法1：历史放电速率（%/h）
+        if (dischargeRate > 0.1f && level > 0) {
+            return level / dischargeRate;
+        }
+
+        // 方法2：实时电流（currentNow 放电时为负）
+        if (currentNowUa < 0 && remainingCapacityMah > 0) {
+            float dischargeMa = Math.abs(currentNowUa) / 1000.0f;
+            if (dischargeMa > 0) {
+                return remainingCapacityMah / dischargeMa;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * 估算充满时间：80% 前按当前电流，80% 后考虑电流衰减。
+     */
+    private float estimateFullChargeHours(int level, int currentNowUa, int designCapacityMah) {
+        if (currentNowUa <= 0 || designCapacityMah <= 0) return -1;
+
+        float chargeMa = currentNowUa / 1000.0f;
+        float remainingMah = designCapacityMah * (100 - level) / 100.0f;
+
+        // 80% 后电流会下降，按 0.55 倍估算平均电流
+        float effectiveChargeMa = level < 80 ? chargeMa : chargeMa * 0.55f;
+        if (effectiveChargeMa <= 0) return -1;
+
+        return remainingMah / effectiveChargeMa;
     }
     
     /**

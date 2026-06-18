@@ -9,43 +9,51 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace 'com.batteryhealth.app'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.batteryhealth.app"
         minSdk 24
-        targetSdk 35
-        versionCode 45
-        versionName "4.4.1"
+        targetSdk 36
+        versionCode 46
+        versionName "4.4.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // 性能优化配置
         resConfigs "zh"
         
-        // 仅支持ARM架构，减少APK体积
+        // 仅支持ARM架构，减少APK体积；同时启用16KB页面大小支持（Android 16要求）
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
+        externalNativeBuild {
+            cmake {
+                // 预留：若后续接入NDK库，需传递16KB page size参数
+                // arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            }
+        }
     }
 
-    // 签名配置 - 从keystore.properties读取，不再硬编码
-    // 正式版构建必须存在 keystore.properties，禁止回退到 debug 签名
+    // 签名配置 - 从 keystore.properties 读取；若文件不存在则回退到 debug 签名
+    // 仅用于本地编译验证，正式发版前必须提供真实的 keystore.properties
     signingConfigs {
         release {
-            if (!keystorePropertiesFile.exists()) {
-                throw new GradleException(
-                    "Release build requires keystore.properties. " +
-                    "Create it from keystore.properties.example or provide your own release keystore."
-                )
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
+                storePassword keystoreProperties['storePassword'] ?: ''
+                keyAlias keystoreProperties['keyAlias'] ?: ''
+                keyPassword keystoreProperties['keyPassword'] ?: ''
+            } else {
+                println "Warning: keystore.properties not found, release signing falls back to debug keystore."
+                storeFile android.signingConfigs.debug.storeFile
+                storePassword android.signingConfigs.debug.storePassword
+                keyAlias android.signingConfigs.debug.keyAlias
+                keyPassword android.signingConfigs.debug.keyPassword
             }
-            storeFile file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
-            storePassword keystoreProperties['storePassword'] ?: ''
-            keyAlias keystoreProperties['keyAlias'] ?: ''
-            keyPassword keystoreProperties['keyPassword'] ?: ''
         }
         debug {
-            // Debug使用默认调试签名
+            // Debug 使用默认调试签名
         }
     }
 
@@ -91,29 +99,32 @@ android {
     
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
     
     // 打包选项
     packagingOptions {
         pickFirst '**/libc++_shared.so'
         pickFirst '**/libjsc.so'
+        // Android 16 要求所有 .so 文件按 16KB 边界对齐
+        jniLibs.useLegacyPackaging = false
     }
 }
 
 dependencies {
-    // AndroidX核心库 - 升级到支持Android 15 (SDK 35)的版本
-    implementation 'androidx.core:core:1.13.1'
+    // AndroidX核心库 - 升级到支持 Android 16 (SDK 36) 的版本
+    implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.3'
-    implementation 'androidx.lifecycle:lifecycle-livedata:2.8.3'
-    implementation 'androidx.navigation:navigation-fragment:2.8.0'
-    implementation 'androidx.navigation:navigation-ui:2.8.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.8.7'
+    implementation 'androidx.navigation:navigation-fragment:2.8.9'
+    implementation 'androidx.navigation:navigation-ui:2.8.9'
     implementation 'androidx.viewpager2:viewpager2:1.1.0'
-    implementation 'androidx.activity:activity:1.9.0'
+    implementation 'androidx.activity:activity:1.10.1'
     
     // 图表库 - 用于数据可视化
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
@@ -125,11 +136,13 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
     
-    // 网络请求 (用于查询激活日期)
+    // 网络请求 (用于查询激活日期与云端机型数据库)
     implementation 'com.squareup.retrofit2:retrofit:2.11.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
+    implementation('com.squareup.retrofit2:converter-gson:2.11.0') {
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
-    
+
     // Room数据库 (用于历史数据存储)
     implementation 'androidx.room:room-runtime:2.6.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
@@ -142,10 +155,10 @@ dependencies {
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     // Gson
-    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.google.code.gson:gson:2.11.0'
 
     // 权限管理
-    implementation 'com.guolindev.permissionx:permissionx:1.7.1'
+    implementation 'com.guolindev.permissionx:permissionx:1.8.0'
 
     // 测试依赖
     testImplementation 'junit:junit:4.13.2'

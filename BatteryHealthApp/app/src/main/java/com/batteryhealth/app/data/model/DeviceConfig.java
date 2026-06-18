@@ -84,9 +84,7 @@ public class DeviceConfig {
         // 初始化处理器信息
         this.cpuAbi = Build.CPU_ABI;
         this.cpuAbi2 = Build.CPU_ABI2;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            this.supportedAbis = Build.SUPPORTED_ABIS;
-        }
+        this.supportedAbis = Build.SUPPORTED_ABIS;
     }
     
     // Getters and Setters
@@ -391,7 +389,7 @@ public class DeviceConfig {
      */
     public String getFormattedBrand() {
         if (brand == null) return "Unknown";
-        return brand.substring(0, 1).toUpperCase() + brand.substring(1).toLowerCase();
+        return brand.substring(0, 1).toUpperCase(Locale.ROOT) + brand.substring(1).toLowerCase(Locale.ROOT);
     }
     
     /**
@@ -440,6 +438,8 @@ public class DeviceConfig {
      */
     public String getAndroidCodename() {
         switch (sdkVersion) {
+            case Build.VERSION_CODES.BAKLAVA: return "Android 16";
+            case Build.VERSION_CODES.VANILLA_ICE_CREAM: return "Android 15";
             case Build.VERSION_CODES.UPSIDE_DOWN_CAKE: return "Android 14";
             case Build.VERSION_CODES.TIRAMISU: return "Android 13";
             case Build.VERSION_CODES.S_V2: return "Android 12L";
@@ -458,7 +458,7 @@ public class DeviceConfig {
      */
     public boolean isDomesticBrand() {
         if (brand == null) return false;
-        String lowerBrand = brand.toLowerCase();
+        String lowerBrand = brand.toLowerCase(Locale.ROOT);
         return lowerBrand.contains("xiaomi") || lowerBrand.contains("redmi") ||
                lowerBrand.contains("huawei") || lowerBrand.contains("honor") ||
                lowerBrand.contains("oppo") || lowerBrand.contains("realme") ||

@@ -22,12 +22,12 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.model.PerformanceData;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 性能分析Fragment
@@ -348,36 +348,70 @@ public class PerformanceFragment extends Fragment {
     }
 
     private int calculatePerformanceScore(float cpuUsage, float memoryUsage, float storageUsage) {
-        // CPU权重40%，内存权重35%，存储权重25%
+        // 综合性能评分 = 资源余量（60%）+ 硬件规格分（40%）
+        // 资源余量：使用率越低越好
         float cpuScore = Math.max(0, 100 - cpuUsage);
         float memScore = Math.max(0, 100 - memoryUsage);
         float storageScore = Math.max(0, 100 - storageUsage * 0.5f);
-        float total = cpuScore * 0.4f + memScore * 0.35f + storageScore * 0.25f;
+        float resourceScore = cpuScore * 0.25f + memScore * 0.20f + storageScore * 0.15f;
+
+        // 硬件规格分：基于总内存与 CPU 最大频率
+        float hardwareScore = calculateHardwareScore();
+
+        float total = resourceScore + hardwareScore;
+        if (total < 0) total = 0;
+        if (total > 100) total = 100;
         return Math.round(total);
+    }
+
+    private float calculateHardwareScore() {
+        try {
+            Context ctx = getContext();
+            if (ctx == null) return 20;
+
+            DeviceInfoManager dim = new DeviceInfoManager(ctx);
+            DeviceConfig config = dim.getDeviceConfig();
+
+            // 内存分：0-20
+            long totalMemMb = config.getTotalMemory();
+            float memScore;
+            if (totalMemMb >= 16384) memScore = 20;           // 16GB+
+            else if (totalMemMb >= 12288) memScore = 18;      // 12GB
+            else if (totalMemMb >= 8192) memScore = 15;       // 8GB
+            else if (totalMemMb >= 6144) memScore = 12;       // 6GB
+            else if (totalMemMb >= 4096) memScore = 10;       // 4GB
+            else memScore = Math.max(5, totalMemMb / 1024f * 2.5f);
+
+            // CPU 分：0-20
+            int cpuFreqMax = config.getCpuFreqMax();
+            float cpuScore;
+            if (cpuFreqMax >= 3200) cpuScore = 20;
+            else if (cpuFreqMax >= 2800) cpuScore = 17;
+            else if (cpuFreqMax >= 2400) cpuScore = 14;
+            else if (cpuFreqMax >= 2000) cpuScore = 11;
+            else if (cpuFreqMax >= 1800) cpuScore = 8;
+            else cpuScore = Math.max(3, cpuFreqMax / 400f);
+
+            return memScore + cpuScore;
+        } catch (Exception e) {
+            return 20;
+        }
     }
 
     private String readGpuInfo() {
         try {
-            String[] renderers = {
-                "/sys/class/kgsl/kgsl-3d0/gpu_model",
-                "/sys/class/devfreq/gpu0/governor",
-                "/sys/devices/platform/soc/soc:qcom,kgsl-3d0/gpuclk"
-            };
-            for (String path : renderers) {
-                java.io.File file = new java.io.File(path);
-                if (file.exists() && file.canRead()) {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null && !line.isEmpty()) {
-                        return line.trim();
-                    }
+            Context ctx = getContext();
+            if (ctx != null) {
+                DeviceInfoManager dim = new DeviceInfoManager(ctx);
+                String gpu = dim.getGpuInfo();
+                if (gpu != null && !gpu.isEmpty() && !gpu.equals("未识别")) {
+                    return gpu;
                 }
             }
         } catch (Exception e) {
             Log.d(TAG, "GPU info not available");
         }
-        return "不可用";
+        return "未识别";
     }
 
     private void savePerformanceData(float cpuUsage, float memoryUsage, float storageUsage, int score) {

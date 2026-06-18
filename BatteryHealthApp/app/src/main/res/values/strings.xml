@@ -47,4 +47,12 @@
     <string name="health_alert_content" formatted="false">近30天电池健康度下降了 %.1f%%（从 %.1f%% 降至 %.1f%%），建议关注。</string>
     <string name="health_alert_setting_title">电池健康度衰减预警</string>
     <string name="health_alert_setting_summary">当近30天健康度下降超过2%时发送通知</string>
+
+    <!-- 错误页 -->
+    <string name="error_title">出错了</string>
+    <string name="error_unknown">发生未知错误，请重启应用后重试。</string>
+    <string name="error_restart">重启应用</string>
+    <string name="error_view_details">查看异常详情</string>
+    <string name="error_hide_details">隐藏异常详情</string>
+    <string name="error_icon_desc">错误图标</string>
 </resources>

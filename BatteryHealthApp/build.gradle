@@ -1,33 +1,28 @@
-// Top-level build file - 阿里云镜像源优化配置
+// Top-level build file - 仓库配置已迁移到 settings.gradle 统一管理
 buildscript {
     repositories {
-        // 阿里云镜像优先
+        google()
+        mavenCentral()
+        gradlePluginPortal()
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
-        // 腾讯云镜像备用
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
-        // 官方源
-        google()
-        mavenCentral()
     }
     dependencies {
-        // 升级到AGP 8.7.3以支持Android 15 (SDK 35)
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        // 升级到 AGP 8.8.2 以支持 Android 16 (SDK 36)
+        classpath 'com.android.tools.build:gradle:8.8.2'
     }
 }
 
 allprojects {
     repositories {
-        // 阿里云镜像优先
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
-        // 腾讯云镜像备用
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
-        // 官方源
-        google()
-        mavenCentral()
     }
 }
 
