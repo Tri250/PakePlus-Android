@@ -1,0 +1,2 @@
+/usr/bin/ar qc libdigiguide_core.a CMakeFiles/digiguide_core.dir/src/sn_decoder.cpp.o CMakeFiles/digiguide_core.dir/src/bugreport_parser.cpp.o CMakeFiles/digiguide_core.dir/src/battery_health.cpp.o CMakeFiles/digiguide_core.dir/src/battery_models.cpp.o CMakeFiles/digiguide_core.dir/src/zip_parser.cpp.o
+/usr/bin/ranlib libdigiguide_core.a
