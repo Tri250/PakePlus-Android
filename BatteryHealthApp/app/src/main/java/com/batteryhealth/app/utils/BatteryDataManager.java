@@ -49,6 +49,18 @@ public class BatteryDataManager {
     // 用于健康度估算的上下文
     private int usageDays = -1;
 
+    // Android 16+ 才在 SDK 中暴露的 BatteryManager 常量（运行时反射兼容旧 SDK）
+    private static final int BATTERY_PROPERTY_CHARGE_FULL = getBatteryManagerIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 7);
+    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryManagerIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 8);
+
+    private static int getBatteryManagerIntConstant(String name, int fallback) {
+        try {
+            return BatteryManager.class.getDeclaredField(name).getInt(null);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.currentBatteryInfo = new BatteryInfo();
@@ -325,7 +337,7 @@ public class BatteryDataManager {
             try {
                 BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                 if (bm != null) {
-                    long chargeFullEstimate = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
+                    long chargeFullEstimate = bm.getLongProperty(BATTERY_PROPERTY_CHARGE_FULL);
                     if (chargeFullEstimate != Long.MIN_VALUE && chargeFullEstimate > 0) {
                         designCapacity = (int) (chargeFullEstimate / 1000);
                         source = SOURCE_BATTERY_MANAGER;
@@ -412,8 +424,8 @@ public class BatteryDataManager {
             try {
                 BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
                 if (bm != null) {
-                    long chargeFull = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
-                    long chargeFullDesign = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL_DESIGN);
+                    long chargeFull = bm.getLongProperty(BATTERY_PROPERTY_CHARGE_FULL);
+                    long chargeFullDesign = bm.getLongProperty(BATTERY_PROPERTY_CHARGE_FULL_DESIGN);
                     if (chargeFull != Long.MIN_VALUE && chargeFull > 0 &&
                         chargeFullDesign != Long.MIN_VALUE && chargeFullDesign > 0) {
                         float health = Math.min(100.0f, (chargeFull * 100.0f) / chargeFullDesign);

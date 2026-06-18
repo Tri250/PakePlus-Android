@@ -37,7 +37,7 @@
     <string name="health_alert_channel_name">电池健康预警</string>
     <string name="health_alert_channel_description">当电池健康度在一个月内明显下降时提醒您</string>
     <string name="health_alert_title">电池健康度下降预警</string>
-    <string name="health_alert_content">近30天电池健康度下降了 %.1f%%（从 %.1f%% 降至 %.1f%%），建议关注。</string>
+    <string name="health_alert_content" formatted="false">近30天电池健康度下降了 %.1f%%（从 %.1f%% 降至 %.1f%%），建议关注。</string>
     <string name="health_alert_setting_title">电池健康度衰减预警</string>
     <string name="health_alert_setting_summary">当近30天健康度下降超过2%时发送通知</string>
 </resources>

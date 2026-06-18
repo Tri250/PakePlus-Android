@@ -14,7 +14,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 
-import net.zetetic.database.sqlcipher.SupportFactory;
+import net.sqlcipher.database.SupportFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -94,7 +94,7 @@ public class BatteryHealthApplication extends Application {
                 final boolean[] restoreSuccess = {true};
                 new Thread(() -> {
                     try {
-                        restoreSnapshot(database, snapshot);
+                        restoreSnapshot(database, snapshotHolder[0]);
                     } catch (Exception e) {
                         restoreSuccess[0] = false;
                         Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);

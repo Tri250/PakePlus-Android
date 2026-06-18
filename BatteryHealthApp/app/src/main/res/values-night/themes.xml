@@ -35,7 +35,7 @@
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
 
         <!-- Android 15 临时禁用强制 edge-to-edge -->
-        <item name="android:windowOptOutEdgeToEdge">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
