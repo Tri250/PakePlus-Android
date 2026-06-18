@@ -33,9 +33,6 @@
 
         <!-- 液态玻璃窗口动画 -->
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
-
-        <!-- Android 15 临时禁用强制 edge-to-edge -->
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <!-- 无 ActionBar 主题（兼容 Activity 显式指定） -->
@@ -165,6 +162,8 @@
     <!-- 液态玻璃列表项（View 样式，必须指定 parent） -->
     <!-- ============================== -->
     <style name="LiquidGlassListItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@android:color/transparent</item>
         <item name="android:paddingStart">22dp</item>
         <item name="android:paddingEnd">22dp</item>
@@ -175,6 +174,7 @@
 
     <style name="LiquidGlassSeparator">
         <item name="android:background">@color/ios_separator</item>
+        <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">0.5dp</item>
         <item name="android:layout_marginStart">22dp</item>
     </style>

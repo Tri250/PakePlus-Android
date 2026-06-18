@@ -89,7 +89,22 @@ public class BatteryHealthFragment extends Fragment {
     private View createErrorView(Throwable t) {
         final Context[] ctxHolder = new Context[1];
         try { ctxHolder[0] = getContext(); } catch (Throwable ignored) {}
-        if (ctxHolder[0] == null) ctxHolder[0] = requireActivity().getApplicationContext();
+        if (ctxHolder[0] == null) {
+            try { ctxHolder[0] = requireActivity().getApplicationContext(); } catch (Throwable ignored2) {}
+        }
+        if (ctxHolder[0] == null) {
+            try { ctxHolder[0] = getActivity() != null ? getActivity().getApplicationContext() : null; } catch (Throwable ignored3) {}
+        }
+        if (ctxHolder[0] == null) {
+            android.widget.LinearLayout fallback = new android.widget.LinearLayout(getActivity() != null ? getActivity() : getContext());
+            fallback.setOrientation(android.widget.LinearLayout.VERTICAL);
+            fallback.setGravity(android.view.Gravity.CENTER);
+            android.widget.TextView tv = new android.widget.TextView(fallback.getContext());
+            tv.setText("界面加载失败，请重启应用");
+            tv.setTextSize(16);
+            fallback.addView(tv);
+            return fallback;
+        }
         final Context ctx = ctxHolder[0];
 
         android.widget.LinearLayout root = new android.widget.LinearLayout(ctx);

@@ -137,14 +137,13 @@
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
-# 移除日志
+# 仅移除调试日志，保留错误日志用于线上问题排查
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
     public static int i(...);
-    public static int w(...);
     public static int d(...);
-    public static int e(...);
+    public static int w(...);
 }
 
 # 优化
