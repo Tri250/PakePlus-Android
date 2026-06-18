@@ -75,11 +75,7 @@ public class BatteryHealthFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         try {
-            View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
-            if (view != null) {
-                view.setTag(R.id.tag_fragment_content, true);
-            }
-            return view;
+            return inflater.inflate(R.layout.fragment_battery_health, container, false);
         } catch (Throwable t) {
             Log.e(TAG, "Error inflating layout: " + t.getMessage(), t);
             return createErrorView(t);
