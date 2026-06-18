@@ -25,6 +25,7 @@ import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.PermissionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;

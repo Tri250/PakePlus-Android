@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- 应用主题 - 液态玻璃风格 -->
+    <!-- ============================== -->
+    <!-- 应用主题 - 液态玻璃风格（浅色） -->
+    <!-- ============================== -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- 主色调 -->
         <item name="colorPrimary">@color/ios_blue</item>
@@ -25,24 +27,26 @@
         <item name="android:navigationBarColor">@color/liquid_glass_surface</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
 
-        <!-- 禁用默认ActionBar -->
+        <!-- 禁用默认 ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
         <!-- 液态玻璃窗口动画 -->
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
 
-        <!-- Android 15 临时禁用强制edge-to-edge，避免系统栏覆盖内容 -->
+        <!-- Android 15 临时禁用强制 edge-to-edge -->
         <item name="android:windowOptOutEdgeToEdge">true</item>
     </style>
 
-    <!-- 无ActionBar主题 - 继承自主主题，确保所有属性完整 -->
+    <!-- 无 ActionBar 主题（兼容 Activity 显式指定） -->
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃窗口动画 -->
+    <!-- ============================== -->
     <style name="LiquidGlassWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
         <item name="android:activityOpenExitAnimation">@anim/ios_slide_out_left</item>
@@ -50,7 +54,9 @@
         <item name="android:activityCloseExitAnimation">@anim/ios_slide_out_right</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃卡片 -->
+    <!-- ============================== -->
     <style name="LiquidGlassCard" parent="Widget.MaterialComponents.CardView">
         <item name="cardBackgroundColor">@color/liquid_glass_surface</item>
         <item name="cardCornerRadius">28dp</item>
@@ -61,7 +67,9 @@
         <item name="rippleColor">@color/liquid_glass_glow</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃按钮 -->
+    <!-- ============================== -->
     <style name="LiquidGlassButton" parent="Widget.MaterialComponents.Button">
         <item name="android:textSize">17sp</item>
         <item name="android:textStyle">normal</item>
@@ -77,21 +85,21 @@
         <item name="strokeColor">@color/liquid_glass_border</item>
     </style>
 
-    <!-- 液态玻璃主按钮 -->
     <style name="LiquidGlassButton.Primary">
         <item name="backgroundTint">@color/ios_blue</item>
         <item name="android:textColor">@color/white</item>
         <item name="strokeWidth">0dp</item>
     </style>
 
-    <!-- 液态玻璃次要按钮 -->
     <style name="LiquidGlassButton.Secondary">
         <item name="backgroundTint">@color/liquid_glass_surface</item>
         <item name="android:textColor">@color/ios_blue</item>
     </style>
 
-    <!-- 液态玻璃标题文字 -->
-    <style name="LiquidGlassTitle">
+    <!-- ============================== -->
+    <!-- 液态玻璃文字样式（全部使用合法 textStyle 枚举） -->
+    <!-- ============================== -->
+    <style name="LiquidGlassTitle" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">30sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
@@ -100,15 +108,13 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- 液态玻璃大标题 -->
-    <style name="LiquidGlassTitle.Large">
+    <style name="LiquidGlassTitle.Large" parent="LiquidGlassTitle">
         <item name="android:textSize">36sp</item>
         <item name="android:letterSpacing">-0.035</item>
         <item name="android:lineSpacingExtra">6dp</item>
     </style>
 
-    <!-- 液态玻璃副标题 -->
-    <style name="LiquidGlassSubtitle">
+    <style name="LiquidGlassSubtitle" parent="TextAppearance.MaterialComponents.Headline6">
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
@@ -117,8 +123,7 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- 液态玻璃正文 -->
-    <style name="LiquidGlassBody">
+    <style name="LiquidGlassBody" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/ios_label</item>
         <item name="android:letterSpacing">-0.01</item>
@@ -126,24 +131,21 @@
         <item name="android:fontFamily">sans-serif</item>
     </style>
 
-    <!-- 液态玻璃次要文字 -->
-    <style name="LiquidGlassBody.Secondary">
+    <style name="LiquidGlassBody.Secondary" parent="LiquidGlassBody">
         <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/ios_secondary_label</item>
         <item name="android:letterSpacing">-0.01</item>
         <item name="android:lineSpacingExtra">2dp</item>
     </style>
 
-    <!-- 液态玻璃小字 -->
-    <style name="LiquidGlassCaption">
+    <style name="LiquidGlassCaption" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ios_tertiary_label</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">1dp</item>
     </style>
 
-    <!-- 液态玻璃大数字 -->
-    <style name="LiquidGlassLargeNumber">
+    <style name="LiquidGlassLargeNumber" parent="TextAppearance.MaterialComponents.Headline2">
         <item name="android:textSize">60sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
@@ -151,8 +153,7 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- 液态玻璃中等数字 -->
-    <style name="LiquidGlassMediumNumber">
+    <style name="LiquidGlassMediumNumber" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">36sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
@@ -160,8 +161,10 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- 液态玻璃列表项 -->
-    <style name="LiquidGlassListItem">
+    <!-- ============================== -->
+    <!-- 液态玻璃列表项（View 样式，必须指定 parent） -->
+    <!-- ============================== -->
+    <style name="LiquidGlassListItem" parent="android:Widget">
         <item name="android:background">@android:color/transparent</item>
         <item name="android:paddingStart">22dp</item>
         <item name="android:paddingEnd">22dp</item>
@@ -170,14 +173,15 @@
         <item name="android:minHeight">48dp</item>
     </style>
 
-    <!-- 液态玻璃分隔线 -->
-    <style name="LiquidGlassSeparator">
+    <style name="LiquidGlassSeparator" parent="android:Widget">
         <item name="android:background">@color/ios_separator</item>
         <item name="android:layout_height">0.5dp</item>
         <item name="android:layout_marginStart">22dp</item>
     </style>
 
-    <!-- 液态玻璃TabLayout -->
+    <!-- ============================== -->
+    <!-- 液态玻璃 TabLayout 与 Tab 文字 -->
+    <!-- ============================== -->
     <style name="LiquidGlassTabLayout" parent="Widget.MaterialComponents.TabLayout">
         <item name="tabBackground">@color/liquid_glass_surface</item>
         <item name="tabIndicatorColor">@color/ios_blue</item>
@@ -188,7 +192,8 @@
         <item name="tabIndicatorAnimationDuration">300</item>
     </style>
 
-    <!-- 液态玻璃Tab文字 -->
+    <!-- 关键修复：必须继承 TextAppearance，不能继承普通 View 父样式； -->
+    <!-- 且 textStyle 仅允许 normal/bold/italic，原 medium 值是崩溃根因。 -->
     <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">normal</item>
@@ -197,19 +202,22 @@
         <item name="android:letterSpacing">0</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃进度条 -->
+    <!-- ============================== -->
     <style name="LiquidGlassProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
         <item name="android:progressDrawable">@drawable/progress_health</item>
         <item name="android:minHeight">8dp</item>
         <item name="android:maxHeight">8dp</item>
     </style>
 
-    <!-- 液态玻璃圆形进度条 -->
-    <style name="LiquidGlassCircularProgress">
+    <style name="LiquidGlassCircularProgress" parent="Widget.AppCompat.ProgressBar">
         <item name="android:indeterminateTint">@color/ios_blue</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃底部导航 -->
+    <!-- ============================== -->
     <style name="LiquidGlassBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="itemIconSize">26dp</item>
         <item name="itemIconTint">@color/bottom_nav_color</item>
@@ -221,14 +229,18 @@
         <item name="backgroundTint">@color/liquid_glass_surface</item>
     </style>
 
+    <!-- ============================== -->
     <!-- 液态玻璃开关 -->
+    <!-- ============================== -->
     <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
         <item name="android:thumbTint">@color/white</item>
         <item name="android:trackTint">@color/ios_tertiary_background</item>
         <item name="android:backgroundTint">@color/ios_blue</item>
     </style>
 
-    <!-- 保持旧名称兼容（避免布局大量改动） -->
+    <!-- ============================== -->
+    <!-- 旧名称兼容（避免布局大量改动） -->
+    <!-- ============================== -->
     <style name="iOSTitle" parent="LiquidGlassTitle" />
     <style name="iOSTitle.Large" parent="LiquidGlassTitle.Large" />
     <style name="iOSSubtitle" parent="LiquidGlassSubtitle" />
