@@ -351,8 +351,9 @@ public class BatteryMonitorService extends Service {
             }
 
             // 3. 兜底估算：基于使用天数
-            if (DeviceInfoManager.getInstance(this).getUsageDays() > 0) {
-                int usageDays = DeviceInfoManager.getInstance(this).getUsageDays();
+            DeviceInfoManager deviceInfoManager = new DeviceInfoManager(this);
+            int usageDays = deviceInfoManager.getUsageDays();
+            if (usageDays > 0) {
                 cycleCount = (int) (usageDays * 0.8f);
                 currentBatteryInfo.setCycleCount(cycleCount);
                 currentBatteryInfo.setCycleCountEstimated(true);
