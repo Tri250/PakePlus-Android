@@ -189,9 +189,10 @@
     </style>
 
     <!-- 液态玻璃Tab文字 -->
-    <style name="LiquidGlassTabText">
+    <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
-        <item name="android:textStyle">medium</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
     </style>
