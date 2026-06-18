@@ -91,6 +91,19 @@
     public static <fields>;
 }
 
+# SQLCipher
+-keep class net.sqlcipher.** { *; }
+-keep class net.sqlcipher.database.** { *; }
+-dontwarn net.sqlcipher.**
+
+# PermissionX
+-keep class com.permissionx.** { *; }
+-dontwarn com.permissionx.**
+
+# EncryptedSharedPreferences / security-crypto
+-keep class androidx.security.crypto.** { *; }
+-dontwarn androidx.security.crypto.**
+
 # 移除日志
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);

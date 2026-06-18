@@ -53,8 +53,9 @@ public class ChargingMonitorService extends Service {
     private Handler handler;
     private String currentSessionId;
     private boolean isCharging = false;
+    private boolean foregroundStarted = false;
     private long chargingStartTime;
-    
+
     // 充电统计数据
     private float maxPower = 0;
     private float avgPower = 0;
@@ -156,8 +157,22 @@ public class ChargingMonitorService extends Service {
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForeground(NOTIFICATION_ID, buildNotification());
+        // 仅在充电时提升为前台服务，避免未充电时显示常驻通知
+        updateForegroundState();
         return START_STICKY;
+    }
+
+    /**
+     * 根据充电状态更新前台服务状态
+     */
+    private void updateForegroundState() {
+        if (isCharging && !foregroundStarted) {
+            startForeground(NOTIFICATION_ID, buildNotification());
+            foregroundStarted = true;
+        } else if (!isCharging && foregroundStarted) {
+            stopForeground(true);
+            foregroundStarted = false;
+        }
     }
     
     @Nullable
@@ -237,11 +252,11 @@ public class ChargingMonitorService extends Service {
      */
     private void startChargingSession() {
         if (isCharging) return;
-        
+
         isCharging = true;
         currentSessionId = UUID.randomUUID().toString();
         chargingStartTime = System.currentTimeMillis();
-        
+
         // 重置统计数据
         maxPower = 0;
         avgPower = 0;
@@ -250,11 +265,13 @@ public class ChargingMonitorService extends Service {
         powerSamples.clear();
 
         Log.d(TAG, "Charging session started: " + currentSessionId);
-        
+
         if (dataListener != null) {
             dataListener.onChargingSessionStarted(currentSessionId);
         }
-        
+
+        // 充电开始时提升为前台服务
+        updateForegroundState();
         updateNotification();
     }
     
@@ -263,9 +280,9 @@ public class ChargingMonitorService extends Service {
      */
     private void endChargingSession() {
         if (!isCharging) return;
-        
+
         isCharging = false;
-        
+
         // 生成充电摘要
         ChargingSummary summary = new ChargingSummary();
         summary.sessionId = currentSessionId;
@@ -274,14 +291,16 @@ public class ChargingMonitorService extends Service {
         summary.duration = summary.endTime - summary.startTime;
         summary.maxPower = maxPower;
         summary.avgPower = powerSampleCount > 0 ? totalPower / powerSampleCount : 0;
-        
+
         Log.d(TAG, "Charging session ended: " + currentSessionId);
-        
+
         if (dataListener != null) {
             dataListener.onChargingSessionEnded(currentSessionId, summary);
         }
-        
+
         currentSessionId = null;
+        // 充电结束时退出前台服务，避免未充电时显示常驻通知
+        updateForegroundState();
         updateNotification();
     }
     
@@ -549,11 +568,11 @@ public class ChargingMonitorService extends Service {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "充电监测",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("实时监测充电功率");
+                        CHANNEL_ID,
+                        getString(R.string.charging_monitor_channel_name),
+                        NotificationManager.IMPORTANCE_LOW
+                );
+                channel.setDescription(getString(R.string.charging_monitor_channel_description));
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
@@ -573,16 +592,17 @@ public class ChargingMonitorService extends Service {
         String content;
         if (isCharging) {
             PowerHistory history = getCurrentPowerHistory();
-            content = String.format("充电中: %.1fW | 电量: %d%% | %s",
+            content = String.format(
+                    getString(R.string.charging_monitor_notification_content_charging),
                     history.getPower(),
                     history.getBatteryLevel(),
                     history.getChargeTypeDescription());
         } else {
-            content = "未在充电";
+            content = getString(R.string.charging_monitor_notification_content_idle);
         }
-        
+
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("充电监测")
+                .setContentTitle(getString(R.string.charging_monitor_notification_title))
                 .setContentText(content)
                 .setSmallIcon(R.drawable.ic_charging)
                 .setContentIntent(pendingIntent)

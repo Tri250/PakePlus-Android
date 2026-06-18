@@ -14,7 +14,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 
-import net.zetetic.database.sqlcipher.SupportFactory;
+import net.sqlcipher.database.SupportFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +34,9 @@ public class BatteryHealthApplication extends Application {
     private AppDatabase database;
     private Handler mainHandler;
     
+    private final Object dbInitLock = new Object();
+    private volatile CountDownLatch dbInitLatch;
+    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -41,10 +44,28 @@ public class BatteryHealthApplication extends Application {
             instance = this;
             mainHandler = new Handler(Looper.getMainLooper());
             
-            // 初始化数据库
-            initDatabase();
+            // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
+            startDatabaseInitAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 异步启动数据库初始化
+     */
+    private void startDatabaseInitAsync() {
+        synchronized (dbInitLock) {
+            if (dbInitLatch == null) {
+                dbInitLatch = new CountDownLatch(1);
+                new Thread(() -> {
+                    try {
+                        initDatabase();
+                    } finally {
+                        dbInitLatch.countDown();
+                    }
+                }, "DbInitThread").start();
+            }
         }
     }
     
@@ -94,7 +115,7 @@ public class BatteryHealthApplication extends Application {
                 final boolean[] restoreSuccess = {true};
                 new Thread(() -> {
                     try {
-                        restoreSnapshot(database, snapshot);
+                        restoreSnapshot(database, snapshotHolder[0]);
                     } catch (Exception e) {
                         restoreSuccess[0] = false;
                         Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);
@@ -174,9 +195,21 @@ public class BatteryHealthApplication extends Application {
     }
     
     /**
-     * 获取数据库实例
+     * 获取数据库实例。
+     * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
      */
     public AppDatabase getDatabase() {
+        startDatabaseInitAsync();
+        CountDownLatch latch = dbInitLatch;
+        if (latch != null) {
+            try {
+                if (!latch.await(60, TimeUnit.SECONDS)) {
+                    Log.w(TAG, "Wait for database initialization timed out");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         return database;
     }
     

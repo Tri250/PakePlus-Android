@@ -15,8 +15,8 @@ android {
         applicationId "com.batteryhealth.app"
         minSdk 24
         targetSdk 35
-        versionCode 37
-        versionName "4.0.2"
+        versionCode 44
+        versionName "4.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -30,22 +30,19 @@ android {
     }
 
     // 签名配置 - 从keystore.properties读取，不再硬编码
+    // 正式版构建必须存在 keystore.properties，禁止回退到 debug 签名
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
-                storePassword keystoreProperties['storePassword'] ?: ''
-                keyAlias keystoreProperties['keyAlias'] ?: ''
-                keyPassword keystoreProperties['keyPassword'] ?: ''
-            } else {
-                // 正式打包前必须创建 keystore.properties
-                // 本地测试/CI环境未配置时回退到debug签名，避免构建失败
-                println("WARNING: keystore.properties not found, release build will use debug signing.")
-                storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
+            if (!keystorePropertiesFile.exists()) {
+                throw new GradleException(
+                    "Release build requires keystore.properties. " +
+                    "Create it from keystore.properties.example or provide your own release keystore."
+                )
             }
+            storeFile file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
+            storePassword keystoreProperties['storePassword'] ?: ''
+            keyAlias keystoreProperties['keyAlias'] ?: ''
+            keyPassword keystoreProperties['keyPassword'] ?: ''
         }
         debug {
             // Debug使用默认调试签名
@@ -54,10 +51,9 @@ android {
 
     buildTypes {
         release {
-            // 暂时禁用混淆和资源压缩以排查空白问题
-            // 待问题确认修复后可重新开启
-            minifyEnabled false
-            shrinkResources false
+            // 启用混淆和资源压缩，减小 APK 体积并提升安全性
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             debuggable false
             signingConfig signingConfigs.release
@@ -143,7 +139,7 @@ dependencies {
     implementation 'androidx.sqlite:sqlite:2.4.0'
 
     // EncryptedSharedPreferences 安全存储加密密钥
-    implementation 'androidx.security:security-crypto:1.0.0'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     // Gson
     implementation 'com.google.code.gson:gson:2.10.1'
