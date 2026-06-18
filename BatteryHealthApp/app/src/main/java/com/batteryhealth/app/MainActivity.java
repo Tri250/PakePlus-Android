@@ -57,12 +57,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         try {
             setContentView(R.layout.activity_main);
-            
+        } catch (Throwable t) {
+            Log.e(TAG, "setContentView failed: " + t.getMessage(), t);
+            Toast.makeText(this, "界面资源加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            // 兜底：构建一个极简可用的界面，避免闪退
+            try {
+                android.widget.FrameLayout root = new android.widget.FrameLayout(this);
+                android.widget.TextView tv = new android.widget.TextView(this);
+                tv.setText("应用初始化失败，请清理后重试");
+                tv.setTextSize(16);
+                tv.setPadding(40, 80, 40, 40);
+                root.addView(tv, new android.widget.FrameLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+                setContentView(root);
+            } catch (Throwable t2) {
+                Log.e(TAG, "Fallback view also failed: " + t2.getMessage(), t2);
+            }
+            return;
+        }
+
+        try {
+
             mainHandler = new Handler(Looper.getMainLooper());
-            
+
             // 初始化视图 - 必须先于其他操作
             initViews();
             

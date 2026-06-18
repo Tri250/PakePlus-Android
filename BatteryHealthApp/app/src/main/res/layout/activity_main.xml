@@ -26,8 +26,6 @@
         app:itemIconSize="26dp"
         app:itemIconTint="@color/bottom_nav_color"
         app:itemTextColor="@color/bottom_nav_color"
-        app:itemTextAppearanceActive="@style/iOSTabText"
-        app:itemTextAppearanceInactive="@style/iOSTabText"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
