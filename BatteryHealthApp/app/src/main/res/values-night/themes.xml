@@ -163,7 +163,7 @@
     <!-- ============================== -->
     <!-- 液态玻璃列表项 -->
     <!-- ============================== -->
-    <style name="LiquidGlassListItem" parent="android:Widget">
+    <style name="LiquidGlassListItem">
         <item name="android:background">@android:color/transparent</item>
         <item name="android:paddingStart">22dp</item>
         <item name="android:paddingEnd">22dp</item>
@@ -172,7 +172,7 @@
         <item name="android:minHeight">48dp</item>
     </style>
 
-    <style name="LiquidGlassSeparator" parent="android:Widget">
+    <style name="LiquidGlassSeparator">
         <item name="android:background">@color/ios_separator</item>
         <item name="android:layout_height">0.5dp</item>
         <item name="android:layout_marginStart">22dp</item>
