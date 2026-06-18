@@ -2,27 +2,19 @@
 <resources>
     <!-- 液态玻璃系统颜色 - 浅色模式 -->
     <color name="ios_background">#EFEFF4</color>
-    <color name="ios_secondary_background">#FFFFFF</color>
     <color name="ios_tertiary_background">#F2F2F7</color>
-    <color name="ios_grouped_background">#EFEFF4</color>
 
     <!-- 液态玻璃半透明叠加色 -->
     <color name="liquid_glass_surface">#CCFFFFFF</color>
     <color name="liquid_glass_surface_subtle">#B3FFFFFF</color>
     <color name="liquid_glass_border">#1F000000</color>
-    <color name="liquid_glass_highlight">#40FFFFFF</color>
-    <color name="liquid_glass_shadow">#0D000000</color>
     <color name="liquid_glass_glow">#1A007AFF</color>
 
     <color name="ios_label">#1C1C1E</color>
     <color name="ios_secondary_label">#3C3C4399</color>
     <color name="ios_tertiary_label">#3C3C4366</color>
-    <color name="ios_quaternary_label">#3C3C432E</color>
 
     <color name="ios_separator">#C6C6C8</color>
-    <color name="ios_opaque_separator">#C6C6C8</color>
-
-    <!-- 液态玻璃系统颜色 - 深色模式（覆盖值在 values-night/colors.xml） -->
 
     <!-- 液态玻璃强调色板（高饱和度、发光感） -->
     <color name="ios_red">#FF453A</color>
@@ -30,63 +22,17 @@
     <color name="ios_yellow">#FFD60A</color>
     <color name="ios_green">#32D74B</color>
     <color name="ios_mint">#66D4CF</color>
-    <color name="ios_teal">#5AC8FA</color>
     <color name="ios_cyan">#64D2FF</color>
     <color name="ios_blue">#0A84FF</color>
-    <color name="ios_indigo">#5E5CE6</color>
     <color name="ios_purple">#BF5AF2</color>
-    <color name="ios_pink">#FF375F</color>
-    <color name="ios_brown">#AC8E68</color>
-
-    <!-- 电池状态颜色 -->
-    <color name="battery_excellent">#32D74B</color>
-    <color name="battery_good">#32D74B</color>
-    <color name="battery_normal">#FFD60A</color>
-    <color name="battery_warning">#FF9F0A</color>
-    <color name="battery_poor">#FF453A</color>
-
-    <!-- 充电功率颜色 -->
-    <color name="power_super">#BF5AF2</color>
-    <color name="power_fast">#0A84FF</color>
-    <color name="power_normal">#32D74B</color>
-    <color name="power_slow">#FF9F0A</color>
-    <color name="power_wireless">#FFD60A</color>
 
     <!-- 通用颜色 -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="transparent">#00000000</color>
 
-    <!-- 渐变颜色 - 液态玻璃光泽 -->
-    <color name="gradient_blue_start">#0A84FF</color>
-    <color name="gradient_blue_end">#5E5CE6</color>
-    <color name="gradient_green_start">#32D74B</color>
-    <color name="gradient_green_end">#66D4CF</color>
-    <color name="gradient_purple_start">#BF5AF2</color>
-    <color name="gradient_purple_end">#5E5CE6</color>
-    <color name="gradient_glass_start">#FFFFFF</color>
-    <color name="gradient_glass_end">#E5F2FF</color>
-
-    <!-- 图表颜色 -->
-    <color name="chart_line">#0A84FF</color>
-    <color name="chart_fill">#1A0A84FF</color>
-    <color name="chart_grid">#E5E5EA</color>
-    <color name="chart_grid_dark">#38383A</color>
-
-    <!-- 健康度等级颜色 -->
+    <!-- 健康度等级颜色（仅实际使用的等级） -->
     <color name="health_a_plus">#32D74B</color>
     <color name="health_a">#32D74B</color>
-    <color name="health_b_plus">#64D2FF</color>
-    <color name="health_b">#5E5CE6</color>
     <color name="health_c">#FFD60A</color>
     <color name="health_d">#FF9F0A</color>
     <color name="health_e">#FF453A</color>
-
-    <!-- 卡片阴影颜色 -->
-    <color name="card_shadow_light">#0A000000</color>
-    <color name="card_shadow_dark">#14FFFFFF</color>
-
-    <!-- 动画渐变颜色 -->
-    <color name="anim_fade_start">#80000000</color>
-    <color name="anim_fade_end">#00000000</color>
 </resources>
