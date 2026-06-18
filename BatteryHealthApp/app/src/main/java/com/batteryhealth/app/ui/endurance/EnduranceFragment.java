@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.endurance;
 
+import android.content.Context;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -81,21 +82,94 @@ public class EnduranceFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         try {
             return inflater.inflate(R.layout.fragment_endurance, container, false);
-        } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            return createErrorView(e);
+        } catch (Throwable t) {
+            Log.e(TAG, "Error inflating layout: " + t.getMessage(), t);
+            return createErrorView(t);
         }
     }
 
-    private View createErrorView(Exception e) {
-        android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
-        errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
-        errorView.setTextSize(16);
-        errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
-        return errorView;
+    /**
+     * 创建友好的错误页：标题 + 提示文案 + "重试" 按钮。
+     */
+    private View createErrorView(Throwable t) {
+        Context ctx = null;
+        try { ctx = getContext(); } catch (Throwable ignored) {}
+        if (ctx == null) ctx = requireActivity().getApplicationContext();
+
+        android.widget.LinearLayout root = new android.widget.LinearLayout(ctx);
+        root.setOrientation(android.widget.LinearLayout.VERTICAL);
+        root.setGravity(android.view.Gravity.CENTER);
+        int pad = (int) (40 * ctx.getResources().getDisplayMetrics().density);
+        root.setPadding(pad, pad * 2, pad, pad);
+        try {
+            root.setBackgroundColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.ios_background));
+        } catch (Throwable ignored) {
+            root.setBackgroundColor(0xFFEFEFF4);
+        }
+
+        android.widget.TextView tvTitle = new android.widget.TextView(ctx);
+        tvTitle.setText("界面加载失败");
+        tvTitle.setTextSize(20);
+        tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+        try {
+            tvTitle.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.ios_label));
+        } catch (Throwable ignored) {
+            tvTitle.setTextColor(0xFF1C1C1E);
+        }
+        tvTitle.setGravity(android.view.Gravity.CENTER);
+        root.addView(tvTitle);
+
+        android.widget.TextView tvMsg = new android.widget.TextView(ctx);
+        tvMsg.setText("数据尚未就绪，请点击下方按钮重试。");
+        tvMsg.setTextSize(14);
+        try {
+            tvMsg.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.ios_secondary_label));
+        } catch (Throwable ignored) {
+            tvMsg.setTextColor(0xFF3C3C43);
+        }
+        tvMsg.setGravity(android.view.Gravity.CENTER);
+        android.widget.LinearLayout.LayoutParams msgLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        msgLp.topMargin = (int) (12 * ctx.getResources().getDisplayMetrics().density);
+        root.addView(tvMsg, msgLp);
+
+        android.widget.Button btnRetry = new android.widget.Button(ctx);
+        btnRetry.setText("重 试");
+        btnRetry.setAllCaps(false);
+        btnRetry.setTextSize(15);
+        try {
+            btnRetry.setBackgroundColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.ios_blue));
+        } catch (Throwable ignored) {
+            btnRetry.setBackgroundColor(0xFF0A84FF);
+        }
+        btnRetry.setTextColor(0xFFFFFFFF);
+        android.widget.LinearLayout.LayoutParams btnLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        btnLp.topMargin = (int) (28 * ctx.getResources().getDisplayMetrics().density);
+        int btnH = (int) (44 * ctx.getResources().getDisplayMetrics().density);
+        btnRetry.setMinHeight(btnH);
+        int btnPad = (int) (28 * ctx.getResources().getDisplayMetrics().density);
+        btnRetry.setPadding(btnPad, 0, btnPad, 0);
+        root.addView(btnRetry, btnLp);
+
+        btnRetry.setOnClickListener(v -> {
+            try {
+                View newView = onCreateView(LayoutInflater.from(ctx), (ViewGroup) v.getParent(), null);
+                if (newView != null && v.getParent() instanceof ViewGroup) {
+                    ViewGroup parent = (ViewGroup) v.getParent();
+                    int idx = parent.indexOfChild(root);
+                    parent.removeView(root);
+                    parent.addView(newView, idx);
+                    try { onViewCreated(newView, null); } catch (Throwable ignored) {}
+                    try { animateCardsEntry(newView); } catch (Throwable ignored) {}
+                }
+            } catch (Throwable ex) {
+                Log.e(TAG, "Retry failed: " + ex.getMessage(), ex);
+            }
+        });
+        return root;
     }
     
     @Override
@@ -171,7 +245,6 @@ public class EnduranceFragment extends Fragment {
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
                 View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
                 child.setAlpha(0f);
                 child.setTranslationY(60f);
                 child.setScaleX(0.94f);
