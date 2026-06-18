@@ -54,7 +54,7 @@ android {
         release {
             // 启用混淆和资源压缩，减小 APK 体积并提升安全性
             minifyEnabled true
-            shrinkResources true
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             debuggable false
             signingConfig signingConfigs.release

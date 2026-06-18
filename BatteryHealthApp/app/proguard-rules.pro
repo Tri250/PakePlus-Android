@@ -86,10 +86,20 @@
     public static ** valueOf(java.lang.String);
 }
 
-# 保留R类
+# 保留R类（防止资源ID被内联或重命名导致XML解析失败）
 -keepclassmembers class **.R$* {
     public static <fields>;
 }
+-keep class **.R { *; }
+
+# 保留所有 style/theme 相关资源引用（shrinkResources=false 已关闭，此规则作为双重保险）
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keepattributes EnclosingMethod
+
+# 保留 Fragment 和 Activity 的完整类名，防止 R8 内联导致反射或资源绑定失败
+-keep class * extends androidx.fragment.app.Fragment { <init>(...); }
+-keep class * extends android.app.Activity { <init>(...); }
 
 # SQLCipher
 -keep class net.sqlcipher.** { *; }
