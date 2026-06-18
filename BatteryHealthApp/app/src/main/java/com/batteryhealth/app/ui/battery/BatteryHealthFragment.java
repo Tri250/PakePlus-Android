@@ -117,8 +117,17 @@ public class BatteryHealthFragment extends Fragment {
         root.addView(tvTitle);
 
         android.widget.TextView tvMsg = new android.widget.TextView(ctx);
-        tvMsg.setText("数据尚未就绪，请点击下方按钮重试。");
-        tvMsg.setTextSize(14);
+        String detail = "";
+        if (t != null) {
+            detail = t.getClass().getSimpleName() + ": " + t.getMessage();
+            Throwable cause = t.getCause();
+            while (cause != null) {
+                detail += "\nCaused by: " + cause.getClass().getSimpleName() + ": " + cause.getMessage();
+                cause = cause.getCause();
+            }
+        }
+        tvMsg.setText("数据尚未就绪，请点击下方按钮重试。\n\n调试信息:\n" + detail);
+        tvMsg.setTextSize(12);
         try {
             tvMsg.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.ios_secondary_label));
         } catch (Throwable ignored) {
@@ -126,9 +135,11 @@ public class BatteryHealthFragment extends Fragment {
         }
         tvMsg.setGravity(android.view.Gravity.CENTER);
         android.widget.LinearLayout.LayoutParams msgLp = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                 android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         msgLp.topMargin = (int) (12 * ctx.getResources().getDisplayMetrics().density);
+        msgLp.leftMargin = pad / 2;
+        msgLp.rightMargin = pad / 2;
         root.addView(tvMsg, msgLp);
 
         android.widget.Button btnRetry = new android.widget.Button(ctx);
