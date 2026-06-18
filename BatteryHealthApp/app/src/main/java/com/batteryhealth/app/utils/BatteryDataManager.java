@@ -196,12 +196,13 @@ public class BatteryDataManager {
      * 优先级：
      * 1. BatteryManager API (Android 14+)
      * 2. 标准 sysfs 路径（厂商 BMS / maxfg / battery）
-     * 3. root 权限读取受保护节点
+     * 3. 基于使用天数估算（兜底）
      */
     public void readCycleCountAsync() {
         new Thread(() -> {
             int cycleCount = -1;
             String source = SOURCE_UNKNOWN;
+            boolean estimated = true;
 
             try {
                 if (Build.VERSION.SDK_INT >= 34) {
@@ -212,6 +213,7 @@ public class BatteryDataManager {
                             if (result >= 0) {
                                 cycleCount = result;
                                 source = SOURCE_BATTERY_MANAGER;
+                                estimated = false;
                             }
                         }
                     } catch (Exception e) {
@@ -241,6 +243,7 @@ public class BatteryDataManager {
                                 if (count >= 0) {
                                     cycleCount = count;
                                     source = SOURCE_SYSFS;
+                                    estimated = false;
                                     break;
                                 }
                             } catch (NumberFormatException ignored) {}
@@ -248,8 +251,18 @@ public class BatteryDataManager {
                     }
                 }
 
+                // 兜底：基于使用天数估算循环次数
+                // 平均每天 0.8 次循环（考虑到不完全放充）
+                if (cycleCount < 0 && usageDays > 0) {
+                    cycleCount = (int) (usageDays * 0.8f);
+                    source = "估算";
+                    estimated = true;
+                    Log.d(TAG, "Cycle count estimated from usage: " + cycleCount 
+                        + " (days=" + usageDays + ")");
+                }
+
                 currentBatteryInfo.setCycleCount(cycleCount);
-                currentBatteryInfo.setCycleCountEstimated(cycleCount < 0);
+                currentBatteryInfo.setCycleCountEstimated(estimated);
                 currentBatteryInfo.setCycleCountSource(source);
 
                 // 如果获得循环次数，可刷新基于循环次数的健康度估算

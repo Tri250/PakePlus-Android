@@ -25,6 +25,7 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -279,41 +280,83 @@ public class BatteryMonitorService extends Service {
     
     /**
      * 读取充电循环次数
+     * 优先级：BatteryManager API > sysfs > 估算
      */
     private void readCycleCount() {
         try {
-            // 尝试从sysfs读取
-            File cycleCountFile = new File("/sys/class/power_supply/battery/cycle_count");
-            if (cycleCountFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(cycleCountFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int cycleCount = Integer.parseInt(line.trim());
-                    currentBatteryInfo.setCycleCount(cycleCount);
-                    return;
+            boolean estimated = false;
+            int cycleCount = -1;
+
+            // 1. BatteryManager API (Android 14+)
+            if (Build.VERSION.SDK_INT >= 34) {
+                try {
+                    BatteryManager bm = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
+                    if (bm != null) {
+                        int result = bm.getIntProperty(7);
+                        if (result >= 0) {
+                            cycleCount = result;
+                            currentBatteryInfo.setCycleCount(cycleCount);
+                            currentBatteryInfo.setCycleCountEstimated(false);
+                            currentBatteryInfo.setCycleCountSource("battery_manager");
+                            return;
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Cycle count API not available: " + e.getMessage());
                 }
             }
-            
-            // 尝试替代路径
-            String[] paths = {
-                "/sys/class/power_supply/bms/cycle_count",
-                "/sys/class/power_supply/maxfg/cycle_count",
-                "/sys/class/power_supply/battery/battery_cycle"
-            };
-            
-            for (String path : paths) {
-                File file = new File(path);
-                if (file.exists()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(file));
+
+            // 2. sysfs 路径
+            try {
+                File cycleCountFile = new File("/sys/class/power_supply/battery/cycle_count");
+                if (cycleCountFile.exists()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(cycleCountFile));
                     String line = reader.readLine();
                     reader.close();
                     if (line != null) {
-                        int cycleCount = Integer.parseInt(line.trim());
+                        cycleCount = Integer.parseInt(line.trim());
                         currentBatteryInfo.setCycleCount(cycleCount);
+                        currentBatteryInfo.setCycleCountEstimated(false);
+                        currentBatteryInfo.setCycleCountSource("sysfs");
                         return;
                     }
                 }
+                
+                String[] paths = {
+                    "/sys/class/power_supply/bms/cycle_count",
+                    "/sys/class/power_supply/maxfg/cycle_count",
+                    "/sys/class/power_supply/battery/battery_cycle",
+                    "/sys/class/power_supply/battery/cyclecounts",
+                    "/sys/class/power_supply/battery/cycle_count_total",
+                    "/sys/class/power_supply/battery/batt_cycle_count"
+                };
+                
+                for (String path : paths) {
+                    File file = new File(path);
+                    if (file.exists()) {
+                        BufferedReader reader = new BufferedReader(new FileReader(file));
+                        String line = reader.readLine();
+                        reader.close();
+                        if (line != null) {
+                            cycleCount = Integer.parseInt(line.trim());
+                            currentBatteryInfo.setCycleCount(cycleCount);
+                            currentBatteryInfo.setCycleCountEstimated(false);
+                            currentBatteryInfo.setCycleCountSource("sysfs");
+                            return;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading cycle count from sysfs: " + e.getMessage());
+            }
+
+            // 3. 兜底估算：基于使用天数
+            if (DeviceInfoManager.getInstance(this).getUsageDays() > 0) {
+                int usageDays = DeviceInfoManager.getInstance(this).getUsageDays();
+                cycleCount = (int) (usageDays * 0.8f);
+                currentBatteryInfo.setCycleCount(cycleCount);
+                currentBatteryInfo.setCycleCountEstimated(true);
+                currentBatteryInfo.setCycleCountSource("估算");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading cycle count: " + e.getMessage());
