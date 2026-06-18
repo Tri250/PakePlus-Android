@@ -21,7 +21,7 @@
 
         <!-- 状态栏 - 液态玻璃 -->
         <item name="android:statusBarColor">@color/liquid_glass_surface</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightStatusBar">true</item>
 
         <!-- 导航栏 - 液态玻璃 -->
         <item name="android:navigationBarColor">@color/liquid_glass_surface</item>
@@ -34,8 +34,7 @@
         <!-- 液态玻璃窗口动画 -->
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
 
-        <!-- Android 15 临时禁用强制 edge-to-edge -->
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+        <!-- Android 15+ 强制 edge-to-edge，由 MainActivity 通过 WindowInsets 动态处理内边距 -->
     </style>
 
     <!-- 无 ActionBar 主题（兼容 Activity 显式指定） -->

@@ -84,9 +84,7 @@ public class DeviceConfig {
         // 初始化处理器信息
         this.cpuAbi = Build.CPU_ABI;
         this.cpuAbi2 = Build.CPU_ABI2;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            this.supportedAbis = Build.SUPPORTED_ABIS;
-        }
+        this.supportedAbis = Build.SUPPORTED_ABIS;
     }
     
     // Getters and Setters
@@ -391,14 +389,14 @@ public class DeviceConfig {
      */
     public String getFormattedBrand() {
         if (brand == null) return "Unknown";
-        return brand.substring(0, 1).toUpperCase() + brand.substring(1).toLowerCase();
+        return brand.substring(0, 1).toUpperCase(Locale.ROOT) + brand.substring(1).toLowerCase(Locale.ROOT);
     }
     
     /**
      * 获取完整型号名
      */
     public String getFullModelName() {
-        return String.format("%s %s", getFormattedBrand(), model);
+        return String.format(Locale.getDefault(), "%s %s", getFormattedBrand(), model);
     }
     
     /**
@@ -439,18 +437,19 @@ public class DeviceConfig {
      * 获取Android版本代号
      */
     public String getAndroidCodename() {
-        switch (sdkVersion) {
-            case Build.VERSION_CODES.UPSIDE_DOWN_CAKE: return "Android 14";
-            case Build.VERSION_CODES.TIRAMISU: return "Android 13";
-            case Build.VERSION_CODES.S_V2: return "Android 12L";
-            case Build.VERSION_CODES.S: return "Android 12";
-            case Build.VERSION_CODES.R: return "Android 11";
-            case Build.VERSION_CODES.Q: return "Android 10";
-            case Build.VERSION_CODES.P: return "Android 9";
-            case Build.VERSION_CODES.O_MR1: return "Android 8.1";
-            case Build.VERSION_CODES.O: return "Android 8.0";
-            default: return "Android " + androidVersion;
-        }
+        int version = sdkVersion;
+        if (version >= 36) return "Android 16";
+        if (version >= 35) return "Android 15";
+        if (version >= 34) return "Android 14";
+        if (version >= 33) return "Android 13";
+        if (version >= 32) return "Android 12L";
+        if (version >= 31) return "Android 12";
+        if (version >= 30) return "Android 11";
+        if (version >= 29) return "Android 10";
+        if (version >= 28) return "Android 9";
+        if (version >= 27) return "Android 8.1";
+        if (version >= 26) return "Android 8.0";
+        return "Android " + androidVersion;
     }
     
     /**
@@ -458,7 +457,7 @@ public class DeviceConfig {
      */
     public boolean isDomesticBrand() {
         if (brand == null) return false;
-        String lowerBrand = brand.toLowerCase();
+        String lowerBrand = brand.toLowerCase(Locale.ROOT);
         return lowerBrand.contains("xiaomi") || lowerBrand.contains("redmi") ||
                lowerBrand.contains("huawei") || lowerBrand.contains("honor") ||
                lowerBrand.contains("oppo") || lowerBrand.contains("realme") ||

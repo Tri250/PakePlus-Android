@@ -1,17 +1,14 @@
 package com.batteryhealth.app.utils;
 
 import android.app.ActivityManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
@@ -21,505 +18,502 @@ import com.batteryhealth.app.data.model.DeviceConfig;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
+import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 设备信息管理器
- *
- * 功能：
- * 1. 获取设备硬件信息
- * 2. 获取系统配置
- * 3. 查询设备激活日期
- * 4. 分析设备性能
+ * 设备信息收集器
+ * 负责聚合 Build / ActivityManager / StatFs / sysfs / 本地机型数据库等信息。
  */
 public class DeviceInfoManager {
 
     private static final String TAG = "DeviceInfoManager";
-    private Context context;
-    private DeviceConfig deviceConfig;
-    
+
+    private final Context context;
+    private final DeviceDatabaseManager deviceDb;
+
+    private DeviceConfig cachedConfig;
+
+    // GPU 渲染器 sysfs / 属性候选路径
+    private static final String[] GPU_RENDERER_PATHS = {
+            "/sys/class/kgsl/kgsl-3d0/gpu_model",
+            "/sys/class/kgsl/kgsl-3d0/device/driver/name",
+            "/sys/class/misc/mali0/device/utgard/clock",
+            "/sys/class/misc/mali0/device/clock",
+            "/sys/class/gpu/clk_level",
+            "/sys/class/devfreq/gpufreq/max_freq",
+            "/sys/class/devfreq/gpufreq/min_freq",
+            "/sys/class/devfreq/gpufreq/cur_freq",
+            "/sys/kernel/gpu/gpu_model",
+            "/sys/module/msm_kgsl/parameters/kgsl_3d0_pwrrail",
+            "/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq"
+    };
+
     public DeviceInfoManager(Context context) {
         this.context = context.getApplicationContext();
-        this.deviceConfig = new DeviceConfig();
-        loadDeviceInfo();
-    }
-    
-    /**
-     * 加载设备信息
-     */
-    private void loadDeviceInfo() {
-        // 基本信息已在构造函数中初始化
-        
-        // 加载处理器信息
-        loadCpuInfo();
-        
-        // 加载内存信息
-        loadMemoryInfo();
-        
-        // 加载存储信息
-        loadStorageInfo();
-        
-        // 加载显示信息
-        loadDisplayInfo();
-        
-        // 加载电池信息
-        loadBatteryInfo();
-        
-        // 加载网络信息
-        loadNetworkInfo();
-        
-        // 加载激活信息
-        loadActivationInfo();
-    }
-    
-    /**
-     * 加载处理器信息
-     */
-    private void loadCpuInfo() {
-        try {
-            // 获取CPU核心数
-            int cores = Runtime.getRuntime().availableProcessors();
-            deviceConfig.setCpuCores(cores);
-            
-            // 读取CPU信息
-            File cpuInfoFile = new File("/proc/cpuinfo");
-            if (cpuInfoFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(cpuInfoFile));
-                StringBuilder cpuInfo = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("Hardware") || line.contains("Processor") || 
-                        line.contains("model name")) {
-                        cpuInfo.append(line).append("\n");
-                    }
-                }
-                reader.close();
-                deviceConfig.setCpuInfo(cpuInfo.toString().trim());
-            }
-            
-            // 读取CPU频率
-            File maxFreqFile = new File("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
-            if (maxFreqFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(maxFreqFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int maxFreq = Integer.parseInt(line.trim()) / 1000; // 转换为MHz
-                    deviceConfig.setCpuFreqMax(maxFreq);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * 加载内存信息
-     */
-    private void loadMemoryInfo() {
-        try {
-            ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            if (activityManager == null) {
-                Log.w(TAG, "ActivityManager is null");
-                return;
-            }
-            
-            ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
-            activityManager.getMemoryInfo(memoryInfo);
-            
-            // 总内存 (MB)
-            long totalMemory = memoryInfo.totalMem / (1024 * 1024);
-            deviceConfig.setTotalMemory(totalMemory);
-            
-            // 可用内存 (MB)
-            long availableMemory = memoryInfo.availMem / (1024 * 1024);
-            deviceConfig.setAvailableMemory(availableMemory);
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading memory info: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 加载存储信息
-     */
-    private void loadStorageInfo() {
-        try {
-            StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
-            
-            long blockSize = statFs.getBlockSizeLong();
-            long totalBlocks = statFs.getBlockCountLong();
-            long availableBlocks = statFs.getAvailableBlocksLong();
-            
-            // 总存储 (GB)
-            long totalStorage = (blockSize * totalBlocks) / (1024 * 1024 * 1024);
-            deviceConfig.setTotalStorage(totalStorage);
-            
-            // 可用存储 (GB)
-            long availableStorage = (blockSize * availableBlocks) / (1024 * 1024 * 1024);
-            deviceConfig.setAvailableStorage(availableStorage);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * 加载显示信息
-     */
-    private void loadDisplayInfo() {
-        try {
-            WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-            if (windowManager == null) {
-                Log.w(TAG, "WindowManager is null");
-                return;
-            }
-            
-            DisplayMetrics metrics = new DisplayMetrics();
-            windowManager.getDefaultDisplay().getMetrics(metrics);
-            
-            deviceConfig.setScreenWidth(metrics.widthPixels);
-            deviceConfig.setScreenHeight(metrics.heightPixels);
-            deviceConfig.setScreenDensity(metrics.density);
-            deviceConfig.setScreenDpi(metrics.densityDpi);
-            
-            // 计算屏幕尺寸 (英寸)
-            if (metrics.xdpi > 0 && metrics.ydpi > 0) {
-                float widthInches = metrics.widthPixels / metrics.xdpi;
-                float heightInches = metrics.heightPixels / metrics.ydpi;
-                double screenSize = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
-                deviceConfig.setScreenSize((float) screenSize);
-            }
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading display info: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 加载电池信息
-     */
-    private void loadBatteryInfo() {
-        try {
-            // 读取电池技术
-            File techFile = new File("/sys/class/power_supply/battery/technology");
-            if (techFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(techFile));
-                String technology = reader.readLine();
-                reader.close();
-                if (technology != null) {
-                    deviceConfig.setBatteryTechnology(technology);
-                }
-            }
-            
-            // 读取电池容量
-            File capacityFile = new File("/sys/class/power_supply/battery/charge_full_design");
-            if (capacityFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(capacityFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int capacity = Integer.parseInt(line.trim()) / 1000; // 转换为mAh
-                    deviceConfig.setBatteryCapacity(capacity);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * 加载网络信息
-     */
-    private void loadNetworkInfo() {
-        try {
-            // 获取网络类型
-            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (cm != null) {
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                if (activeNetwork != null) {
-                    deviceConfig.setNetworkType(getNetworkTypeString(activeNetwork.getType()));
-                }
-            }
-            
-            // 获取IP地址
-            deviceConfig.setIpAddress(getIPAddress());
-            
-            // 获取MAC地址
-            deviceConfig.setMacAddress(getMacAddress());
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading network info: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 加载激活信息（2026 旗舰版）
-     *
-     * 尝试多种方式获取设备首次激活日期，并按可信度排序：
-     * 1. 系统设置 first_boot_time（最可信，但极少 ROM 提供）
-     * 2. 应用首次安装时间 PackageInfo.firstInstallTime（较可信）
-     * 3. 应用数据目录创建时间（较可信，但可能被清除数据影响）
-     * 4. Android ID + Build.TIME 估算（粗略估算）
-     * 5. 设备构建时间（最后备选）
-     *
-     * 每次结果都会标注来源与可信度，UI 可据此向用户说明是否为估算值。
-     */
-    private void loadActivationInfo() {
-        long activationTime = 0;
-        String source = "unknown";
-        float confidence = 0.0f;
-
-        try {
-            // 方法1: 系统设置中的首次启动时间（最可信）
-            try {
-                String firstBoot = Settings.Global.getString(context.getContentResolver(), "first_boot_time");
-                if (firstBoot != null && !firstBoot.isEmpty()) {
-                    activationTime = Long.parseLong(firstBoot);
-                    source = "system";
-                    confidence = 0.95f;
-                }
-            } catch (Exception ignored) {}
-
-            // 方法2: 应用首次安装时间
-            if (activationTime == 0) {
-                try {
-                    android.content.pm.PackageInfo packageInfo = context.getPackageManager()
-                            .getPackageInfo(context.getPackageName(), 0);
-                    if (packageInfo != null && packageInfo.firstInstallTime > 0) {
-                        activationTime = packageInfo.firstInstallTime;
-                        source = "package_install";
-                        confidence = 0.75f;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // 方法3: 从应用数据目录的修改时间推断
-            if (activationTime == 0) {
-                try {
-                    File dataDir = context.getDataDir();
-                    if (dataDir != null && dataDir.exists()) {
-                        activationTime = dataDir.lastModified();
-                        if (activationTime > 0) {
-                            source = "datadir";
-                            confidence = 0.55f;
-                        }
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // 方法4: 从Android ID的生成时间推断（粗略估算）
-            if (activationTime == 0) {
-                try {
-                    String androidId = Settings.Secure.getString(context.getContentResolver(),
-                            Settings.Secure.ANDROID_ID);
-                    if (androidId != null && !androidId.isEmpty()) {
-                        long buildTime = Build.TIME;
-                        int idHash = androidId.hashCode();
-                        long offset = Math.abs(idHash % (30L * 24 * 60 * 60 * 1000));
-                        activationTime = buildTime + offset;
-                        source = "android_id";
-                        confidence = 0.30f;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // 方法5: 使用设备构建时间作为最后备选
-            if (activationTime == 0) {
-                activationTime = Build.TIME;
-                source = "build_time";
-                confidence = 0.15f;
-            }
-
-            deviceConfig.setActivationDate(activationTime);
-            deviceConfig.setActivationSource(source);
-            deviceConfig.setActivationConfidence(confidence);
-
-            // 计算使用天数
-            long currentTime = System.currentTimeMillis();
-            long usageDays = (currentTime - activationTime) / (1000 * 60 * 60 * 24);
-            deviceConfig.setUsageDays((int) Math.max(0, usageDays));
-
-            // 格式化日期
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            deviceConfig.setActivationDateStr(sdf.format(new java.util.Date(activationTime)));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            deviceConfig.setActivationDate(Build.TIME);
-            deviceConfig.setUsageDays(0);
-            deviceConfig.setActivationDateStr("未知");
-            deviceConfig.setActivationSource("unknown");
-            deviceConfig.setActivationConfidence(0.0f);
-        }
+        this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
     }
 
     /**
-     * 获取激活日期来源文本
-     */
-    public String getActivationSourceText() {
-        String source = deviceConfig.getActivationSource();
-        if ("system".equals(source)) return "系统记录";
-        if ("package_install".equals(source)) return "应用安装时间";
-        if ("datadir".equals(source)) return "应用数据目录";
-        if ("android_id".equals(source)) return "Android ID 估算";
-        if ("build_time".equals(source)) return "设备构建时间估算";
-        return "未知";
-    }
-
-    /**
-     * 获取激活日期可信度 0-1
-     */
-    public float getActivationConfidence() {
-        return deviceConfig.getActivationConfidence();
-    }
-    
-    /**
-     * 获取网络类型字符串
-     */
-    private String getNetworkTypeString(int type) {
-        switch (type) {
-            case ConnectivityManager.TYPE_WIFI:
-                return "WiFi";
-            case ConnectivityManager.TYPE_MOBILE:
-                return "移动数据";
-            case ConnectivityManager.TYPE_ETHERNET:
-                return "以太网";
-            default:
-                return "未知";
-        }
-    }
-    
-    /**
-     * 获取IP地址
-     */
-    private String getIPAddress() {
-        try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface intf : interfaces) {
-                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
-                for (InetAddress addr : addrs) {
-                    if (!addr.isLoopbackAddress()) {
-                        String sAddr = addr.getHostAddress();
-                        if (sAddr.indexOf(':') < 0) {
-                            return sAddr;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "Unknown";
-    }
-    
-    /**
-     * 获取MAC地址
-     */
-    private String getMacAddress() {
-        try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface intf : interfaces) {
-                if (intf.getName().equalsIgnoreCase("wlan0")) {
-                    byte[] mac = intf.getHardwareAddress();
-                    if (mac != null) {
-                        StringBuilder buf = new StringBuilder();
-                        for (byte b : mac) {
-                            buf.append(String.format("%02X:", b));
-                        }
-                        if (buf.length() > 0) {
-                            buf.deleteCharAt(buf.length() - 1);
-                        }
-                        return buf.toString();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "Unknown";
-    }
-    
-    /**
-     * 获取设备配置
+     * 获取完整设备配置。
      */
     public DeviceConfig getDeviceConfig() {
-        return deviceConfig;
+        if (cachedConfig != null) {
+            return cachedConfig;
+        }
+        DeviceConfig config = new DeviceConfig();
+
+        // 1. CPU 信息
+        collectCpuInfo(config);
+
+        // 2. 内存信息
+        collectMemoryInfo(config);
+
+        // 3. 存储信息
+        collectStorageInfo(config);
+
+        // 4. 屏幕信息
+        collectScreenInfo(config);
+
+        // 5. 电池基础信息
+        collectBatteryInfo(config);
+
+        // 6. 网络信息
+        collectNetworkInfo(config);
+
+        // 7. 激活日期
+        ActivationInfo activation = collectActivationInfo();
+        config.setActivationDate(activation.timestamp);
+        config.setActivationDateStr(activation.dateStr);
+        config.setUsageDays(activation.usageDays);
+        config.setActivationSource(activation.source);
+        config.setActivationConfidence(activation.confidence);
+
+        // 7. GPU 信息（保留主板字段原始值）
+        String gpuInfo = collectGpuInfo();
+
+        // 8. 使用机型数据库覆盖营销名称/处理器/屏幕
+        DeviceDatabaseManager.DeviceEntry entry = deviceDb.findDevice();
+        if (entry != null) {
+            if (entry.marketName != null && !entry.marketName.isEmpty()) {
+                config.setModel(entry.marketName);
+            }
+            if (entry.processor != null && !entry.processor.isEmpty()) {
+                config.setCpuInfo(entry.processor);
+            }
+            if (entry.screen != null && !entry.screen.isEmpty()) {
+                gpuInfo = gpuInfo + " | 屏幕: " + entry.screen;
+            }
+            if (entry.batteryMah > 0) {
+                config.setBatteryCapacity(entry.batteryMah);
+            }
+        }
+        config.setBoard(gpuInfo);
+
+        cachedConfig = config;
+        return config;
     }
-    
+
     /**
-     * 获取设备品牌
+     * 获取 GPU 信息。
      */
-    public String getDeviceBrand() {
-        return deviceConfig.getFormattedBrand();
+    public String getGpuInfo() {
+        return collectGpuInfo();
     }
-    
+
     /**
-     * 获取设备型号
+     * 获取营销型号名。
      */
-    public String getDeviceModel() {
-        return deviceConfig.getFullModelName();
+    public String getMarketModelName() {
+        return deviceDb.getMarketName();
     }
-    
+
     /**
-     * 获取Android版本
+     * 获取处理器营销名。
      */
-    public String getAndroidVersion() {
-        return deviceConfig.getAndroidCodename();
+    public String getProcessorName() {
+        return deviceDb.getProcessorName();
     }
-    
+
     /**
-     * 获取处理器信息
+     * 获取处理器详细信息（优先本地数据库，其次 CPU 硬件信息）。
      */
     public String getProcessorInfo() {
-        StringBuilder info = new StringBuilder();
-        info.append(deviceConfig.getCpuCores()).append("核 ");
-        if (deviceConfig.getCpuFreqMax() > 0) {
-            info.append(deviceConfig.getCpuFreqMax()).append("MHz");
+        String dbProcessor = deviceDb.getProcessorName();
+        if (dbProcessor != null && !dbProcessor.isEmpty()) {
+            return dbProcessor;
         }
-        return info.toString();
+        DeviceConfig config = getDeviceConfig();
+        return config != null ? config.getCpuInfo() : "未识别";
     }
-    
+
     /**
-     * 获取内存信息
+     * 获取激活日期来源文本。
      */
-    public String getMemoryInfo() {
-        return deviceConfig.getFormattedMemory();
+    public String getActivationSourceText() {
+        DeviceConfig config = getDeviceConfig();
+        return config != null ? config.getActivationSource() : "未知";
     }
-    
+
     /**
-     * 获取存储信息
+     * 获取激活日期可信度。
      */
-    public String getStorageInfo() {
-        return deviceConfig.getFormattedStorage();
+    public float getActivationConfidence() {
+        DeviceConfig config = getDeviceConfig();
+        return config != null ? config.getActivationConfidence() : 0.0f;
     }
-    
+
     /**
-     * 获取屏幕信息
-     */
-    public String getScreenInfo() {
-        return deviceConfig.getScreenResolution() + " " + deviceConfig.getFormattedScreenSize();
-    }
-    
-    /**
-     * 获取激活日期
-     */
-    public String getActivationDate() {
-        return deviceConfig.getActivationDateStr();
-    }
-    
-    /**
-     * 获取使用天数
+     * 获取设备已使用天数。
      */
     public int getUsageDays() {
-        return deviceConfig.getUsageDays();
+        DeviceConfig config = getDeviceConfig();
+        return config != null ? config.getUsageDays() : -1;
+    }
+
+    // region CPU / Memory / Storage / Screen
+
+    private void collectCpuInfo(DeviceConfig config) {
+        config.setCpuCores(Runtime.getRuntime().availableProcessors());
+
+        int maxFreq = 0;
+        for (int i = 0; i < config.getCpuCores(); i++) {
+            try {
+                String path = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_max_freq";
+                String value = readFile(path);
+                if (value != null) {
+                    int freq = Integer.parseInt(value);
+                    if (freq > maxFreq) maxFreq = freq;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        config.setCpuFreqMax(maxFreq / 1000); // kHz -> MHz
+
+        StringBuilder cpuInfo = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("Hardware") || line.startsWith("model name") || line.startsWith("Processor")) {
+                    cpuInfo.append(line).append("\n");
+                }
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to read cpuinfo", e);
+        }
+        config.setCpuInfo(cpuInfo.toString().trim());
+    }
+
+    private void collectMemoryInfo(DeviceConfig config) {
+        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am != null) {
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+            am.getMemoryInfo(memInfo);
+            config.setTotalMemory((int) (memInfo.totalMem / (1024 * 1024)));       // MB
+            config.setAvailableMemory((int) (memInfo.availMem / (1024 * 1024)));   // MB
+        }
+    }
+
+    private void collectStorageInfo(DeviceConfig config) {
+        StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
+        long blockSize = statFs.getBlockSizeLong();
+        long totalBlocks = statFs.getBlockCountLong();
+        long availableBlocks = statFs.getAvailableBlocksLong();
+        config.setTotalStorage(totalBlocks * blockSize / (1024 * 1024 * 1024));         // GB
+        config.setAvailableStorage(availableBlocks * blockSize / (1024 * 1024 * 1024)); // GB
+    }
+
+    private void collectScreenInfo(DeviceConfig config) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        if (wm == null) return;
+        DisplayMetrics metrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getRealMetrics(metrics);
+        config.setScreenWidth(metrics.widthPixels);
+        config.setScreenHeight(metrics.heightPixels);
+        config.setScreenDensity(metrics.density);
+        config.setScreenDpi(metrics.densityDpi);
+
+        double widthInches = metrics.widthPixels / (double) metrics.xdpi;
+        double heightInches = metrics.heightPixels / (double) metrics.ydpi;
+        double size = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
+        config.setScreenSize((float) size);
+    }
+
+    private void collectBatteryInfo(DeviceConfig config) {
+        int dbCapacity = deviceDb.getDesignCapacity();
+        if (dbCapacity > 0) {
+            config.setBatteryCapacity(dbCapacity);
+            config.setBatteryTechnology("锂离子");
+            return;
+        }
+
+        try {
+            String tech = readSysfsString(new String[]{
+                    "/sys/class/power_supply/battery/technology",
+                    "/sys/class/power_supply/bms/technology"
+            }, "锂离子");
+            config.setBatteryTechnology(tech);
+        } catch (Exception ignored) {
+            config.setBatteryTechnology("锂离子");
+        }
+    }
+
+    private void collectNetworkInfo(DeviceConfig config) {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return;
+
+            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            if (activeNetwork == null || !activeNetwork.isConnected()) {
+                config.setNetworkType("无网络");
+                return;
+            }
+
+            int type = activeNetwork.getType();
+            if (type == android.net.ConnectivityManager.TYPE_WIFI) {
+                config.setNetworkType("Wi-Fi");
+            } else if (type == android.net.ConnectivityManager.TYPE_MOBILE) {
+                int subtype = activeNetwork.getSubtype();
+                config.setNetworkType(getMobileNetworkType(subtype));
+            } else {
+                config.setNetworkType(activeNetwork.getTypeName());
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to collect network info: " + e.getMessage());
+        }
+    }
+
+    private String getMobileNetworkType(int subtype) {
+        switch (subtype) {
+            case android.telephony.TelephonyManager.NETWORK_TYPE_LTE:
+                return "4G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_NR:
+                return "5G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_UMTS:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSDPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSUPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSPAP:
+                return "3G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_GPRS:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_EDGE:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_CDMA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_1xRTT:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_IDEN:
+                return "2G";
+            default:
+                return "移动数据";
+        }
+    }
+
+    // endregion
+
+    // region 激活日期
+
+    private ActivationInfo collectActivationInfo() {
+        ActivationInfo info = new ActivationInfo();
+
+        // 1. 系统 FIRST_BOOT_TIME（部分国产 ROM 如 MIUI/HarmonyOS 提供）
+        try {
+            long firstBoot = Settings.Global.getLong(context.getContentResolver(), "first_boot_time", -1);
+            if (firstBoot > 0) {
+                info.set(firstBoot, "system_first_boot_time", 0.95f);
+                return info;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 2. DevicePolicyManager 设备激活时间（企业/MDM 场景）
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            if (dpm != null) {
+                long provisioningTime = invokeLongMethod(dpm, "getProvisioningTime");
+                if (provisioningTime > 0) {
+                    info.set(provisioningTime, "device_policy_manager", 0.90f);
+                    return info;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 3. Google Play 服务或系统框架首次安装时间（最稳定的首次使用参考）
+        long systemPackageInstall = getPackageFirstInstallTime("android");
+        if (systemPackageInstall > 0) {
+            info.set(systemPackageInstall, "system_framework_install", 0.80f);
+            return info;
+        }
+
+        // 4. 本应用首次安装时间
+        long appInstall = getPackageFirstInstallTime(context.getPackageName());
+        if (appInstall > 0) {
+            info.set(appInstall, "app_first_install", 0.60f);
+            return info;
+        }
+
+        // 5. 数据目录创建时间
+        try {
+            File dataDir = context.getDataDir();
+            if (dataDir != null) {
+                long lastModified = dataDir.lastModified();
+                if (lastModified > 0) {
+                    info.set(lastModified, "app_data_directory", 0.40f);
+                    return info;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 6. Build.TIME 兜底
+        info.set(Build.TIME, "build_time_fallback", 0.15f);
+        return info;
+    }
+
+    private long getPackageFirstInstallTime(String packageName) {
+        try {
+            PackageManager pm = context.getPackageManager();
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? PackageManager.GET_SIGNING_CERTIFICATES
+                    : PackageManager.GET_SIGNATURES;
+            PackageInfo info = pm.getPackageInfo(packageName, flags);
+            return info.firstInstallTime;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    private long invokeLongMethod(Object target, String methodName) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object result = method.invoke(target);
+            if (result instanceof Long) return (Long) result;
+        } catch (Exception ignored) {
+        }
+        return -1;
+    }
+
+    // endregion
+
+    // region GPU
+
+    private String collectGpuInfo() {
+        // 1. 尝试读取 sysfs
+        for (String path : GPU_RENDERER_PATHS) {
+            String value = readFile(path);
+            if (value != null && !value.isEmpty()) {
+                return value.trim();
+            }
+        }
+
+        // 2. 通过系统属性读取
+        String[] properties = {
+                "ro.hardware.egl",
+                "ro.hardware.vulkan",
+                "ro.product.board",
+                "ro.board.platform",
+                "ro.hardware"
+        };
+        for (String prop : properties) {
+            String value = getSystemProperty(prop);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+
+        // 3. 从 /proc/cpuinfo 的 Hardware 字段推断 GPU 厂商
+        String cpuHardware = getCpuHardware();
+        if (cpuHardware != null) {
+            String lower = cpuHardware.toLowerCase(Locale.ROOT);
+            if (lower.contains("qcom") || lower.contains("qualcomm") || lower.contains("snapdragon")) {
+                return "Adreno GPU（高通）";
+            } else if (lower.contains("mtk") || lower.contains("mediatek")) {
+                return "Mali GPU（联发科）";
+            } else if (lower.contains("kirin") || lower.contains("hisilicon")) {
+                return "Mali GPU（海思麒麟）";
+            } else if (lower.contains("exynos")) {
+                return "Mali/Xclipse GPU（三星）";
+            }
+        }
+
+        return "未识别";
+    }
+
+    private String getCpuHardware() {
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("Hardware")) {
+                    return line.split(":", 2)[1].trim();
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    // endregion
+
+    // region 工具方法
+
+    private String readFile(String path) {
+        File file = new File(path);
+        if (!file.exists() || !file.canRead()) return null;
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+        } catch (IOException e) {
+            return null;
+        }
+        return sb.toString().trim();
+    }
+
+    private String readSysfsString(String[] paths, String defaultValue) {
+        for (String path : paths) {
+            String value = readFile(path);
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return defaultValue;
+    }
+
+    @android.annotation.SuppressLint("PrivateApi")
+    private String getSystemProperty(String propertyName) {
+        try {
+            Class<?> systemProperties = Class.forName("android.os.SystemProperties");
+            Method get = systemProperties.getMethod("get", String.class);
+            Object value = get.invoke(null, propertyName);
+            return value != null ? value.toString() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // endregion
+
+    private static class ActivationInfo {
+        long timestamp;
+        String dateStr;
+        int usageDays;
+        String source;
+        float confidence;
+
+        void set(long timestamp, String source, float confidence) {
+            this.timestamp = timestamp;
+            this.source = source;
+            this.confidence = confidence;
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            this.dateStr = sdf.format(new Date(timestamp));
+            this.usageDays = (int) ((System.currentTimeMillis() - timestamp) / (24 * 60 * 60 * 1000L));
+        }
     }
 }

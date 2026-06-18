@@ -2,6 +2,7 @@ package com.batteryhealth.app;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -13,6 +14,7 @@ import com.batteryhealth.app.data.database.DatabaseEncryptionHelper;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.ui.error.ErrorActivity;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -43,12 +45,41 @@ public class BatteryHealthApplication extends Application {
         try {
             instance = this;
             mainHandler = new Handler(Looper.getMainLooper());
-            
+
+            // 注册全局未捕获异常处理器，跳转错误兜底页
+            registerUncaughtExceptionHandler();
+
             // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
             startDatabaseInitAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 注册全局未捕获异常处理器，所有未处理异常都会跳转到 ErrorActivity。
+     */
+    private void registerUncaughtExceptionHandler() {
+        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                Intent intent = ErrorActivity.createIntent(
+                        this,
+                        "应用发生崩溃",
+                        "我们已记录错误信息，请点击下方按钮重启应用。",
+                        throwable
+                );
+                startActivity(intent);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start ErrorActivity", e);
+            } finally {
+                if (defaultHandler != null) {
+                    defaultHandler.uncaughtException(thread, throwable);
+                }
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(1);
+            }
+        });
     }
     
     /**

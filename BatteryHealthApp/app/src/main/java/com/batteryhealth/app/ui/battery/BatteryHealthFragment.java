@@ -21,6 +21,8 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
+import java.util.Locale;
+
 /**
  * 电池健康Fragment
  * 
@@ -201,7 +203,7 @@ public class BatteryHealthFragment extends Fragment {
                 float healthPercentage = info.getHealthPercentage();
                 if (tvHealthPercentage != null) {
                     if (info.hasValidHealthData()) {
-                        tvHealthPercentage.setText(String.format("%.1f%%", healthPercentage));
+                        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
                     } else {
                         tvHealthPercentage.setText("--");
                     }
@@ -215,7 +217,7 @@ public class BatteryHealthFragment extends Fragment {
                     String source = batteryDataManager.getHealthSourceText();
                     float confidence = info.getHealthConfidence();
                     String confidenceText = confidence > 0
-                            ? String.format(" (可信度 %.0f%%)", confidence * 100)
+                            ? String.format(Locale.getDefault(), " (可信度 %.0f%%)", confidence * 100)
                             : "";
                     tvHealthStatus.setText(info.getHealthDescription() + " · " + source + confidenceText);
                 }
@@ -247,7 +249,7 @@ public class BatteryHealthFragment extends Fragment {
                     int currentCap = info.getCurrentCapacity();
                     int designCap = info.getDesignCapacity();
                     if (currentCap > 0 && designCap > 0) {
-                        tvCapacity.setText(String.format("%d / %d mAh", currentCap, designCap));
+                        tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap));
                     } else {
                         tvCapacity.setText("无法读取");
                     }
@@ -256,18 +258,18 @@ public class BatteryHealthFragment extends Fragment {
                 if (tvCycleCount != null) {
                     if (info.hasValidCycleCount()) {
                         String estimatedMark = info.isCycleCountEstimated() ? " · 估算" : "";
-                        tvCycleCount.setText(String.format("%d 次%s", info.getCycleCount(), estimatedMark));
+                        tvCycleCount.setText(String.format(Locale.getDefault(), "%d 次%s", info.getCycleCount(), estimatedMark));
                     } else {
                         tvCycleCount.setText("无法读取");
                     }
                 }
                 
                 if (tvTemperature != null) {
-                    tvTemperature.setText(String.format("%.1f°C", info.getTemperature()));
+                    tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
                 }
                 
                 if (tvVoltage != null) {
-                    tvVoltage.setText(String.format("%.0f mV", info.getVoltage()));
+                    tvVoltage.setText(String.format(Locale.getDefault(), "%.0f mV", info.getVoltage()));
                 }
                 
                 if (tvBatterySource != null) {
@@ -293,7 +295,7 @@ public class BatteryHealthFragment extends Fragment {
                 if (tvCurrentNow != null) {
                     int currentNow = info.getCurrentNow();
                     if (currentNow != 0) {
-                        tvCurrentNow.setText(String.format("%.0f mA", Math.abs(currentNow / 1000.0f)));
+                        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentNow / 1000.0f)));
                     } else {
                         tvCurrentNow.setText("-- mA");
                     }

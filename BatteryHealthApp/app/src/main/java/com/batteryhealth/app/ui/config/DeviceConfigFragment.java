@@ -2,6 +2,8 @@ package com.batteryhealth.app.ui.config;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+
+import java.util.Locale;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -129,14 +131,14 @@ public class DeviceConfigFragment extends Fragment {
             if (tvActivationSource != null) {
                 String sourceText = deviceInfoManager.getActivationSourceText();
                 float confidence = deviceInfoManager.getActivationConfidence();
-                tvActivationSource.setText(String.format("%s (可信度 %.0f%%)", sourceText, confidence * 100));
+                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", sourceText, confidence * 100));
             }
             // 可用内存
             if (tvAvailableMemory != null) {
                 long availMem = config.getAvailableMemory();
                 if (availMem > 0) {
                     tvAvailableMemory.setText(availMem >= 1024
-                        ? String.format("%.1f GB", availMem / 1024.0)
+                        ? String.format(Locale.getDefault(), "%.1f GB", availMem / 1024.0)
                         : availMem + " MB");
                 } else {
                     tvAvailableMemory.setText("--");

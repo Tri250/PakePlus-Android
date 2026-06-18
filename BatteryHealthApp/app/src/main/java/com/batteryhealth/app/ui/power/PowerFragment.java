@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.Locale;
+
 import java.util.LinkedList;
 
 import androidx.annotation.NonNull;
@@ -22,6 +24,8 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.DeviceDatabaseManager;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -196,13 +200,13 @@ public class PowerFragment extends Fragment {
             addSample(voltage, current, power, level);
 
             if (tvVoltage != null) {
-                tvVoltage.setText(String.format("%.2f V", voltage));
+                tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltage));
             }
             if (tvCurrent != null) {
-                tvCurrent.setText(String.format("%.2f A", current));
+                tvCurrent.setText(String.format(Locale.getDefault(), "%.2f A", current));
             }
             if (tvPower != null) {
-                tvPower.setText(String.format("%.1f W", power));
+                tvPower.setText(String.format(Locale.getDefault(), "%.1f W", power));
             }
             if (tvChargeType != null) {
                 String chargeType = getChargeTypeDescription(power);
@@ -241,7 +245,7 @@ public class PowerFragment extends Fragment {
                     if (batteryStatus != null) {
                         int temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
                         if (temp != -1) {
-                            tvBatteryTemp.setText(String.format("%.1f°C", temp / 10.0f));
+                            tvBatteryTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temp / 10.0f));
                         }
                     }
                 } catch (Exception e) {
@@ -369,18 +373,26 @@ public class PowerFragment extends Fragment {
     }
     
     private String getChargeTypeDescription(float power) {
-        if (power >= 60) {
-            return "超快闪充";
-        } else if (power >= 40) {
-            return "超级快充";
-        } else if (power >= 18) {
-            return "快速充电";
-        } else if (power >= 10) {
-            return "标准充电";
-        } else if (power > 0) {
-            return "慢速充电";
-        } else {
-            return "未充电";
+        Context ctx = getContext();
+        int officialPower = 0;
+        if (ctx != null) {
+            officialPower = DeviceDatabaseManager.getInstance(ctx).getTypicalChargePower();
         }
+
+        if (power <= 0) return "未充电";
+
+        // 基于机型数据库官方快充功率判断，更准确
+        if (officialPower > 0) {
+            if (power >= officialPower * 0.6f && power >= 60) return "超快闪充";
+            if (power >= officialPower * 0.5f && power >= 30) return "快速充电";
+            if (power >= officialPower * 0.25f && power >= 10) return "标准充电";
+            return "慢速充电";
+        }
+
+        // 通用阈值兜底
+        if (power >= 60) return "超快闪充";
+        if (power >= 30) return "快速充电";
+        if (power >= 10) return "标准充电";
+        return "慢速充电";
     }
 }
