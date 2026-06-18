@@ -216,19 +216,6 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 液态玻璃底部导航 -->
-    <!-- ============================== -->
-    <!-- 2026-06-18 重构：不在 style 中指定 itemTextAppearance，避免低版本 Material 组件崩溃 -->
-    <style name="LiquidGlassBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="itemIconSize">26dp</item>
-        <item name="itemIconTint">@color/bottom_nav_color</item>
-        <item name="itemTextColor">@color/bottom_nav_color</item>
-        <item name="itemActiveIndicatorStyle">@null</item>
-        <item name="labelVisibilityMode">labeled</item>
-        <item name="backgroundTint">@color/liquid_glass_surface</item>
-    </style>
-
-    <!-- ============================== -->
     <!-- 液态玻璃开关 -->
     <!-- ============================== -->
     <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
@@ -256,7 +243,6 @@
     <style name="iOSButton.Secondary" parent="LiquidGlassButton.Secondary" />
     <style name="iOSProgressBar" parent="LiquidGlassProgressBar" />
     <style name="iOSCircularProgress" parent="LiquidGlassCircularProgress" />
-    <style name="iOSBottomNav" parent="LiquidGlassBottomNav" />
     <style name="iOSSwitch" parent="LiquidGlassSwitch" />
     <style name="iOSTabLayout" parent="LiquidGlassTabLayout" />
     <style name="iOSTabText" parent="LiquidGlassTabText" />

@@ -406,7 +406,8 @@ public class BatteryMonitorService extends Service {
                     if (isOriginalBattery(serial)) {
                         currentBatteryInfo.setBatterySource("original");
                     } else {
-                        currentBatteryInfo.setBatterySource("third_party");
+                        // 无法可靠判定为原装时，统一标记为未知，避免误导用户
+                        currentBatteryInfo.setBatterySource("unknown");
                     }
                 }
             }
@@ -458,10 +459,10 @@ public class BatteryMonitorService extends Service {
             try {
                 NotificationChannel channel = new NotificationChannel(
                         CHANNEL_ID,
-                        "电池监测",
+                        getString(R.string.battery_monitor_channel_name),
                         NotificationManager.IMPORTANCE_LOW
                 );
-                channel.setDescription("实时监测电池状态");
+                channel.setDescription(getString(R.string.battery_monitor_channel_description));
                 NotificationManager manager = getSystemService(NotificationManager.class);
                 if (manager != null) {
                     manager.createNotificationChannel(channel);
@@ -597,13 +598,14 @@ public class BatteryMonitorService extends Service {
                     this, 0, intent, PendingIntent.FLAG_IMMUTABLE
             );
             
-            String content = String.format("电量: %d%% | 温度: %.1f°C | 健康度: %.1f%%",
+            String content = String.format(
+                    getString(R.string.battery_monitor_notification_content),
                     currentBatteryInfo.getLevel(),
                     currentBatteryInfo.getTemperature(),
                     currentBatteryInfo.getHealthPercentage());
-            
+
             return new NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setContentTitle("电池监测中")
+                    .setContentTitle(getString(R.string.battery_monitor_notification_title))
                     .setContentText(content)
                     .setSmallIcon(R.drawable.ic_battery)
                     .setContentIntent(pendingIntent)
@@ -614,8 +616,8 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error building notification: " + e.getMessage());
             // 返回一个基本通知
             return new NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setContentTitle("电池监测")
-                    .setContentText("监测服务运行中")
+                    .setContentTitle(getString(R.string.battery_monitor_channel_name))
+                    .setContentText(getString(R.string.battery_monitor_notification_fallback))
                     .setSmallIcon(R.drawable.ic_battery)
                     .build();
         }

@@ -6,7 +6,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKeys;
+import androidx.security.crypto.MasterKey;
 
 import java.io.File;
 import java.security.SecureRandom;
@@ -28,21 +28,46 @@ public class DatabaseEncryptionHelper {
 
     private static final String TAG = "DatabaseEncryptionHelper";
     private static final String PREFS_FILE = "battery_db_key_prefs";
+    private static final String PREFS_FILE_PLAIN = "battery_db_key_prefs_plain";
     private static final String KEY_PASSPHRASE = "db_passphrase";
+    private static final String KEY_USE_PLAIN_PREFS = "use_plain_prefs_fallback";
     private static final int PASSPHRASE_LENGTH = 32;
     private static final String DATABASE_NAME = "battery_health_db";
 
     /**
-     * 获取数据库加密密钥
+     * 获取数据库加密密钥。
+     * <p>
+     * 优先使用 EncryptedSharedPreferences + Android Keystore 存储；
+     * 若 Keystore 不可用（如部分定制系统、root 设备），降级到普通 SharedPreferences，
+     * 保证应用不崩溃且同一安装周期内密钥保持一致。
      */
     public static byte[] getPassphrase(Context context) {
         Context appContext = context.getApplicationContext();
-        SharedPreferences securePrefs = getEncryptedSharedPreferences(appContext);
-        String encoded = securePrefs.getString(KEY_PASSPHRASE, null);
+
+        // 用于记录降级标志的独立 SharedPreferences（不存储密钥本身）
+        SharedPreferences fallbackFlagPrefs = appContext.getSharedPreferences(
+                PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
+        boolean forcePlain = fallbackFlagPrefs.getBoolean(KEY_USE_PLAIN_PREFS, false);
+
+        SharedPreferences prefs = null;
+        if (!forcePlain) {
+            prefs = getEncryptedSharedPreferences(appContext);
+            if (prefs == null) {
+                // 一旦初始化失败，后续整个安装周期都使用明文存储，避免密钥不一致
+                forcePlain = true;
+                fallbackFlagPrefs.edit().putBoolean(KEY_USE_PLAIN_PREFS, true).apply();
+                Log.w(TAG, "EncryptedSharedPreferences unavailable, falling back to plain prefs");
+            }
+        }
+        if (prefs == null) {
+            prefs = appContext.getSharedPreferences(PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
+        }
+
+        String encoded = prefs.getString(KEY_PASSPHRASE, null);
         if (encoded == null) {
             byte[] passphrase = generatePassphrase();
             encoded = Base64.encodeToString(passphrase, Base64.NO_WRAP);
-            securePrefs.edit().putString(KEY_PASSPHRASE, encoded).apply();
+            prefs.edit().putString(KEY_PASSPHRASE, encoded).apply();
             return passphrase;
         }
         return Base64.decode(encoded, Base64.NO_WRAP);
@@ -187,16 +212,19 @@ public class DatabaseEncryptionHelper {
 
     private static SharedPreferences getEncryptedSharedPreferences(Context context) {
         try {
-            String masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
             return EncryptedSharedPreferences.create(
-                    masterKeyAlias,
-                    PREFS_FILE,
                     context,
+                    PREFS_FILE,
+                    masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize encrypted preferences", e);
+            Log.e(TAG, "Failed to initialize encrypted preferences", e);
+            return null;
         }
     }
 

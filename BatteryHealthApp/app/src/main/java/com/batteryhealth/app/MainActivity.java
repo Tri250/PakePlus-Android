@@ -253,14 +253,7 @@ public class MainActivity extends AppCompatActivity {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS);
         }
 
-        // Android 13+ 使用新的媒体权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
-        } else {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
-
-        // 设备信息权限 - Android 10+ 需要特殊处理
+        // 设备信息权限 - Android 10+ 无需此权限
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             permissions.add(Manifest.permission.READ_PHONE_STATE);
         }
