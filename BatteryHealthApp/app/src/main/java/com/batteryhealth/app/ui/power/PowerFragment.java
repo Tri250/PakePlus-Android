@@ -91,9 +91,10 @@ public class PowerFragment extends Fragment {
      * 创建友好的错误页：标题 + 提示文案 + "重试" 按钮。
      */
     private View createErrorView(Throwable t) {
-        Context ctx = null;
-        try { ctx = getContext(); } catch (Throwable ignored) {}
-        if (ctx == null) ctx = requireActivity().getApplicationContext();
+        final Context[] ctxHolder = new Context[1];
+        try { ctxHolder[0] = getContext(); } catch (Throwable ignored) {}
+        if (ctxHolder[0] == null) ctxHolder[0] = requireActivity().getApplicationContext();
+        final Context ctx = ctxHolder[0];
 
         android.widget.LinearLayout root = new android.widget.LinearLayout(ctx);
         root.setOrientation(android.widget.LinearLayout.VERTICAL);

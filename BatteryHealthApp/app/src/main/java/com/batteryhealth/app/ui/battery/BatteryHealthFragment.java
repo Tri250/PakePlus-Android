@@ -91,9 +91,10 @@ public class BatteryHealthFragment extends Fragment {
      * 该方法自身已 try-catch，绝不二次崩溃。
      */
     private View createErrorView(Throwable t) {
-        Context ctx = null;
-        try { ctx = getContext(); } catch (Throwable ignored) {}
-        if (ctx == null) ctx = requireActivity().getApplicationContext();
+        final Context[] ctxHolder = new Context[1];
+        try { ctxHolder[0] = getContext(); } catch (Throwable ignored) {}
+        if (ctxHolder[0] == null) ctxHolder[0] = requireActivity().getApplicationContext();
+        final Context ctx = ctxHolder[0];
 
         android.widget.LinearLayout root = new android.widget.LinearLayout(ctx);
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
