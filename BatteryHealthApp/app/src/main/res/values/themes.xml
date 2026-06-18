@@ -21,7 +21,7 @@
 
         <!-- 状态栏 - 液态玻璃 -->
         <item name="android:statusBarColor">@color/liquid_glass_surface</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightStatusBar">true</item>
 
         <!-- 导航栏 - 液态玻璃 -->
         <item name="android:navigationBarColor">@color/liquid_glass_surface</item>

@@ -378,7 +378,10 @@ public class DeviceInfoManager {
     private long getPackageFirstInstallTime(String packageName) {
         try {
             PackageManager pm = context.getPackageManager();
-            PackageInfo info = pm.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES);
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? PackageManager.GET_SIGNING_CERTIFICATES
+                    : PackageManager.GET_SIGNATURES;
+            PackageInfo info = pm.getPackageInfo(packageName, flags);
             return info.firstInstallTime;
         } catch (Exception e) {
             return -1;
