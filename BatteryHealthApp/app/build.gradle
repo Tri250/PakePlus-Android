@@ -15,8 +15,8 @@ android {
         applicationId "com.batteryhealth.app"
         minSdk 24
         targetSdk 36
-        versionCode 46
-        versionName "4.4.3"
+        versionCode 49
+        versionName "4.4.6"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         

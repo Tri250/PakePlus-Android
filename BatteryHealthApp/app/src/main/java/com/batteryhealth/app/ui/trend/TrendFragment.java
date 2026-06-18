@@ -156,8 +156,8 @@ public class TrendFragment extends Fragment {
     }
     
     private void setupChart(LineChart chart, String label, int colorRes) {
-        if (chart == null) return;
-        
+        if (chart == null || !isAdded()) return;
+
         chart.getDescription().setEnabled(false);
         chart.setTouchEnabled(true);
         chart.setDragEnabled(true);
@@ -205,22 +205,29 @@ public class TrendFragment extends Fragment {
     }
     
     private void loadData() {
+        if (!isAdded() || isDetached()) return;
         new Thread(() -> {
             try {
+                if (!isAdded() || isDetached()) return;
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
                 if (app == null) return;
                 AppDatabase db = app.getDatabase();
                 if (db == null) return;
-                
-                // 获取最近7天的电池数据
+
+                // 获取最近指定天数的电池数据
                 long startTime = System.currentTimeMillis() - (long) selectedTimeRangeDays * 24 * 60 * 60 * 1000;
                 List<BatteryInfo> batteryData = db.batteryInfoDao().getSince(startTime);
 
                 // 获取充电功率历史
                 List<PowerHistory> powerData = db.powerHistoryDao().getSince(startTime);
-                
+
+                final List<BatteryInfo> finalBattery = batteryData;
+                final List<PowerHistory> finalPower = powerData;
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> updateCharts(batteryData, powerData));
+                    getActivity().runOnUiThread(() -> {
+                        if (!isAdded() || isDetached()) return;
+                        updateCharts(finalBattery, finalPower);
+                    });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error loading trend data: " + e.getMessage());
@@ -303,8 +310,8 @@ public class TrendFragment extends Fragment {
     }
     
     private void setChartData(LineChart chart, String label, List<Entry> entries, int colorRes) {
-        if (chart == null || entries == null || entries.isEmpty()) return;
-        
+        if (chart == null || entries == null || entries.isEmpty() || !isAdded()) return;
+
         LineDataSet dataSet = new LineDataSet(entries, label);
         int color = ContextCompat.getColor(requireContext(), colorRes);
         dataSet.setColor(color);
