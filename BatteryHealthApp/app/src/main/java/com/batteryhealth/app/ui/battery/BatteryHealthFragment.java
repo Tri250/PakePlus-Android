@@ -331,29 +331,53 @@ public class BatteryHealthFragment extends Fragment {
         });
     }
     
+    /**
+     * 递归遍历视图树，对每个 MaterialCardView 应用淡入动画。
+     * 原实现只对 NestedScrollView 的直接子 LinearLayout 应用动画，导致内部卡片没有动画。
+     */
     private void animateCardsEntry(View view) {
         try {
-            if (!(view instanceof android.view.ViewGroup)) return;
+            if (view == null || !(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
+            animateViewGroupRecursive(root, 0);
         } catch (Exception e) {
             Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
+        }
+    }
+
+    private void animateViewGroupRecursive(android.view.ViewGroup parent, int depth) {
+        if (parent == null) return;
+        // 限制递归深度，避免深层嵌套导致性能问题
+        if (depth > 4) return;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child == null) continue;
+            // 跳过 ViewPager 容器（保持兼容历史代码）
+            if (child.getId() == R.id.view_pager) continue;
+            // 仅对卡片或顶层子元素执行动画
+            boolean shouldAnimate = (child instanceof com.google.android.material.card.MaterialCardView)
+                    || depth == 1
+                    || (depth == 0 && parent.getChildCount() > 1);
+            if (shouldAnimate) {
+                try {
+                    child.setAlpha(0f);
+                    child.setTranslationY(60f);
+                    child.setScaleX(0.94f);
+                    child.setScaleY(0.94f);
+                    child.animate()
+                        .alpha(1f)
+                        .translationY(0f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(650)
+                        .setStartDelay(i * 100L)
+                        .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
+                        .start();
+                } catch (Exception ignored) {}
+            }
+            if (child instanceof android.view.ViewGroup) {
+                animateViewGroupRecursive((android.view.ViewGroup) child, depth + 1);
+            }
         }
     }
 

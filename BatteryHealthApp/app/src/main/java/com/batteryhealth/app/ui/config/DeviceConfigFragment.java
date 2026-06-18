@@ -196,27 +196,44 @@ public class DeviceConfigFragment extends Fragment {
     
     private void animateCardsEntry(View view) {
         try {
-            if (!(view instanceof android.view.ViewGroup)) return;
+            if (view == null || !(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
+            animateViewGroupRecursive(root, 0);
         } catch (Exception e) {
             Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
+        }
+    }
+
+    private void animateViewGroupRecursive(android.view.ViewGroup parent, int depth) {
+        if (parent == null) return;
+        if (depth > 4) return;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child == null) continue;
+            if (child.getId() == R.id.view_pager) continue;
+            boolean shouldAnimate = (child instanceof com.google.android.material.card.MaterialCardView)
+                    || depth == 1
+                    || (depth == 0 && parent.getChildCount() > 1);
+            if (shouldAnimate) {
+                try {
+                    child.setAlpha(0f);
+                    child.setTranslationY(60f);
+                    child.setScaleX(0.94f);
+                    child.setScaleY(0.94f);
+                    child.animate()
+                        .alpha(1f)
+                        .translationY(0f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(650)
+                        .setStartDelay(i * 100L)
+                        .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
+                        .start();
+                } catch (Exception ignored) {}
+            }
+            if (child instanceof android.view.ViewGroup) {
+                animateViewGroupRecursive((android.view.ViewGroup) child, depth + 1);
+            }
         }
     }
 

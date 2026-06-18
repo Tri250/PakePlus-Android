@@ -78,12 +78,17 @@ public class CustomBottomNavigationView extends LinearLayout {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, this, false);
+            if (view == null) continue;
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
 
-            icon.setImageResource(item.iconRes);
-            label.setText(item.label);
+            if (icon != null) {
+                icon.setImageResource(item.iconRes);
+            }
+            if (label != null) {
+                label.setText(item.label);
+            }
 
             view.setOnClickListener(v -> {
                 if (listener != null) {
@@ -95,7 +100,9 @@ public class CustomBottomNavigationView extends LinearLayout {
             itemViews.add(view);
         }
 
-        updateSelection(0);
+        if (!itemViews.isEmpty()) {
+            updateSelection(0);
+        }
     }
 
     /**
