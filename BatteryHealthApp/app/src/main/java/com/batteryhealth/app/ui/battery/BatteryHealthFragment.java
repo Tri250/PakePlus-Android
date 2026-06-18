@@ -77,13 +77,14 @@ public class BatteryHealthFragment extends Fragment {
             return inflater.inflate(R.layout.fragment_battery_health, container, false);
         } catch (Exception e) {
             Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            // 创建错误提示视图，避免完全空白
-            return createErrorView("界面加载失败，请重启应用");
+            // 创建错误提示视图，避免完全空白，同时显示异常信息便于排查
+            return createErrorView(e);
         }
     }
 
-    private View createErrorView(String message) {
+    private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);

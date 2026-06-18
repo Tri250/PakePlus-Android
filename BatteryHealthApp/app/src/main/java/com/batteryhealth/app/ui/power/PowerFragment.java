@@ -83,12 +83,13 @@ public class PowerFragment extends Fragment {
             return inflater.inflate(R.layout.fragment_power, container, false);
         } catch (Exception e) {
             Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            return createErrorView("界面加载失败，请重启应用");
+            return createErrorView(e);
         }
     }
 
-    private View createErrorView(String message) {
+    private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);

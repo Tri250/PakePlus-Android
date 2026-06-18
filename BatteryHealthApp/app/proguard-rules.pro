@@ -104,6 +104,29 @@
 -keep class androidx.security.crypto.** { *; }
 -dontwarn androidx.security.crypto.**
 
+# Material Components 与 AndroidX UI 组件：避免 release 混淆后布局解析失败
+-keep class com.google.android.material.card.MaterialCardView { *; }
+-keep class androidx.core.widget.NestedScrollView { *; }
+-keep class androidx.viewpager2.widget.ViewPager2 { *; }
+-keep class androidx.recyclerview.widget.RecyclerView { *; }
+-keep class androidx.coordinatorlayout.widget.CoordinatorLayout { *; }
+
+# Fragment 与自定义 View
+-keep class * extends androidx.fragment.app.Fragment { *; }
+-keep class com.batteryhealth.app.ui.view.CustomBottomNavigationView { *; }
+
+# 保留所有 public View 构造函数，防止 XML 反射创建失败
+-keep public class * extends android.view.View {
+    public <init>(android.content.Context);
+    public <init>(android.content.Context, android.util.AttributeSet);
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+-keep public class * extends android.view.ViewGroup {
+    public <init>(android.content.Context);
+    public <init>(android.content.Context, android.util.AttributeSet);
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
 # 移除日志
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
