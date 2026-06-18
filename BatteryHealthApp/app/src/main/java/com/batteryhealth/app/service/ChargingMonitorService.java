@@ -85,14 +85,20 @@ public class ChargingMonitorService extends Service {
     private Runnable updateTask = new Runnable() {
         @Override
         public void run() {
-            if (isCharging) {
-                readChargingPower();
-                updateNotification();
-                if (dataListener != null) {
-                    dataListener.onChargingDataUpdated(getCurrentPowerHistory());
+            try {
+                if (isCharging) {
+                    readChargingPower();
+                    updateNotification();
+                    if (dataListener != null) {
+                        dataListener.onChargingDataUpdated(getCurrentPowerHistory());
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in update task: " + e.getMessage());
             }
-            handler.postDelayed(this, UPDATE_INTERVAL);
+            if (handler != null) {
+                handler.postDelayed(this, UPDATE_INTERVAL);
+            }
         }
     };
     
@@ -358,18 +364,18 @@ public class ChargingMonitorService extends Service {
      * 读取电压
      */
     private float readVoltage() {
+        BufferedReader reader = null;
         try {
             File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
             if (voltageFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(voltageFile));
+                reader = new BufferedReader(new FileReader(voltageFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     long voltageUv = Long.parseLong(line.trim());
                     return voltageUv / 1000000.0f; // 转换为V
                 }
             }
-            
+
             // 尝试从BatteryManager读取
             BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
@@ -383,26 +389,27 @@ public class ChargingMonitorService extends Service {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading voltage: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return 0;
     }
-    
-    /**
-     * 读取电流
-     */
+
     private float readCurrent() {
+        BufferedReader reader = null;
         try {
             File currentFile = new File("/sys/class/power_supply/battery/current_now");
             if (currentFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(currentFile));
+                reader = new BufferedReader(new FileReader(currentFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     long currentUa = Long.parseLong(line.trim());
                     return Math.abs(currentUa) / 1000000.0f; // 转换为A，取绝对值
                 }
             }
-            
+
             // 尝试从BatteryManager读取
             BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
@@ -411,6 +418,10 @@ public class ChargingMonitorService extends Service {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading current: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
         return 0;
     }
@@ -567,15 +578,19 @@ public class ChargingMonitorService extends Service {
      */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
+            try {
+                NotificationChannel channel = new NotificationChannel(
                         CHANNEL_ID,
                         getString(R.string.charging_monitor_channel_name),
                         NotificationManager.IMPORTANCE_LOW
                 );
                 channel.setDescription(getString(R.string.charging_monitor_channel_description));
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    manager.createNotificationChannel(channel);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel: " + e.getMessage());
             }
         }
     }

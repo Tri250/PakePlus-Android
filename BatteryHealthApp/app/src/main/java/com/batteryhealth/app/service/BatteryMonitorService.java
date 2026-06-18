@@ -281,42 +281,52 @@ public class BatteryMonitorService extends Service {
      * 读取充电循环次数
      */
     private void readCycleCount() {
+        BufferedReader reader = null;
         try {
             // 尝试从sysfs读取
             File cycleCountFile = new File("/sys/class/power_supply/battery/cycle_count");
             if (cycleCountFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(cycleCountFile));
+                reader = new BufferedReader(new FileReader(cycleCountFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     int cycleCount = Integer.parseInt(line.trim());
                     currentBatteryInfo.setCycleCount(cycleCount);
                     return;
                 }
             }
-            
+
             // 尝试替代路径
             String[] paths = {
                 "/sys/class/power_supply/bms/cycle_count",
                 "/sys/class/power_supply/maxfg/cycle_count",
                 "/sys/class/power_supply/battery/battery_cycle"
             };
-            
+
             for (String path : paths) {
                 File file = new File(path);
                 if (file.exists()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(file));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null) {
-                        int cycleCount = Integer.parseInt(line.trim());
-                        currentBatteryInfo.setCycleCount(cycleCount);
-                        return;
+                    try {
+                        reader = new BufferedReader(new FileReader(file));
+                        String line = reader.readLine();
+                        if (line != null) {
+                            int cycleCount = Integer.parseInt(line.trim());
+                            currentBatteryInfo.setCycleCount(cycleCount);
+                            return;
+                        }
+                    } finally {
+                        if (reader != null) {
+                            try { reader.close(); } catch (Exception ignored) {}
+                            reader = null;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading cycle count: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
     }
     
@@ -324,39 +334,45 @@ public class BatteryMonitorService extends Service {
      * 读取电池容量
      */
     private void readBatteryCapacity() {
+        BufferedReader reader = null;
         try {
             // 读取charge_counter (当前容量，单位uAh)
             File chargeCounterFile = new File("/sys/class/power_supply/battery/charge_counter");
             if (chargeCounterFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(chargeCounterFile));
+                reader = new BufferedReader(new FileReader(chargeCounterFile));
                 String line = reader.readLine();
-                reader.close();
                 if (line != null) {
                     int chargeCounter = Integer.parseInt(line.trim());
                     currentBatteryInfo.setChargeCounter(chargeCounter);
                     currentBatteryInfo.setCurrentCapacity(chargeCounter / 1000); // 转换为mAh
                 }
             }
-            
+
             // 读取设计容量
             File chargeFullFile = new File("/sys/class/power_supply/battery/charge_full");
             if (chargeFullFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(chargeFullFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int chargeFull = Integer.parseInt(line.trim());
-                    currentBatteryInfo.setDesignCapacity(chargeFull / 1000); // 转换为mAh
+                try {
+                    reader = new BufferedReader(new FileReader(chargeFullFile));
+                    String line = reader.readLine();
+                    if (line != null) {
+                        int chargeFull = Integer.parseInt(line.trim());
+                        currentBatteryInfo.setDesignCapacity(chargeFull / 1000); // 转换为mAh
+                    }
+                } finally {
+                    if (reader != null) {
+                        try { reader.close(); } catch (Exception ignored) {}
+                        reader = null;
+                    }
                 }
             }
-            
+
             // 计算健康度
-            if (currentBatteryInfo.getDesignCapacity() > 0 && 
+            if (currentBatteryInfo.getDesignCapacity() > 0 &&
                 currentBatteryInfo.getCurrentCapacity() > 0) {
-                float healthPercentage = (currentBatteryInfo.getCurrentCapacity() * 100.0f) / 
+                float healthPercentage = (currentBatteryInfo.getCurrentCapacity() * 100.0f) /
                                          currentBatteryInfo.getDesignCapacity();
                 currentBatteryInfo.setHealthPercentage(healthPercentage);
-                
+
                 // 设置健康状态
                 if (healthPercentage >= 90) {
                     currentBatteryInfo.setHealthStatus("good");
@@ -370,6 +386,10 @@ public class BatteryMonitorService extends Service {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error reading battery capacity: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
     }
     
@@ -392,16 +412,16 @@ public class BatteryMonitorService extends Service {
      * 判断电池来源
      */
     private void detectBatterySource() {
+        BufferedReader reader = null;
         try {
             // 读取电池序列号
             File serialFile = new File("/sys/class/power_supply/battery/serial_number");
             if (serialFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(serialFile));
+                reader = new BufferedReader(new FileReader(serialFile));
                 String serial = reader.readLine();
-                reader.close();
                 if (serial != null) {
                     currentBatteryInfo.setBatterySerial(serial);
-                    
+
                     // 根据序列号判断来源
                     if (isOriginalBattery(serial)) {
                         currentBatteryInfo.setBatterySource("original");
@@ -414,6 +434,10 @@ public class BatteryMonitorService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error detecting battery source: " + e.getMessage());
             currentBatteryInfo.setBatterySource("unknown");
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
     }
     

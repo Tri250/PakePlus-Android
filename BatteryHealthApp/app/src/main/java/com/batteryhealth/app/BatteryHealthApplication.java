@@ -197,6 +197,7 @@ public class BatteryHealthApplication extends Application {
     /**
      * 获取数据库实例。
      * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
+     * 注意：若所有数据库初始化方案均失败，此方法可能返回 null，调用方需做 null 检查。
      */
     public AppDatabase getDatabase() {
         startDatabaseInitAsync();
@@ -208,6 +209,17 @@ public class BatteryHealthApplication extends Application {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            }
+        }
+        if (database == null) {
+            Log.e(TAG, "Database is null after initialization, creating in-memory fallback");
+            try {
+                database = Room.inMemoryDatabaseBuilder(
+                        getApplicationContext(),
+                        AppDatabase.class
+                ).build();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to create in-memory database fallback: " + e.getMessage());
             }
         }
         return database;

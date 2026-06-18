@@ -84,40 +84,50 @@ public class DeviceInfoManager {
      * 加载处理器信息
      */
     private void loadCpuInfo() {
+        BufferedReader reader = null;
         try {
             // 获取CPU核心数
             int cores = Runtime.getRuntime().availableProcessors();
             deviceConfig.setCpuCores(cores);
-            
+
             // 读取CPU信息
             File cpuInfoFile = new File("/proc/cpuinfo");
             if (cpuInfoFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(cpuInfoFile));
+                reader = new BufferedReader(new FileReader(cpuInfoFile));
                 StringBuilder cpuInfo = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.contains("Hardware") || line.contains("Processor") || 
+                    if (line.contains("Hardware") || line.contains("Processor") ||
                         line.contains("model name")) {
                         cpuInfo.append(line).append("\n");
                     }
                 }
-                reader.close();
                 deviceConfig.setCpuInfo(cpuInfo.toString().trim());
             }
-            
+
             // 读取CPU频率
             File maxFreqFile = new File("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
             if (maxFreqFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(maxFreqFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int maxFreq = Integer.parseInt(line.trim()) / 1000; // 转换为MHz
-                    deviceConfig.setCpuFreqMax(maxFreq);
+                try {
+                    reader = new BufferedReader(new FileReader(maxFreqFile));
+                    String line = reader.readLine();
+                    if (line != null) {
+                        int maxFreq = Integer.parseInt(line.trim()) / 1000; // 转换为MHz
+                        deviceConfig.setCpuFreqMax(maxFreq);
+                    }
+                } finally {
+                    if (reader != null) {
+                        try { reader.close(); } catch (Exception ignored) {}
+                        reader = null;
+                    }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error loading CPU info: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
     }
     
@@ -208,31 +218,41 @@ public class DeviceInfoManager {
      * 加载电池信息
      */
     private void loadBatteryInfo() {
+        BufferedReader reader = null;
         try {
             // 读取电池技术
             File techFile = new File("/sys/class/power_supply/battery/technology");
             if (techFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(techFile));
+                reader = new BufferedReader(new FileReader(techFile));
                 String technology = reader.readLine();
-                reader.close();
                 if (technology != null) {
                     deviceConfig.setBatteryTechnology(technology);
                 }
             }
-            
+
             // 读取电池容量
             File capacityFile = new File("/sys/class/power_supply/battery/charge_full_design");
             if (capacityFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(capacityFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    int capacity = Integer.parseInt(line.trim()) / 1000; // 转换为mAh
-                    deviceConfig.setBatteryCapacity(capacity);
+                try {
+                    reader = new BufferedReader(new FileReader(capacityFile));
+                    String line = reader.readLine();
+                    if (line != null) {
+                        int capacity = Integer.parseInt(line.trim()) / 1000; // 转换为mAh
+                        deviceConfig.setBatteryCapacity(capacity);
+                    }
+                } finally {
+                    if (reader != null) {
+                        try { reader.close(); } catch (Exception ignored) {}
+                        reader = null;
+                    }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error loading battery info: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try { reader.close(); } catch (Exception ignored) {}
+            }
         }
     }
     
