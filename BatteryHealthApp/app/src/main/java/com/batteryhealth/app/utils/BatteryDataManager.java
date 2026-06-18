@@ -185,7 +185,8 @@ public class BatteryDataManager {
         info.setHealthStatus(mapHealthStatusToCode(health.healthLevel));
         info.setHealthConfidence(health.confidence);
         info.setHealthDataSource(health.confidence >= 0.95f ? "fcc_ratio" :
-                (health.confidence >= 0.70f ? "charge_counter_ratio" : "unknown"));
+                (health.confidence >= 0.70f ? "charge_counter_ratio" :
+                        (health.confidence >= 0.30f ? "usage_days_estimate" : "unknown")));
 
         // 9. 循环次数
         int cycleCount = readCycleCount(batteryManager);

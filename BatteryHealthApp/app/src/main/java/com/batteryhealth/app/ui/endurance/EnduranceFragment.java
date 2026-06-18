@@ -23,6 +23,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.List;
 
 /**
@@ -258,7 +259,7 @@ public class EnduranceFragment extends Fragment {
                     if (isCharging) {
                         tvDischargeRate.setText("充电中");
                     } else if (dischargeRate > 0) {
-                        tvDischargeRate.setText(String.format("%.1f%%/h", dischargeRate));
+                        tvDischargeRate.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
                     } else {
                         tvDischargeRate.setText("计算中...");
                     }
@@ -271,7 +272,7 @@ public class EnduranceFragment extends Fragment {
 
                 // 更新电池温度
                 if (tvBatteryTemp != null) {
-                    tvBatteryTemp.setText(String.format("%.1f°C", temperature));
+                    tvBatteryTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temperature));
                 }
 
                 // 计算预计续航时间：优先基于历史放电速率，其次基于实时电流
@@ -283,9 +284,9 @@ public class EnduranceFragment extends Fragment {
                         float remainingHours = estimateRemainingHours(level, currentNowUa, remainingCapacityMah);
                         if (remainingHours > 0) {
                             if (remainingHours >= 24) {
-                                tvEnduranceTime.setText(String.format("%.0f 天", remainingHours / 24));
+                                tvEnduranceTime.setText(String.format(Locale.getDefault(), "%.0f 天", remainingHours / 24));
                             } else {
-                                tvEnduranceTime.setText(String.format("%.1f 小时", remainingHours));
+                                tvEnduranceTime.setText(String.format(Locale.getDefault(), "%.1f 小时", remainingHours));
                             }
                             tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                         } else {
@@ -319,9 +320,9 @@ public class EnduranceFragment extends Fragment {
                         float fullChargeHours = estimateFullChargeHours(level, currentNowUa, designCapacity);
                         if (fullChargeHours > 0) {
                             if (fullChargeHours < 1) {
-                                tvFullChargeTime.setText(String.format("%.0f 分钟", fullChargeHours * 60));
+                                tvFullChargeTime.setText(String.format(Locale.getDefault(), "%.0f 分钟", fullChargeHours * 60));
                             } else {
-                                tvFullChargeTime.setText(String.format("%.1f 小时", fullChargeHours));
+                                tvFullChargeTime.setText(String.format(Locale.getDefault(), "%.1f 小时", fullChargeHours));
                             }
                         } else {
                             tvFullChargeTime.setText("计算中...");

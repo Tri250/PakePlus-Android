@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.Locale;
+
 import java.util.LinkedList;
 
 import androidx.annotation.NonNull;
@@ -198,13 +200,13 @@ public class PowerFragment extends Fragment {
             addSample(voltage, current, power, level);
 
             if (tvVoltage != null) {
-                tvVoltage.setText(String.format("%.2f V", voltage));
+                tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltage));
             }
             if (tvCurrent != null) {
-                tvCurrent.setText(String.format("%.2f A", current));
+                tvCurrent.setText(String.format(Locale.getDefault(), "%.2f A", current));
             }
             if (tvPower != null) {
-                tvPower.setText(String.format("%.1f W", power));
+                tvPower.setText(String.format(Locale.getDefault(), "%.1f W", power));
             }
             if (tvChargeType != null) {
                 String chargeType = getChargeTypeDescription(power);
@@ -243,7 +245,7 @@ public class PowerFragment extends Fragment {
                     if (batteryStatus != null) {
                         int temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
                         if (temp != -1) {
-                            tvBatteryTemp.setText(String.format("%.1f°C", temp / 10.0f));
+                            tvBatteryTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temp / 10.0f));
                         }
                     }
                 } catch (Exception e) {

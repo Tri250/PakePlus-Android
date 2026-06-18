@@ -28,6 +28,7 @@ import com.batteryhealth.app.utils.DeviceInfoManager;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.Locale;
 
 /**
  * 性能分析Fragment
@@ -179,7 +180,7 @@ public class PerformanceFragment extends Fragment {
             // 获取CPU使用率
             float cpuUsage = readCpuUsage();
             if (tvCpuUsage != null) {
-                tvCpuUsage.setText(String.format("%.1f%%", cpuUsage));
+                tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
             }
             if (progressCpu != null) {
                 progressCpu.setProgress((int) Math.min(cpuUsage, 100));
@@ -188,7 +189,7 @@ public class PerformanceFragment extends Fragment {
             // 获取内存使用率
             float memoryUsage = readMemoryUsage();
             if (tvMemoryUsage != null) {
-                tvMemoryUsage.setText(String.format("%.1f%%", memoryUsage));
+                tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
             }
             if (progressMemory != null) {
                 progressMemory.setProgress((int) Math.min(memoryUsage, 100));
@@ -197,7 +198,7 @@ public class PerformanceFragment extends Fragment {
             // 存储使用率
             float storageUsage = readStorageUsage();
             if (tvStorageUsage != null) {
-                tvStorageUsage.setText(String.format("%.1f%%", storageUsage));
+                tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
             }
             if (progressStorage != null) {
                 progressStorage.setProgress((int) Math.min(storageUsage, 100));

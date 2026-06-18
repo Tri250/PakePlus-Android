@@ -84,7 +84,10 @@ public class DeviceInfoManager {
         // 5. 电池基础信息
         collectBatteryInfo(config);
 
-        // 6. 激活日期
+        // 6. 网络信息
+        collectNetworkInfo(config);
+
+        // 7. 激活日期
         ActivationInfo activation = collectActivationInfo();
         config.setActivationDate(activation.timestamp);
         config.setActivationDateStr(activation.dateStr);
@@ -258,6 +261,55 @@ public class DeviceInfoManager {
             config.setBatteryTechnology(tech);
         } catch (Exception ignored) {
             config.setBatteryTechnology("锂离子");
+        }
+    }
+
+    private void collectNetworkInfo(DeviceConfig config) {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return;
+
+            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            if (activeNetwork == null || !activeNetwork.isConnected()) {
+                config.setNetworkType("无网络");
+                return;
+            }
+
+            int type = activeNetwork.getType();
+            if (type == android.net.ConnectivityManager.TYPE_WIFI) {
+                config.setNetworkType("Wi-Fi");
+            } else if (type == android.net.ConnectivityManager.TYPE_MOBILE) {
+                int subtype = activeNetwork.getSubtype();
+                config.setNetworkType(getMobileNetworkType(subtype));
+            } else {
+                config.setNetworkType(activeNetwork.getTypeName());
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to collect network info: " + e.getMessage());
+        }
+    }
+
+    private String getMobileNetworkType(int subtype) {
+        switch (subtype) {
+            case android.telephony.TelephonyManager.NETWORK_TYPE_LTE:
+                return "4G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_NR:
+                return "5G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_UMTS:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSDPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSUPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSPA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_HSPAP:
+                return "3G";
+            case android.telephony.TelephonyManager.NETWORK_TYPE_GPRS:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_EDGE:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_CDMA:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_1xRTT:
+            case android.telephony.TelephonyManager.NETWORK_TYPE_IDEN:
+                return "2G";
+            default:
+                return "移动数据";
         }
     }
 
