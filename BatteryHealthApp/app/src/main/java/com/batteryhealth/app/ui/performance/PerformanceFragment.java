@@ -64,10 +64,17 @@ public class PerformanceFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
-        errorView.setText(message);
+        StringBuilder message = new StringBuilder();
+        message.append("界面加载失败，请重启应用\n\n");
+        message.append("错误类型: ").append(e.getClass().getSimpleName()).append("\n");
+        message.append("错误信息: ").append(e.getMessage() != null ? e.getMessage() : "未知错误").append("\n\n");
+        message.append("堆栈跟踪:\n");
+        for (StackTraceElement element : e.getStackTrace()) {
+            message.append(element.toString()).append("\n");
+        }
+        errorView.setText(message.toString());
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
-        errorView.setTextSize(16);
+        errorView.setTextSize(14);
         errorView.setPadding(40, 100, 40, 40);
         errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
         return errorView;
@@ -98,8 +105,15 @@ public class PerformanceFragment extends Fragment {
                 @Override
                 public void run() {
                     if (!isRunning) return;
+
+                    // 检查Fragment是否仍然附加到Activity
+                    if (!isAdded() || isDetached() || getContext() == null) {
+                        isRunning = false;
+                        return;
+                    }
+
                     updatePerformanceData();
-                    if (handler != null) {
+                    if (handler != null && isAdded()) {
                         handler.postDelayed(this, 2000);
                     }
                 }

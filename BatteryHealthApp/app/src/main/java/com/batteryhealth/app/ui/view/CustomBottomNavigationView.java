@@ -118,7 +118,8 @@ public class CustomBottomNavigationView extends LinearLayout {
             TextView label = view.findViewById(R.id.nav_label);
 
             icon.setSelected(selected);
-            icon.setColorFilter(selected ? activeColor : inactiveColor);
+            // 使用 setImageTintList 替代 setColorFilter，避免与 vector tint 冲突
+            icon.setImageTintList(android.content.res.ColorStateList.valueOf(selected ? activeColor : inactiveColor));
             label.setTextColor(selected ? activeColor : inactiveColor);
         }
     }
