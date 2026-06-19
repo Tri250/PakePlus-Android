@@ -540,7 +540,9 @@ public class ChargingMonitorService extends Service {
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
                     db.powerHistoryDao().insert(history);
-                    Log.d(TAG, "Power history saved: " + history.getPower() + "W");
+                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                        Log.d(TAG, "Power history saved: " + history.getPower() + "W");
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error saving power history: " + e.getMessage());

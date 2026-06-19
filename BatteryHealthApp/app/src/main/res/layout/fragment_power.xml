@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="充电功率"
+            android:text="@string/title_power"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -56,7 +56,7 @@
                     android:id="@+id/tv_charge_type"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="未充电"
+                    android:text="@string/status_not_charging"
                     android:textAppearance="@style/iOSBody.Secondary"
                     android:layout_marginTop="12dp" />
 
@@ -81,7 +81,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="详细信息"
+                    android:text="@string/section_details"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -97,7 +97,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电压"
+                        android:text="@string/label_voltage"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -118,7 +118,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电流"
+                        android:text="@string/label_current"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -139,7 +139,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池电量"
+                        android:text="@string/label_battery_level"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -160,7 +160,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="充电阶段"
+                        android:text="@string/label_charging_phase"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -182,7 +182,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池温度"
+                        android:text="@string/label_battery_temperature"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView

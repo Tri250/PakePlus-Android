@@ -121,17 +121,20 @@ public class DeviceConfigFragment extends Fragment {
                 tvScreen.setText(config.getScreenResolution());
             }
             if (tvActivation != null) {
-                tvActivation.setText(config.getActivationDateStr() != null ? config.getActivationDateStr() : "--");
+                String dateStr = config.getActivationDateStr();
+                tvActivation.setText(dateStr != null && !"--".equals(dateStr) ? dateStr : "--");
             }
             if (tvUsageDays != null) {
-                tvUsageDays.setText(config.getUsageDays() + " 天");
+                int usageDays = config.getUsageDays();
+                tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
             }
 
             // 激活来源与可信度
             if (tvActivationSource != null) {
                 String sourceText = deviceInfoManager.getActivationSourceText();
                 float confidence = deviceInfoManager.getActivationConfidence();
-                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", sourceText, confidence * 100));
+                String sourceLabel = "unknown".equals(sourceText) ? "未知" : sourceText;
+                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", sourceLabel, confidence * 100));
             }
             // 可用内存
             if (tvAvailableMemory != null) {

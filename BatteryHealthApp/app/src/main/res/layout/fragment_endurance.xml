@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="续航分析"
+            android:text="@string/title_endurance"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -47,7 +47,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="预计续航时间"
+                    android:text="@string/label_estimated_endurance"
                     android:textAppearance="@style/iOSBody.Secondary"
                     android:layout_marginBottom="16dp" />
 
@@ -55,7 +55,7 @@
                     android:id="@+id/tv_endurance_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="-- 小时"
+                    android:text="@string/hours_placeholder"
                     android:textAppearance="@style/iOSLargeNumber"
                     android:textColor="@color/ios_green" />
 
@@ -63,7 +63,7 @@
                     android:id="@+id/tv_endurance_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="正在计算..."
+                    android:text="@string/status_calculating"
                     android:textAppearance="@style/iOSCaption"
                     android:layout_marginTop="8dp" />
 
@@ -88,7 +88,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电池使用详情"
+                    android:text="@string/section_battery_usage_details"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -105,7 +105,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="当前电量"
+                        android:text="@string/label_current_level"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -129,7 +129,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="放电速率"
+                        android:text="@string/label_discharge_rate"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -153,7 +153,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="充电状态"
+                        android:text="@string/label_charging_status"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -177,7 +177,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池温度"
+                        android:text="@string/label_battery_temperature"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -202,7 +202,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="预计充满"
+                        android:text="@string/label_estimated_full"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 

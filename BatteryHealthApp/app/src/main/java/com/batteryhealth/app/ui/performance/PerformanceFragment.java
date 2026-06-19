@@ -36,6 +36,12 @@ import java.util.Locale;
 public class PerformanceFragment extends Fragment {
     
     private static final String TAG = "PerformanceFragment";
+
+    // 性能评分权重：资源余量 60% + 硬件规格 40%
+    private static final float CPU_USAGE_WEIGHT = 0.25f;
+    private static final float MEMORY_USAGE_WEIGHT = 0.20f;
+    private static final float STORAGE_USAGE_WEIGHT = 0.15f;
+    private static final float HARDWARE_SCORE_MAX = 40f;
     
     private TextView tvCpuUsage;
     private TextView tvMemoryUsage;
@@ -349,19 +355,19 @@ public class PerformanceFragment extends Fragment {
     }
 
     private int calculatePerformanceScore(float cpuUsage, float memoryUsage, float storageUsage) {
-        // 综合性能评分 = 资源余量（60%）+ 硬件规格分（40%）
         // 资源余量：使用率越低越好
         float cpuScore = Math.max(0, 100 - cpuUsage);
         float memScore = Math.max(0, 100 - memoryUsage);
         float storageScore = Math.max(0, 100 - storageUsage * 0.5f);
-        float resourceScore = cpuScore * 0.25f + memScore * 0.20f + storageScore * 0.15f;
+        float resourceScore = cpuScore * CPU_USAGE_WEIGHT
+                + memScore * MEMORY_USAGE_WEIGHT
+                + storageScore * STORAGE_USAGE_WEIGHT;
 
         // 硬件规格分：基于总内存与 CPU 最大频率
         float hardwareScore = calculateHardwareScore();
 
         float total = resourceScore + hardwareScore;
-        if (total < 0) total = 0;
-        if (total > 100) total = 100;
+        total = Math.max(0, Math.min(100, total));
         return Math.round(total);
     }
 

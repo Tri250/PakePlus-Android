@@ -22,7 +22,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="趋势追踪"
+            android:text="@string/title_trend"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -33,7 +33,7 @@
             android:id="@+id/tv_data_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="暂无数据"
+            android:text="@string/status_no_data"
             android:textAppearance="@style/iOSCaption"
             android:layout_marginBottom="24dp" />
 
@@ -42,7 +42,7 @@
             android:id="@+id/tv_no_data"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="使用应用一段时间后，这里将显示电池数据的趋势变化图表"
+            android:text="@string/trend_no_data_description"
             android:textAppearance="@style/iOSBody.Secondary"
             android:gravity="center"
             android:layout_marginBottom="16dp"
@@ -66,7 +66,7 @@
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1天"
+                android:text="@string/time_range_1day"
                 android:textAppearance="@style/iOSBody.Secondary" />
 
             <com.google.android.material.chip.Chip
@@ -74,7 +74,7 @@
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="7天"
+                android:text="@string/time_range_7days"
                 android:checked="true"
                 android:textAppearance="@style/iOSBody.Secondary" />
 
@@ -83,7 +83,7 @@
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="30天"
+                android:text="@string/time_range_30days"
                 android:textAppearance="@style/iOSBody.Secondary" />
 
         </com.google.android.material.chip.ChipGroup>
@@ -108,7 +108,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="健康度趋势"
+                    android:text="@string/chart_health_trend"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="14dp" />
 
@@ -141,7 +141,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电量趋势"
+                    android:text="@string/chart_level_trend"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="14dp" />
 
@@ -174,7 +174,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="温度趋势"
+                    android:text="@string/chart_temperature_trend"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="14dp" />
 
@@ -206,7 +206,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="充电功率趋势"
+                    android:text="@string/chart_power_trend"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="14dp" />
 

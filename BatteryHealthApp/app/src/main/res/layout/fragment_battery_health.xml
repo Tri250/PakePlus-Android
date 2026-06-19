@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="电池健康"
+            android:text="@string/title_battery_health"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -66,7 +66,7 @@
                     android:id="@+id/tv_health_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="正在检测..."
+                    android:text="@string/status_detecting"
                     android:textAppearance="@style/iOSBody.Secondary"
                     android:lineSpacingExtra="2dp"
                     android:layout_marginTop="8dp" />
@@ -103,7 +103,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="当前状态"
+                    android:text="@string/section_current_status"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -122,7 +122,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池电量"
+                        android:text="@string/label_battery_level"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -148,7 +148,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="充电状态"
+                        android:text="@string/label_charging_status"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -174,7 +174,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电流"
+                        android:text="@string/label_current"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -211,7 +211,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="详细信息"
+                    android:text="@string/section_details"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -230,7 +230,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池容量"
+                        android:text="@string/label_battery_capacity"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -256,7 +256,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="循环次数"
+                        android:text="@string/label_cycle_count"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -282,7 +282,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池温度"
+                        android:text="@string/label_battery_temperature"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -308,7 +308,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池电压"
+                        android:text="@string/label_battery_voltage"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -334,7 +334,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池来源"
+                        android:text="@string/label_battery_source"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 
@@ -360,7 +360,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="电池技术"
+                        android:text="@string/label_battery_technology"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 

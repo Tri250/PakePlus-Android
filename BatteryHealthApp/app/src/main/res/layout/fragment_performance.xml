@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="性能分析"
+            android:text="@string/title_performance"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -46,7 +46,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="CPU使用率"
+                    android:text="@string/label_cpu_usage"
                     android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
@@ -90,7 +90,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="内存使用率"
+                    android:text="@string/label_memory_usage"
                     android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
@@ -134,7 +134,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="性能评分"
+                    android:text="@string/label_performance_score"
                     android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
@@ -178,7 +178,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="存储使用率"
+                    android:text="@string/label_storage_usage"
                     android:textAppearance="@style/iOSSubtitle" />
 
                 <TextView
@@ -220,7 +220,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="GPU信息"
+                    android:text="@string/label_gpu_info"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -238,7 +238,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="GPU渲染器"
+                        android:text="@string/label_gpu_renderer"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
 

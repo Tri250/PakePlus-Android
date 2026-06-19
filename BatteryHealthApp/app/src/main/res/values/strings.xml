@@ -7,7 +7,7 @@
     <string name="battery_monitor_channel_name">电池监控</string>
     <string name="battery_monitor_channel_description">实时监控电池状态</string>
     <string name="battery_monitor_notification_title">电池监控运行中</string>
-    <string name="battery_monitor_notification_content">正在监控电池状态变化</string>
+    <string name="battery_monitor_notification_content">电量 %d%% · 温度 %.1f°C · 健康度 %.1f%%</string>
     <string name="battery_monitor_notification_fallback">电池监控服务运行中</string>
 
     <string name="health_alert_channel_name">电池健康提醒</string>
@@ -35,4 +35,73 @@
     <!-- 设置项 -->
     <string name="health_alert_setting_title">电池健康度提醒</string>
     <string name="health_alert_setting_summary">当电池健康度出现明显衰减时通知我</string>
+
+    <!-- 电池健康 -->
+    <string name="title_battery_health">电池健康</string>
+    <string name="section_current_status">当前状态</string>
+    <string name="section_details">详细信息</string>
+    <string name="status_detecting">正在检测...</string>
+    <string name="label_battery_level">电池电量</string>
+    <string name="label_charging_status">充电状态</string>
+    <string name="label_current">电流</string>
+    <string name="label_battery_capacity">电池容量</string>
+    <string name="label_cycle_count">循环次数</string>
+    <string name="label_battery_temperature">电池温度</string>
+    <string name="label_battery_voltage">电池电压</string>
+    <string name="label_battery_source">电池来源</string>
+    <string name="label_battery_technology">电池技术</string>
+
+    <!-- 设备配置 -->
+    <string name="title_device_config">设备配置</string>
+    <string name="section_device_info">设备信息</string>
+    <string name="label_device_name">设备名称</string>
+    <string name="label_android_version">Android版本</string>
+    <string name="label_processor">处理器</string>
+    <string name="label_memory">内存</string>
+    <string name="label_storage">存储</string>
+    <string name="label_screen">屏幕</string>
+    <string name="label_activation_date">激活日期</string>
+    <string name="label_usage_days">使用天数</string>
+    <string name="label_activation_source">激活来源</string>
+    <string name="label_available_memory">可用内存</string>
+    <string name="label_available_storage">可用存储</string>
+    <string name="label_network_type">网络类型</string>
+    <string name="section_alert_settings">预警设置</string>
+
+    <!-- 性能分析 -->
+    <string name="title_performance">性能分析</string>
+    <string name="label_cpu_usage">CPU使用率</string>
+    <string name="label_memory_usage">内存使用率</string>
+    <string name="label_performance_score">性能评分</string>
+    <string name="label_storage_usage">存储使用率</string>
+    <string name="label_gpu_info">GPU信息</string>
+    <string name="label_gpu_renderer">GPU渲染器</string>
+
+    <!-- 续航分析 -->
+    <string name="title_endurance">续航分析</string>
+    <string name="label_estimated_endurance">预计续航时间</string>
+    <string name="hours_placeholder">-- 小时</string>
+    <string name="status_calculating">正在计算...</string>
+    <string name="section_battery_usage_details">电池使用详情</string>
+    <string name="label_current_level">当前电量</string>
+    <string name="label_discharge_rate">放电速率</string>
+    <string name="label_estimated_full">预计充满</string>
+
+    <!-- 充电功率 -->
+    <string name="title_power">充电功率</string>
+    <string name="status_not_charging">未充电</string>
+    <string name="label_voltage">电压</string>
+    <string name="label_charging_phase">充电阶段</string>
+
+    <!-- 趋势追踪 -->
+    <string name="title_trend">趋势追踪</string>
+    <string name="status_no_data">暂无数据</string>
+    <string name="trend_no_data_description">使用应用一段时间后，这里将显示电池数据的趋势变化图表</string>
+    <string name="time_range_1day">1天</string>
+    <string name="time_range_7days">7天</string>
+    <string name="time_range_30days">30天</string>
+    <string name="chart_health_trend">健康度趋势</string>
+    <string name="chart_level_trend">电量趋势</string>
+    <string name="chart_temperature_trend">温度趋势</string>
+    <string name="chart_power_trend">充电功率趋势</string>
 </resources>

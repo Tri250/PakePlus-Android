@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="设备配置"
+            android:text="@string/title_device_config"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -45,7 +45,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="设备信息"
+                    android:text="@string/section_device_info"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -61,7 +61,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="设备名称"
+                        android:text="@string/label_device_name"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -82,7 +82,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Android版本"
+                        android:text="@string/label_android_version"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -103,7 +103,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="处理器"
+                        android:text="@string/label_processor"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -124,7 +124,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="内存"
+                        android:text="@string/label_memory"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -145,7 +145,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="存储"
+                        android:text="@string/label_storage"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -166,7 +166,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="屏幕"
+                        android:text="@string/label_screen"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -187,7 +187,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="激活日期"
+                        android:text="@string/label_activation_date"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -208,7 +208,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="使用天数"
+                        android:text="@string/label_usage_days"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -229,7 +229,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="激活来源"
+                        android:text="@string/label_activation_source"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -250,7 +250,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="可用内存"
+                        android:text="@string/label_available_memory"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -271,7 +271,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="可用存储"
+                        android:text="@string/label_available_storage"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -293,7 +293,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="网络类型"
+                        android:text="@string/label_network_type"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
@@ -328,7 +328,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="预警设置"
+                    android:text="@string/section_alert_settings"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="14dp" />
 

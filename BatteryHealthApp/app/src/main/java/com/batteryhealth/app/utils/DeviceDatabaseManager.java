@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024-2026年国内品牌在售机型数据库管理器。
@@ -24,7 +26,8 @@ public class DeviceDatabaseManager {
     private static final String ASSET_FILE = "device_database.json";
 
     private static DeviceDatabaseManager instance;
-    private DeviceDatabase database;
+    private volatile DeviceDatabase database;
+    private final CountDownLatch loadLatch = new CountDownLatch(1);
 
     public static synchronized DeviceDatabaseManager getInstance(Context context) {
         if (instance == null) {
@@ -33,8 +36,15 @@ public class DeviceDatabaseManager {
         return instance;
     }
 
-    private DeviceDatabaseManager(Context context) {
-        loadDatabase(context);
+    private DeviceDatabaseManager(final Context context) {
+        // 在后台线程异步加载，避免 Application.onCreate 阻塞主线程
+        new Thread(() -> {
+            try {
+                loadDatabase(context);
+            } finally {
+                loadLatch.countDown();
+            }
+        }, "DeviceDbLoader").start();
     }
 
     private void loadDatabase(Context context) {
@@ -54,11 +64,20 @@ public class DeviceDatabaseManager {
         }
     }
 
+    private void awaitLoaded() {
+        try {
+            loadLatch.await(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     /**
      * 根据 Build.MODEL 或 Build.DEVICE 匹配机型。
      * 支持：精确 model 匹配、codename 匹配、market_name 匹配、品牌+型号关键词模糊匹配。
      */
     public DeviceEntry findDevice() {
+        awaitLoaded();
         if (database == null || database.devices == null) {
             return null;
         }
@@ -217,10 +236,12 @@ public class DeviceDatabaseManager {
      * 获取数据库版本。
      */
     public String getDatabaseVersion() {
+        awaitLoaded();
         return database != null && database.version != null ? database.version : "unknown";
     }
 
     public List<DeviceEntry> getAllDevices() {
+        awaitLoaded();
         return database != null && database.devices != null ? database.devices : new ArrayList<>();
     }
 

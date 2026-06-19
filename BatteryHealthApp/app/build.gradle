@@ -74,8 +74,6 @@ android {
         debug {
             minifyEnabled false
             debuggable true
-            applicationIdSuffix '.debug'
-            versionNameSuffix '-debug'
             lintOptions {
                 abortOnError false
             }

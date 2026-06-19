@@ -98,9 +98,11 @@ public class DatabaseEncryptionHelper {
             List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList =
                     plainDb.powerHistoryDao().getAll();
 
-            Log.d(TAG, "Migrating plain database: battery=" + batteryInfoList.size()
-                    + ", performance=" + performanceDataList.size()
-                    + ", power=" + powerHistoryList.size());
+            if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                Log.d(TAG, "Migrating plain database: battery=" + batteryInfoList.size()
+                        + ", performance=" + performanceDataList.size()
+                        + ", power=" + powerHistoryList.size());
+            }
 
             return new DatabaseSnapshot(batteryInfoList, performanceDataList, powerHistoryList);
         } catch (Exception e) {

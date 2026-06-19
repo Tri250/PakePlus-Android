@@ -19,6 +19,7 @@ public class DeviceConfig {
     private String product; // 产品名
     private String board; // 主板
     private String hardware; // 硬件
+    private String gpuInfo; // GPU 信息
     
     // 系统信息
     private String androidVersion; // Android版本
@@ -143,7 +144,15 @@ public class DeviceConfig {
     public void setHardware(String hardware) {
         this.hardware = hardware;
     }
-    
+
+    public String getGpuInfo() {
+        return gpuInfo;
+    }
+
+    public void setGpuInfo(String gpuInfo) {
+        this.gpuInfo = gpuInfo;
+    }
+
     public String getAndroidVersion() {
         return androidVersion;
     }

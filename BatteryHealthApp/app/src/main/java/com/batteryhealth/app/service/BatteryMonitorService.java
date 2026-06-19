@@ -336,7 +336,9 @@ public class BatteryMonitorService extends Service {
                 if (drop >= threshold) {
                     sendHealthAlertNotification(drop, averageHealth, currentHealth);
                     prefs.edit().putLong(PREF_LAST_ALERT_TIME, now).apply();
-                    Log.d(TAG, "Health degradation alert sent: drop=" + drop + "%");
+                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                        Log.d(TAG, "Health degradation alert sent: drop=" + drop + "%");
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error checking health degradation: " + e.getMessage());
@@ -461,7 +463,9 @@ public class BatteryMonitorService extends Service {
                     record.setDeviceBrand(android.os.Build.BRAND);
 
                     db.batteryInfoDao().insert(record);
-                    Log.d(TAG, "Battery data saved: level=" + record.getLevel() + "% health=" + record.getHealthPercentage() + "%");
+                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                        Log.d(TAG, "Battery data saved: level=" + record.getLevel() + "% health=" + record.getHealthPercentage() + "%");
+                    }
 
                     // 清理30天前的旧数据
                     long thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;

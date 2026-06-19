@@ -98,7 +98,7 @@ public class DeviceInfoManager {
         // 7. GPU 信息（保留主板字段原始值）
         String gpuInfo = collectGpuInfo();
 
-        // 8. 使用机型数据库覆盖营销名称/处理器/屏幕
+        // 8. 使用机型数据库覆盖营销名称/处理器/屏幕规格
         DeviceDatabaseManager.DeviceEntry entry = deviceDb.findDevice();
         if (entry != null) {
             if (entry.marketName != null && !entry.marketName.isEmpty()) {
@@ -107,14 +107,11 @@ public class DeviceInfoManager {
             if (entry.processor != null && !entry.processor.isEmpty()) {
                 config.setCpuInfo(entry.processor);
             }
-            if (entry.screen != null && !entry.screen.isEmpty()) {
-                gpuInfo = gpuInfo + " | 屏幕: " + entry.screen;
-            }
             if (entry.batteryMah > 0) {
                 config.setBatteryCapacity(entry.batteryMah);
             }
         }
-        config.setBoard(gpuInfo);
+        config.setGpuInfo(gpuInfo);
 
         cachedConfig = config;
         return config;
@@ -343,21 +340,28 @@ public class DeviceInfoManager {
         } catch (Exception ignored) {
         }
 
-        // 3. Google Play 服务或系统框架首次安装时间（最稳定的首次使用参考）
+        // 3. Google Play 服务首次安装时间（较稳定的首次使用参考）
+        long gmsInstall = getPackageFirstInstallTime("com.google.android.gms");
+        if (gmsInstall > 0) {
+            info.set(gmsInstall, "gms_first_install", 0.85f);
+            return info;
+        }
+
+        // 4. 系统框架首次安装时间
         long systemPackageInstall = getPackageFirstInstallTime("android");
         if (systemPackageInstall > 0) {
             info.set(systemPackageInstall, "system_framework_install", 0.80f);
             return info;
         }
 
-        // 4. 本应用首次安装时间
+        // 5. 本应用首次安装时间
         long appInstall = getPackageFirstInstallTime(context.getPackageName());
         if (appInstall > 0) {
             info.set(appInstall, "app_first_install", 0.60f);
             return info;
         }
 
-        // 5. 数据目录创建时间
+        // 6. 数据目录创建时间
         try {
             File dataDir = context.getDataDir();
             if (dataDir != null) {
@@ -370,8 +374,8 @@ public class DeviceInfoManager {
         } catch (Exception ignored) {
         }
 
-        // 6. Build.TIME 兜底
-        info.set(Build.TIME, "build_time_fallback", 0.15f);
+        // 7. 无法推断，标记为未知
+        info.setUnknown();
         return info;
     }
 
@@ -511,6 +515,14 @@ public class DeviceInfoManager {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             this.dateStr = sdf.format(new Date(timestamp));
             this.usageDays = (int) ((System.currentTimeMillis() - timestamp) / (24 * 60 * 60 * 1000L));
+        }
+
+        void setUnknown() {
+            this.timestamp = -1;
+            this.source = "unknown";
+            this.confidence = 0.0f;
+            this.dateStr = "--";
+            this.usageDays = -1;
         }
     }
 }

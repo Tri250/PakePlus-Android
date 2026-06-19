@@ -86,8 +86,8 @@
     public static ** valueOf(java.lang.String);
 }
 
-# 保留R类
--keepclassmembers class **.R$* {
+# 仅保留应用自身 R 类（避免全局 ** 阻止 R8 资源缩减）
+-keepclassmembers class com.batteryhealth.app.R$* {
     public static <fields>;
 }
 
