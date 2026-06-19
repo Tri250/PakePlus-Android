@@ -40,7 +40,7 @@ android {
     signingConfigs {
         release {
             def storeFilePath = keystoreProperties['storeFile'] ?: 'release-keystore.jks'
-            def releaseStoreFile = file(storeFilePath)
+            def releaseStoreFile = rootProject.file(storeFilePath)
             if (keystorePropertiesFile.exists() && releaseStoreFile.exists()) {
                 storeFile releaseStoreFile
                 storePassword keystoreProperties['storePassword'] ?: ''
