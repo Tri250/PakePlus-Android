@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.batteryhealth.app.R;
@@ -23,7 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 电池数据管理器（重写版 v4.4.9）。
+ * 电池数据管理器（重写版 v4.5.0 (Android 16 / ColorOS 16)）。
  *
  * 数据采集与计算逻辑：
  *  1. 设计容量优先级：用户校准 > 机型数据库 > sysfs 设计容量节点。
@@ -68,6 +69,10 @@ public class BatteryDataManager {
     private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 24);
     private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 6);
 
+    // Android 16 (API 36) 新增常量
+    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 8);
+    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 9);
+
     // 设计容量候选
     private static final String[] DESIGN_CAPACITY_PATHS = {
             "/sys/class/power_supply/battery/charge_full_design",
@@ -79,7 +84,9 @@ public class BatteryDataManager {
             "/sys/class/power_supply/bms/batt_design_capacity",
             "/sys/class/power_supply/battery/nominal_capacity",
             "/sys/class/power_supply/battery/battery_design_capacity",
-            "/sys/class/power_supply/battery/fg_design_capacity"
+            "/sys/class/power_supply/battery/fg_design_capacity",
+            "/sys/class/power_supply/bms/fg_design_capacity",
+            "/sys/class/power_supply/battery/fg_nominal_capacity"
     };
 
     // 当前满充容量（FCC）候选
@@ -92,7 +99,10 @@ public class BatteryDataManager {
             "/sys/class/power_supply/battery/learned_full_capacity",
             "/sys/class/power_supply/bms/learned_full_capacity",
             "/sys/class/power_supply/maxfg/learned_full_capacity",
-            "/sys/class/power_supply/battery/fg_full_capacity"
+            "/sys/class/power_supply/battery/fg_full_capacity",
+            "/sys/class/power_supply/battery/learned_capacity",
+            "/sys/class/power_supply/bms/learned_capacity",
+            "/sys/class/power_supply/battery/fg_learned_capacity"
     };
 
     // 循环次数候选
@@ -116,19 +126,27 @@ public class BatteryDataManager {
             "/sys/class/power_supply/bms/batt_cycle",                        // vivo BMS
             "/sys/class/power_supply/battery/charge_full_cycles",
             "/sys/class/power_supply/battery/mmi_cycle_count",
-            "/sys/class/power_supply/battery/batt_cycle_count"
+            "/sys/class/power_supply/battery/batt_cycle_count",
+            "/sys/class/power_supply/battery/battery_cycle",
+            "/sys/class/power_supply/battery/cycle_count_details",
+            "/sys/class/power_supply/battery/fg_cycle_count"
     };
 
     private static final String[] CURRENT_NOW_PATHS = {
             "/sys/class/power_supply/battery/current_now",
             "/sys/class/power_supply/bms/current_now",
-            "/sys/class/power_supply/maxfg/current_now"
+            "/sys/class/power_supply/maxfg/current_now",
+            "/sys/class/power_supply/usb/current_now",
+            "/sys/class/power_supply/battery/input_current_now",
+            "/sys/class/power_supply/battery/constant_charge_current"
     };
 
     private static final String[] VOLTAGE_NOW_PATHS = {
             "/sys/class/power_supply/battery/voltage_now",
             "/sys/class/power_supply/bms/voltage_now",
-            "/sys/class/power_supply/maxfg/voltage_now"
+            "/sys/class/power_supply/maxfg/voltage_now",
+            "/sys/class/power_supply/usb/voltage_now",
+            "/sys/class/power_supply/battery/voltage_ocv"
     };
 
     private static final String[] TEMP_PATHS = {
@@ -167,6 +185,12 @@ public class BatteryDataManager {
             "/sys/class/power_supply/bms/manufacturer",
             "/sys/class/power_supply/battery/company",
             "/sys/class/power_supply/bms/company"
+    };
+
+    // 旁路充电检测节点（ColorOS 16 特性：充电器直接供电给设备，不经过电池）
+    private static final String[] BYPASS_CHARGING_PATHS = {
+            "/sys/class/power_supply/battery/bypass_charging",
+            "/sys/class/power_supply/usb/bypass_charging"
     };
 
     public void setActivationInfo(ActivationDateHelper.Result activation) {
@@ -335,6 +359,23 @@ public class BatteryDataManager {
             return dbCapacity;
         }
 
+        // 2.5 Android 16+ 原生设计容量（API 36 BATTERY_PROPERTY_CHARGE_FULL_DESIGN）
+        if (Build.VERSION.SDK_INT >= 36) {
+            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            if (batteryManager != null) {
+                try {
+                    int designMicroAh = batteryManager.getIntProperty(BATTERY_PROPERTY_CHARGE_FULL_DESIGN);
+                    if (designMicroAh != Integer.MIN_VALUE && designMicroAh > 1000) {
+                        if (sourceHolder != null) sourceHolder[0] = "android16_native_design";
+                        // µAh → mAh
+                        if (designMicroAh >= 1_000_000) return designMicroAh / 1000;
+                        return designMicroAh;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
         // 3. sysfs 设计容量节点
         int design = readSysfsInt(DESIGN_CAPACITY_PATHS, -1);
         if (design > 100000) {
@@ -367,6 +408,13 @@ public class BatteryDataManager {
         int full = readSysfsInt(CHARGE_FULL_PATHS, -1);
         if (full > 100000) return full / 1000;
         if (full > 100) return full;
+        // learned_capacity 节点（ColorOS 16 / OPPO / 现代 BMS）
+        int learned = readSysfsInt(new String[]{
+                "/sys/class/power_supply/battery/learned_capacity",
+                "/sys/class/power_supply/bms/learned_capacity"
+        }, -1);
+        if (learned > 100000) return learned / 1000;
+        if (learned > 100) return learned;
         return -1;
     }
 
@@ -580,7 +628,27 @@ public class BatteryDataManager {
         int effectiveUsageDays = usageDays;
         if (effectiveUsageDays < 0 && activation != null) effectiveUsageDays = activation.usageDays;
 
-        // === 路径 1: FCC / 设计容量（最高优先级） ===
+        // === 路径 0: Android 16+ 原生健康度百分比（最高优先级） ===
+        if (Build.VERSION.SDK_INT >= 36) {
+            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            if (batteryManager != null) {
+                try {
+                    int nativeHealth = batteryManager.getIntProperty(BATTERY_PROPERTY_BATTERY_HEALTH);
+                    if (nativeHealth != Integer.MIN_VALUE && nativeHealth >= 0 && nativeHealth <= 100) {
+                        r.healthPercentage = nativeHealth;
+                        r.sourceTag = "android16_native_health";
+                        r.cycleLossPercent = Math.max(0f, 100f - nativeHealth);
+                        r.confidence = 0.98f;
+                        r.healthLevel = getHealthLevel(r.healthPercentage);
+                        r.healthStatus = getHealthStatusString(r.healthLevel);
+                        return r;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        // === 路径 1: FCC / 设计容量 ===
         if (fullCapacity > 0 && designCapacity > 0) {
             float ratio = (fullCapacity / (float) designCapacity) * 100f;
             r.healthPercentage = clampHealth(ratio);
@@ -714,6 +782,7 @@ public class BatteryDataManager {
     }
 
     private String mapHealthDataSource(float confidence, String sourceTag) {
+        if ("android16_native_health".equals(sourceTag)) return "android16_native_health";
         if ("fcc_ratio".equals(sourceTag)) {
             return confidence >= 0.95f ? "fcc_ratio" : "user_calibrated";
         }
@@ -945,6 +1014,46 @@ public class BatteryDataManager {
 
     public void setUsageDays(int days) {
         this.usageDays = days;
+    }
+
+    /**
+     * 检测旁路充电是否激活（ColorOS 16 特性）。
+     * 旁路充电模式下，充电器直接为设备供电而不经过电池，有助于减少电池发热和损耗。
+     *
+     * @return true 表示旁路充电模式已激活
+     */
+    public boolean isBypassCharging() {
+        String value = readSysfsString(BYPASS_CHARGING_PATHS, "");
+        return "1".equals(value.trim());
+    }
+
+    /**
+     * 读取用户配置的充电限制百分比（ColorOS 16 / Android 16 特性）。
+     * 常见值：80、85、90、95、100。
+     *
+     * @return 充电限制百分比，未设置时返回 100（即无限制）
+     */
+    public int getChargingLimitPercent() {
+        // 依次尝试 Settings.Global、Settings.Secure、Settings.System
+        String[] keys = {"charge_limit_percent", "battery_charge_limit", "smart_charging_limit"};
+        for (String key : keys) {
+            try {
+                int value = Settings.Global.getInt(context.getContentResolver(), key, -1);
+                if (value > 0 && value <= 100) return value;
+            } catch (Exception ignored) {
+            }
+            try {
+                int value = Settings.Secure.getInt(context.getContentResolver(), key, -1);
+                if (value > 0 && value <= 100) return value;
+            } catch (Exception ignored) {
+            }
+            try {
+                int value = Settings.System.getInt(context.getContentResolver(), key, -1);
+                if (value > 0 && value <= 100) return value;
+            } catch (Exception ignored) {
+            }
+        }
+        return 100;
     }
 
     public String getChargingStatusText() {

@@ -17,6 +17,7 @@ import java.util.Locale;
  * 优先级：
  *  0. 各品牌系统电子保卡激活时间（最高置信度）
  *  1. Settings.Global first_boot_time
+ *  1.5 Settings.Secure first_unlock_time（Android 16+）
  *  2. DevicePolicyManager.getProvisioningTime
  *  3. Google Play 服务首次安装时间
  *  4. 系统框架首次安装时间
@@ -58,6 +59,12 @@ public final class ActivationDateHelper {
         try {
             long firstBoot = Settings.Global.getLong(app.getContentResolver(), "first_boot_time", -1);
             if (firstBoot > 0) return build(firstBoot, "system_first_boot_time", 0.95f);
+        } catch (Exception ignored) { }
+
+        // Android 16+：首次解锁时间，代表设备首次完成设置向导后的解锁时刻
+        try {
+            long firstUnlock = Settings.Secure.getLong(app.getContentResolver(), "first_unlock_time", -1);
+            if (firstUnlock > 0) return build(firstUnlock, "first_unlock_time", 0.93f);
         } catch (Exception ignored) { }
 
         try {
@@ -199,6 +206,21 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = firstPositive("ro.vendor.miui.activated_time", () -> systemPropertyLong("ro.vendor.miui.activated_time"));
             if (t > 0) return t;
+            // HyperOS 3 新增键
+            t = firstPositive("hyperos_activated_time", () -> settingsLong(context, "hyperos_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("hyperos_activated", () -> settingsLong(context, "hyperos_activated"));
+            if (t > 0) return t;
+            t = firstPositive("hyperos_activate_time", () -> settingsLong(context, "hyperos_activate_time"));
+            if (t > 0) return t;
+            t = firstPositive("miui_hyperos_activated", () -> settingsLong(context, "miui_hyperos_activated"));
+            if (t > 0) return t;
+            t = firstPositive("ro.hyperos.activated_time", () -> systemPropertyLong("ro.hyperos.activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("ro.miui.hyperos.activated", () -> systemPropertyLong("ro.miui.hyperos.activated"));
+            if (t > 0) return t;
+            t = firstPositive("xiaomi_cloud_activated_time", () -> settingsLong(context, "xiaomi_cloud_activated_time"));
+            if (t > 0) return t;
         }
 
         // OPPO/realme/一加：ColorOS/OxygenOS / realme UI 激活时间
@@ -244,6 +266,27 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = firstPositive("ro.oplus.activated", () -> systemPropertyLong("ro.oplus.activated"));
             if (t > 0) return t;
+            // ColorOS 16 / OPLUS 新增键
+            t = firstPositive("coloros16_activated_time", () -> settingsLong(context, "coloros16_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("oplus_activate_date", () -> settingsLong(context, "oplus_activate_date"));
+            if (t > 0) return t;
+            t = firstPositive("oplus_warranty_start", () -> settingsLong(context, "oplus_warranty_start"));
+            if (t > 0) return t;
+            t = firstPositive("oppo_warranty_start", () -> settingsLong(context, "oppo_warranty_start"));
+            if (t > 0) return t;
+            t = firstPositive("heytap_activate_date", () -> settingsLong(context, "heytap_activate_date"));
+            if (t > 0) return t;
+            t = firstPositive("ro.coloros.activated_time", () -> systemPropertyLong("ro.coloros.activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("ro.oplus.activate_date", () -> systemPropertyLong("ro.oplus.activate_date"));
+            if (t > 0) return t;
+            t = firstPositive("ro.oppo.warranty_start", () -> systemPropertyLong("ro.oppo.warranty_start"));
+            if (t > 0) return t;
+            t = firstPositive("persist.sys.oppo.activate_time", () -> systemPropertyLong("persist.sys.oppo.activate_time"));
+            if (t > 0) return t;
+            t = firstPositive("persist.sys.oplus.activate_time", () -> systemPropertyLong("persist.sys.oplus.activate_time"));
+            if (t > 0) return t;
         }
 
         // vivo/iQOO：OriginOS/FuntouchOS 激活时间
@@ -275,6 +318,15 @@ public final class ActivationDateHelper {
             t = firstPositive("ro.vivo.activated", () -> systemPropertyLong("ro.vivo.activated"));
             if (t > 0) return t;
             t = firstPositive("ro.vendor.vivo.activated_time", () -> systemPropertyLong("ro.vendor.vivo.activated_time"));
+            if (t > 0) return t;
+            // OriginOS 5 新增键
+            t = firstPositive("originos5_activated_time", () -> settingsLong(context, "originos5_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("originos_activated_date", () -> settingsLong(context, "originos_activated_date"));
+            if (t > 0) return t;
+            t = firstPositive("vivo_cloud_activated_time", () -> settingsLong(context, "vivo_cloud_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("ro.vivo.originos.activated", () -> systemPropertyLong("ro.vivo.originos.activated"));
             if (t > 0) return t;
         }
 
@@ -316,6 +368,17 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = firstPositive("ro.honor.activated_time", () -> systemPropertyLong("ro.honor.activated_time"));
             if (t > 0) return t;
+            // HarmonyOS NEXT 新增键
+            t = firstPositive("harmonyos_activated_time", () -> settingsLong(context, "harmonyos_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("harmonyos_activated", () -> settingsLong(context, "harmonyos_activated"));
+            if (t > 0) return t;
+            t = firstPositive("huawei_cloud_activated_time", () -> settingsLong(context, "huawei_cloud_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("ro.harmonyos.activated_time", () -> systemPropertyLong("ro.harmonyos.activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("ro.huawei.cloud.activated", () -> systemPropertyLong("ro.huawei.cloud.activated"));
+            if (t > 0) return t;
         }
 
         // 魅族：Flyme 激活时间
@@ -351,6 +414,17 @@ public final class ActivationDateHelper {
             t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
             t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
+            if (t > 0) return t;
+            // One UI 8 新增键
+            t = firstPositive("oneui_activated_time", () -> settingsLong(context, "oneui_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("oneui8_activated", () -> settingsLong(context, "oneui8_activated"));
+            if (t > 0) return t;
+            t = firstPositive("samsung_cloud_activated_time", () -> settingsLong(context, "samsung_cloud_activated_time"));
+            if (t > 0) return t;
+            t = firstPositive("sec_oneui_activated", () -> settingsLong(context, "sec_oneui_activated"));
+            if (t > 0) return t;
+            t = firstPositive("ro.samsung.activated_time", () -> systemPropertyLong("ro.samsung.activated_time"));
             if (t > 0) return t;
         }
 
@@ -404,6 +478,17 @@ public final class ActivationDateHelper {
         if (t > 0) return t;
         t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
         if (t > 0) return t;
+        // Android 16 / 通用新增键
+        t = firstPositive("android_activated_time", () -> settingsLong(context, "android_activated_time"));
+        if (t > 0) return t;
+        t = firstPositive("device_register_time", () -> settingsLong(context, "device_register_time"));
+        if (t > 0) return t;
+        t = firstPositive("first_unlock_time", () -> settingsSecureLong(context, "first_unlock_time"));
+        if (t > 0) return t;
+        t = firstPositive("ro.boot.activated_time", () -> systemPropertyLong("ro.boot.activated_time"));
+        if (t > 0) return t;
+        t = firstPositive("persist.sys.device.activated", () -> systemPropertyLong("persist.sys.device.activated"));
+        if (t > 0) return t;
         return -1;
     }
 
@@ -420,6 +505,17 @@ public final class ActivationDateHelper {
                     return -1;
                 }
             }
+        }
+    }
+
+    /**
+     * 仅从 Settings.Secure 读取 long 值，用于 Android 16+ 的 first_unlock_time 等键。
+     */
+    private static long settingsSecureLong(Context context, String key) {
+        try {
+            return Settings.Secure.getLong(context.getContentResolver(), key, -1);
+        } catch (Exception ignored) {
+            return -1;
         }
     }
 
