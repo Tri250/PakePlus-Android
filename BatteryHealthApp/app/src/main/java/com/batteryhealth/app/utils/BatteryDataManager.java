@@ -35,7 +35,7 @@ public class BatteryDataManager {
     private final DeviceDatabaseManager deviceDb;
     private ActivationDateHelper.Result activation;
 
-    private BatteryInfo currentBatteryInfo;
+    private volatile BatteryInfo currentBatteryInfo;
     private int usageDays = -1;
 
     // 充电状态文本缓存
@@ -693,27 +693,22 @@ public class BatteryDataManager {
     }
 
     private String getHealthLevel(float percentage) {
-        if (percentage < 0) return context.getString(R.string.health_unknown);
-        if (percentage >= 95) return context.getString(R.string.health_excellent);
-        if (percentage >= 85) return context.getString(R.string.health_good);
-        if (percentage >= 75) return context.getString(R.string.health_average);
-        if (percentage >= 60) return context.getString(R.string.health_poor);
-        return context.getString(R.string.health_very_poor);
+        if (percentage < 0) return "unknown";
+        if (percentage >= 95) return "excellent";
+        if (percentage >= 85) return "good";
+        if (percentage >= 75) return "average";
+        if (percentage >= 60) return "poor";
+        return "very_poor";
     }
 
     private String getHealthStatusString(String level) {
-        if (level.equals(context.getString(R.string.health_excellent))) {
-            return context.getString(R.string.health_status_excellent);
-        } else if (level.equals(context.getString(R.string.health_good))) {
-            return context.getString(R.string.health_status_good);
-        } else if (level.equals(context.getString(R.string.health_average))) {
-            return context.getString(R.string.health_status_average);
-        } else if (level.equals(context.getString(R.string.health_poor))) {
-            return context.getString(R.string.health_status_poor);
-        } else if (level.equals(context.getString(R.string.health_very_poor))) {
-            return context.getString(R.string.health_status_very_poor);
-        } else {
-            return context.getString(R.string.health_status_unknown);
+        switch (level) {
+            case "excellent": return context.getString(R.string.health_excellent);
+            case "good": return context.getString(R.string.health_good);
+            case "average": return context.getString(R.string.health_average);
+            case "poor": return context.getString(R.string.health_poor);
+            case "very_poor": return context.getString(R.string.health_very_poor);
+            default: return context.getString(R.string.health_unknown);
         }
     }
 
@@ -721,21 +716,18 @@ public class BatteryDataManager {
      * 将健康等级映射为数据库存储的代码。
      */
     private String mapHealthStatusToCode(String level) {
-        String excellent = context.getString(R.string.health_excellent);
-        String good = context.getString(R.string.health_good);
-        String average = context.getString(R.string.health_average);
-        String poor = context.getString(R.string.health_poor);
-        String veryPoor = context.getString(R.string.health_very_poor);
-        if (level.equals(excellent) || level.equals(good)) {
-            return "good";
-        } else if (level.equals(average)) {
-            return "normal";
-        } else if (level.equals(poor)) {
-            return "warning";
-        } else if (level.equals(veryPoor)) {
-            return "poor";
-        } else {
-            return "unknown";
+        switch (level) {
+            case "excellent":
+            case "good":
+                return "good";
+            case "average":
+                return "normal";
+            case "poor":
+                return "warning";
+            case "very_poor":
+                return "poor";
+            default:
+                return "unknown";
         }
     }
 

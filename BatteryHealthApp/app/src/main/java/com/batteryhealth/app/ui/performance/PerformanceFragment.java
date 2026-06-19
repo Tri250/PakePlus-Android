@@ -316,10 +316,8 @@ public class PerformanceFragment extends Fragment {
     private PerformanceData lastSavedPerformanceData;
 
     private float readCpuUsage() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
             String line = reader.readLine();
-            reader.close();
 
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
@@ -488,12 +486,14 @@ public class PerformanceFragment extends Fragment {
 
     private String readGpuInfo() {
         try {
-            Context ctx = getContext();
-            if (ctx != null) {
-                DeviceInfoManager dim = new DeviceInfoManager(ctx);
-                String gpu = dim.getGpuInfo();
-                if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
-                    return gpu;
+            // 复用 MainActivity 已有的 DeviceInfoManager，避免重复创建
+            if (getActivity() instanceof MainActivity) {
+                DeviceInfoManager dim = ((MainActivity) getActivity()).getDeviceInfoManager();
+                if (dim != null) {
+                    String gpu = dim.getGpuInfo();
+                    if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
+                        return gpu;
+                    }
                 }
             }
         } catch (Exception e) {

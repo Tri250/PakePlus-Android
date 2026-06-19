@@ -61,6 +61,13 @@ public class EnduranceFragment extends Fragment {
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0; // %/h
+    private float historicalDischargeRate = 0; // 从数据库加载的历史均值 %/h
+
+    // 充电电流滑动窗口（用于充满时间估算的平滑电流）
+    private static final int CURRENT_WINDOW_SIZE = 12; // 最近 12 次采样（约 60 秒）
+    private final java.util.LinkedList<Integer> currentWindow = new java.util.LinkedList<>();
+    private long currentWindowSum = 0;
+    private int currentWindowSamples = 0;
     
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -168,6 +175,7 @@ public class EnduranceFragment extends Fragment {
                     // 限制在合理范围
                     if (avgRate > 0.1f && avgRate < 100) {
                         dischargeRate = avgRate;
+                        historicalDischargeRate = avgRate;
                         Log.d(TAG, "Loaded historical discharge rate: " + avgRate + "%/h");
                     }
                 }
@@ -301,6 +309,17 @@ public class EnduranceFragment extends Fragment {
                 // 计算放电速率（%/h）
                 calculateDischargeRate(level);
 
+                // 更新充电电流滑动窗口
+                if (currentNowUa > 0) {
+                    currentWindow.addLast(currentNowUa);
+                    currentWindowSum += currentNowUa;
+                    currentWindowSamples++;
+                    while (currentWindow.size() > CURRENT_WINDOW_SIZE) {
+                        currentWindowSum -= currentWindow.removeFirst();
+                        currentWindowSamples--;
+                    }
+                }
+
                 // 更新当前电量
                 if (tvCurrentLevel != null) {
                     tvCurrentLevel.setText(level + "%");
@@ -393,20 +412,38 @@ public class EnduranceFragment extends Fragment {
     }
 
     /**
-     * 综合历史放电速率和实时电流估算剩余续航时间。
+     * 综合多种方法估算剩余续航时间。
+     * 优先级：历史放电速率 + 实时电流 加权平均 → 单一方法 → 数据库历史均值兜底。
      */
     private float estimateRemainingHours(int level, int currentNowUa, int remainingCapacityMah) {
+        float method1Result = -1; // 历史放电速率
+        float method2Result = -1; // 实时电流
+
         // 方法1：历史放电速率（%/h）
         if (dischargeRate > 0.1f && level > 0) {
-            return level / dischargeRate;
+            method1Result = level / dischargeRate;
         }
 
         // 方法2：实时电流（currentNow 放电时为负）
         if (currentNowUa < 0 && remainingCapacityMah > 0) {
             float dischargeMa = Math.abs(currentNowUa) / 1000.0f;
             if (dischargeMa > 0) {
-                return remainingCapacityMah / dischargeMa;
+                method2Result = remainingCapacityMah / dischargeMa;
             }
+        }
+
+        // 两种方法都有效时取加权平均（放电速率更稳定，权重更高）
+        if (method1Result > 0 && method2Result > 0) {
+            return method1Result * 0.6f + method2Result * 0.4f;
+        }
+
+        // 只有一种方法有效
+        if (method1Result > 0) return method1Result;
+        if (method2Result > 0) return method2Result;
+
+        // 兜底：从数据库加载历史均值放电速率
+        if (historicalDischargeRate > 0.1f && level > 0) {
+            return level / historicalDischargeRate;
         }
 
         return -1;
@@ -414,14 +451,21 @@ public class EnduranceFragment extends Fragment {
 
     /**
      * 估算充满时间：分段计算 CC（恒流）和 CV（恒压）阶段。
-     * CC 阶段（0-80%）：按当前充电电流估算。
+     * CC 阶段（0-80%）：按滑动窗口平均充电电流估算，避免瞬时波动。
      * CV 阶段（80-100%）：电流逐渐衰减，平均约为 CC 阶段的 55%。
-     * 安兔兔/AccuBattery 均采用类似的分段模型。
      */
     private float estimateFullChargeHours(int level, int currentNowUa, int designCapacityMah) {
-        if (currentNowUa <= 0 || designCapacityMah <= 0) return -1;
+        if (designCapacityMah <= 0) return -1;
 
-        float chargeMa = currentNowUa / 1000.0f;
+        // 使用滑动窗口平均电流，避免瞬时值波动导致估算不稳定
+        float chargeMa;
+        if (currentWindowSamples > 3) {
+            chargeMa = currentWindowSum / currentWindowSamples / 1000.0f; // µA → mA → A 的 mA 部分
+        } else {
+            // 采样不足，使用瞬时值
+            if (currentNowUa <= 0) return -1;
+            chargeMa = currentNowUa / 1000.0f;
+        }
         if (chargeMa <= 0) return -1;
 
         float remainingMah = designCapacityMah * (100 - level) / 100.0f;

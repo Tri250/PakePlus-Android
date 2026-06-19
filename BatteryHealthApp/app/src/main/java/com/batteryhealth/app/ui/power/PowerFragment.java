@@ -399,15 +399,40 @@ public class PowerFragment extends Fragment {
     }
     
     private float readVoltage() {
-        File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
-        if (voltageFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
-                String line = reader.readLine();
-                if (line != null && !line.trim().isEmpty()) {
-                    return Long.parseLong(line.trim()) / 1000000.0f;
+        // 统一使用 BatteryDataManager 读取电压，避免重复实现单位判断逻辑
+        if (getActivity() instanceof MainActivity) {
+            com.batteryhealth.app.utils.BatteryDataManager bdm =
+                    ((MainActivity) getActivity()).getBatteryDataManager();
+            if (bdm != null) {
+                int voltageMv = bdm.readVoltageNow();
+                if (voltageMv > 0) {
+                    return voltageMv / 1000.0f; // mV → V
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error reading voltage from sysfs: " + e.getMessage());
+            }
+        }
+
+        // 兜底：直接读取 sysfs 多路径
+        String[] voltagePaths = {
+                "/sys/class/power_supply/battery/voltage_now",
+                "/sys/class/power_supply/bms/voltage_now",
+                "/sys/class/power_supply/maxfg/voltage_now"
+        };
+        for (String path : voltagePaths) {
+            File voltageFile = new File(path);
+            if (voltageFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Long.parseLong(line.trim());
+                        if (Math.abs(raw) > 1000000) {
+                            return Math.abs(raw) / 1000000.0f; // µV → V
+                        } else if (Math.abs(raw) > 2500) {
+                            return Math.abs(raw) / 1000.0f; // mV → V
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error reading voltage from sysfs: " + path + " " + e.getMessage());
+                }
             }
         }
 
@@ -423,6 +448,7 @@ public class PowerFragment extends Fragment {
                 }
                 if (batteryStatus != null) {
                     int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                    if (voltageMv > 10000) voltageMv = voltageMv / 1000; // µV → mV
                     if (voltageMv > 0) {
                         return voltageMv / 1000.0f;
                     }
@@ -447,21 +473,28 @@ public class PowerFragment extends Fragment {
             }
         }
 
-        // 兜底：直接读取 sysfs
-        File currentFile = new File("/sys/class/power_supply/battery/current_now");
-        if (currentFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
-                String line = reader.readLine();
-                if (line != null && !line.trim().isEmpty()) {
-                    long raw = Long.parseLong(line.trim());
-                    long absRaw = Math.abs(raw);
-                    if (absRaw > 100000) {
-                        return absRaw / 1000000.0f; // µA → A
+        // 兜底：直接读取 sysfs 多路径
+        String[] currentPaths = {
+                "/sys/class/power_supply/battery/current_now",
+                "/sys/class/power_supply/bms/current_now",
+                "/sys/class/power_supply/maxfg/current_now"
+        };
+        for (String path : currentPaths) {
+            File currentFile = new File(path);
+            if (currentFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Long.parseLong(line.trim());
+                        long absRaw = Math.abs(raw);
+                        if (absRaw > 100000) {
+                            return absRaw / 1000000.0f; // µA → A
+                        }
+                        return absRaw / 1000.0f; // mA → A
                     }
-                    return absRaw / 1000.0f; // mA → A
+                } catch (Exception e) {
+                    Log.e(TAG, "Error reading current from sysfs: " + path + " " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error reading current from sysfs: " + e.getMessage());
             }
         }
         return 0;

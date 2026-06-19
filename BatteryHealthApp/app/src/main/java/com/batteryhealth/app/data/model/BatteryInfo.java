@@ -371,20 +371,6 @@ public class BatteryInfo {
     }
 
     /**
-     * 计算健康度
-     */
-    public void calculateHealthPercentage() {
-        if (designCapacity > 0 && currentCapacity > 0) {
-            this.healthPercentage = (currentCapacity * 100.0f) / designCapacity;
-            if (this.healthPercentage > 100.0f) {
-                this.healthPercentage = 100.0f;
-            } else if (this.healthPercentage < 0.0f) {
-                this.healthPercentage = 0.0f;
-            }
-        }
-    }
-    
-    /**
      * 计算充电功率
      */
     public void calculateChargingPower() {
@@ -396,25 +382,22 @@ public class BatteryInfo {
     /**
      * 获取健康等级
      *
-     * 阈值与健康描述保持一致：95+ A+，90-94 A，85-89 B+，80-84 B，75-79 C，60-74 D，<60 E。
+     * 阈值与 BatteryDataManager / getHealthDescription() 保持一致：
+     * 95+ A+，85-94 A，75-84 B，60-74 C，<60 D。
      */
     public String getHealthGrade() {
         if (healthPercentage < 0) {
             return "--";
         } else if (healthPercentage >= 95) {
             return "A+";
-        } else if (healthPercentage >= 90) {
-            return "A";
         } else if (healthPercentage >= 85) {
-            return "B+";
-        } else if (healthPercentage >= 80) {
-            return "B";
+            return "A";
         } else if (healthPercentage >= 75) {
-            return "C";
+            return "B";
         } else if (healthPercentage >= 60) {
-            return "D";
+            return "C";
         } else {
-            return "E";
+            return "D";
         }
     }
     
@@ -453,5 +436,44 @@ public class BatteryInfo {
      */
     public boolean hasValidCycleCount() {
         return cycleCount >= 0;
+    }
+
+    /**
+     * 创建当前对象的深拷贝，避免 Gson 序列化/反序列化的性能开销。
+     */
+    public BatteryInfo copy() {
+        BatteryInfo snapshot = new BatteryInfo();
+        snapshot.id = this.id;
+        snapshot.timestamp = this.timestamp;
+        snapshot.designCapacity = this.designCapacity;
+        snapshot.currentCapacity = this.currentCapacity;
+        snapshot.chargeCounter = this.chargeCounter;
+        snapshot.healthPercentage = this.healthPercentage;
+        snapshot.healthStatus = this.healthStatus;
+        snapshot.cycleCount = this.cycleCount;
+        snapshot.temperature = this.temperature;
+        snapshot.voltage = this.voltage;
+        snapshot.currentNow = this.currentNow;
+        snapshot.status = this.status;
+        snapshot.plugged = this.plugged;
+        snapshot.level = this.level;
+        snapshot.technology = this.technology;
+        snapshot.batterySource = this.batterySource;
+        snapshot.batterySerial = this.batterySerial;
+        snapshot.chargingPower = this.chargingPower;
+        snapshot.chargingVoltage = this.chargingVoltage;
+        snapshot.chargingCurrent = this.chargingCurrent;
+        snapshot.deviceModel = this.deviceModel;
+        snapshot.deviceBrand = this.deviceBrand;
+        snapshot.cycleCountEstimated = this.cycleCountEstimated;
+        snapshot.cycleCountSource = this.cycleCountSource;
+        snapshot.designCapacitySource = this.designCapacitySource;
+        snapshot.currentCapacitySource = this.currentCapacitySource;
+        snapshot.healthDataSource = this.healthDataSource;
+        snapshot.healthConfidence = this.healthConfidence;
+        snapshot.systemHealth = this.systemHealth;
+        snapshot.energyCounter = this.energyCounter;
+        snapshot.batterySourceConfidence = this.batterySourceConfidence;
+        return snapshot;
     }
 }
