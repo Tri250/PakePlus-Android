@@ -23,6 +23,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 /**
  * 设备配置Fragment
@@ -220,68 +221,8 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            java.util.List<View> cards = new java.util.ArrayList<>();
-            collectCards(view, cards);
-            for (int i = 0; i < cards.size(); i++) {
-                View child = cards.get(i);
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Card entry animation skipped: " + e.getMessage());
-        }
-    }
-
-    private void collectCards(View view, java.util.List<View> cards) {
-        if (view instanceof com.google.android.material.card.MaterialCardView) {
-            cards.add(view);
-            return;
-        }
-        if (view instanceof android.view.ViewGroup) {
-            android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                collectCards(group.getChildAt(i), cards);
-            }
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     private String getActivationSourceLabel(String source) {

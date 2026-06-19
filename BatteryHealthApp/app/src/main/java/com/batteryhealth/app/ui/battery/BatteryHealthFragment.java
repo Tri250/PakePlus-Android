@@ -34,6 +34,7 @@ import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -76,7 +77,8 @@ public class BatteryHealthFragment extends Fragment {
     private SharedPreferences prefs;
     private Handler mainHandler;
     private boolean isRunning = false;
-    
+    private boolean isFirstUpdate = true;
+
     // 定时更新UI的Runnable
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -278,18 +280,23 @@ public class BatteryHealthFragment extends Fragment {
                 
                 // 更新健康度
                 float healthPercentage = info.getHealthPercentage();
+                boolean hasValidHealth = info.hasValidHealthData();
                 if (tvHealthPercentage != null) {
-                    if (info.hasValidHealthData()) {
-                        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
+                    if (hasValidHealth) {
+                        if (isFirstUpdate) {
+                            UiAnimationHelper.animateNumberText(tvHealthPercentage, healthPercentage, "%.1f%%");
+                        } else {
+                            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
+                        }
                     } else {
                         tvHealthPercentage.setText("--");
                     }
                 }
-                
+
                 if (tvHealthGrade != null) {
                     tvHealthGrade.setText(info.getHealthGrade());
                 }
-                
+
                 if (tvHealthStatus != null) {
                     // healthSourceText 内部已包含置信度，不再重复拼接
                     String source = batteryDataManager.getHealthSourceText();
@@ -297,10 +304,11 @@ public class BatteryHealthFragment extends Fragment {
                 }
 
                 if (progressHealth != null) {
-                    if (info.hasValidHealthData()) {
-                        progressHealth.setProgress((int) healthPercentage);
+                    int targetProgress = hasValidHealth ? (int) healthPercentage : 0;
+                    if (isFirstUpdate && hasValidHealth) {
+                        UiAnimationHelper.animateProgressBar(progressHealth, targetProgress);
                     } else {
-                        progressHealth.setProgress(0);
+                        progressHealth.setProgress(targetProgress);
                     }
                 }
                 
@@ -378,12 +386,15 @@ public class BatteryHealthFragment extends Fragment {
                         tvCurrentNow.setText("-- mA");
                     }
                 }
+                if (isFirstUpdate) {
+                    isFirstUpdate = false;
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating UI: " + e.getMessage());
             }
         });
     }
-    
+
     private static final String PREFS_GLOBAL = "app_global_prefs";
     private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
 
@@ -410,42 +421,7 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            java.util.List<View> cards = new java.util.ArrayList<>();
-            collectCards(view, cards);
-            for (int i = 0; i < cards.size(); i++) {
-                View child = cards.get(i);
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Card entry animation skipped: " + e.getMessage());
-        }
-    }
-
-    private void collectCards(View view, java.util.List<View> cards) {
-        if (view instanceof com.google.android.material.card.MaterialCardView) {
-            cards.add(view);
-            return;
-        }
-        if (view instanceof android.view.ViewGroup) {
-            android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                collectCards(group.getChildAt(i), cards);
-            }
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     private int getHealthColor(float percentage) {

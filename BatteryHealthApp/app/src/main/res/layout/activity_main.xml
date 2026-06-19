@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background">
+    android:background="@android:color/transparent">
 
     <!-- 主内容区域：底部 margin 由代码动态设置，避免被导航栏遮挡 -->
     <androidx.viewpager2.widget.ViewPager2

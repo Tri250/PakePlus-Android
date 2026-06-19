@@ -27,6 +27,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -63,7 +64,8 @@ public class PerformanceFragment extends Fragment {
     private Runnable updateTask;
     private ExecutorService executor;
     private boolean isRunning = false;
-    
+    private boolean isFirstUpdate = true;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -124,68 +126,8 @@ public class PerformanceFragment extends Fragment {
         }
     }
 
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            java.util.List<View> cards = new java.util.ArrayList<>();
-            collectCards(view, cards);
-            for (int i = 0; i < cards.size(); i++) {
-                View child = cards.get(i);
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Card entry animation skipped: " + e.getMessage());
-        }
-    }
-
-    private void collectCards(View view, java.util.List<View> cards) {
-        if (view instanceof com.google.android.material.card.MaterialCardView) {
-            cards.add(view);
-            return;
-        }
-        if (view instanceof android.view.ViewGroup) {
-            android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                collectCards(group.getChildAt(i), cards);
-            }
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -256,33 +198,62 @@ public class PerformanceFragment extends Fragment {
     private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo) {
         if (!isAdded()) return;
         try {
+            boolean animate = isFirstUpdate;
+
             if (tvCpuUsage != null) {
                 if (cpuUsage < 0) {
                     tvCpuUsage.setText(getString(R.string.status_calculating_short));
+                } else if (animate) {
+                    UiAnimationHelper.animateNumberText(tvCpuUsage, cpuUsage, "%.1f%%");
                 } else {
                     tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
                 }
             }
             if (progressCpu != null) {
-                progressCpu.setProgress(cpuUsage < 0 ? 0 : (int) Math.min(cpuUsage, 100));
+                int target = cpuUsage < 0 ? 0 : (int) Math.min(cpuUsage, 100);
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressCpu, target);
+                } else {
+                    progressCpu.setProgress(target);
+                }
             }
 
             if (tvMemoryUsage != null) {
-                tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
+                if (animate) {
+                    UiAnimationHelper.animateNumberText(tvMemoryUsage, memoryUsage, "%.1f%%");
+                } else {
+                    tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
+                }
             }
             if (progressMemory != null) {
-                progressMemory.setProgress((int) Math.min(memoryUsage, 100));
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressMemory, (int) Math.min(memoryUsage, 100));
+                } else {
+                    progressMemory.setProgress((int) Math.min(memoryUsage, 100));
+                }
             }
 
             if (tvStorageUsage != null) {
-                tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
+                if (animate) {
+                    UiAnimationHelper.animateNumberText(tvStorageUsage, storageUsage, "%.1f%%");
+                } else {
+                    tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
+                }
             }
             if (progressStorage != null) {
-                progressStorage.setProgress((int) Math.min(storageUsage, 100));
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressStorage, (int) Math.min(storageUsage, 100));
+                } else {
+                    progressStorage.setProgress((int) Math.min(storageUsage, 100));
+                }
             }
 
             if (tvPerformanceScore != null) {
-                tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
+                if (animate) {
+                    UiAnimationHelper.animateIntText(tvPerformanceScore, score, getString(R.string.performance_score_format));
+                } else {
+                    tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
+                }
                 if (score >= 80) {
                     tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                 } else if (score >= 60) {
@@ -292,11 +263,19 @@ public class PerformanceFragment extends Fragment {
                 }
             }
             if (progressScore != null) {
-                progressScore.setProgress(score);
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressScore, score);
+                } else {
+                    progressScore.setProgress(score);
+                }
             }
 
             if (tvGpuInfo != null) {
                 tvGpuInfo.setText(gpuInfo);
+            }
+
+            if (isFirstUpdate) {
+                isFirstUpdate = false;
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating performance UI: " + e.getMessage());
