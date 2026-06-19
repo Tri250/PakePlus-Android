@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,7 +27,7 @@ import java.util.List;
  *    TextAppearance 时会出现 Binary XML 崩溃。
  * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
  */
-public class CustomBottomNavigationView extends LinearLayout {
+public class CustomBottomNavigationView extends HorizontalScrollView {
 
     public interface OnItemSelectedListener {
         void onItemSelected(int position);
@@ -39,6 +40,7 @@ public class CustomBottomNavigationView extends LinearLayout {
 
     private int activeColor;
     private int inactiveColor;
+    private LinearLayout container;
 
     public CustomBottomNavigationView(@NonNull Context context) {
         this(context, null);
@@ -54,7 +56,15 @@ public class CustomBottomNavigationView extends LinearLayout {
     }
 
     private void init() {
-        setOrientation(HORIZONTAL);
+        setHorizontalScrollBarEnabled(false);
+        setOverScrollMode(OVER_SCROLL_NEVER);
+
+        container = new LinearLayout(getContext());
+        container.setOrientation(LinearLayout.HORIZONTAL);
+        container.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        addView(container);
+
         activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
         inactiveColor = getResources().getColor(R.color.ios_secondary_label, getContext().getTheme());
     }
@@ -65,7 +75,7 @@ public class CustomBottomNavigationView extends LinearLayout {
     public void setItems(List<NavItem> navItems) {
         items.clear();
         itemViews.clear();
-        removeAllViews();
+        container.removeAllViews();
 
         if (navItems == null || navItems.isEmpty()) {
             return;
@@ -77,7 +87,7 @@ public class CustomBottomNavigationView extends LinearLayout {
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
-            View view = inflater.inflate(R.layout.item_bottom_nav, this, false);
+            View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
@@ -91,7 +101,7 @@ public class CustomBottomNavigationView extends LinearLayout {
                 }
             });
 
-            addView(view);
+            container.addView(view);
             itemViews.add(view);
         }
 

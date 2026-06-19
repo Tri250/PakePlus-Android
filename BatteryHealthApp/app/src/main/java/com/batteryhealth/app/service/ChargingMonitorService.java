@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -19,12 +20,17 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.service.BatteryMonitorService;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,7 +44,7 @@ import java.util.concurrent.Executors;
 
 /**
  * 充电监测服务
- * 
+ *
  * 功能：
  * 1. 实时监测充电功率
  * 2. 记录充电曲线
@@ -46,18 +52,19 @@ import java.util.concurrent.Executors;
  * 4. 生成充电报告
  */
 public class ChargingMonitorService extends Service {
-    
+
     private static final String TAG = "ChargingMonitorService";
     private static final String CHANNEL_ID = "charging_monitor_channel";
     private static final int NOTIFICATION_ID = 1003;
     private static final long UPDATE_INTERVAL = 3000; // 3秒更新一次
-    
+
     private Handler handler;
     private ExecutorService executor;
     private String currentSessionId;
     private volatile boolean isCharging = false;
     private boolean foregroundStarted = false;
     private long chargingStartTime;
+    private SharedPreferences prefs;
 
     // 充电统计数据
     private float maxPower = 0;
@@ -77,7 +84,7 @@ public class ChargingMonitorService extends Service {
     private final LinkedList<PowerSample> powerSamples = new LinkedList<>();
 
     private OnChargingDataListener dataListener;
-    
+
     // 电池广播接收器
     private BroadcastReceiver chargingReceiver = new BroadcastReceiver() {
         @Override
@@ -90,7 +97,7 @@ public class ChargingMonitorService extends Service {
             }
         }
     };
-    
+
     // 定时更新任务：UI 调度在 Handler，IO 与数据库操作下沉到 executor
     private Runnable updateTask = new Runnable() {
         @Override
@@ -101,7 +108,9 @@ public class ChargingMonitorService extends Service {
                     if (history != null) {
                         handler.post(() -> {
                             if (!isCharging) return;
-                            updateNotification(history);
+                            if (isNotificationEnabled()) {
+                                updateNotification(history);
+                            }
                             if (dataListener != null) {
                                 dataListener.onChargingDataUpdated(history);
                             }
@@ -114,13 +123,13 @@ public class ChargingMonitorService extends Service {
             }
         }
     };
-    
+
     public interface OnChargingDataListener {
         void onChargingDataUpdated(PowerHistory history);
         void onChargingSessionStarted(String sessionId);
         void onChargingSessionEnded(String sessionId, ChargingSummary summary);
     }
-    
+
     /**
      * 充电摘要数据
      */
@@ -163,7 +172,8 @@ public class ChargingMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         handler = new Handler(Looper.getMainLooper());
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("charging-io"));
+        prefs = getSharedPreferences(BatteryMonitorService.PREFS_NAME, Context.MODE_PRIVATE);
 
         createNotificationChannel();
         registerChargingReceiver();
@@ -174,33 +184,64 @@ public class ChargingMonitorService extends Service {
         // 检查当前是否在充电
         checkChargingStatus();
     }
-    
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 仅在充电时提升为前台服务，避免未充电时显示常驻通知
-        updateForegroundState();
+        try {
+            if (intent != null && "STOP_FOREGROUND".equals(intent.getAction())) {
+                if (foregroundStarted) {
+                    stopForeground(true);
+                    foregroundStarted = false;
+                }
+                return START_STICKY;
+            }
+
+            // 仅在充电时提升为前台服务，避免未充电时显示常驻通知
+            updateForegroundState();
+        } catch (Exception e) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
+                Log.e(TAG, "ForegroundServiceStartNotAllowedException: cannot start foreground from background", e);
+            } else {
+                Log.e(TAG, "Error in onStartCommand: " + e.getMessage(), e);
+            }
+        }
         return START_STICKY;
+    }
+
+    /**
+     * 检查通知设置是否开启
+     */
+    private boolean isNotificationEnabled() {
+        if (prefs == null) {
+            prefs = getSharedPreferences(BatteryMonitorService.PREFS_NAME, Context.MODE_PRIVATE);
+        }
+        return prefs.getBoolean(BatteryMonitorService.PREF_ALERT_ENABLED, true);
     }
 
     /**
      * 根据充电状态更新前台服务状态
      */
     private void updateForegroundState() {
-        if (isCharging && !foregroundStarted) {
+        boolean showNotification = isNotificationEnabled();
+        if (isCharging && !foregroundStarted && showNotification) {
             startForeground(NOTIFICATION_ID, buildNotification());
             foregroundStarted = true;
         } else if (!isCharging && foregroundStarted) {
             stopForeground(true);
             foregroundStarted = false;
+        } else if (isCharging && foregroundStarted && !showNotification) {
+            stopForeground(true);
+            foregroundStarted = false;
         }
     }
-    
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-    
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -217,7 +258,7 @@ public class ChargingMonitorService extends Service {
             executor = null;
         }
     }
-    
+
     /**
      * 注册充电广播接收器
      */
@@ -226,7 +267,7 @@ public class ChargingMonitorService extends Service {
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
             filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            
+
             // Android 14+ 需要指定导出标志
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 registerReceiver(chargingReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -237,7 +278,7 @@ public class ChargingMonitorService extends Service {
             Log.e(TAG, "Error registering charging receiver: " + e.getMessage());
         }
     }
-    
+
     /**
      * 检查充电状态
      */
@@ -247,13 +288,13 @@ public class ChargingMonitorService extends Service {
             int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
             isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                         status == BatteryManager.BATTERY_STATUS_FULL;
-            
+
             if (isCharging) {
                 startChargingSession();
             }
         }
     }
-    
+
     /**
      * 安全获取电池sticky intent（兼容Android 14+）
      */
@@ -270,7 +311,7 @@ public class ChargingMonitorService extends Service {
             return null;
         }
     }
-    
+
     /**
      * 开始充电会话
      */
@@ -296,9 +337,11 @@ public class ChargingMonitorService extends Service {
 
         // 充电开始时提升为前台服务
         updateForegroundState();
-        updateNotification();
+        if (isNotificationEnabled()) {
+            updateNotification();
+        }
     }
-    
+
     /**
      * 结束充电会话
      */
@@ -322,12 +365,67 @@ public class ChargingMonitorService extends Service {
             dataListener.onChargingSessionEnded(currentSessionId, summary);
         }
 
+        // 发送充电完成本地通知
+        sendChargingCompleteNotification(summary);
+
+        // 发送广播供 UI 层接收
+        Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
+        broadcast.putExtra("session_id", summary.sessionId);
+        broadcast.putExtra("duration", summary.duration);
+        broadcast.putExtra("max_power", summary.maxPower);
+        broadcast.putExtra("avg_power", summary.avgPower);
+        sendBroadcast(broadcast);
+
         currentSessionId = null;
         // 充电结束时退出前台服务，避免未充电时显示常驻通知
         updateForegroundState();
-        updateNotification();
+        if (isNotificationEnabled()) {
+            updateNotification();
+        }
     }
-    
+
+    private void sendChargingCompleteNotification(ChargingSummary summary) {
+        try {
+            if (!isNotificationEnabled()) return;
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager == null) return;
+
+            String channelId = "charging_complete_channel";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                        channelId,
+                        "充电完成提醒",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                );
+                channel.setDescription("充电完成时发送通知");
+                manager.createNotificationChannel(channel);
+            }
+
+            Intent intent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String content = String.format(Locale.getDefault(),
+                    "本次充电耗时 %d 分钟，平均功率 %.1f W，峰值功率 %.1f W",
+                    summary.duration / (1000 * 60),
+                    summary.avgPower,
+                    summary.maxPower);
+
+            Notification notification = new NotificationCompat.Builder(this, channelId)
+                    .setContentTitle("充电完成")
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .build();
+
+            manager.notify(NOTIFICATION_ID + 1, notification);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending charging complete notification: " + e.getMessage());
+        }
+    }
+
     /**
      * 读取充电功率并生成历史记录（应在后台线程调用）。
      *
@@ -389,7 +487,7 @@ public class ChargingMonitorService extends Service {
             return null;
         }
     }
-    
+
     /**
      * 读取电压（单位：V）
      */
@@ -456,7 +554,7 @@ public class ChargingMonitorService extends Service {
         }
         return 0;
     }
-    
+
     /**
      * 读取电池电量
      */
@@ -493,7 +591,7 @@ public class ChargingMonitorService extends Service {
         }
         return 0;
     }
-    
+
     /**
      * 记录充电采样点，维护固定长度滑动窗口。
      */
@@ -555,7 +653,7 @@ public class ChargingMonitorService extends Service {
             return "trickle";
         }
     }
-    
+
     /**
      * 检测充电类型
      */
@@ -572,7 +670,7 @@ public class ChargingMonitorService extends Service {
             return "none";
         }
     }
-    
+
     /**
      * 保存功率历史记录（调用方已在后台线程时可直接执行，否则提交到 executor）
      */
@@ -584,7 +682,7 @@ public class ChargingMonitorService extends Service {
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
                     db.powerHistoryDao().insert(history);
-                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                    if (BuildConfigHelper.isDebugMode()) {
                         Log.d(TAG, "Power history saved: " + history.getPower() + "W");
                     }
                 }
@@ -598,7 +696,7 @@ public class ChargingMonitorService extends Service {
             saveTask.run();
         }
     }
-    
+
     /**
      * 获取当前功率历史记录。
      * 优先返回缓存值，避免在主线程上读取 sysfs 触发 StrictMode / ANR。
@@ -614,7 +712,7 @@ public class ChargingMonitorService extends Service {
         history.calculatePower();
         return history;
     }
-    
+
     /**
      * 创建通知渠道
      */
@@ -632,7 +730,7 @@ public class ChargingMonitorService extends Service {
             }
         }
     }
-    
+
     /**
      * 构建通知
      */
@@ -686,25 +784,46 @@ public class ChargingMonitorService extends Service {
     private void updateNotification() {
         updateNotification(getCurrentPowerHistory());
     }
-    
+
     /**
      * 设置数据监听器
      */
     public void setDataListener(OnChargingDataListener listener) {
         this.dataListener = listener;
     }
-    
+
     /**
      * 获取当前会话ID
      */
     public String getCurrentSessionId() {
         return currentSessionId;
     }
-    
+
     /**
      * 检查是否在充电
      */
     public boolean isCharging() {
         return isCharging;
+    }
+
+    /**
+     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
+     */
+    private static class NamedThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        NamedThreadFactory(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
+            t.setUncaughtExceptionHandler((thread, ex) -> {
+                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            });
+            return t;
+        }
     }
 }

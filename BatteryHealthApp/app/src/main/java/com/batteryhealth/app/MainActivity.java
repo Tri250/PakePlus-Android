@@ -1,20 +1,29 @@
 package com.batteryhealth.app;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
@@ -32,6 +41,7 @@ import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PermissionManager;
 import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +77,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             setContentView(R.layout.activity_main);
 
-            // Android 15+ 强制 edge-to-edge：为根视图和底部导航栏动态应用系统栏内边距
+            // Android 15+ 强制 edge-to-edge
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
             applyEdgeToEdgeInsets();
 
             mainHandler = new Handler(Looper.getMainLooper());
@@ -78,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
             // 检查视图是否成功初始化
             if (viewPager == null || bottomNavigation == null) {
                 Log.e(TAG, "Critical views not initialized");
-                Toast.makeText(this, "界面初始化失败", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.status_init_failed), Toast.LENGTH_LONG).show();
                 return;
             }
             
@@ -108,10 +119,16 @@ public class MainActivity extends AppCompatActivity {
 
             // 检查权限（统一使用 PermissionManager）
             PermissionManager.checkAndRequestPermissions(this, getRequiredPermissions());
-            
+
+            // 检查通知权限并提示
+            checkNotificationPermissionAndPrompt();
+
+            // 引导用户关闭电池优化
+            promptBatteryOptimizationIfNeeded();
+
             // 注意：电池广播由BatteryMonitorService统一处理
             // 不再在MainActivity中注册电池广播接收器，避免重复监听
-            
+
             // 延迟启动服务，避免启动时闪退
             mainHandler.postDelayed(() -> {
                 try {
@@ -128,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
             
         } catch (Exception e) {
             Log.e(TAG, "Critical error in onCreate: " + e.getMessage(), e);
-            Toast.makeText(this, "应用初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.status_app_init_failed, e.getMessage()), Toast.LENGTH_LONG).show();
             // 记录详细错误信息
             StringBuilder errorDetail = new StringBuilder();
             errorDetail.append("Error: ").append(e.getMessage()).append("\n");
@@ -155,7 +172,9 @@ public class MainActivity extends AppCompatActivity {
             if (root == null) return;
             ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
                 Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+                int bottom = Math.max(bars.bottom, ime.bottom);
+                v.setPadding(bars.left, bars.top, bars.right, bottom);
                 return WindowInsetsCompat.CONSUMED;
             });
         } catch (Exception e) {
@@ -245,16 +264,16 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航
+     * 设置底部导航（6项，屏幕不足时支持滚动）
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
-        navItems.add(new CustomBottomNavigationView.NavItem("健康", R.drawable.ic_battery_health));
-        navItems.add(new CustomBottomNavigationView.NavItem("配置", R.drawable.ic_device));
-        navItems.add(new CustomBottomNavigationView.NavItem("性能", R.drawable.ic_performance));
-        navItems.add(new CustomBottomNavigationView.NavItem("续航", R.drawable.ic_endurance));
-        navItems.add(new CustomBottomNavigationView.NavItem("趋势", R.drawable.ic_trend));
-        navItems.add(new CustomBottomNavigationView.NavItem("充电", R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health), R.drawable.ic_battery_health));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {
@@ -301,8 +320,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             if (!allGranted) {
-                Toast.makeText(this, "部分功能需要权限才能正常使用", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.status_permission_needed), Toast.LENGTH_LONG).show();
             }
+            PermissionManager.handlePermissionResult(this, permissions, grantResults);
         }
     }
     
@@ -311,33 +331,116 @@ public class MainActivity extends AppCompatActivity {
      */
     private void startMonitorServices() {
         if (servicesStarted) return;
-        
+
         try {
-            // 启动电池监测服务
-            android.content.Intent batteryServiceIntent = new android.content.Intent(this, BatteryMonitorService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(batteryServiceIntent);
-            } else {
-                startService(batteryServiceIntent);
-            }
-            
+            startServiceSafely(BatteryMonitorService.class);
+
             // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
             mainHandler.postDelayed(() -> {
                 try {
-                    android.content.Intent chargingServiceIntent = new android.content.Intent(this, ChargingMonitorService.class);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(chargingServiceIntent);
-                    } else {
-                        startService(chargingServiceIntent);
-                    }
+                    startServiceSafely(ChargingMonitorService.class);
                 } catch (Exception e) {
                     Log.e(TAG, "Error starting charging service: " + e.getMessage());
                 }
             }, 1000);
-            
+
             servicesStarted = true;
         } catch (Exception e) {
             Log.e(TAG, "Error starting services: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 安全启动服务：若应用在前台直接启动；若在后台（Android 14+）使用 AlarmManager 延迟启动
+     */
+    private void startServiceSafely(Class<?> serviceClass) {
+        Intent intent = new Intent(this, serviceClass);
+        boolean isAppInForeground = isAppInForeground();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (isAppInForeground || Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForegroundService(intent);
+            } else {
+                // Android 14+ 且不在前台：使用 AlarmManager 延迟 5 秒启动
+                AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                if (alarmManager != null) {
+                    PendingIntent pendingIntent = PendingIntent.getForegroundService(
+                            this, serviceClass.hashCode(), intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                    long triggerAt = System.currentTimeMillis() + 5000;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    } else {
+                        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    }
+                    Log.d(TAG, "Scheduled delayed start for " + serviceClass.getSimpleName());
+                }
+            }
+        } else {
+            startService(intent);
+        }
+    }
+
+    /**
+     * 判断应用是否处于前台
+     */
+    private boolean isAppInForeground() {
+        android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (am != null) {
+            List<android.app.ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
+            if (processes != null) {
+                for (android.app.ActivityManager.RunningAppProcessInfo process : processes) {
+                    if (process.processName.equals(getPackageName())) {
+                        return process.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 检查通知权限，未授予时显示 Snackbar 提示
+     */
+    private void checkNotificationPermissionAndPrompt() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                View rootView = findViewById(android.R.id.content);
+                if (rootView != null) {
+                    Snackbar.make(rootView, getString(R.string.status_notification_permission_needed), Snackbar.LENGTH_LONG)
+                            .setAction(getString(R.string.action_go_settings), v -> {
+                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            })
+                            .show();
+                }
+            }
+        }
+    }
+
+    /**
+     * 引导用户关闭电池优化
+     */
+    private void promptBatteryOptimizationIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.dialog_battery_optimization_title))
+                        .setMessage(getString(R.string.dialog_battery_optimization_message))
+                        .setPositiveButton(getString(R.string.action_go_settings), (dialog, which) -> {
+                            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                            try {
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Failed to open battery optimization settings", e);
+                            }
+                        })
+                        .setNegativeButton(getString(R.string.action_later), null)
+                        .show();
+            }
         }
     }
     

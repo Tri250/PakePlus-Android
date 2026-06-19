@@ -47,17 +47,13 @@
             android:windowSoftInputMode="adjustResize"
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:enableOnBackInvokedCallback="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            
-            <!-- Android 15+ 预测性返回手势 -->
-            <meta-data
-                android:name="android.window.enableOnBackInvokedCallback"
-                android:value="true"
-                tools:targetApi="33" />
         </activity>
 
         <activity
@@ -70,14 +66,14 @@
             android:name=".service.BatteryMonitorService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|health" />
         
         <!-- 充电监测服务 -->
         <service
             android:name=".service.ChargingMonitorService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|health" />
             
     </application>
 </manifest>

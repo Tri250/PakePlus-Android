@@ -11,8 +11,8 @@
     <color name="liquid_glass_glow">#1A007AFF</color>
 
     <color name="ios_label">#1C1C1E</color>
-    <color name="ios_secondary_label">#3C3C4399</color>
-    <color name="ios_tertiary_label">#3C3C4366</color>
+    <color name="ios_secondary_label">#3C3C43CC</color>
+    <color name="ios_tertiary_label">#3C3C43AA</color>
 
     <color name="ios_separator">#C6C6C8</color>
 

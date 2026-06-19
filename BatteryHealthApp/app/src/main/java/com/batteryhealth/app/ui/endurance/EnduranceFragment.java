@@ -1,5 +1,8 @@
 package com.batteryhealth.app.ui.endurance;
 
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -64,12 +67,20 @@ public class EnduranceFragment extends Fragment {
         public void run() {
             if (!isRunning) return;
 
-            // 刷新基本电池信息
-            if (batteryDataManager != null) {
-                batteryDataManager.refreshFromStickyIntent();
-            }
+            // 将 IO 操作下沉到后台线程，UI 更新回主线程
+            new Thread(() -> {
+                if (batteryDataManager != null) {
+                    batteryDataManager.refreshFromStickyIntent();
+                }
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (isAdded()) {
+                            updateUI();
+                        }
+                    });
+                }
+            }).start();
 
-            updateUI();
             if (mainHandler != null) {
                 mainHandler.postDelayed(this, UPDATE_INTERVAL);
             }
@@ -90,7 +101,7 @@ public class EnduranceFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
+        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
@@ -166,8 +177,34 @@ public class EnduranceFragment extends Fragment {
         }).start();
     }
 
+    private static final String PREFS_GLOBAL = "app_global_prefs";
+    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
+
+    private boolean shouldSkipAnimations() {
+        try {
+            Context ctx = requireContext();
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
+                return true;
+            }
+            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(mi);
+                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
+                if (totalMemGb < 4) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Animation check skipped: " + e.getMessage());
+        }
+        return false;
+    }
+
     private void animateCardsEntry(View view) {
         try {
+            if (shouldSkipAnimations()) return;
             if (!(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
@@ -182,8 +219,8 @@ public class EnduranceFragment extends Fragment {
                     .translationY(0f)
                     .scaleX(1f)
                     .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
+                    .setDuration(300)
+                    .setStartDelay(i * 60L)
                     .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
                     .start();
             }
@@ -257,11 +294,11 @@ public class EnduranceFragment extends Fragment {
                 // 更新放电速率
                 if (tvDischargeRate != null) {
                     if (isCharging) {
-                        tvDischargeRate.setText("充电中");
+                        tvDischargeRate.setText(getString(R.string.status_charging));
                     } else if (dischargeRate > 0) {
                         tvDischargeRate.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
                     } else {
-                        tvDischargeRate.setText("计算中...");
+                        tvDischargeRate.setText(getString(R.string.status_calculating_short));
                     }
                 }
 
@@ -278,19 +315,19 @@ public class EnduranceFragment extends Fragment {
                 // 计算预计续航时间：优先基于历史放电速率，其次基于实时电流
                 if (tvEnduranceTime != null) {
                     if (isCharging) {
-                        tvEnduranceTime.setText("充电中");
+                        tvEnduranceTime.setText(getString(R.string.status_charging));
                         tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_blue));
                     } else {
                         float remainingHours = estimateRemainingHours(level, currentNowUa, remainingCapacityMah);
                         if (remainingHours > 0) {
                             if (remainingHours >= 24) {
-                                tvEnduranceTime.setText(String.format(Locale.getDefault(), "%.0f 天", remainingHours / 24));
+                                tvEnduranceTime.setText(String.format(Locale.getDefault(), getString(R.string.status_endurance_days), remainingHours / 24));
                             } else {
-                                tvEnduranceTime.setText(String.format(Locale.getDefault(), "%.1f 小时", remainingHours));
+                                tvEnduranceTime.setText(String.format(Locale.getDefault(), getString(R.string.status_endurance_hours), remainingHours));
                             }
                             tvEnduranceTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                         } else {
-                            tvEnduranceTime.setText("-- 小时");
+                            tvEnduranceTime.setText(getString(R.string.status_hours_placeholder));
                         }
                     }
                 }
@@ -298,19 +335,19 @@ public class EnduranceFragment extends Fragment {
                 // 更新续航状态描述
                 if (tvEnduranceStatus != null) {
                     if (isCharging) {
-                        tvEnduranceStatus.setText("设备正在充电");
+                        tvEnduranceStatus.setText(getString(R.string.status_device_charging));
                     } else if (dischargeRate > 0) {
                         if (dischargeRate < 5) {
-                            tvEnduranceStatus.setText("续航表现优秀");
+                            tvEnduranceStatus.setText(getString(R.string.status_excellent));
                         } else if (dischargeRate < 10) {
-                            tvEnduranceStatus.setText("续航表现良好");
+                            tvEnduranceStatus.setText(getString(R.string.status_good));
                         } else if (dischargeRate < 20) {
-                            tvEnduranceStatus.setText("续航表现一般");
+                            tvEnduranceStatus.setText(getString(R.string.status_average));
                         } else {
-                            tvEnduranceStatus.setText("耗电较快，请检查后台应用");
+                            tvEnduranceStatus.setText(getString(R.string.status_poor));
                         }
                     } else {
-                        tvEnduranceStatus.setText("正在计算...");
+                        tvEnduranceStatus.setText(getString(R.string.status_calculating_short));
                     }
                 }
 
@@ -320,17 +357,17 @@ public class EnduranceFragment extends Fragment {
                         float fullChargeHours = estimateFullChargeHours(level, currentNowUa, designCapacity);
                         if (fullChargeHours > 0) {
                             if (fullChargeHours < 1) {
-                                tvFullChargeTime.setText(String.format(Locale.getDefault(), "%.0f 分钟", fullChargeHours * 60));
+                                tvFullChargeTime.setText(String.format(Locale.getDefault(), getString(R.string.status_full_charge_time_minutes), fullChargeHours * 60));
                             } else {
-                                tvFullChargeTime.setText(String.format(Locale.getDefault(), "%.1f 小时", fullChargeHours));
+                                tvFullChargeTime.setText(String.format(Locale.getDefault(), getString(R.string.status_full_charge_time_hours), fullChargeHours));
                             }
                         } else {
-                            tvFullChargeTime.setText("计算中...");
+                            tvFullChargeTime.setText(getString(R.string.status_calculating_short));
                         }
                     } else if (level >= 100) {
-                        tvFullChargeTime.setText("已充满");
+                        tvFullChargeTime.setText(getString(R.string.status_full_charge_done));
                     } else {
-                        tvFullChargeTime.setText("未充电");
+                        tvFullChargeTime.setText(getString(R.string.status_not_charging_short));
                     }
                 }
 

@@ -65,8 +65,8 @@ public class BatteryHealthApplication extends Application {
             try {
                 Intent intent = ErrorActivity.createIntent(
                         this,
-                        "应用发生崩溃",
-                        "我们已记录错误信息，请点击下方按钮重启应用。",
+                        getString(R.string.error_crash_title),
+                        getString(R.string.error_crash_message),
                         throwable
                 );
                 startActivity(intent);

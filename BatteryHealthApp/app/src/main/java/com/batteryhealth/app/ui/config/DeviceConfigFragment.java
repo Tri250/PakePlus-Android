@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.config;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -63,7 +64,7 @@ public class DeviceConfigFragment extends Fragment {
             ctx = requireActivity();
         }
         android.widget.TextView errorView = new android.widget.TextView(ctx);
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
+        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
         errorView.setTextSize(16);
@@ -153,14 +154,14 @@ public class DeviceConfigFragment extends Fragment {
             }
             if (tvUsageDays != null) {
                 int usageDays = config.getUsageDays();
-                tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
+                tvUsageDays.setText(usageDays >= 0 ? getString(R.string.usage_days_format, usageDays) : getString(R.string.unit_days_fallback));
             }
 
             // 激活来源与可信度
             if (tvActivationSource != null) {
                 String sourceText = config.getActivationSource();
                 float confidence = config.getActivationConfidence();
-                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", getActivationSourceLabel(sourceText), confidence * 100));
+                tvActivationSource.setText(String.format(Locale.getDefault(), getString(R.string.activation_source_confidence_format), getActivationSourceLabel(sourceText), confidence * 100));
             }
             // 可用内存
             if (tvAvailableMemory != null) {
@@ -215,8 +216,34 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
+    private static final String PREFS_GLOBAL = "app_global_prefs";
+    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
+
+    private boolean shouldSkipAnimations() {
+        try {
+            Context ctx = requireContext();
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
+                return true;
+            }
+            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(mi);
+                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
+                if (totalMemGb < 4) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Animation check skipped: " + e.getMessage());
+        }
+        return false;
+    }
+
     private void animateCardsEntry(View view) {
         try {
+            if (shouldSkipAnimations()) return;
             if (!(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
@@ -231,8 +258,8 @@ public class DeviceConfigFragment extends Fragment {
                     .translationY(0f)
                     .scaleX(1f)
                     .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
+                    .setDuration(300)
+                    .setStartDelay(i * 60L)
                     .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
                     .start();
             }
@@ -242,22 +269,22 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private String getActivationSourceLabel(String source) {
-        if (source == null || "unknown".equals(source)) return "未知";
+        if (source == null || "unknown".equals(source)) return getString(R.string.activation_source_unknown);
         switch (source) {
             case "electronic_warranty_card":
-                return "电子保卡";
+                return getString(R.string.activation_source_warranty);
             case "system_first_boot_time":
-                return "系统首次开机";
+                return getString(R.string.activation_source_first_boot);
             case "device_policy_manager":
-                return "设备管理策略";
+                return getString(R.string.activation_source_device_policy);
             case "gms_first_install":
-                return "Google 服务首次安装";
+                return getString(R.string.activation_source_google);
             case "system_framework_install":
-                return "系统框架安装";
+                return getString(R.string.activation_source_framework);
             case "app_first_install":
-                return "本应用首次安装";
+                return getString(R.string.activation_source_app_first_install);
             case "app_data_directory":
-                return "应用数据目录";
+                return getString(R.string.activation_source_app_data);
             default:
                 return source;
         }

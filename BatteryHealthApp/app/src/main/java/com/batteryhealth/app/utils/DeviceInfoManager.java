@@ -11,6 +11,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
 
 import java.io.BufferedReader;
@@ -23,6 +24,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 设备信息收集器
@@ -36,7 +39,7 @@ public class DeviceInfoManager {
     private final DeviceDatabaseManager deviceDb;
 
     private DeviceConfig cachedConfig;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // GPU 渲染器 sysfs / 属性候选路径
@@ -51,7 +54,9 @@ public class DeviceInfoManager {
             "/sys/class/devfreq/gpufreq/cur_freq",
             "/sys/kernel/gpu/gpu_model",
             "/sys/module/msm_kgsl/parameters/kgsl_3d0_pwrrail",
-            "/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq"
+            "/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq",
+            "/sys/class/drm/card0/device/pp_dpm_sclk",
+            "/sys/class/drm/renderD128/device/pp_dpm_sclk"
     };
 
     public DeviceInfoManager(Context context) {
@@ -198,7 +203,7 @@ public class DeviceInfoManager {
             if (cfgCpu != null && !cfgCpu.isEmpty()) return cfgCpu;
         }
 
-        return "未识别";
+        return context.getString(R.string.status_not_recognized);
     }
 
     private String readCpuInfoFromProc() {
@@ -244,7 +249,7 @@ public class DeviceInfoManager {
      */
     public String getActivationSourceText() {
         DeviceConfig config = getDeviceConfig();
-        return config != null ? config.getActivationSource() : "未知";
+        return config != null ? config.getActivationSource() : context.getString(R.string.status_unknown);
     }
 
     /**
@@ -392,7 +397,7 @@ public class DeviceInfoManager {
         int dbCapacity = deviceDb.getDesignCapacity();
         if (dbCapacity > 0) {
             config.setBatteryCapacity(dbCapacity);
-            config.setBatteryTechnology("锂离子");
+            config.setBatteryTechnology(context.getString(R.string.battery_technology_default));
             return;
         }
 
@@ -400,10 +405,10 @@ public class DeviceInfoManager {
             String tech = readSysfsString(new String[]{
                     "/sys/class/power_supply/battery/technology",
                     "/sys/class/power_supply/bms/technology"
-            }, "锂离子");
+            }, context.getString(R.string.battery_technology_default));
             config.setBatteryTechnology(tech);
         } catch (Exception ignored) {
-            config.setBatteryTechnology("锂离子");
+            config.setBatteryTechnology(context.getString(R.string.battery_technology_default));
         }
     }
 
@@ -415,7 +420,7 @@ public class DeviceInfoManager {
 
             android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             if (activeNetwork == null || !activeNetwork.isConnected()) {
-                config.setNetworkType("无网络");
+                config.setNetworkType(context.getString(R.string.status_no_network));
                 return;
             }
 
@@ -452,7 +457,7 @@ public class DeviceInfoManager {
             case android.telephony.TelephonyManager.NETWORK_TYPE_IDEN:
                 return "2G";
             default:
-                return "移动数据";
+                return context.getString(R.string.status_mobile_data);
         }
     }
 
@@ -501,10 +506,11 @@ public class DeviceInfoManager {
             }
         }
 
-        // 2. 通过系统属性读取
+        // 2. 通过系统属性读取（增加 ro.opengles.version）
         String[] properties = {
                 "ro.hardware.egl",
                 "ro.hardware.vulkan",
+                "ro.opengles.version",
                 "ro.product.board",
                 "ro.board.platform",
                 "ro.hardware"
@@ -516,22 +522,51 @@ public class DeviceInfoManager {
             }
         }
 
-        // 3. 从 /proc/cpuinfo 的 Hardware 字段推断 GPU 厂商
+        // 3. 通过反射调用 GLES20.glGetString(GL_RENDERER)
+        String glRenderer = getGlRendererViaReflection();
+        if (glRenderer != null && !glRenderer.isEmpty()) {
+            return glRenderer;
+        }
+
+        // 4. 从 /proc/gpuinfo 读取（部分设备存在）
+        String procGpu = readFile("/proc/gpuinfo");
+        if (procGpu != null && !procGpu.isEmpty()) {
+            return procGpu.trim();
+        }
+
+        // 5. 从 /proc/cpuinfo 的 Hardware 字段推断 GPU 厂商
         String cpuHardware = getCpuHardware();
         if (cpuHardware != null) {
             String lower = cpuHardware.toLowerCase(Locale.ROOT);
             if (lower.contains("qcom") || lower.contains("qualcomm") || lower.contains("snapdragon")) {
-                return "Adreno GPU（高通）";
+                return context.getString(R.string.gpu_adreno);
             } else if (lower.contains("mtk") || lower.contains("mediatek")) {
-                return "Mali GPU（联发科）";
+                return context.getString(R.string.gpu_mali_mediatek);
             } else if (lower.contains("kirin") || lower.contains("hisilicon")) {
-                return "Mali GPU（海思麒麟）";
+                return context.getString(R.string.gpu_mali_hisilicon);
             } else if (lower.contains("exynos")) {
-                return "Mali/Xclipse GPU（三星）";
+                return context.getString(R.string.gpu_mali_samsung);
             }
         }
 
-        return "未识别";
+        return context.getString(R.string.status_not_recognized);
+    }
+
+    private String getGlRendererViaReflection() {
+        try {
+            Class<?> gles20Class = Class.forName("android.opengl.GLES20");
+            java.lang.reflect.Method glGetStringMethod = gles20Class.getMethod("glGetString", int.class);
+            // GL_RENDERER = 0x1F01
+            Object result = glGetStringMethod.invoke(null, 0x1F01);
+            if (result != null) {
+                String renderer = result.toString();
+                if (!renderer.isEmpty() && !renderer.contains("Emulator")) {
+                    return renderer;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private String getCpuHardware() {
@@ -612,6 +647,27 @@ public class DeviceInfoManager {
             this.confidence = 0.0f;
             this.dateStr = "--";
             this.usageDays = -1;
+        }
+    }
+
+    /**
+     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
+     */
+    private static class NamedThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        NamedThreadFactory(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
+            t.setUncaughtExceptionHandler((thread, ex) -> {
+                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            });
+            return t;
         }
     }
 }

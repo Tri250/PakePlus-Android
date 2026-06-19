@@ -1,8 +1,10 @@
 package com.batteryhealth.app.ui.power;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -32,6 +34,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 充电功率Fragment
@@ -96,7 +100,7 @@ public class PowerFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
+        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
@@ -111,7 +115,7 @@ public class PowerFragment extends Fragment {
         
         try {
             mainHandler = new Handler(Looper.getMainLooper());
-            executor = Executors.newSingleThreadExecutor();
+            executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("power-io"));
 
             tvPower = view.findViewById(R.id.tv_power);
             tvVoltage = view.findViewById(R.id.tv_voltage);
@@ -130,8 +134,34 @@ public class PowerFragment extends Fragment {
         }
     }
     
+    private static final String PREFS_GLOBAL = "app_global_prefs";
+    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
+
+    private boolean shouldSkipAnimations() {
+        try {
+            Context ctx = requireContext();
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
+                return true;
+            }
+            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(mi);
+                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
+                if (totalMemGb < 4) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Animation check skipped: " + e.getMessage());
+        }
+        return false;
+    }
+
     private void animateCardsEntry(View view) {
         try {
+            if (shouldSkipAnimations()) return;
             if (!(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
@@ -146,8 +176,8 @@ public class PowerFragment extends Fragment {
                     .translationY(0f)
                     .scaleX(1f)
                     .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
+                    .setDuration(300)
+                    .setStartDelay(i * 60L)
                     .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
                     .start();
             }
@@ -191,7 +221,7 @@ public class PowerFragment extends Fragment {
         if (tvPower != null) tvPower.setText("0.0 W");
         if (tvVoltage != null) tvVoltage.setText("0.00 V");
         if (tvCurrent != null) tvCurrent.setText("0.00 A");
-        if (tvChargeType != null) tvChargeType.setText("未充电");
+        if (tvChargeType != null) tvChargeType.setText(getString(R.string.status_not_charging_short));
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
         if (tvChargingPhase != null) tvChargingPhase.setText("--");
         if (tvBatteryTemp != null) tvBatteryTemp.setText("--°C");
@@ -249,7 +279,7 @@ public class PowerFragment extends Fragment {
                 if (power > 0) {
                     tvChargingPhase.setText(detectChargingPhase(level, power));
                 } else {
-                    tvChargingPhase.setText("未充电");
+                    tvChargingPhase.setText(getString(R.string.status_not_charging_short));
                 }
             }
 
@@ -297,7 +327,7 @@ public class PowerFragment extends Fragment {
     }
 
     private String detectChargingPhase(int level, float power) {
-        if (level >= 99) return "已充满";
+        if (level >= 99) return getString(R.string.status_fully_charged);
 
         if (samples.size() >= 8) {
             PowerSample first = samples.getFirst();
@@ -309,17 +339,17 @@ public class PowerFragment extends Fragment {
                 float dvdt = (last.voltage - first.voltage) / hours;
 
                 if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
-                    return "恒压充电";
+                    return getString(R.string.charge_phase_constant_voltage);
                 }
                 if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
-                    return "恒流充电";
+                    return getString(R.string.charge_phase_constant_current);
                 }
             }
         }
 
-        if (level >= 80) return "恒压充电";
-        if (power > 5) return "恒流充电";
-        return "涓流充电";
+        if (level >= 80) return getString(R.string.charge_phase_constant_voltage);
+        if (power > 5) return getString(R.string.charge_phase_constant_current);
+        return getString(R.string.charge_phase_trickle);
     }
 
     private int readBatteryLevel() {
@@ -418,20 +448,41 @@ public class PowerFragment extends Fragment {
             officialPower = DeviceDatabaseManager.getInstance(ctx).getTypicalChargePower();
         }
 
-        if (power <= 0) return "未充电";
+        if (power <= 0) return getString(R.string.status_not_charging_short);
 
         // 基于机型数据库官方快充功率判断，更准确
         if (officialPower > 0) {
-            if (power >= officialPower * 0.6f && power >= 60) return "超快闪充";
-            if (power >= officialPower * 0.5f && power >= 30) return "快速充电";
-            if (power >= officialPower * 0.25f && power >= 10) return "标准充电";
-            return "慢速充电";
+            if (power >= officialPower * 0.6f && power >= 60) return getString(R.string.charge_power_ultra_fast);
+            if (power >= officialPower * 0.5f && power >= 30) return getString(R.string.charge_power_fast);
+            if (power >= officialPower * 0.25f && power >= 10) return getString(R.string.charge_power_standard);
+            return getString(R.string.charge_power_slow);
         }
 
         // 通用阈值兜底
-        if (power >= 60) return "超快闪充";
-        if (power >= 30) return "快速充电";
-        if (power >= 10) return "标准充电";
-        return "慢速充电";
+        if (power >= 60) return getString(R.string.charge_power_ultra_fast);
+        if (power >= 30) return getString(R.string.charge_power_fast);
+        if (power >= 10) return getString(R.string.charge_power_standard);
+        return getString(R.string.charge_power_slow);
+    }
+
+    /**
+     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
+     */
+    private static class NamedThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        NamedThreadFactory(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
+            t.setUncaughtExceptionHandler((thread, ex) -> {
+                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            });
+            return t;
+        }
     }
 }

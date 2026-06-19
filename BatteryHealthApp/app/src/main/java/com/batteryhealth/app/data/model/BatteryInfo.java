@@ -415,6 +415,7 @@ public class BatteryInfo {
      * 获取健康描述
      */
     public String getHealthDescription() {
+        // 注意：此处返回硬编码字符串仅作为数据模型默认值，实际展示文本由 UI 层通过 strings.xml 控制
         if (healthPercentage < 0) {
             return "无法获取电池健康数据";
         } else if (healthPercentage >= 90) {

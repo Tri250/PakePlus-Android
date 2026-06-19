@@ -2,6 +2,7 @@ package com.batteryhealth.app.ui.performance;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -20,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.DeviceConfig;
@@ -31,6 +33,8 @@ import java.io.FileReader;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 性能分析Fragment
@@ -74,7 +78,7 @@ public class PerformanceFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
+        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
         errorView.setText(message);
         errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
         errorView.setTextSize(16);
@@ -103,7 +107,7 @@ public class PerformanceFragment extends Fragment {
             animateCardsEntry(view);
 
             handler = new Handler(Looper.getMainLooper());
-            executor = Executors.newSingleThreadExecutor();
+            executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("performance-io"));
 
             updateTask = new Runnable() {
                 @Override
@@ -111,7 +115,7 @@ public class PerformanceFragment extends Fragment {
                     if (!isRunning) return;
                     updatePerformanceData();
                     if (handler != null) {
-                        handler.postDelayed(this, 2000);
+                        handler.postDelayed(this, 30000);
                     }
                 }
             };
@@ -120,8 +124,34 @@ public class PerformanceFragment extends Fragment {
         }
     }
 
+    private static final String PREFS_GLOBAL = "app_global_prefs";
+    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
+
+    private boolean shouldSkipAnimations() {
+        try {
+            Context ctx = requireContext();
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
+                return true;
+            }
+            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(mi);
+                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
+                if (totalMemGb < 4) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Animation check skipped: " + e.getMessage());
+        }
+        return false;
+    }
+
     private void animateCardsEntry(View view) {
         try {
+            if (shouldSkipAnimations()) return;
             if (!(view instanceof android.view.ViewGroup)) return;
             android.view.ViewGroup root = (android.view.ViewGroup) view;
             for (int i = 0; i < root.getChildCount(); i++) {
@@ -136,8 +166,8 @@ public class PerformanceFragment extends Fragment {
                     .translationY(0f)
                     .scaleX(1f)
                     .scaleY(1f)
-                    .setDuration(650)
-                    .setStartDelay(i * 100L)
+                    .setDuration(300)
+                    .setStartDelay(i * 60L)
                     .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
                     .start();
             }
@@ -236,7 +266,7 @@ public class PerformanceFragment extends Fragment {
             }
 
             if (tvPerformanceScore != null) {
-                tvPerformanceScore.setText(score + " 分");
+                tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
                 if (score >= 80) {
                     tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                 } else if (score >= 60) {
@@ -267,6 +297,7 @@ public class PerformanceFragment extends Fragment {
     private long lastSoftirq = 0;
     private long lastSteal = 0;
     private boolean hasLastStat = false;
+    private PerformanceData lastSavedPerformanceData;
 
     private float readCpuUsage() {
         try {
@@ -394,7 +425,13 @@ public class PerformanceFragment extends Fragment {
             Context ctx = getContext();
             if (ctx == null) return 20;
 
-            DeviceInfoManager dim = new DeviceInfoManager(ctx);
+            DeviceInfoManager dim = null;
+            if (getActivity() instanceof MainActivity) {
+                dim = ((MainActivity) getActivity()).getDeviceInfoManager();
+            }
+            if (dim == null) {
+                dim = new DeviceInfoManager(ctx);
+            }
             DeviceConfig config = dim.getDeviceConfig();
 
             // 内存分：0-20
@@ -429,14 +466,14 @@ public class PerformanceFragment extends Fragment {
             if (ctx != null) {
                 DeviceInfoManager dim = new DeviceInfoManager(ctx);
                 String gpu = dim.getGpuInfo();
-                if (gpu != null && !gpu.isEmpty() && !gpu.equals("未识别")) {
+                if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
                     return gpu;
                 }
             }
         } catch (Exception e) {
             Log.d(TAG, "GPU info not available");
         }
-        return "未识别";
+        return getString(R.string.status_not_recognized);
     }
 
     private void savePerformanceData(float cpuUsage, float memoryUsage, float storageUsage, int score) {
@@ -447,6 +484,20 @@ public class PerformanceFragment extends Fragment {
                 AppDatabase db = app.getDatabase();
                 if (db == null) return;
 
+                // 采样去重：如果 CPU/内存/存储与上次记录差异 <1%，跳过写入
+                if (lastSavedPerformanceData != null) {
+                    float cpuDiff = Math.abs(cpuUsage - lastSavedPerformanceData.getCpuUsage());
+                    float memDiff = Math.abs(memoryUsage - lastSavedPerformanceData.getMemoryUsed() / (float) lastSavedPerformanceData.getMemoryTotal() * 100f);
+                    float storageDiff = Math.abs(storageUsage - (lastSavedPerformanceData.getMemoryTotal() > 0
+                            ? lastSavedPerformanceData.getMemoryUsed() / (float) lastSavedPerformanceData.getMemoryTotal() * 100f : 0));
+                    if (cpuDiff < 1f && memDiff < 1f && storageDiff < 1f) {
+                        if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                            Log.d(TAG, "Performance data skipped (no significant change)");
+                        }
+                        return;
+                    }
+                }
+
                 PerformanceData data = new PerformanceData();
                 data.setCpuUsage(cpuUsage);
                 data.setMemoryTotal(getTotalMemory());
@@ -456,10 +507,11 @@ public class PerformanceFragment extends Fragment {
                 data.setHasIssue(score < 60);
                 if (score < 60) {
                     data.setIssueType("performance_low");
-                    data.setIssueDescription("综合性能评分低于60，建议关闭后台应用");
+                    data.setIssueDescription(getString(R.string.performance_low_issue));
                 }
 
                 db.performanceDataDao().insert(data);
+                lastSavedPerformanceData = data;
             } catch (Exception e) {
                 Log.e(TAG, "Error saving performance data: " + e.getMessage());
             }
@@ -505,5 +557,26 @@ public class PerformanceFragment extends Fragment {
             }
         } catch (Exception ignored) {}
         return 0;
+    }
+
+    /**
+     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
+     */
+    private static class NamedThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        NamedThreadFactory(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
+            t.setUncaughtExceptionHandler((thread, ex) -> {
+                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            });
+            return t;
+        }
     }
 }

@@ -19,10 +19,13 @@ import android.util.Log;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
@@ -50,7 +53,7 @@ public class BatteryMonitorService extends Service {
     private static final String CHANNEL_ID = "battery_monitor_channel";
     private static final int NOTIFICATION_ID = 1001;
     private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
-    private static final long SAVE_INTERVAL = 60000; // 60秒保存一次到数据库
+    private static final long SAVE_INTERVAL = 300000; // 5分钟保存一次到数据库
     private static final long DATA_CLEANUP_INTERVAL = 86400000; // 24小时清理一次旧数据
 
     // 健康度衰减预警配置
@@ -71,6 +74,7 @@ public class BatteryMonitorService extends Service {
     private boolean isRunning = false;
     private long lastSaveTime = 0;
     private SharedPreferences prefs;
+    private BatteryInfo lastSavedBatteryInfo;
     private boolean healthCheckScheduled = false;
     private BatteryDataManager batteryDataManager;
     private ExecutorService ioExecutor;
@@ -156,7 +160,7 @@ public class BatteryMonitorService extends Service {
         super.onCreate();
         try {
             handler = new Handler(Looper.getMainLooper());
-            ioExecutor = Executors.newSingleThreadExecutor();
+            ioExecutor = Executors.newSingleThreadExecutor(new NamedThreadFactory("battery-io"));
             batteryDataManager = new BatteryDataManager(this);
             // 首次读取也走后台线程，避免 onCreate 阻塞主线程
             ioExecutor.submit(() -> {
@@ -185,8 +189,19 @@ public class BatteryMonitorService extends Service {
         try {
             if (!isRunning) {
                 isRunning = true;
-                startForeground(NOTIFICATION_ID, buildNotification());
-                
+                try {
+                    startForeground(NOTIFICATION_ID, buildNotification());
+                } catch (Exception e) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                            && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
+                        Log.e(TAG, "ForegroundServiceStartNotAllowedException: cannot start foreground from background", e);
+                    } else {
+                        Log.e(TAG, "Error starting foreground: " + e.getMessage(), e);
+                    }
+                    isRunning = false;
+                    return START_NOT_STICKY;
+                }
+
                 // 启动定时更新
                 if (handler != null) {
                     handler.post(updateTask);
@@ -202,6 +217,31 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error in onStartCommand: " + e.getMessage());
         }
         return START_STICKY;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        try {
+            // 使用 AlarmManager 在 5 秒后尝试重启服务（仅当用户未手动关闭服务时）
+            android.app.AlarmManager alarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null) {
+                Intent restartIntent = new Intent(this, BatteryMonitorService.class);
+                PendingIntent pendingIntent = PendingIntent.getForegroundService(
+                        this, 1, restartIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+                long triggerAt = System.currentTimeMillis() + 5000;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                } else {
+                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                }
+                Log.d(TAG, "Task removed, scheduled service restart in 5s");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error scheduling restart on task removed: " + e.getMessage());
+        }
     }
     
     @Nullable
@@ -375,7 +415,7 @@ public class BatteryMonitorService extends Service {
                 if (drop >= threshold) {
                     sendHealthAlertNotification(drop, averageHealth, currentHealth);
                     prefs.edit().putLong(PREF_LAST_ALERT_TIME, now).apply();
-                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                    if (BuildConfigHelper.isDebugMode()) {
                         Log.d(TAG, "Health degradation alert sent: drop=" + drop + "%");
                     }
                 }
@@ -491,6 +531,21 @@ public class BatteryMonitorService extends Service {
     private void saveBatteryData() {
         if (currentBatteryInfo == null) return;
 
+        // 采样去重：如果电量/温度/电压与上次记录差异 <1%，跳过写入
+        if (lastSavedBatteryInfo != null) {
+            int levelDiff = Math.abs(currentBatteryInfo.getLevel() - lastSavedBatteryInfo.getLevel());
+            float tempDiff = Math.abs(currentBatteryInfo.getTemperature() - lastSavedBatteryInfo.getTemperature());
+            float voltDiff = Math.abs(currentBatteryInfo.getVoltage() - lastSavedBatteryInfo.getVoltage());
+            float tempThreshold = Math.max(1f, Math.abs(lastSavedBatteryInfo.getTemperature()) * 0.01f);
+            float voltThreshold = Math.max(1f, Math.abs(lastSavedBatteryInfo.getVoltage()) * 0.01f);
+            if (levelDiff < 1 && tempDiff < tempThreshold && voltDiff < voltThreshold) {
+                if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                    Log.d(TAG, "Battery data skipped (no significant change)");
+                }
+                return;
+            }
+        }
+
         // 先深拷贝，避免后台写入时修改 currentBatteryInfo 影响 UI/通知数据流
         final BatteryInfo snapshot = new Gson().fromJson(
                 new Gson().toJson(currentBatteryInfo), BatteryInfo.class);
@@ -501,6 +556,8 @@ public class BatteryMonitorService extends Service {
         snapshot.setDeviceModel(android.os.Build.MODEL);
         snapshot.setDeviceBrand(android.os.Build.BRAND);
 
+        lastSavedBatteryInfo = new Gson().fromJson(new Gson().toJson(snapshot), BatteryInfo.class);
+
         new Thread(() -> {
             try {
                 com.batteryhealth.app.BatteryHealthApplication app =
@@ -508,7 +565,7 @@ public class BatteryMonitorService extends Service {
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
                     db.batteryInfoDao().insert(snapshot);
-                    if (com.batteryhealth.app.BuildConfig.DEBUG) {
+                    if (BuildConfigHelper.isDebugMode()) {
                         Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
                     }
 
@@ -520,5 +577,26 @@ public class BatteryMonitorService extends Service {
                 Log.e(TAG, "Error saving battery data: " + e.getMessage());
             }
         }).start();
+    }
+
+    /**
+     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
+     */
+    private static class NamedThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        NamedThreadFactory(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
+            t.setUncaughtExceptionHandler((thread, ex) -> {
+                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            });
+            return t;
+        }
     }
 }

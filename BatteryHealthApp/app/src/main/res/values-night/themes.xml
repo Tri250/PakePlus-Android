@@ -20,12 +20,14 @@
         <item name="android:textColorTertiary">@color/ios_tertiary_label</item>
 
         <!-- 状态栏 - 液态玻璃（深色下用浅色图标） -->
-        <item name="android:statusBarColor">@color/liquid_glass_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
 
         <!-- 导航栏 - 液态玻璃 -->
-        <item name="android:navigationBarColor">@color/liquid_glass_surface</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+
+
 
         <!-- 禁用默认 ActionBar -->
         <item name="windowActionBar">false</item>

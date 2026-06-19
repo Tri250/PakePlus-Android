@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.util.Log;
 
+import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
@@ -27,6 +28,9 @@ public class BatteryDataManager {
 
     private static final String TAG = "BatteryDataManager";
 
+    public static final String PREFS_NAME = "battery_health_prefs";
+    public static final String PREF_CALIBRATED_CAPACITY = "calibrated_capacity_mah";
+
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
     private ActivationDateHelper.Result activation;
@@ -35,9 +39,17 @@ public class BatteryDataManager {
     private int usageDays = -1;
 
     // 充电状态文本缓存
-    private String chargingStatusText = "未知";
-    private String healthSourceText = "未知";
-    private String batterySourceText = "未知";
+    private String chargingStatusText;
+    private String healthSourceText;
+    private String batterySourceText;
+
+    public BatteryDataManager(Context context) {
+        this.context = context.getApplicationContext();
+        this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
+        this.chargingStatusText = this.context.getString(R.string.status_unknown);
+        this.healthSourceText = this.context.getString(R.string.status_unknown);
+        this.batterySourceText = this.context.getString(R.string.status_unknown);
+    }
 
     // BatteryManager 常量兜底（兼容不同 SDK 版本及预览版平台缺失的符号）
     private static final int BATTERY_PROP_CYCLE_COUNT = 7;
@@ -145,11 +157,6 @@ public class BatteryDataManager {
             "/sys/class/power_supply/bms/technology"
     };
 
-    public BatteryDataManager(Context context) {
-        this.context = context.getApplicationContext();
-        this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
-    }
-
     /**
      * 设置当前设备激活信息（用于计算基于使用时长的健康度估算）。由 Activity/Fragment 在创建后注入。
      */
@@ -213,7 +220,7 @@ public class BatteryDataManager {
         if (technology == null || technology.isEmpty()) {
             technology = readSysfsString(TECH_PATHS, "");
         }
-        info.setTechnology(technology.isEmpty() ? "锂离子" : technology);
+        info.setTechnology(technology.isEmpty() ? context.getString(R.string.battery_technology_default) : technology);
 
         // 7. 容量相关（关键：用于健康度）
         String[] designSource = new String[1];
@@ -299,12 +306,22 @@ public class BatteryDataManager {
     }
 
     /**
-     * 设计容量：优先本地数据库，其次 sysfs，再次 BatteryManager CHARGE_FULL 兜底。
+     * 设计容量：优先用户校准值，其次本地数据库，再次 sysfs，再次 BatteryManager CHARGE_FULL 兜底。
      *
-     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（device_database / sysfs / battery_manager / unknown）
+     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（user_calibrated / device_database / sysfs / battery_manager / unknown）
      */
     private int getDesignCapacity(Intent intent, String[] sourceHolder) {
-        // 1. 本地机型数据库（最准确）
+        // 1. 用户校准值（最优先）
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        int calibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1);
+        if (calibrated > 0) {
+            if (sourceHolder != null && sourceHolder.length > 0) {
+                sourceHolder[0] = "user_calibrated";
+            }
+            return calibrated;
+        }
+
+        // 2. 本地机型数据库（最准确）
         int dbCapacity = deviceDb.getDesignCapacity();
         if (dbCapacity > 0) {
             if (sourceHolder != null && sourceHolder.length > 0) {
@@ -313,7 +330,7 @@ public class BatteryDataManager {
             return dbCapacity;
         }
 
-        // 2. sysfs 多路径
+        // 3. sysfs 多路径
         int design = readSysfsInt(DESIGN_CAPACITY_PATHS, -1);
         if (design > 1000) {
             // sysfs 返回值单位通常为 uAh，需转换为 mAh
@@ -329,7 +346,7 @@ public class BatteryDataManager {
             return design;
         }
 
-        // 3. BatteryManager BATTERY_PROPERTY_CHARGE_FULL（部分设备该值接近设计容量）
+        // 4. BatteryManager BATTERY_PROPERTY_CHARGE_FULL（部分设备该值接近设计容量）
         BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
         if (batteryManager != null) {
             int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
@@ -404,7 +421,8 @@ public class BatteryDataManager {
 
     /**
      * 从数据库历史记录估算循环次数。
-     * 统计从低电量（<20%）到高电量（>80%）的完整充电次数。
+     * 简化方案：按天去重，同一天内无论充几次只算 1 次。
+     * 判断依据：存在从低电量（<20%）开始充电，到拔掉充电器时电量 >80% 的完整会话。
      */
     private int estimateCycleCountFromHistory() {
         try {
@@ -419,17 +437,37 @@ public class BatteryDataManager {
             List<BatteryInfo> records = db.batteryInfoDao().getSince(startTime);
             if (records == null || records.size() < 10) return -1;
 
-            int cycles = 0;
+            java.util.Set<String> cycleDays = new java.util.HashSet<>();
             boolean wasLow = false;
+            boolean wasCharging = false;
+            int lastLevel = -1;
+
             for (BatteryInfo info : records) {
                 int level = info.getLevel();
-                if (level < 20) wasLow = true;
-                if (wasLow && level > 80) {
-                    cycles++;
-                    wasLow = false;
+                int status = info.getStatus();
+                boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
+                long ts = info.getTimestamp();
+                String day = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(new java.util.Date(ts));
+
+                if (level < 20) {
+                    wasLow = true;
                 }
+
+                if (wasLow && isCharging) {
+                    wasCharging = true;
+                }
+
+                // 从充电变为不充电，且电量 >80%，算作一次完整充电会话
+                if (wasLow && wasCharging && !isCharging && level > 80) {
+                    cycleDays.add(day);
+                    wasLow = false;
+                    wasCharging = false;
+                }
+
+                lastLevel = level;
             }
-            return cycles > 0 ? cycles : -1;
+
+            return cycleDays.isEmpty() ? -1 : cycleDays.size();
         } catch (Exception e) {
             Log.d(TAG, "Failed to estimate cycle count from history: " + e.getMessage());
             return -1;
@@ -464,10 +502,10 @@ public class BatteryDataManager {
             }
 
             if (matchesBrandPattern) {
-                result.source = "原装";
+                result.source = context.getString(R.string.battery_source_original);
                 result.confidence = 0.75f;
             } else {
-                result.source = "第三方";
+                result.source = context.getString(R.string.battery_source_third_party);
                 result.confidence = 0.45f;
             }
         }
@@ -477,17 +515,17 @@ public class BatteryDataManager {
             float ratio = fullCapacity / (float) designCapacity;
             if (ratio < 0.55f || ratio > 1.25f) {
                 // 容量严重偏离官方规格，强烈怀疑非原装
-                result.source = "第三方";
+                result.source = context.getString(R.string.battery_source_third_party);
                 result.confidence = Math.min(result.confidence + 0.25f, 0.95f);
             } else if (ratio >= 0.85f && ratio <= 1.05f && result.confidence < 0.85f) {
-                result.source = "原装";
+                result.source = context.getString(R.string.battery_source_original);
                 result.confidence = 0.85f;
             }
         }
 
         // 3. 无法获取任何有效信息
         if (result.source == null || result.source.isEmpty()) {
-            result.source = "无法验证";
+            result.source = context.getString(R.string.battery_source_unverifiable);
             result.confidence = 0.0f;
         }
 
@@ -504,7 +542,7 @@ public class BatteryDataManager {
                 return serial;
             }
         }
-        return readSysfsString(SERIAL_PATHS, "未知");
+        return readSysfsString(SERIAL_PATHS, context.getString(R.string.status_unknown));
     }
 
     private String tryGetBatterySerial(BatteryManager batteryManager) {
@@ -550,7 +588,10 @@ public class BatteryDataManager {
             result.healthPercentage = clampHealth(health);
             result.healthLevel = getHealthLevel(result.healthPercentage);
             result.healthStatus = getHealthStatusString(result.healthLevel);
-            result.confidence = 0.95f;
+            // 用户校准值置信度略低于实测 sysfs，但高于数据库兜底
+            android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            boolean isCalibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1) > 0;
+            result.confidence = isCalibrated ? 0.90f : 0.95f;
             return result;
         }
 
@@ -571,7 +612,7 @@ public class BatteryDataManager {
             float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
             result.healthPercentage = clampHealth(estimatedHealth);
             result.healthLevel = getHealthLevel(result.healthPercentage);
-            result.healthStatus = getHealthStatusString(result.healthLevel) + "（基于使用时长估算）";
+            result.healthStatus = getHealthStatusString(result.healthLevel) + context.getString(R.string.confidence_format, 35);
             result.confidence = 0.35f;
             return result;
         }
@@ -581,15 +622,15 @@ public class BatteryDataManager {
             float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
             result.healthPercentage = clampHealth(estimatedHealth);
             result.healthLevel = getHealthLevel(result.healthPercentage);
-            result.healthStatus = getHealthStatusString(result.healthLevel) + "（基于使用时长估算）";
+            result.healthStatus = getHealthStatusString(result.healthLevel) + context.getString(R.string.confidence_format, 20);
             result.confidence = 0.20f;
             return result;
         }
 
         // 没有任何容量信息时，无法计算，返回未知
         result.healthPercentage = -1;
-        result.healthLevel = "未知";
-        result.healthStatus = "缺少容量数据，无法评估";
+        result.healthLevel = context.getString(R.string.health_unknown);
+        result.healthStatus = context.getString(R.string.health_status_no_data);
         result.confidence = 0.0f;
         return result;
     }
@@ -601,28 +642,27 @@ public class BatteryDataManager {
     }
 
     private String getHealthLevel(float percentage) {
-        if (percentage < 0) return "未知";
-        if (percentage >= 95) return "极佳";
-        if (percentage >= 85) return "良好";
-        if (percentage >= 75) return "一般";
-        if (percentage >= 60) return "较差";
-        return "极差";
+        if (percentage < 0) return context.getString(R.string.health_unknown);
+        if (percentage >= 95) return context.getString(R.string.health_excellent);
+        if (percentage >= 85) return context.getString(R.string.health_good);
+        if (percentage >= 75) return context.getString(R.string.health_average);
+        if (percentage >= 60) return context.getString(R.string.health_poor);
+        return context.getString(R.string.health_very_poor);
     }
 
     private String getHealthStatusString(String level) {
-        switch (level) {
-            case "极佳":
-                return "电池状态极佳，可继续使用";
-            case "良好":
-                return "电池状态良好，性能正常";
-            case "一般":
-                return "电池健康度一般，建议关注";
-            case "较差":
-                return "电池损耗明显，建议考虑更换";
-            case "极差":
-                return "电池健康度极差，建议尽快更换";
-            default:
-                return "无法评估";
+        if (level.equals(context.getString(R.string.health_excellent))) {
+            return context.getString(R.string.health_status_excellent);
+        } else if (level.equals(context.getString(R.string.health_good))) {
+            return context.getString(R.string.health_status_good);
+        } else if (level.equals(context.getString(R.string.health_average))) {
+            return context.getString(R.string.health_status_average);
+        } else if (level.equals(context.getString(R.string.health_poor))) {
+            return context.getString(R.string.health_status_poor);
+        } else if (level.equals(context.getString(R.string.health_very_poor))) {
+            return context.getString(R.string.health_status_very_poor);
+        } else {
+            return context.getString(R.string.health_status_unknown);
         }
     }
 
@@ -630,18 +670,21 @@ public class BatteryDataManager {
      * 将健康等级映射为数据库存储的代码。
      */
     private String mapHealthStatusToCode(String level) {
-        switch (level) {
-            case "极佳":
-            case "良好":
-                return "good";
-            case "一般":
-                return "normal";
-            case "较差":
-                return "warning";
-            case "极差":
-                return "poor";
-            default:
-                return "unknown";
+        String excellent = context.getString(R.string.health_excellent);
+        String good = context.getString(R.string.health_good);
+        String average = context.getString(R.string.health_average);
+        String poor = context.getString(R.string.health_poor);
+        String veryPoor = context.getString(R.string.health_very_poor);
+        if (level.equals(excellent) || level.equals(good)) {
+            return "good";
+        } else if (level.equals(average)) {
+            return "normal";
+        } else if (level.equals(poor)) {
+            return "warning";
+        } else if (level.equals(veryPoor)) {
+            return "poor";
+        } else {
+            return "unknown";
         }
     }
 
@@ -650,12 +693,11 @@ public class BatteryDataManager {
      */
     private String mapSourceToCode(String source) {
         if (source == null) return "unknown";
-        switch (source) {
-            case "原装":
-                return "original";
-            case "第三方":
-                return "third_party";
-            default:
+        if (source.equals(context.getString(R.string.battery_source_original))) {
+            return "original";
+        } else if (source.equals(context.getString(R.string.battery_source_third_party))) {
+            return "third_party";
+        } else {
                 return "unknown";
         }
     }
@@ -664,6 +706,9 @@ public class BatteryDataManager {
      * 根据置信度给出数据来源标签。
      */
     private String mapHealthDataSource(float confidence) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean isCalibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1) > 0;
+        if (isCalibrated && confidence >= 0.85f) return "user_calibrated";
         if (confidence >= 0.95f) return "fcc_ratio";
         if (confidence >= 0.70f) return "charge_counter_ratio";
         if (confidence >= 0.30f) return "usage_days_estimate";
@@ -671,33 +716,44 @@ public class BatteryDataManager {
         return "unknown";
     }
 
+    /**
+     * 格式化循环次数显示文本。
+     */
+    public String formatCycleCount(BatteryInfo info) {
+        if (info == null || !info.hasValidCycleCount()) return context.getString(R.string.cycle_count_unreadable);
+        if (info.isCycleCountEstimated()) {
+            return String.format(Locale.getDefault(), context.getString(R.string.cycle_count_estimate_format), info.getCycleCount());
+        }
+        return String.format(Locale.getDefault(), context.getString(R.string.cycle_count_format), info.getCycleCount());
+    }
+
     private String getStatusString(int status) {
         switch (status) {
             case BatteryManager.BATTERY_STATUS_CHARGING:
-                return "充电中";
+                return context.getString(R.string.status_charging);
             case BatteryManager.BATTERY_STATUS_DISCHARGING:
-                return "放电中";
+                return context.getString(R.string.status_discharging);
             case BatteryManager.BATTERY_STATUS_FULL:
-                return "已充满";
+                return context.getString(R.string.status_fully_charged);
             case BatteryManager.BATTERY_STATUS_NOT_CHARGING:
-                return "未充电";
+                return context.getString(R.string.status_not_charging_short);
             default:
-                return "未知";
+                return context.getString(R.string.status_unknown);
         }
     }
 
     private String getChargeTypeString(int plugged) {
         switch (plugged) {
             case BatteryManager.BATTERY_PLUGGED_AC:
-                return "交流电源";
+                return context.getString(R.string.charging_status_ac);
             case BatteryManager.BATTERY_PLUGGED_USB:
-                return "USB";
+                return context.getString(R.string.charging_status_usb);
             case BatteryManager.BATTERY_PLUGGED_WIRELESS:
-                return "无线充电";
+                return context.getString(R.string.charging_status_wireless);
             case BatteryManager.BATTERY_PLUGGED_DOCK:
                 return "Dock";
             default:
-                return "未连接";
+                return context.getString(R.string.status_not_charging_short);
         }
     }
 
@@ -803,12 +859,12 @@ public class BatteryDataManager {
      * 获取当前充电功率等级，用于UI展示。
      */
     public String getPowerLevelLabel(float powerW) {
-        if (powerW >= 100) return "超快闪充";
-        if (powerW >= 60) return "极速快充";
-        if (powerW >= 30) return "快速充电";
-        if (powerW >= 10) return "标准充电";
-        if (powerW > 0) return "慢速充电";
-        return "未充电";
+        if (powerW >= 100) return context.getString(R.string.charge_type_ultra_fast);
+        if (powerW >= 60) return context.getString(R.string.charge_type_extreme_fast);
+        if (powerW >= 30) return context.getString(R.string.charge_type_fast);
+        if (powerW >= 10) return context.getString(R.string.charge_type_standard);
+        if (powerW > 0) return context.getString(R.string.charge_type_slow);
+        return context.getString(R.string.status_not_charging_short);
     }
 
     /**
@@ -881,24 +937,25 @@ public class BatteryDataManager {
     }
 
     private String formatHealthSource(BatteryInfo info) {
-        if (info == null) return "未知";
+        if (info == null) return context.getString(R.string.status_unknown);
         float conf = info.getHealthConfidence();
         String source = info.getHealthDataSource();
-        if ("fcc_ratio".equals(source)) return "实测容量比（置信度 " + (int) (conf * 100) + "%）";
-        if ("charge_counter_ratio".equals(source)) return "剩余电量推算（置信度 " + (int) (conf * 100) + "%）";
-        if ("usage_days_estimate".equals(source)) return "使用时长估算（置信度 " + (int) (conf * 100) + "%）";
-        if ("usage_only_estimate".equals(source)) return "仅基于使用时长（置信度 " + (int) (conf * 100) + "%）";
-        if (conf > 0) return "估算（置信度 " + (int) (conf * 100) + "%）";
-        return "无法获取";
+        if ("user_calibrated".equals(source)) return context.getString(R.string.health_source_user_calibrated, (int) (conf * 100));
+        if ("fcc_ratio".equals(source)) return context.getString(R.string.health_source_fcc_ratio, (int) (conf * 100));
+        if ("charge_counter_ratio".equals(source)) return context.getString(R.string.health_source_charge_counter, (int) (conf * 100));
+        if ("usage_days_estimate".equals(source)) return context.getString(R.string.health_source_usage_days, (int) (conf * 100));
+        if ("usage_only_estimate".equals(source)) return context.getString(R.string.health_source_usage_only, (int) (conf * 100));
+        if (conf > 0) return context.getString(R.string.health_source_estimate, (int) (conf * 100));
+        return context.getString(R.string.health_source_unavailable);
     }
 
     private String formatBatterySource(BatteryInfo info) {
-        if (info == null) return "未知";
+        if (info == null) return context.getString(R.string.status_unknown);
         String source = info.getBatterySource();
         float conf = info.getBatterySourceConfidence();
-        if ("original".equals(source)) return "原装（置信度 " + (int) (conf * 100) + "%）";
-        if ("third_party".equals(source)) return "第三方（置信度 " + (int) (conf * 100) + "%）";
-        return "无法验证";
+        if ("original".equals(source)) return context.getString(R.string.battery_source_original_confidence, (int) (conf * 100));
+        if ("third_party".equals(source)) return context.getString(R.string.battery_source_third_party_confidence, (int) (conf * 100));
+        return context.getString(R.string.battery_source_unverifiable);
     }
 
     // endregion
