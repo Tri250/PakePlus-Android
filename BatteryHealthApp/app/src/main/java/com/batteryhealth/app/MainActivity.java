@@ -33,10 +33,9 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
+import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
-import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;
-import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -241,15 +240,13 @@ public class MainActivity extends AppCompatActivity {
                     case 0:
                         return new BatteryHealthFragment();
                     case 1:
-                        return new DeviceConfigFragment();
-                    case 2:
-                        return new PerformanceFragment();
-                    case 3:
-                        return new EnduranceFragment();
-                    case 4:
-                        return new TrendFragment();
-                    case 5:
                         return new PowerFragment();
+                    case 2:
+                        return new CommunityFragment();
+                    case 3:
+                        return new DeviceConfigFragment();
+                    case 4:
+                        return new EnduranceFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -257,11 +254,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 6;
+                return 5;
             }
         });
 
-        viewPager.setOffscreenPageLimit(5);
+        viewPager.setOffscreenPageLimit(4);
         // 设置页面切换动画
         viewPager.setPageTransformer((page, position) -> {
             float absPosition = Math.abs(position);
@@ -291,16 +288,15 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航（6项，屏幕不足时支持滚动）
+     * 设置底部导航（5项，匹配图片风格）
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health), R.drawable.ic_battery_health));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_community), R.drawable.ic_endurance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_mine), R.drawable.ic_performance));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {
