@@ -43,6 +43,9 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private LinearLayout container;
     private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
 
+    private int baseHeightPx = -1;
+    private int bottomInset = 0;
+
     public CustomBottomNavigationView(@NonNull Context context) {
         this(context, null);
     }
@@ -165,6 +168,34 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
     public void setOnItemSelectedListener(OnItemSelectedListener listener) {
         this.listener = listener;
+    }
+
+    /**
+     * 应用系统底部导航栏/手势条高度：总高度 = 内容高度（XML 64dp）+ 系统 inset
+     */
+    public void applySystemBottomInset(int inset) {
+        ensureBaseHeight();
+        if (this.bottomInset == inset) {
+            return;
+        }
+        this.bottomInset = inset;
+        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp != null) {
+            lp.height = baseHeightPx + inset;
+            setLayoutParams(lp);
+        }
+    }
+
+    private void ensureBaseHeight() {
+        if (baseHeightPx > 0) {
+            return;
+        }
+        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp != null && lp.height > 0) {
+            baseHeightPx = lp.height;
+        } else {
+            baseHeightPx = (int) (64 * getResources().getDisplayMetrics().density + 0.5f);
+        }
     }
 
     /**
