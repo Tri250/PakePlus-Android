@@ -431,7 +431,14 @@ public class PowerFragment extends Fragment {
                 if (batteryManager != null) {
                     int currentUa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                     if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
-                        return Math.abs(currentUa) / 1000000.0f;
+                        int absCurrent = Math.abs(currentUa);
+                        // 部分设备返回 mA 而非 µA，需判断单位
+                        // 正常充电电流：500mA-10A = 500000-10000000 µA
+                        if (absCurrent > 100000) {
+                            return absCurrent / 1000000.0f; // µA → A
+                        } else if (absCurrent > 0) {
+                            return absCurrent / 1000.0f; // mA → A
+                        }
                     }
                 }
             } catch (Exception e) {

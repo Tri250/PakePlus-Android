@@ -106,54 +106,109 @@ public final class ActivationDateHelper {
         String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
         String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
 
+        // 小米/红米：MIUI 激活时间
         if (brand.contains("xiaomi") || brand.contains("redmi") || manufacturer.contains("xiaomi")) {
-            long t = settingsLong(context, "miui_activated");
+            // MIUI 12+ 使用 miui_activated_time（毫秒时间戳）
+            long t = settingsLong(context, "miui_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "miui_activated");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.miui.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.miui.activated");
             if (t > 0) return t;
         }
 
+        // OPPO/realme/一加：ColorOS/OxygenOS 激活时间
         if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")
                 || manufacturer.contains("oppo") || manufacturer.contains("oneplus")) {
-            long t = settingsLong(context, "oppo_activated");
+            long t = settingsLong(context, "oppo_activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "oppo_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "coloros_activated_time");
             if (t > 0) return t;
             t = settingsLong(context, "coloros_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "oneplus_activated_time");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.oppo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.oppo.activated");
             if (t > 0) return t;
         }
 
+        // vivo/iQOO：OriginOS/FuntouchOS 激活时间
         if (brand.contains("vivo") || brand.contains("iqoo") || manufacturer.contains("vivo")) {
-            long t = settingsLong(context, "vivo_activated");
+            long t = settingsLong(context, "vivo_active_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "vivo_activated");
             if (t > 0) return t;
             t = settingsLong(context, "vivo_warranty_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "vivo_activate_time");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.vivo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.vivo.activated");
             if (t > 0) return t;
         }
 
+        // 华为/荣耀：EMUI/MagicUI 激活时间
         if (brand.contains("huawei") || brand.contains("honor") || manufacturer.contains("huawei")) {
-            long t = settingsLong(context, "huawei_warranty_time");
+            long t = settingsLong(context, "huawei_first_boot_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "huawei_warranty_time");
             if (t > 0) return t;
             t = parseDateString(settingsString(context, "huawei_activation_date"));
+            if (t > 0) return t;
+            t = settingsLong(context, "honor_first_boot_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "honor_activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.hw.oem.activated");
             if (t > 0) return t;
         }
 
+        // 魅族：Flyme 激活时间
         if (brand.contains("meizu") || manufacturer.contains("meizu")) {
-            long t = settingsLong(context, "meizu_activated");
+            long t = settingsLong(context, "meizu_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "meizu_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "flyme_activated_time");
             if (t > 0) return t;
         }
 
+        // 三星：One UI 激活时间
         if (brand.contains("samsung") || manufacturer.contains("samsung")) {
-            long t = settingsLong(context, "samsung_activated");
+            long t = settingsLong(context, "samsung_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "samsung_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "sec_activated_time");
             if (t > 0) return t;
         }
 
-        long t = settingsLong(context, "electronic_warranty_activated");
+        // 中兴/努比亚/红魔
+        if (brand.contains("nubia") || brand.contains("redmagic") || brand.contains("zte")
+                || manufacturer.contains("nubia") || manufacturer.contains("zte")) {
+            long t = settingsLong(context, "nubia_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "zte_activated_time");
+            if (t > 0) return t;
+        }
+
+        // 通用：尝试常见的通用激活时间键名
+        long t = settingsLong(context, "electronic_warranty_activated_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "electronic_warranty_activated");
         if (t > 0) return t;
         t = settingsLong(context, "device_activated_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "device_activate_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "first_activate_time");
         if (t > 0) return t;
         t = systemPropertyLong("ro.runtime.firstboot");
         if (t > 0) return t;

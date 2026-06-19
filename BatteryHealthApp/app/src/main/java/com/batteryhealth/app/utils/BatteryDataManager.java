@@ -199,9 +199,22 @@ public class BatteryDataManager {
 
         // 3. 电压
         int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-        if (voltageMv <= 0) {
-            long voltageUv = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
-            if (voltageUv > 1000000) voltageMv = (int) (voltageUv / 1000);
+        // 部分国产设备 EXTRA_VOLTAGE 返回 µV 而非 mV，需做合理性校验
+        // 正常手机电池电压范围：2500-5000 mV（2.5-5.0 V）
+        if (voltageMv > 10000) {
+            // 值过大，大概率是 µV，转换为 mV
+            voltageMv = voltageMv / 1000;
+        }
+        if (voltageMv <= 0 || voltageMv < 2500) {
+            // intent 电压无效或异常，尝试 sysfs
+            long voltageSysfs = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
+            if (voltageSysfs > 1000000) {
+                // sysfs 返回 µV
+                voltageMv = (int) (voltageSysfs / 1000);
+            } else if (voltageSysfs > 2500) {
+                // sysfs 返回 mV
+                voltageMv = (int) voltageSysfs;
+            }
         }
         info.setVoltage(voltageMv);
 
@@ -263,30 +276,50 @@ public class BatteryDataManager {
 
     /**
      * 读取当前电流（mA），正值充电，负值放电。
+     * 带单位判断：部分设备 BatteryManager 返回 mA 而非 µA。
      */
     public int readCurrentNow(BatteryManager batteryManager) {
         if (batteryManager != null) {
-            int microAmps = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-            if (microAmps != Integer.MIN_VALUE && microAmps != 0) {
-                return Math.abs(microAmps) > 100000 ? microAmps / 1000 : microAmps;
+            int currentRaw = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+            if (currentRaw != Integer.MIN_VALUE && currentRaw != 0) {
+                int absCurrent = Math.abs(currentRaw);
+                // 正常充电电流：500mA-10A = 500000-10000000 µA
+                if (absCurrent > 100000) {
+                    // µA → mA
+                    return currentRaw / 1000;
+                } else {
+                    // 已经是 mA
+                    return currentRaw;
+                }
             }
         }
-        long sysfsUa = readSysfsLong(CURRENT_NOW_PATHS, 0);
-        if (sysfsUa != 0) {
-            return sysfsUa > 100000 ? (int) (sysfsUa / 1000) : (int) sysfsUa;
+        long sysfsRaw = readSysfsLong(CURRENT_NOW_PATHS, 0);
+        if (sysfsRaw != 0) {
+            long absRaw = Math.abs(sysfsRaw);
+            if (absRaw > 100000) {
+                return (int) (sysfsRaw / 1000); // µA → mA
+            } else {
+                return (int) sysfsRaw; // 已经是 mA
+            }
         }
         return 0;
     }
 
     /**
      * 读取当前电压（mV）。
+     * 带合理性校验：正常手机电池电压 2500-5000 mV。
      */
     public int readVoltageNow() {
         Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int voltageMv = intent != null ? intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) : -1;
-        if (voltageMv > 0) return voltageMv;
-        long voltageUv = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
-        return voltageUv > 1000 ? (int) (voltageUv / 1000) : (int) voltageUv;
+        // 部分国产设备返回 µV，需转换
+        if (voltageMv > 10000) voltageMv = voltageMv / 1000;
+        if (voltageMv > 0 && voltageMv >= 2500) return voltageMv;
+        // sysfs 回退
+        long voltageSysfs = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
+        if (voltageSysfs > 1000000) return (int) (voltageSysfs / 1000);
+        if (voltageSysfs > 2500) return (int) voltageSysfs;
+        return (int) voltageSysfs;
     }
 
     /**
@@ -332,14 +365,14 @@ public class BatteryDataManager {
 
         // 3. sysfs 多路径
         int design = readSysfsInt(DESIGN_CAPACITY_PATHS, -1);
-        if (design > 1000) {
-            // sysfs 返回值单位通常为 uAh，需转换为 mAh
+        if (design > 100000) {
+            // sysfs 返回值单位为 uAh（如 4500000），需转换为 mAh
             if (sourceHolder != null && sourceHolder.length > 0) {
                 sourceHolder[0] = "sysfs";
             }
             return design / 1000;
         } else if (design > 100) {
-            // 部分设备直接返回 mAh
+            // sysfs 直接返回 mAh（如 4500）
             if (sourceHolder != null && sourceHolder.length > 0) {
                 sourceHolder[0] = "sysfs";
             }
@@ -370,16 +403,22 @@ public class BatteryDataManager {
 
     /**
      * 满充容量（FCC）：优先 BatteryManager，其次 sysfs。
+     * 带合理性校验：正常手机电池满充容量 1000-10000 mAh。
      */
     private int getFullCapacity(BatteryManager batteryManager) {
         if (batteryManager != null) {
             int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
             if (microAh != Integer.MIN_VALUE && microAh > 1000) {
-                return microAh / 1000;
+                int mah = microAh / 1000;
+                if (mah >= 1000 && mah <= 10000) return mah;
+                // 如果 mah 不在合理范围，可能 microAh 本身就是 mAh 单位
+                if (microAh >= 1000 && microAh <= 10000) return microAh;
             }
         }
         int full = readSysfsInt(CHARGE_FULL_PATHS, -1);
-        return full > 1000 ? full / 1000 : full;
+        if (full > 100000) return full / 1000; // µAh → mAh
+        if (full > 100) return full; // 已经是 mAh
+        return -1;
     }
 
     /**
@@ -396,11 +435,11 @@ public class BatteryDataManager {
     }
 
     /**
-     * 读取循环次数：系统 API + sysfs + 充电历史估算兜底。
+     * 读取循环次数：系统 API + sysfs + 充电历史估算 + 使用天数估算兜底。
      */
     private int readCycleCount(BatteryManager batteryManager) {
-        // 1. Android 14+ BatteryManager 隐藏 API
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && batteryManager != null) {
+        // 1. BatteryManager 循环次数 API（Android 12+ 部分设备已支持，不仅限 14+）
+        if (batteryManager != null) {
             try {
                 int count = batteryManager.getIntProperty(BATTERY_PROP_CYCLE_COUNT);
                 if (count > 0 && count < 10000) return count;
@@ -415,6 +454,15 @@ public class BatteryDataManager {
         // 3. 基于充电历史估算（从数据库统计完整 0→100% 充电次数）
         int estimatedCycles = estimateCycleCountFromHistory();
         if (estimatedCycles > 0) return estimatedCycles;
+
+        // 4. 基于使用天数估算兜底（假设每天约 0.8 次完整充电循环）
+        int effectiveUsageDays = usageDays;
+        if (effectiveUsageDays < 0 && activation != null) {
+            effectiveUsageDays = activation.usageDays;
+        }
+        if (effectiveUsageDays > 0) {
+            return Math.max(1, (int) (effectiveUsageDays * 0.8f));
+        }
 
         return -1;
     }
@@ -435,7 +483,7 @@ public class BatteryDataManager {
             // 取最近 180 天数据
             long startTime = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
             List<BatteryInfo> records = db.batteryInfoDao().getSince(startTime);
-            if (records == null || records.size() < 10) return -1;
+            if (records == null || records.size() < 5) return -1;
 
             java.util.Set<String> cycleDays = new java.util.HashSet<>();
             boolean wasLow = false;

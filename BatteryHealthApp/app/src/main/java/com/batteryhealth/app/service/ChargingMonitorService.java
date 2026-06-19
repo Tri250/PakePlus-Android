@@ -490,41 +490,50 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 读取电压（单位：V）
+     * 带合理性校验：正常手机电池电压 2.5-5.0 V
      */
     private float readVoltage() {
+        // 1. 尝试从 BatteryManager 读取（最可靠）
+        try {
+            Intent batteryStatus = getBatteryIntent();
+            if (batteryStatus != null) {
+                int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                // 部分国产设备返回 µV，需转换
+                if (voltageMv > 10000) voltageMv = voltageMv / 1000;
+                if (voltageMv >= 2500 && voltageMv <= 5000) {
+                    return voltageMv / 1000.0f;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading voltage from BatteryManager: " + e.getMessage());
+        }
+
+        // 2. sysfs 回退
         File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
         if (voltageFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
                 String line = reader.readLine();
                 if (line != null && !line.trim().isEmpty()) {
-                    long voltageUv = Long.parseLong(line.trim());
-                    return voltageUv / 1000000.0f;
+                    long voltageRaw = Long.parseLong(line.trim());
+                    // sysfs voltage_now 通常返回 µV
+                    if (voltageRaw > 1000000) {
+                        return voltageRaw / 1000000.0f;
+                    } else if (voltageRaw > 2500) {
+                        // 部分设备返回 mV
+                        return voltageRaw / 1000.0f;
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error reading voltage from sysfs: " + e.getMessage());
             }
         }
 
-        // 尝试从 BatteryManager 读取
-        try {
-            BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
-            if (batteryManager != null) {
-                Intent batteryStatus = getBatteryIntent();
-                if (batteryStatus != null) {
-                    int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-                    if (voltageMv > 0) {
-                        return voltageMv / 1000.0f;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading voltage from BatteryManager: " + e.getMessage());
-        }
         return 0;
     }
 
     /**
      * 读取电流（单位：A，取绝对值）
+     * 带单位判断：部分设备返回 mA 而非 µA。
      */
     private float readCurrent() {
         File currentFile = new File("/sys/class/power_supply/battery/current_now");
@@ -532,8 +541,14 @@ public class ChargingMonitorService extends Service {
             try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
                 String line = reader.readLine();
                 if (line != null && !line.trim().isEmpty()) {
-                    long currentUa = Long.parseLong(line.trim());
-                    return Math.abs(currentUa) / 1000000.0f;
+                    long currentRaw = Long.parseLong(line.trim());
+                    long absCurrent = Math.abs(currentRaw);
+                    // sysfs current_now 通常返回 µA
+                    if (absCurrent > 100000) {
+                        return absCurrent / 1000000.0f; // µA → A
+                    } else if (absCurrent > 0) {
+                        return absCurrent / 1000.0f; // mA → A
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error reading current from sysfs: " + e.getMessage());
@@ -546,7 +561,12 @@ public class ChargingMonitorService extends Service {
             if (batteryManager != null) {
                 int currentUa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                 if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
-                    return Math.abs(currentUa) / 1000000.0f;
+                    int absCurrent = Math.abs(currentUa);
+                    if (absCurrent > 100000) {
+                        return absCurrent / 1000000.0f; // µA → A
+                    } else if (absCurrent > 0) {
+                        return absCurrent / 1000.0f; // mA → A
+                    }
                 }
             }
         } catch (Exception e) {

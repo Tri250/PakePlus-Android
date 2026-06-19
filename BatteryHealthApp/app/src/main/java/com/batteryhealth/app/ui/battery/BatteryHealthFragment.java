@@ -260,7 +260,7 @@ public class BatteryHealthFragment extends Fragment {
         if (tvCapacity != null) tvCapacity.setText("-- mAh");
         if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.unit_days_fallback) + " " + getString(R.string.cycle_count_format, 0));
         if (tvTemperature != null) tvTemperature.setText("-- °C");
-        if (tvVoltage != null) tvVoltage.setText("-- mV");
+        if (tvVoltage != null) tvVoltage.setText("-- V");
         if (tvBatterySource != null) tvBatterySource.setText(getString(R.string.status_detecting_short));
         if (tvTechnology != null) tvTechnology.setText("--");
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
@@ -345,7 +345,12 @@ public class BatteryHealthFragment extends Fragment {
                 }
                 
                 if (tvVoltage != null) {
-                    tvVoltage.setText(String.format(Locale.getDefault(), "%.0f mV", info.getVoltage()));
+                    float voltageMv = info.getVoltage();
+                    if (voltageMv > 0) {
+                        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageMv / 1000.0f));
+                    } else {
+                        tvVoltage.setText("-- V");
+                    }
                 }
                 
                 if (tvBatterySource != null) {
