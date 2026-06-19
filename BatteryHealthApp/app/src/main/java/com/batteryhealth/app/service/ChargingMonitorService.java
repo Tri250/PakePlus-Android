@@ -65,6 +65,13 @@ public class ChargingMonitorService extends Service {
     private int powerSampleCount = 0;
     private float totalPower = 0;
 
+    // 缓存最近一次成功读取的功率信息（供前台通知等主线程调用使用，避免在主线程读 sysfs）
+    private volatile float cachedVoltage = 0f;
+    private volatile float cachedCurrent = 0f;
+    private volatile int cachedLevel = 0;
+    private volatile float cachedTemp = 0f;
+    private volatile String cachedChargeType = "none";
+
     // 用于智能充电阶段判断的滑动窗口（最近 30 个采样点，约 90 秒）
     private static final int MAX_SAMPLES = 30;
     private final LinkedList<PowerSample> powerSamples = new LinkedList<>();
@@ -358,6 +365,13 @@ public class ChargingMonitorService extends Service {
             // 判断充电类型
             history.setChargeType(detectChargeType(history.getPower()));
 
+            // 更新缓存（供主线程通知使用）
+            cachedVoltage = voltage;
+            cachedCurrent = current;
+            cachedLevel = history.getBatteryLevel();
+            cachedTemp = history.getBatteryTemp();
+            cachedChargeType = history.getChargeType();
+
             // 更新统计数据
             float power = history.getPower();
             if (power > maxPower) {
@@ -586,16 +600,18 @@ public class ChargingMonitorService extends Service {
     }
     
     /**
-     * 获取当前功率历史记录
+     * 获取当前功率历史记录。
+     * 优先返回缓存值，避免在主线程上读取 sysfs 触发 StrictMode / ANR。
      */
     private PowerHistory getCurrentPowerHistory() {
         PowerHistory history = new PowerHistory();
         history.setSessionId(currentSessionId);
-        history.setVoltage(readVoltage());
-        history.setCurrent(readCurrent());
+        history.setVoltage(cachedVoltage);
+        history.setCurrent(cachedCurrent);
+        history.setBatteryLevel(cachedLevel);
+        history.setBatteryTemp(cachedTemp);
+        history.setChargeType(cachedChargeType);
         history.calculatePower();
-        history.setBatteryLevel(readBatteryLevel());
-        history.setBatteryTemp(readBatteryTemperature());
         return history;
     }
     

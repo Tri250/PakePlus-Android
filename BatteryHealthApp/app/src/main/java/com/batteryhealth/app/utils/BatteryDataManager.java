@@ -27,6 +27,7 @@ public class BatteryDataManager {
 
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
+    private ActivationDateHelper.Result activation;
 
     private BatteryInfo currentBatteryInfo;
     private int usageDays = -1;
@@ -111,6 +112,13 @@ public class BatteryDataManager {
     }
 
     /**
+     * 设置当前设备激活信息（用于计算基于使用时长的健康度估算）。由 Activity/Fragment 在创建后注入。
+     */
+    public void setActivationInfo(ActivationDateHelper.Result activation) {
+        this.activation = activation;
+    }
+
+    /**
      * 获取完整电池信息
      */
     public BatteryInfo getBatteryInfo() {
@@ -185,9 +193,7 @@ public class BatteryDataManager {
         info.setHealthPercentage(health.healthPercentage);
         info.setHealthStatus(mapHealthStatusToCode(health.healthLevel));
         info.setHealthConfidence(health.confidence);
-        info.setHealthDataSource(health.confidence >= 0.95f ? "fcc_ratio" :
-                (health.confidence >= 0.70f ? "charge_counter_ratio" :
-                        (health.confidence >= 0.30f ? "usage_days_estimate" : "unknown")));
+        info.setHealthDataSource(mapHealthDataSource(health.confidence));
 
         // 9. 循环次数
         int cycleCount = readCycleCount(batteryManager);
@@ -435,6 +441,12 @@ public class BatteryDataManager {
     private BatteryHealthResult calculateHealth(int designCapacity, int fullCapacity, int chargeCounter, int percentage) {
         BatteryHealthResult result = new BatteryHealthResult();
 
+        // 优先从注入的激活信息中读取使用天数
+        int effectiveUsageDays = usageDays;
+        if (effectiveUsageDays < 0 && activation != null) {
+            effectiveUsageDays = activation.usageDays;
+        }
+
         if (fullCapacity > 0 && designCapacity > 0) {
             // 最可信：FCC / 设计容量
             float health = (fullCapacity / (float) designCapacity) * 100f;
@@ -456,14 +468,24 @@ public class BatteryDataManager {
             return result;
         }
 
-        // 3. 兜底：基于使用天数的经验估算（仅用于完全无容量数据的场景，置信度低）
-        if (usageDays > 0 && designCapacity > 0) {
+        // 3. 兜底 1：基于使用天数的经验估算（仅用于完全无容量数据的场景，置信度低）
+        if (effectiveUsageDays > 0 && designCapacity > 0) {
             // 锂电池典型衰减：约 7%/年（365 天），使用 4 年后约 75%
-            float estimatedHealth = 100f - (usageDays * 0.018f);
+            float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
             result.healthPercentage = clampHealth(estimatedHealth);
             result.healthLevel = getHealthLevel(result.healthPercentage);
             result.healthStatus = getHealthStatusString(result.healthLevel) + "（基于使用时长估算）";
             result.confidence = 0.35f;
+            return result;
+        }
+
+        // 4. 兜底 2：仅有使用天数无设计容量，给出参考值
+        if (effectiveUsageDays > 0) {
+            float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
+            result.healthPercentage = clampHealth(estimatedHealth);
+            result.healthLevel = getHealthLevel(result.healthPercentage);
+            result.healthStatus = getHealthStatusString(result.healthLevel) + "（基于使用时长估算）";
+            result.confidence = 0.20f;
             return result;
         }
 
@@ -539,6 +561,17 @@ public class BatteryDataManager {
             default:
                 return "unknown";
         }
+    }
+
+    /**
+     * 根据置信度给出数据来源标签。
+     */
+    private String mapHealthDataSource(float confidence) {
+        if (confidence >= 0.95f) return "fcc_ratio";
+        if (confidence >= 0.70f) return "charge_counter_ratio";
+        if (confidence >= 0.30f) return "usage_days_estimate";
+        if (confidence > 0f) return "usage_only_estimate";
+        return "unknown";
     }
 
     private String getStatusString(int status) {
@@ -757,6 +790,8 @@ public class BatteryDataManager {
         if ("fcc_ratio".equals(source)) return "实测容量比（置信度 " + (int) (conf * 100) + "%）";
         if ("charge_counter_ratio".equals(source)) return "剩余电量推算（置信度 " + (int) (conf * 100) + "%）";
         if ("usage_days_estimate".equals(source)) return "使用时长估算（置信度 " + (int) (conf * 100) + "%）";
+        if ("usage_only_estimate".equals(source)) return "仅基于使用时长（置信度 " + (int) (conf * 100) + "%）";
+        if (conf > 0) return "估算（置信度 " + (int) (conf * 100) + "%）";
         return "无法获取";
     }
 

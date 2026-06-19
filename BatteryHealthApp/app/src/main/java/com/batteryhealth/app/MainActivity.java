@@ -95,9 +95,10 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 batteryDataManager = new BatteryDataManager(this);
-                // 将设备使用天数同步给电池管理器，用于健康度物理估算
+                // 将设备使用天数与激活信息同步给电池管理器，用于健康度物理估算
                 if (deviceInfoManager != null) {
                     batteryDataManager.setUsageDays(deviceInfoManager.getUsageDays());
+                    batteryDataManager.setActivationInfo(deviceInfoManager.getActivationInfo());
                 }
                 Log.d(TAG, "BatteryDataManager created");
             } catch (Exception e) {

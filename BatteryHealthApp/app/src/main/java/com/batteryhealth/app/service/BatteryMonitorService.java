@@ -17,6 +17,9 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
@@ -70,6 +73,7 @@ public class BatteryMonitorService extends Service {
     private SharedPreferences prefs;
     private boolean healthCheckScheduled = false;
     private BatteryDataManager batteryDataManager;
+    private ExecutorService ioExecutor;
     
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -84,28 +88,41 @@ public class BatteryMonitorService extends Service {
         @Override
         public void run() {
             if (!isRunning) return;
-            
-            try {
-                // 统一使用 BatteryDataManager 读取（含机型数据库校准、多路径 sysfs、BatteryManager）
-                if (batteryDataManager != null) {
-                    batteryDataManager.refreshFromStickyIntent();
-                    currentBatteryInfo = batteryDataManager.getCurrentBatteryInfo();
-                }
-                if (dataListener != null && currentBatteryInfo != null) {
-                    dataListener.onBatteryDataUpdated(currentBatteryInfo);
-                }
-                updateNotification();
 
-                // 定时保存数据到数据库
-                long now = System.currentTimeMillis();
-                if (now - lastSaveTime >= SAVE_INTERVAL) {
-                    saveBatteryData();
-                    lastSaveTime = now;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error in update task: " + e.getMessage());
+            // 耗时读取与 DB 写入下沉到 ioExecutor
+            if (ioExecutor != null) {
+                ioExecutor.submit(() -> {
+                    try {
+                        if (batteryDataManager != null) {
+                            batteryDataManager.refreshFromStickyIntent();
+                            BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                            if (info != null) {
+                                currentBatteryInfo = info;
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error refreshing battery data: " + e.getMessage());
+                    }
+
+                    // 通知与 UI 回调放回主线程
+                    if (handler != null) {
+                        handler.post(() -> {
+                            if (!isRunning) return;
+                            if (dataListener != null && currentBatteryInfo != null) {
+                                dataListener.onBatteryDataUpdated(currentBatteryInfo);
+                            }
+                            updateNotification();
+
+                            long now = System.currentTimeMillis();
+                            if (now - lastSaveTime >= SAVE_INTERVAL) {
+                                saveBatteryData();
+                                lastSaveTime = now;
+                            }
+                        });
+                    }
+                });
             }
-            
+
             if (handler != null) {
                 handler.postDelayed(this, UPDATE_INTERVAL);
             }
@@ -139,12 +156,20 @@ public class BatteryMonitorService extends Service {
         super.onCreate();
         try {
             handler = new Handler(Looper.getMainLooper());
+            ioExecutor = Executors.newSingleThreadExecutor();
             batteryDataManager = new BatteryDataManager(this);
-            batteryDataManager.refreshFromStickyIntent();
-            currentBatteryInfo = batteryDataManager.getCurrentBatteryInfo();
-            if (currentBatteryInfo == null) {
-                currentBatteryInfo = new BatteryInfo();
-            }
+            // 首次读取也走后台线程，避免 onCreate 阻塞主线程
+            ioExecutor.submit(() -> {
+                try {
+                    batteryDataManager.refreshFromStickyIntent();
+                    BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                    if (info != null) {
+                        currentBatteryInfo = info;
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error priming battery data: " + e.getMessage());
+                }
+            });
             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
             createNotificationChannel();
@@ -198,6 +223,10 @@ public class BatteryMonitorService extends Service {
             handler.removeCallbacks(updateTask);
             handler.removeCallbacks(healthCheckTask);
         }
+        if (ioExecutor != null) {
+            ioExecutor.shutdown();
+            ioExecutor = null;
+        }
     }
 
     /**
@@ -222,25 +251,30 @@ public class BatteryMonitorService extends Service {
     }
     
     /**
-     * 更新电池数据
+     * 更新电池数据（广播回调，主线程）。仅负责将耗时操作转到后台，避免主线程做 sysfs IO。
      */
     private void updateBatteryData(Intent intent) {
         if (intent == null) return;
 
         try {
             String action = intent.getAction();
-            if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-                // 统一由 BatteryDataManager 解析完整电池信息，避免本服务与核心逻辑重复/不一致
-                if (batteryDataManager != null) {
-                    batteryDataManager.refreshFromStickyIntent();
-                    BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                    if (info != null) {
-                        currentBatteryInfo = info;
+            if (Intent.ACTION_BATTERY_CHANGED.equals(action) && ioExecutor != null) {
+                ioExecutor.submit(() -> {
+                    try {
+                        if (batteryDataManager != null) {
+                            batteryDataManager.refreshFromStickyIntent();
+                            BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                            if (info != null) {
+                                currentBatteryInfo = info;
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error updating battery data: " + e.getMessage());
                     }
-                }
+                });
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating battery data: " + e.getMessage());
+            Log.e(TAG, "Error dispatching battery data update: " + e.getMessage());
         }
     }
     
