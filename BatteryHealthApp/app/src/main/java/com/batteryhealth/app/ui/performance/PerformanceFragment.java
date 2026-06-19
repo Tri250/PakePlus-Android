@@ -27,6 +27,8 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.PerformanceBenchmark;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -63,7 +65,8 @@ public class PerformanceFragment extends Fragment {
     private Runnable updateTask;
     private ExecutorService executor;
     private boolean isRunning = false;
-    
+    private boolean isFirstUpdate = true;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -119,61 +122,27 @@ public class PerformanceFragment extends Fragment {
                     }
                 }
             };
+
+            // 异步运行完整基准测试，结果仅在 UI 回调中使用
+            if (executor != null) {
+                executor.submit(() -> {
+                    try {
+                        PerformanceBenchmark.Result r = PerformanceBenchmark.runFullBenchmark(requireContext());
+                        if (handler != null) {
+                            handler.post(() -> applyBenchmarkResult(r));
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Benchmark skipped: " + e.getMessage());
+                    }
+                });
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
 
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -244,29 +213,62 @@ public class PerformanceFragment extends Fragment {
     private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo) {
         if (!isAdded()) return;
         try {
+            boolean animate = isFirstUpdate;
+
             if (tvCpuUsage != null) {
-                tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
+                if (cpuUsage < 0) {
+                    tvCpuUsage.setText(getString(R.string.status_calculating_short));
+                } else if (animate) {
+                    UiAnimationHelper.animateNumberText(tvCpuUsage, cpuUsage, "%.1f%%");
+                } else {
+                    tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
+                }
             }
             if (progressCpu != null) {
-                progressCpu.setProgress((int) Math.min(cpuUsage, 100));
+                int target = cpuUsage < 0 ? 0 : (int) Math.min(cpuUsage, 100);
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressCpu, target);
+                } else {
+                    progressCpu.setProgress(target);
+                }
             }
 
             if (tvMemoryUsage != null) {
-                tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
+                if (animate) {
+                    UiAnimationHelper.animateNumberText(tvMemoryUsage, memoryUsage, "%.1f%%");
+                } else {
+                    tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
+                }
             }
             if (progressMemory != null) {
-                progressMemory.setProgress((int) Math.min(memoryUsage, 100));
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressMemory, (int) Math.min(memoryUsage, 100));
+                } else {
+                    progressMemory.setProgress((int) Math.min(memoryUsage, 100));
+                }
             }
 
             if (tvStorageUsage != null) {
-                tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
+                if (animate) {
+                    UiAnimationHelper.animateNumberText(tvStorageUsage, storageUsage, "%.1f%%");
+                } else {
+                    tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
+                }
             }
             if (progressStorage != null) {
-                progressStorage.setProgress((int) Math.min(storageUsage, 100));
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressStorage, (int) Math.min(storageUsage, 100));
+                } else {
+                    progressStorage.setProgress((int) Math.min(storageUsage, 100));
+                }
             }
 
             if (tvPerformanceScore != null) {
-                tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
+                if (animate) {
+                    UiAnimationHelper.animateIntText(tvPerformanceScore, score, getString(R.string.performance_score_format));
+                } else {
+                    tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
+                }
                 if (score >= 80) {
                     tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
                 } else if (score >= 60) {
@@ -276,11 +278,19 @@ public class PerformanceFragment extends Fragment {
                 }
             }
             if (progressScore != null) {
-                progressScore.setProgress(score);
+                if (animate) {
+                    UiAnimationHelper.animateProgressBar(progressScore, score);
+                } else {
+                    progressScore.setProgress(score);
+                }
             }
 
             if (tvGpuInfo != null) {
                 tvGpuInfo.setText(gpuInfo);
+            }
+
+            if (isFirstUpdate) {
+                isFirstUpdate = false;
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating performance UI: " + e.getMessage());
@@ -300,14 +310,12 @@ public class PerformanceFragment extends Fragment {
     private PerformanceData lastSavedPerformanceData;
 
     private float readCpuUsage() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
             String line = reader.readLine();
-            reader.close();
 
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
-                if (parts.length < 5) return 0;
+                if (parts.length < 5) return -1; // 无法计算
 
                 long user = Long.parseLong(parts[1]);
                 long nice = Long.parseLong(parts[2]);
@@ -319,7 +327,7 @@ public class PerformanceFragment extends Fragment {
                 long steal = parts.length > 8 ? Long.parseLong(parts[8]) : 0;
 
                 if (!hasLastStat) {
-                    // 第一次读取，只保存数据
+                    // 第一次读取，只保存数据，返回 -1 表示"尚未就绪"
                     lastUser = user;
                     lastNice = nice;
                     lastSystem = system;
@@ -329,7 +337,7 @@ public class PerformanceFragment extends Fragment {
                     lastSoftirq = softirq;
                     lastSteal = steal;
                     hasLastStat = true;
-                    return 0;
+                    return -1;
                 }
 
                 // 计算差值
@@ -363,7 +371,7 @@ public class PerformanceFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error reading CPU usage: " + e.getMessage());
         }
-        return 0;
+        return -1;
     }
     
     private float readMemoryUsage() {
@@ -405,14 +413,16 @@ public class PerformanceFragment extends Fragment {
 
     private int calculatePerformanceScore(float cpuUsage, float memoryUsage, float storageUsage) {
         // 资源余量：使用率越低越好
-        float cpuScore = Math.max(0, 100 - cpuUsage);
+        // CPU 使用率 < 0 表示尚未就绪，按 50% 中性值计算
+        float effectiveCpuUsage = cpuUsage < 0 ? 50f : cpuUsage;
+        float cpuScore = Math.max(0, 100 - effectiveCpuUsage);
         float memScore = Math.max(0, 100 - memoryUsage);
         float storageScore = Math.max(0, 100 - storageUsage * 0.5f);
         float resourceScore = cpuScore * CPU_USAGE_WEIGHT
                 + memScore * MEMORY_USAGE_WEIGHT
                 + storageScore * STORAGE_USAGE_WEIGHT;
 
-        // 硬件规格分：基于总内存与 CPU 最大频率
+        // 硬件规格分：基于总内存、CPU 核心数与最大频率
         float hardwareScore = calculateHardwareScore();
 
         float total = resourceScore + hardwareScore;
@@ -434,27 +444,35 @@ public class PerformanceFragment extends Fragment {
             }
             DeviceConfig config = dim.getDeviceConfig();
 
-            // 内存分：0-20
+            // 内存分：0-14
             long totalMemMb = config.getTotalMemory();
             float memScore;
-            if (totalMemMb >= 16384) memScore = 20;           // 16GB+
-            else if (totalMemMb >= 12288) memScore = 18;      // 12GB
-            else if (totalMemMb >= 8192) memScore = 15;       // 8GB
-            else if (totalMemMb >= 6144) memScore = 12;       // 6GB
-            else if (totalMemMb >= 4096) memScore = 10;       // 4GB
-            else memScore = Math.max(5, totalMemMb / 1024f * 2.5f);
+            if (totalMemMb >= 16384) memScore = 14;           // 16GB+
+            else if (totalMemMb >= 12288) memScore = 12;      // 12GB
+            else if (totalMemMb >= 8192) memScore = 10;       // 8GB
+            else if (totalMemMb >= 6144) memScore = 8;        // 6GB
+            else if (totalMemMb >= 4096) memScore = 6;        // 4GB
+            else memScore = Math.max(3, totalMemMb / 1024f * 1.5f);
 
-            // CPU 分：0-20
+            // CPU 频率分：0-14
             int cpuFreqMax = config.getCpuFreqMax();
-            float cpuScore;
-            if (cpuFreqMax >= 3200) cpuScore = 20;
-            else if (cpuFreqMax >= 2800) cpuScore = 17;
-            else if (cpuFreqMax >= 2400) cpuScore = 14;
-            else if (cpuFreqMax >= 2000) cpuScore = 11;
-            else if (cpuFreqMax >= 1800) cpuScore = 8;
-            else cpuScore = Math.max(3, cpuFreqMax / 400f);
+            float cpuFreqScore;
+            if (cpuFreqMax >= 3200) cpuFreqScore = 14;
+            else if (cpuFreqMax >= 2800) cpuFreqScore = 12;
+            else if (cpuFreqMax >= 2400) cpuFreqScore = 10;
+            else if (cpuFreqMax >= 2000) cpuFreqScore = 8;
+            else if (cpuFreqMax >= 1800) cpuFreqScore = 6;
+            else cpuFreqScore = Math.max(3, cpuFreqMax / 400f);
 
-            return memScore + cpuScore;
+            // CPU 核心数分：0-12（安兔兔/鲁大师均将核心数纳入评分）
+            int cores = config.getCpuCores();
+            float coreScore;
+            if (cores >= 8) coreScore = 12;
+            else if (cores >= 6) coreScore = 9;
+            else if (cores >= 4) coreScore = 6;
+            else coreScore = 3;
+
+            return Math.min(40, memScore + cpuFreqScore + coreScore);
         } catch (Exception e) {
             return 20;
         }
@@ -462,12 +480,14 @@ public class PerformanceFragment extends Fragment {
 
     private String readGpuInfo() {
         try {
-            Context ctx = getContext();
-            if (ctx != null) {
-                DeviceInfoManager dim = new DeviceInfoManager(ctx);
-                String gpu = dim.getGpuInfo();
-                if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
-                    return gpu;
+            // 复用 MainActivity 已有的 DeviceInfoManager，避免重复创建
+            if (getActivity() instanceof MainActivity) {
+                DeviceInfoManager dim = ((MainActivity) getActivity()).getDeviceInfoManager();
+                if (dim != null) {
+                    String gpu = dim.getGpuInfo();
+                    if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
+                        return gpu;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -557,6 +577,35 @@ public class PerformanceFragment extends Fragment {
             }
         } catch (Exception ignored) {}
         return 0;
+    }
+
+    private void applyBenchmarkResult(PerformanceBenchmark.Result r) {
+        if (r == null || !isAdded()) return;
+        int normalized = PerformanceBenchmark.normalizeOverallScore(r.overallScore);
+        if (tvPerformanceScore != null) {
+            tvPerformanceScore.setText(String.format(Locale.getDefault(), "%,d", normalized));
+        }
+        if (progressScore != null) {
+            int progress = (int) Math.min(100, Math.max(0, normalized / 1000));
+            UiAnimationHelper.animateProgressBar(progressScore, progress);
+        }
+        if (tvGpuInfo != null) {
+            String text = String.format(Locale.getDefault(),
+                    "CPU单核 %,d · 多核 %,d · 内存 %,d MB/s · 读 %,d MB/s · 写 %,d MB/s",
+                    r.cpuSingleCoreScore, r.cpuMultiCoreScore,
+                    r.memoryBandwidthMBps, r.storageReadMBps, r.storageWriteMBps);
+            tvGpuInfo.setText(text);
+        }
+        // 修正评分颜色
+        if (tvPerformanceScore != null) {
+            if (normalized >= 80000) {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
+            } else if (normalized >= 50000) {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_yellow));
+            } else {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_red));
+            }
+        }
     }
 
     /**

@@ -25,9 +25,12 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.DeviceDatabaseManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -51,6 +54,7 @@ public class PowerFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvChargeType;
+    private TextView tvChargeProtocol;
     private TextView tvBatteryLevel;
     private TextView tvChargingPhase;
     private TextView tvBatteryTemp;
@@ -121,6 +125,7 @@ public class PowerFragment extends Fragment {
             tvVoltage = view.findViewById(R.id.tv_voltage);
             tvCurrent = view.findViewById(R.id.tv_current);
             tvChargeType = view.findViewById(R.id.tv_charge_type);
+            tvChargeProtocol = view.findViewById(R.id.tv_charge_protocol);
             tvBatteryLevel = view.findViewById(R.id.tv_power_battery_level);
             tvChargingPhase = view.findViewById(R.id.tv_charging_phase);
             tvBatteryTemp = view.findViewById(R.id.tv_power_battery_temp);
@@ -134,56 +139,8 @@ public class PowerFragment extends Fragment {
         }
     }
     
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -222,6 +179,7 @@ public class PowerFragment extends Fragment {
         if (tvVoltage != null) tvVoltage.setText("0.00 V");
         if (tvCurrent != null) tvCurrent.setText("0.00 A");
         if (tvChargeType != null) tvChargeType.setText(getString(R.string.status_not_charging_short));
+        if (tvChargeProtocol != null) tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
         if (tvChargingPhase != null) tvChargingPhase.setText("--");
         if (tvBatteryTemp != null) tvBatteryTemp.setText("--°C");
@@ -268,6 +226,29 @@ public class PowerFragment extends Fragment {
                     tvChargeType.setText(chargeType + " · " + phase);
                 } else {
                     tvChargeType.setText(chargeType);
+                }
+            }
+
+            // 充电协议识别（基于系统属性 + 厂商 + 实时功率）
+            if (tvChargeProtocol != null) {
+                Context ctx = getContext();
+                if (ctx == null) {
+                    tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
+                } else if (power <= 0) {
+                    tvChargeProtocol.setText(getString(R.string.charge_protocol_standard));
+                } else {
+                    try {
+                        ChargeProtocolDetector.Result pr = ChargeProtocolDetector.detect(ctx, power);
+                        StringBuilder protocolText = new StringBuilder();
+                        protocolText.append(pr.primary);
+                        if (pr.detail != null && !pr.detail.isEmpty()) {
+                            protocolText.append(" · ").append(pr.detail);
+                        }
+                        tvChargeProtocol.setText(protocolText.toString());
+                    } catch (Throwable t) {
+                        Log.w(TAG, "detect charge protocol failed: " + t.getMessage());
+                        tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
+                    }
                 }
             }
 
@@ -326,29 +307,39 @@ public class PowerFragment extends Fragment {
         }
     }
 
+    /**
+     * 充电阶段检测：基于电量和电流变化趋势综合判断。
+     * CC（恒流）：电流稳定，电压上升，通常 0-80%。
+     * CV（恒压）：电流逐渐下降，电压稳定，通常 80-100%。
+     * Trickle（涓流）：电流很小，接近充满。
+     * 安兔兔/AccuBattery 采用类似的 CC/CV/Trickle 三阶段模型。
+     */
     private String detectChargingPhase(int level, float power) {
         if (level >= 99) return getString(R.string.status_fully_charged);
 
+        // 基于滑动窗口的电流趋势判断
         if (samples.size() >= 8) {
             PowerSample first = samples.getFirst();
             PowerSample last = samples.getLast();
             long timeDiff = last.time - first.time;
-            if (timeDiff > 8_000) {
+            if (timeDiff > 10_000) { // 至少 10 秒的采样窗口
                 float hours = timeDiff / (1000.0f * 60 * 60);
                 float didt = (last.current - first.current) / hours;
-                float dvdt = (last.voltage - first.voltage) / hours;
 
-                if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
+                // 电流明显下降 → CV 阶段
+                if (level >= 70 && didt < -0.3f) {
                     return getString(R.string.charge_phase_constant_voltage);
                 }
-                if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
+                // 电流稳定 → CC 阶段
+                if (power > 5 && Math.abs(didt) < 0.5f) {
                     return getString(R.string.charge_phase_constant_current);
                 }
             }
         }
 
+        // 采样不足时基于电量和功率判断
         if (level >= 80) return getString(R.string.charge_phase_constant_voltage);
-        if (power > 5) return getString(R.string.charge_phase_constant_current);
+        if (power >= 5) return getString(R.string.charge_phase_constant_current);
         return getString(R.string.charge_phase_trickle);
     }
 
@@ -376,15 +367,40 @@ public class PowerFragment extends Fragment {
     }
     
     private float readVoltage() {
-        File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
-        if (voltageFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
-                String line = reader.readLine();
-                if (line != null && !line.trim().isEmpty()) {
-                    return Long.parseLong(line.trim()) / 1000000.0f;
+        // 统一使用 BatteryDataManager 读取电压，避免重复实现单位判断逻辑
+        if (getActivity() instanceof MainActivity) {
+            com.batteryhealth.app.utils.BatteryDataManager bdm =
+                    ((MainActivity) getActivity()).getBatteryDataManager();
+            if (bdm != null) {
+                int voltageMv = bdm.readVoltageNow();
+                if (voltageMv > 0) {
+                    return voltageMv / 1000.0f; // mV → V
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error reading voltage from sysfs: " + e.getMessage());
+            }
+        }
+
+        // 兜底：直接读取 sysfs 多路径
+        String[] voltagePaths = {
+                "/sys/class/power_supply/battery/voltage_now",
+                "/sys/class/power_supply/bms/voltage_now",
+                "/sys/class/power_supply/maxfg/voltage_now"
+        };
+        for (String path : voltagePaths) {
+            File voltageFile = new File(path);
+            if (voltageFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Long.parseLong(line.trim());
+                        if (Math.abs(raw) > 1000000) {
+                            return Math.abs(raw) / 1000000.0f; // µV → V
+                        } else if (Math.abs(raw) > 2500) {
+                            return Math.abs(raw) / 1000.0f; // mV → V
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error reading voltage from sysfs: " + path + " " + e.getMessage());
+                }
             }
         }
 
@@ -400,6 +416,7 @@ public class PowerFragment extends Fragment {
                 }
                 if (batteryStatus != null) {
                     int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                    if (voltageMv > 10000) voltageMv = voltageMv / 1000; // µV → mV
                     if (voltageMv > 0) {
                         return voltageMv / 1000.0f;
                     }
@@ -412,37 +429,40 @@ public class PowerFragment extends Fragment {
     }
 
     private float readCurrent() {
-        File currentFile = new File("/sys/class/power_supply/battery/current_now");
-        if (currentFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
-                String line = reader.readLine();
-                if (line != null && !line.trim().isEmpty()) {
-                    return Math.abs(Long.parseLong(line.trim())) / 1000000.0f;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error reading current from sysfs: " + e.getMessage());
+        // 统一使用 BatteryDataManager 读取电流，避免重复实现单位判断逻辑
+        if (getActivity() instanceof MainActivity) {
+            com.batteryhealth.app.utils.BatteryDataManager bdm =
+                    ((MainActivity) getActivity()).getBatteryDataManager();
+            if (bdm != null) {
+                BatteryManager bm = (BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
+                int currentMa = bdm.readCurrentNow(bm);
+                // readCurrentNow 返回 mA，正值充电，负值放电；功率页需要绝对值
+                return Math.abs(currentMa) / 1000.0f; // mA → A
             }
         }
 
-        Context ctx = getContext();
-        if (ctx != null) {
-            try {
-                BatteryManager batteryManager = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
-                if (batteryManager != null) {
-                    int currentUa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                    if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
-                        int absCurrent = Math.abs(currentUa);
-                        // 部分设备返回 mA 而非 µA，需判断单位
-                        // 正常充电电流：500mA-10A = 500000-10000000 µA
-                        if (absCurrent > 100000) {
-                            return absCurrent / 1000000.0f; // µA → A
-                        } else if (absCurrent > 0) {
-                            return absCurrent / 1000.0f; // mA → A
+        // 兜底：直接读取 sysfs 多路径
+        String[] currentPaths = {
+                "/sys/class/power_supply/battery/current_now",
+                "/sys/class/power_supply/bms/current_now",
+                "/sys/class/power_supply/maxfg/current_now"
+        };
+        for (String path : currentPaths) {
+            File currentFile = new File(path);
+            if (currentFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Long.parseLong(line.trim());
+                        long absRaw = Math.abs(raw);
+                        if (absRaw > 100000) {
+                            return absRaw / 1000000.0f; // µA → A
                         }
+                        return absRaw / 1000.0f; // mA → A
                     }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error reading current from sysfs: " + path + " " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error reading current from BatteryManager: " + e.getMessage());
             }
         }
         return 0;

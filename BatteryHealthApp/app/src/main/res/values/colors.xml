@@ -2,19 +2,22 @@
 <resources>
     <!-- 液态玻璃系统颜色 - 浅色模式 -->
     <color name="ios_background">#EFEFF4</color>
+    <color name="ios_background_gradient_start">#F8F9FB</color>
+    <color name="ios_background_gradient_end">#E8ECF1</color>
     <color name="ios_tertiary_background">#F2F2F7</color>
 
-    <!-- 液态玻璃半透明叠加色 -->
-    <color name="liquid_glass_surface">#CCFFFFFF</color>
-    <color name="liquid_glass_surface_subtle">#B3FFFFFF</color>
-    <color name="liquid_glass_border">#1F000000</color>
-    <color name="liquid_glass_glow">#1A007AFF</color>
+    <!-- 液态玻璃半透明叠加色 - 更通透、更精致 -->
+    <color name="liquid_glass_surface">#E6FFFFFF</color>
+    <color name="liquid_glass_surface_subtle">#CCFFFFFF</color>
+    <color name="liquid_glass_border">#14000000</color>
+    <color name="liquid_glass_border_strong">#26000000</color>
+    <color name="liquid_glass_glow">#33007AFF</color>
 
     <color name="ios_label">#1C1C1E</color>
-    <color name="ios_secondary_label">#3C3C43CC</color>
-    <color name="ios_tertiary_label">#3C3C43AA</color>
+    <color name="ios_secondary_label">#3C3C4399</color>
+    <color name="ios_tertiary_label">#3C3C4366</color>
 
-    <color name="ios_separator">#C6C6C8</color>
+    <color name="ios_separator">#D1D1D6</color>
 
     <!-- 液态玻璃强调色板（高饱和度、发光感） -->
     <color name="ios_red">#FF453A</color>

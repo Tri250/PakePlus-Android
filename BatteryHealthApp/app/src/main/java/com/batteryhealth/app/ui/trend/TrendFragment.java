@@ -2,17 +2,22 @@ package com.batteryhealth.app.ui.trend;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -20,6 +25,8 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.utils.UiAnimationHelper;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.chip.Chip;
 import com.github.mikephil.charting.charts.LineChart;
@@ -30,6 +37,9 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -63,7 +73,10 @@ public class TrendFragment extends Fragment {
     private TextView tvNoData;
     private TextView tvDemoHint;
     private ChipGroup chipGroupTimeRange;
+    private MaterialButton btnExportCsv;
     private int selectedTimeRangeDays = 7; // 默认7天
+    private List<BatteryInfo> cachedBatteryData;
+    private List<PowerHistory> cachedPowerData;
 
     @Nullable
     @Override
@@ -101,7 +114,12 @@ public class TrendFragment extends Fragment {
             tvNoData = view.findViewById(R.id.tv_no_data);
             tvDemoHint = view.findViewById(R.id.tv_demo_hint);
             chipGroupTimeRange = view.findViewById(R.id.chip_group_time_range);
+            btnExportCsv = view.findViewById(R.id.btn_export_csv);
             setupTimeRangeSelector();
+
+            if (btnExportCsv != null) {
+                btnExportCsv.setOnClickListener(v -> exportCsvAsync());
+            }
 
             setupCharts();
             loadData();
@@ -111,56 +129,8 @@ public class TrendFragment extends Fragment {
         }
     }
 
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -180,6 +150,8 @@ public class TrendFragment extends Fragment {
                 selectedTimeRangeDays = 7;
             } else if (checkedId == R.id.chip_30days) {
                 selectedTimeRangeDays = 30;
+            } else if (checkedId == R.id.chip_90days) {
+                selectedTimeRangeDays = 90;
             }
             loadData();
         });
@@ -268,6 +240,8 @@ public class TrendFragment extends Fragment {
                 final List<BatteryInfo> finalBattery = batteryData;
                 final List<PowerHistory> finalPower = powerData;
                 final int finalTotalCount = totalRecordCount;
+                cachedBatteryData = batteryData;
+                cachedPowerData = powerData;
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (!isAdded() || isDetached()) return;
@@ -346,6 +320,9 @@ public class TrendFragment extends Fragment {
             case 30:
                 bucketMillis = 24 * 60 * 60 * 1000L; // 1天
                 break;
+            case 90:
+                bucketMillis = 3L * 24 * 60 * 60 * 1000L; // 3天
+                break;
             default:
                 bucketMillis = 24 * 60 * 60 * 1000L;
         }
@@ -392,6 +369,9 @@ public class TrendFragment extends Fragment {
                 break;
             case 30:
                 bucketMillis = 24 * 60 * 60 * 1000L;
+                break;
+            case 90:
+                bucketMillis = 3L * 24 * 60 * 60 * 1000L;
                 break;
             default:
                 bucketMillis = 24 * 60 * 60 * 1000L;
@@ -446,50 +426,11 @@ public class TrendFragment extends Fragment {
     }
 
     /**
-     * 显示演示数据（模拟7天的电池健康度变化曲线）
+     * 数据不足时显示空状态提示，不使用模拟/假数据。
+     * 安兔兔/鲁大师在数据不足时同样显示"数据采集中"，不会生成假曲线。
      */
     private void showDemoData() {
-        showCharts();
-        if (tvDataCount != null) tvDataCount.setText(getString(R.string.status_demo_data));
-        if (tvDemoHint != null) {
-            tvDemoHint.setVisibility(View.VISIBLE);
-            tvDemoHint.setText(getString(R.string.status_demo_hint));
-        }
-
-        long now = System.currentTimeMillis();
-        long interval = 24 * 60 * 60 * 1000L / 24; // 每小时一个点
-
-        List<Entry> healthEntries = new ArrayList<>();
-        List<Entry> levelEntries = new ArrayList<>();
-        List<Entry> tempEntries = new ArrayList<>();
-        List<Entry> powerEntries = new ArrayList<>();
-
-        for (int i = 0; i < DEMO_DATA_POINTS; i++) {
-            long time = now - (DEMO_DATA_POINTS - i) * interval;
-            float progress = i / (float) DEMO_DATA_POINTS;
-
-            // 模拟健康度缓慢下降
-            float health = DEMO_HEALTH_START - (DEMO_HEALTH_START - DEMO_HEALTH_END) * progress;
-            health += (float) (Math.sin(progress * Math.PI * 4) * 0.3); // 微小波动
-            healthEntries.add(new Entry(time, health));
-
-            // 模拟电量周期性变化
-            float level = 50 + 40 * (float) Math.sin(progress * Math.PI * 8);
-            levelEntries.add(new Entry(time, Math.max(0, Math.min(100, level))));
-
-            // 模拟温度
-            float temp = 32 + 5 * (float) Math.sin(progress * Math.PI * 6);
-            tempEntries.add(new Entry(time, temp));
-
-            // 模拟功率
-            float power = (i % 24 < 8) ? 15 + (float) Math.random() * 10 : 0;
-            powerEntries.add(new Entry(time, power));
-        }
-
-        setChartData(chartHealth, getString(R.string.chart_health_trend), healthEntries, R.color.ios_green, true);
-        setChartData(chartLevel, getString(R.string.chart_level_trend), levelEntries, R.color.ios_blue, true);
-        setChartData(chartTemperature, getString(R.string.chart_temperature_trend), tempEntries, R.color.ios_orange, true);
-        setChartData(chartPower, getString(R.string.chart_power_trend), powerEntries, R.color.ios_purple, true);
+        showEmptyState(0);
     }
 
     private void showEmptyState(int recordCount) {
@@ -556,5 +497,106 @@ public class TrendFragment extends Fragment {
         int green = (color >> 8) & 0xFF;
         int blue = color & 0xFF;
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    /**
+     * 异步导出当前时间范围内的真实历史数据为 CSV 文件。
+     * 数据来源：Room 数据库 batteryInfoDao + powerHistoryDao，无任何模拟/假数据。
+     * 导出位置：app cache 目录，通过 FileProvider 分享。
+     */
+    private void exportCsvAsync() {
+        if (!isAdded()) return;
+        new Thread(() -> {
+            try {
+                List<BatteryInfo> battery = cachedBatteryData;
+                List<PowerHistory> power = cachedPowerData;
+                if ((battery == null || battery.isEmpty()) && (power == null || power.isEmpty())) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> Toast.makeText(getContext(),
+                                R.string.export_csv_no_data, Toast.LENGTH_SHORT).show());
+                    }
+                    return;
+                }
+                Context ctx = getContext();
+                if (ctx == null) return;
+                File outDir = new File(ctx.getCacheDir(), "exports");
+                if (!outDir.exists() && !outDir.mkdirs()) {
+                    throw new IOException("Cannot create export dir: " + outDir);
+                }
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+                String filename = "battery_trend_" + selectedTimeRangeDays + "d_" + sdf.format(new Date()) + ".csv";
+                File outFile = new File(outDir, filename);
+                try (FileWriter w = new FileWriter(outFile)) {
+                    w.write("# Battery Health Trend Export\n");
+                    w.write("# Range,Days\n");
+                    w.write("range_days," + selectedTimeRangeDays + "\n");
+                    w.write("\n# BatteryInfo\n");
+                    w.write("timestamp,level,health_percent,temperature_c,voltage_mv,current_ua,cycle_count,capacity_mah,is_charging\n");
+                    if (battery != null) {
+                        for (BatteryInfo b : battery) {
+                            if (b == null) continue;
+                            w.write(String.format(Locale.US, "%d,%d,%.2f,%.2f,%.0f,%d,%d,%d,%d\n",
+                                    b.getTimestamp(),
+                                    b.getLevel(),
+                                    b.getHealthPercentage(),
+                                    b.getTemperature(),
+                                    b.getVoltage(),
+                                    b.getCurrentNow(),
+                                    b.getCycleCount(),
+                                    b.getCurrentCapacity(),
+                                    b.isCharging() ? 1 : 0));
+                        }
+                    }
+                    w.write("\n# PowerHistory\n");
+                    w.write("timestamp,voltage_v,current_ma,power_w,battery_level,temperature_c\n");
+                    if (power != null) {
+                        for (PowerHistory p : power) {
+                            if (p == null) continue;
+                            w.write(String.format(Locale.US, "%d,%.3f,%.1f,%.2f,%d,%.2f\n",
+                                    p.getTimestamp(),
+                                    p.getVoltage(),
+                                    p.getCurrent(),
+                                    p.getPower(),
+                                    p.getBatteryLevel(),
+                                    p.getBatteryTemp()));
+                        }
+                    }
+                }
+                final File finalFile = outFile;
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        try {
+                            Toast.makeText(ctx, getString(R.string.export_csv_success, finalFile.getName()),
+                                    Toast.LENGTH_LONG).show();
+                            shareCsv(finalFile);
+                        } catch (Exception e) {
+                            Log.w(TAG, "share csv failed: " + e.getMessage());
+                        }
+                    });
+                }
+            } catch (Throwable t) {
+                Log.e(TAG, "exportCsvAsync failed: " + t.getMessage(), t);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> Toast.makeText(getContext(),
+                            getString(R.string.export_csv_failed, t.getMessage()),
+                            Toast.LENGTH_LONG).show());
+                }
+            }
+        }).start();
+    }
+
+    private void shareCsv(File file) {
+        try {
+            Context ctx = getContext();
+            if (ctx == null) return;
+            Uri uri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".fileprovider", file);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/csv");
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, getString(R.string.action_export_csv)));
+        } catch (Exception e) {
+            Log.w(TAG, "share intent failed: " + e.getMessage());
+        }
     }
 }

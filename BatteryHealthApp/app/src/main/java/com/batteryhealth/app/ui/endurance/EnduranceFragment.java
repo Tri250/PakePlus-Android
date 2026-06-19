@@ -23,11 +23,15 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Collections;
 import java.util.Locale;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 续航分析Fragment
@@ -52,15 +56,26 @@ public class EnduranceFragment extends Fragment {
     private TextView tvChargeStatus;
     private TextView tvBatteryTemp;
     private TextView tvFullChargeTime;
-    
+    private TextView tvConsumptionSummary;
+    private TextView tvConsumptionList;
+    private TextView tvConsumptionEmpty;
+
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
+    private ExecutorService ioExecutor;
     private boolean isRunning = false;
     
     // 放电速率计算
     private int lastLevel = -1;
     private long lastLevelTime = 0;
     private float dischargeRate = 0; // %/h
+    private float historicalDischargeRate = 0; // 从数据库加载的历史均值 %/h
+
+    // 充电电流滑动窗口（用于充满时间估算的平滑电流）
+    private static final int CURRENT_WINDOW_SIZE = 12; // 最近 12 次采样（约 60 秒）
+    private final java.util.LinkedList<Integer> currentWindow = new java.util.LinkedList<>();
+    private long currentWindowSum = 0;
+    private int currentWindowSamples = 0;
     
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -113,17 +128,19 @@ public class EnduranceFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
+
         try {
             mainHandler = new Handler(Looper.getMainLooper());
-            
+            ioExecutor = Executors.newSingleThreadExecutor();
+
             if (getActivity() instanceof MainActivity) {
                 batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
             }
-            
+
             initViews(view);
             loadHistoricalDischargeRate();
             updateUI();
+            refreshConsumptionAsync();
             animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
@@ -168,6 +185,7 @@ public class EnduranceFragment extends Fragment {
                     // 限制在合理范围
                     if (avgRate > 0.1f && avgRate < 100) {
                         dischargeRate = avgRate;
+                        historicalDischargeRate = avgRate;
                         Log.d(TAG, "Loaded historical discharge rate: " + avgRate + "%/h");
                     }
                 }
@@ -177,56 +195,8 @@ public class EnduranceFragment extends Fragment {
         }).start();
     }
 
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -236,6 +206,8 @@ public class EnduranceFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.post(updateRunnable);
         }
+        // 进入页面时拉取一次真实耗电榜
+        refreshConsumptionAsync();
     }
     
     @Override
@@ -254,8 +226,12 @@ public class EnduranceFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.removeCallbacks(updateRunnable);
         }
+        if (ioExecutor != null) {
+            ioExecutor.shutdown();
+            ioExecutor = null;
+        }
     }
-    
+
     private void initViews(View view) {
         tvEnduranceTime = view.findViewById(R.id.tv_endurance_time);
         tvEnduranceStatus = view.findViewById(R.id.tv_endurance_status);
@@ -264,6 +240,74 @@ public class EnduranceFragment extends Fragment {
         tvChargeStatus = view.findViewById(R.id.tv_charge_status);
         tvBatteryTemp = view.findViewById(R.id.tv_battery_temp);
         tvFullChargeTime = view.findViewById(R.id.tv_full_charge_time);
+        tvConsumptionSummary = view.findViewById(R.id.tv_consumption_summary);
+        tvConsumptionList = view.findViewById(R.id.tv_consumption_list);
+        tvConsumptionEmpty = view.findViewById(R.id.tv_consumption_empty);
+    }
+
+    /**
+     * 异步刷新耗电榜（24 小时窗口）。
+     * 数据源：android.app.usage.BatteryStatsManager（通过 "batterystats" 字符串获取隐藏服务），
+     *         配合 UsageStatsManager 获取前台应用列表，最终给出真实耗电排名。
+     */
+    private void refreshConsumptionAsync() {
+        if (!isAdded() || ioExecutor == null || ioExecutor.isShutdown()) return;
+        ioExecutor.submit(() -> {
+            try {
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final BatteryConsumptionAnalyzer.Result result = BatteryConsumptionAnalyzer.analyze(ctx, 24L * 60 * 60 * 1000);
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (!isAdded() || isDetached()) return;
+                        renderConsumption(result);
+                    });
+                }
+            } catch (Throwable t) {
+                Log.e(TAG, "refreshConsumptionAsync failed: " + t.getMessage(), t);
+            }
+        });
+    }
+
+    private void renderConsumption(BatteryConsumptionAnalyzer.Result result) {
+        if (tvConsumptionSummary == null || tvConsumptionList == null || tvConsumptionEmpty == null) return;
+        if (result == null) {
+            tvConsumptionSummary.setText(R.string.consumption_calculating);
+            tvConsumptionList.setText("");
+            tvConsumptionEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        // 顶部摘要：电池容量 + 系统预估续航
+        String hoursStr;
+        if (result.systemEstimatedHours > 0) {
+            hoursStr = String.format(Locale.getDefault(), getString(R.string.consumption_hours_format), result.systemEstimatedHours);
+        } else {
+            hoursStr = getString(R.string.consumption_calculating);
+        }
+        if (result.batteryCapacityMah > 0) {
+            tvConsumptionSummary.setText(String.format(Locale.getDefault(),
+                    getString(R.string.consumption_summary_format), result.batteryCapacityMah, hoursStr));
+        } else {
+            tvConsumptionSummary.setText(R.string.consumption_summary_unknown);
+        }
+
+        // 耗电榜列表
+        if (result.topConsumers == null || result.topConsumers.isEmpty()) {
+            tvConsumptionList.setText("");
+            tvConsumptionEmpty.setVisibility(View.VISIBLE);
+        } else {
+            tvConsumptionEmpty.setVisibility(View.GONE);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < result.topConsumers.size(); i++) {
+                BatteryConsumptionAnalyzer.AppConsumption c = result.topConsumers.get(i);
+                if (c == null) continue;
+                if (i > 0) sb.append("\n");
+                sb.append(String.format(Locale.getDefault(), "%d. %s  %.1f%% · %d mAh",
+                        i + 1, c.displayName, c.percent, c.totalMahConsumed));
+            }
+            tvConsumptionList.setText(sb.toString());
+        }
     }
     
     private void updateUI() {
@@ -281,10 +325,24 @@ public class EnduranceFragment extends Fragment {
                         status == BatteryManager.BATTERY_STATUS_FULL;
                 int currentNowUa = info.getCurrentNow(); // 正值充电，负值放电
                 int designCapacity = info.getDesignCapacity();
-                int remainingCapacityMah = designCapacity > 0 ? (int) (designCapacity * level / 100.0) : -1;
+                // 优先使用 charge_counter（当前剩余电量 mAh），更精确
+                int remainingCapacityMah = info.getChargeCounter() > 0
+                        ? info.getChargeCounter() / 1000  // uAh → mAh
+                        : (designCapacity > 0 ? (int) (designCapacity * level / 100.0) : -1);
 
                 // 计算放电速率（%/h）
                 calculateDischargeRate(level);
+
+                // 更新充电电流滑动窗口
+                if (currentNowUa > 0) {
+                    currentWindow.addLast(currentNowUa);
+                    currentWindowSum += currentNowUa;
+                    currentWindowSamples++;
+                    while (currentWindow.size() > CURRENT_WINDOW_SIZE) {
+                        currentWindowSum -= currentWindow.removeFirst();
+                        currentWindowSamples--;
+                    }
+                }
 
                 // 更新当前电量
                 if (tvCurrentLevel != null) {
@@ -378,39 +436,77 @@ public class EnduranceFragment extends Fragment {
     }
 
     /**
-     * 综合历史放电速率和实时电流估算剩余续航时间。
+     * 综合多种方法估算剩余续航时间。
+     * 优先级：历史放电速率 + 实时电流 加权平均 → 单一方法 → 数据库历史均值兜底。
      */
     private float estimateRemainingHours(int level, int currentNowUa, int remainingCapacityMah) {
+        float method1Result = -1; // 历史放电速率
+        float method2Result = -1; // 实时电流
+
         // 方法1：历史放电速率（%/h）
         if (dischargeRate > 0.1f && level > 0) {
-            return level / dischargeRate;
+            method1Result = level / dischargeRate;
         }
 
         // 方法2：实时电流（currentNow 放电时为负）
         if (currentNowUa < 0 && remainingCapacityMah > 0) {
             float dischargeMa = Math.abs(currentNowUa) / 1000.0f;
             if (dischargeMa > 0) {
-                return remainingCapacityMah / dischargeMa;
+                method2Result = remainingCapacityMah / dischargeMa;
             }
+        }
+
+        // 两种方法都有效时取加权平均（放电速率更稳定，权重更高）
+        if (method1Result > 0 && method2Result > 0) {
+            return method1Result * 0.6f + method2Result * 0.4f;
+        }
+
+        // 只有一种方法有效
+        if (method1Result > 0) return method1Result;
+        if (method2Result > 0) return method2Result;
+
+        // 兜底：从数据库加载历史均值放电速率
+        if (historicalDischargeRate > 0.1f && level > 0) {
+            return level / historicalDischargeRate;
         }
 
         return -1;
     }
 
     /**
-     * 估算充满时间：80% 前按当前电流，80% 后考虑电流衰减。
+     * 估算充满时间：分段计算 CC（恒流）和 CV（恒压）阶段。
+     * CC 阶段（0-80%）：按滑动窗口平均充电电流估算，避免瞬时波动。
+     * CV 阶段（80-100%）：电流逐渐衰减，平均约为 CC 阶段的 55%。
      */
     private float estimateFullChargeHours(int level, int currentNowUa, int designCapacityMah) {
-        if (currentNowUa <= 0 || designCapacityMah <= 0) return -1;
+        if (designCapacityMah <= 0) return -1;
 
-        float chargeMa = currentNowUa / 1000.0f;
+        // 使用滑动窗口平均电流，避免瞬时值波动导致估算不稳定
+        float chargeMa;
+        if (currentWindowSamples > 3) {
+            chargeMa = currentWindowSum / currentWindowSamples / 1000.0f; // µA → mA → A 的 mA 部分
+        } else {
+            // 采样不足，使用瞬时值
+            if (currentNowUa <= 0) return -1;
+            chargeMa = currentNowUa / 1000.0f;
+        }
+        if (chargeMa <= 0) return -1;
+
         float remainingMah = designCapacityMah * (100 - level) / 100.0f;
 
-        // 80% 后电流会下降，按 0.55 倍估算平均电流
-        float effectiveChargeMa = level < 80 ? chargeMa : chargeMa * 0.55f;
-        if (effectiveChargeMa <= 0) return -1;
-
-        return remainingMah / effectiveChargeMa;
+        if (level < 80) {
+            // CC 阶段：0→80% 按当前电流
+            float ccRemainingMah = designCapacityMah * (80 - level) / 100.0f;
+            float ccHours = ccRemainingMah / chargeMa;
+            // CV 阶段：80→100% 电流衰减，平均约 55%
+            float cvRemainingMah = designCapacityMah * 20 / 100.0f;
+            float cvHours = cvRemainingMah / (chargeMa * 0.55f);
+            return ccHours + cvHours;
+        } else {
+            // 已在 CV 阶段：电流衰减，平均约 55%
+            float cvHours = remainingMah / (chargeMa * 0.55f);
+            return cvHours;
+        }
     }
     
     /**

@@ -2,6 +2,7 @@ package com.batteryhealth.app.ui.config;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import java.util.Locale;
@@ -18,11 +19,14 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BuildConfig;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
+import com.batteryhealth.app.ui.policy.PolicyActivity;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 /**
  * 设备配置Fragment
@@ -45,6 +49,9 @@ public class DeviceConfigFragment extends Fragment {
     private TextView tvAvailableMemory;
     private TextView tvAvailableStorage;
     private TextView tvNetworkType;
+    private TextView tvAppVersion;
+    private View rowPrivacyPolicy;
+    private View rowUserAgreement;
 
     @Nullable
     @Override
@@ -85,6 +92,7 @@ public class DeviceConfigFragment extends Fragment {
             bindViews(view);
             setDefaultValues();
             initHealthAlertSwitch(view);
+            initPolicyEntries(view);
             animateCardsEntry(view);
 
             loadDeviceConfigAsync();
@@ -106,6 +114,9 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
+        tvAppVersion = view.findViewById(R.id.tv_app_version);
+        rowPrivacyPolicy = view.findViewById(R.id.row_privacy_policy);
+        rowUserAgreement = view.findViewById(R.id.row_user_agreement);
     }
 
     private void loadDeviceConfigAsync() {
@@ -146,7 +157,9 @@ public class DeviceConfigFragment extends Fragment {
                 tvStorage.setText(config.getFormattedStorage());
             }
             if (tvScreen != null) {
-                tvScreen.setText(config.getScreenResolution());
+                String resolution = config.getScreenResolution();
+                String size = config.getFormattedScreenSize();
+                tvScreen.setText(resolution + " · " + size);
             }
             if (tvActivation != null) {
                 String dateStr = config.getActivationDateStr();
@@ -178,7 +191,9 @@ public class DeviceConfigFragment extends Fragment {
             if (tvAvailableStorage != null) {
                 long availStorage = config.getAvailableStorage();
                 if (availStorage > 0) {
-                    tvAvailableStorage.setText(availStorage + " GB");
+                    tvAvailableStorage.setText(availStorage >= 100
+                            ? String.format(Locale.getDefault(), "%d GB", availStorage)
+                            : String.format(Locale.getDefault(), "%.1f GB", availStorage / 1.0));
                 } else {
                     tvAvailableStorage.setText("--");
                 }
@@ -216,56 +231,8 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
-        }
-        return false;
-    }
-
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     private String getActivationSourceLabel(String source) {
@@ -303,5 +270,40 @@ public class DeviceConfigFragment extends Fragment {
         if (tvAvailableMemory != null) tvAvailableMemory.setText("--");
         if (tvAvailableStorage != null) tvAvailableStorage.setText("--");
         if (tvNetworkType != null) tvNetworkType.setText("--");
+        if (tvAppVersion != null) {
+            try {
+                tvAppVersion.setText(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+            } catch (Exception e) {
+                tvAppVersion.setText("--");
+            }
+        }
+    }
+
+    /**
+     * 初始化隐私政策/用户协议入口点击。
+     */
+    private void initPolicyEntries(View view) {
+        if (rowPrivacyPolicy != null) {
+            rowPrivacyPolicy.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(requireContext(), PolicyActivity.class);
+                    intent.putExtra(PolicyActivity.EXTRA_TYPE, PolicyActivity.TYPE_PRIVACY);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "open privacy policy failed: " + e.getMessage());
+                }
+            });
+        }
+        if (rowUserAgreement != null) {
+            rowUserAgreement.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(requireContext(), PolicyActivity.class);
+                    intent.putExtra(PolicyActivity.EXTRA_TYPE, PolicyActivity.TYPE_AGREEMENT);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "open user agreement failed: " + e.getMessage());
+                }
+            });
+        }
     }
 }

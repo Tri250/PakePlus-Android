@@ -1,12 +1,14 @@
 package com.batteryhealth.app.utils;
 
 import android.app.ActivityManager;
+import android.app.usage.StorageStatsManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
+import android.os.storage.StorageManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
@@ -56,7 +58,10 @@ public class DeviceInfoManager {
             "/sys/module/msm_kgsl/parameters/kgsl_3d0_pwrrail",
             "/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq",
             "/sys/class/drm/card0/device/pp_dpm_sclk",
-            "/sys/class/drm/renderD128/device/pp_dpm_sclk"
+            "/sys/class/drm/renderD128/device/pp_dpm_sclk",
+            // Android 16 新增 GPU 检测路径
+            "/sys/class/devfreq/gpufreq/gpu_model",
+            "/sys/class/gpu/gpu_model"
     };
 
     public DeviceInfoManager(Context context) {
@@ -160,6 +165,19 @@ public class DeviceInfoManager {
     }
 
     /**
+     * 检测设备是否支持旁路充电（Bypass Charging）。
+     * ColorOS 16 特性：充电时绕过电池直接供电，减少充电发热。
+     * 通过检测 /sys/class/power_supply/battery/bypass_charging 节点是否可读来判断。
+     *
+     * @return true 表示设备支持旁路充电
+     */
+    public boolean isBypassChargingSupported() {
+        String path = "/sys/class/power_supply/battery/bypass_charging";
+        File file = new File(path);
+        return file.exists() && file.canRead();
+    }
+
+    /**
      * 获取营销型号名。
      */
     public String getMarketModelName() {
@@ -241,6 +259,34 @@ public class DeviceInfoManager {
                 v = v.substring(p.length()).trim();
             }
         }
+        // 处理 2026 芯片组营销后缀
+        String lower = v.toLowerCase(Locale.ROOT);
+        // Snapdragon 8 Gen 4 / Gen 5 / Elite / Supreme
+        if (lower.contains("gen4") || lower.contains("gen 4")) {
+            v = v.replaceAll("(?i)gen\\s*4", "Gen 4");
+        }
+        if (lower.contains("gen5") || lower.contains("gen 5")) {
+            v = v.replaceAll("(?i)gen\\s*5", "Gen 5");
+        }
+        if (lower.contains("elite")) {
+            v = v.replaceAll("(?i)elite", "Elite");
+        }
+        if (lower.contains("supreme")) {
+            v = v.replaceAll("(?i)supreme", "Supreme");
+        }
+        // Dimensity 9500 / 9400
+        if (lower.contains("dimensity")) {
+            if (lower.contains("9500")) {
+                return "MediaTek Dimensity 9500";
+            }
+            if (lower.contains("9400")) {
+                return "MediaTek Dimensity 9400";
+            }
+        }
+        // Tensor G5
+        if (lower.contains("tensor") && lower.contains("g5")) {
+            return "Google Tensor G5";
+        }
         return v;
     }
 
@@ -314,9 +360,25 @@ public class DeviceInfoManager {
         // 如果 /proc/cpuinfo 没有拿到有效信息，尝试 sysprop
         String cpuResult = cpuInfo.toString().trim();
         if (cpuResult.isEmpty()) {
-            String soc = SystemPropertiesCompat.getSoC();
-            if (soc != null && !soc.isEmpty()) {
-                cpuResult = soc;
+            // 优先使用 Android 16 新增的 SoC 属性（更准确的芯片型号名称）
+            String[] newSocProps = {
+                    "ro.boot.soc_model",
+                    "ro.soc.model",
+                    "ro.product.soc_model"
+            };
+            for (String prop : newSocProps) {
+                String value = SystemPropertiesCompat.get(prop);
+                if (value != null && !value.isEmpty() && !"unknown".equalsIgnoreCase(value)) {
+                    cpuResult = value;
+                    break;
+                }
+            }
+            // 回退到原有 SoC 检测
+            if (cpuResult.isEmpty()) {
+                String soc = SystemPropertiesCompat.getSoC();
+                if (soc != null && !soc.isEmpty()) {
+                    cpuResult = soc;
+                }
             }
         }
 
@@ -369,26 +431,135 @@ public class DeviceInfoManager {
     }
 
     private void collectStorageInfo(DeviceConfig config) {
-        StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
-        long blockSize = statFs.getBlockSizeLong();
-        long totalBlocks = statFs.getBlockCountLong();
-        long availableBlocks = statFs.getAvailableBlocksLong();
-        config.setTotalStorage(totalBlocks * blockSize / (1024 * 1024 * 1024));         // GB
-        config.setAvailableStorage(availableBlocks * blockSize / (1024 * 1024 * 1024)); // GB
+        long totalBytes = -1;
+        long availableBytes = -1;
+
+        // Android 8+ 优先使用 StorageStatsManager，返回的是整机存储（与系统设置一致）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                StorageStatsManager ssm = (StorageStatsManager) context.getSystemService(Context.STORAGE_STATS_SERVICE);
+                StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+                if (ssm != null && sm != null) {
+                    // Android 16+ 使用 StorageManager.UUID_DEFAULT 处理 UUID，避免空指针
+                    java.util.UUID uuid;
+                    try {
+                        String uuidStr = sm.getPrimaryStorageVolume().getUuid();
+                        uuid = uuidStr != null ? java.util.UUID.fromString(uuidStr) : StorageManager.UUID_DEFAULT;
+                    } catch (SecurityException se) {
+                        // Android 16 可能因存储权限限制抛出 SecurityException，回退到 UUID_DEFAULT
+                        Log.d(TAG, "StorageVolume UUID access denied on Android 16+, using UUID_DEFAULT: " + se.getMessage());
+                        uuid = StorageManager.UUID_DEFAULT;
+                    }
+                    totalBytes = ssm.getTotalBytes(uuid);
+                    availableBytes = ssm.getFreeBytes(uuid);
+                }
+            } catch (SecurityException e) {
+                // Android 16+ 存储权限受限时的安全异常
+                Log.d(TAG, "StorageStatsManager access denied, fallback to StatFs: " + e.getMessage());
+            } catch (Exception e) {
+                Log.d(TAG, "StorageStatsManager failed, fallback to StatFs: " + e.getMessage());
+            }
+        }
+
+        // Android 16+ 检测存储加密状态
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            try {
+                StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+                if (sm != null) {
+                    android.os.storage.StorageVolume primaryVolume = sm.getPrimaryStorageVolume();
+                    // 通过反射调用 isDirectoryEncrypted()（Android 16 新增 API）
+                    try {
+                        java.lang.reflect.Method isEncryptedMethod = primaryVolume.getClass()
+                                .getMethod("isDirectoryEncrypted");
+                        Object result = isEncryptedMethod.invoke(primaryVolume);
+                        if (result instanceof Boolean) {
+                            Log.d(TAG, "Primary storage encrypted: " + result);
+                        }
+                    } catch (NoSuchMethodException nsme) {
+                        Log.d(TAG, "isDirectoryEncrypted() not available on this device");
+                    }
+                }
+            } catch (SecurityException e) {
+                Log.d(TAG, "Storage encryption check denied: " + e.getMessage());
+            } catch (Exception e) {
+                Log.d(TAG, "Storage encryption check failed: " + e.getMessage());
+            }
+        }
+
+        // 回退：使用外部存储目录 StatFs
+        if (totalBytes <= 0 || availableBytes <= 0) {
+            try {
+                File path = Environment.getExternalStorageDirectory();
+                if (path != null) {
+                    StatFs statFs = new StatFs(path.getPath());
+                    long blockSize = statFs.getBlockSizeLong();
+                    totalBytes = statFs.getBlockCountLong() * blockSize;
+                    availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "External storage StatFs failed: " + e.getMessage());
+            }
+        }
+
+        // 最后兜底：/data 分区
+        if (totalBytes <= 0 || availableBytes <= 0) {
+            try {
+                StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
+                long blockSize = statFs.getBlockSizeLong();
+                totalBytes = statFs.getBlockCountLong() * blockSize;
+                availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+            } catch (Exception e) {
+                Log.d(TAG, "Data directory StatFs failed: " + e.getMessage());
+            }
+        }
+
+        if (totalBytes > 0) {
+            config.setTotalStorage(totalBytes / (1024 * 1024 * 1024));         // GB
+        }
+        if (availableBytes > 0) {
+            config.setAvailableStorage(availableBytes / (1024 * 1024 * 1024)); // GB
+        }
     }
 
     private void collectScreenInfo(DeviceConfig config) {
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         if (wm == null) return;
-        DisplayMetrics metrics = new DisplayMetrics();
-        wm.getDefaultDisplay().getRealMetrics(metrics);
-        config.setScreenWidth(metrics.widthPixels);
-        config.setScreenHeight(metrics.heightPixels);
-        config.setScreenDensity(metrics.density);
-        config.setScreenDpi(metrics.densityDpi);
 
-        double widthInches = metrics.widthPixels / (double) metrics.xdpi;
-        double heightInches = metrics.heightPixels / (double) metrics.ydpi;
+        // Android 11+ 优先使用 WindowMetrics API（getRealMetrics 在 Android 16 已废弃）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                android.view.WindowMetrics windowMetrics = wm.getCurrentWindowMetrics();
+                android.graphics.Rect bounds = windowMetrics.getBounds();
+                config.setScreenWidth(bounds.width());
+                config.setScreenHeight(bounds.height());
+                // 从 WindowMetrics 获取密度
+                float density = windowMetrics.getDensity();
+                config.setScreenDensity(density);
+                config.setScreenDpi((int) (density * 160f));
+            } catch (Exception e) {
+                Log.d(TAG, "WindowMetrics API failed, fallback to getRealMetrics: " + e.getMessage());
+                // 回退到旧 API
+                DisplayMetrics metrics = new DisplayMetrics();
+                wm.getDefaultDisplay().getRealMetrics(metrics);
+                config.setScreenWidth(metrics.widthPixels);
+                config.setScreenHeight(metrics.heightPixels);
+                config.setScreenDensity(metrics.density);
+                config.setScreenDpi(metrics.densityDpi);
+            }
+        } else {
+            // 旧版 API 回退
+            DisplayMetrics metrics = new DisplayMetrics();
+            wm.getDefaultDisplay().getRealMetrics(metrics);
+            config.setScreenWidth(metrics.widthPixels);
+            config.setScreenHeight(metrics.heightPixels);
+            config.setScreenDensity(metrics.density);
+            config.setScreenDpi(metrics.densityDpi);
+        }
+
+        // 使用 densityDpi 计算对角线，xdpi/ydpi 在很多设备上不准确
+        int dpi = config.getScreenDpi() > 0 ? config.getScreenDpi() : 160;
+        double widthInches = config.getScreenWidth() / (double) dpi;
+        double heightInches = config.getScreenHeight() / (double) dpi;
         double size = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
         config.setScreenSize((float) size);
     }
@@ -418,20 +589,43 @@ public class DeviceInfoManager {
                     context.getSystemService(Context.CONNECTIVITY_SERVICE);
             if (cm == null) return;
 
-            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            if (activeNetwork == null || !activeNetwork.isConnected()) {
-                config.setNetworkType(context.getString(R.string.status_no_network));
-                return;
-            }
-
-            int type = activeNetwork.getType();
-            if (type == android.net.ConnectivityManager.TYPE_WIFI) {
-                config.setNetworkType("Wi-Fi");
-            } else if (type == android.net.ConnectivityManager.TYPE_MOBILE) {
-                int subtype = activeNetwork.getSubtype();
-                config.setNetworkType(getMobileNetworkType(subtype));
+            // Android 10+ 优先使用 NetworkCapabilities API（getActiveNetworkInfo 已废弃）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                android.net.Network activeNetwork = cm.getActiveNetwork();
+                android.net.NetworkCapabilities caps = activeNetwork != null
+                        ? cm.getNetworkCapabilities(activeNetwork) : null;
+                if (caps == null) {
+                    config.setNetworkType(context.getString(R.string.status_no_network));
+                    return;
+                }
+                if (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)) {
+                    config.setNetworkType("Wi-Fi");
+                } else if (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                    // 通过 TelephonyManager 获取移动网络子类型
+                    android.telephony.TelephonyManager tm = (android.telephony.TelephonyManager)
+                            context.getSystemService(Context.TELEPHONY_SERVICE);
+                    int subtype = tm != null ? tm.getDataNetworkType() : android.telephony.TelephonyManager.NETWORK_TYPE_UNKNOWN;
+                    config.setNetworkType(getMobileNetworkType(subtype));
+                } else {
+                    config.setNetworkType(context.getString(R.string.status_mobile_data));
+                }
             } else {
-                config.setNetworkType(activeNetwork.getTypeName());
+                // 旧版 API 回退
+                android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                if (activeNetwork == null || !activeNetwork.isConnected()) {
+                    config.setNetworkType(context.getString(R.string.status_no_network));
+                    return;
+                }
+
+                int type = activeNetwork.getType();
+                if (type == android.net.ConnectivityManager.TYPE_WIFI) {
+                    config.setNetworkType("Wi-Fi");
+                } else if (type == android.net.ConnectivityManager.TYPE_MOBILE) {
+                    int subtype = activeNetwork.getSubtype();
+                    config.setNetworkType(getMobileNetworkType(subtype));
+                } else {
+                    config.setNetworkType(activeNetwork.getTypeName());
+                }
             }
         } catch (Exception e) {
             Log.d(TAG, "Failed to collect network info: " + e.getMessage());
@@ -517,6 +711,18 @@ public class DeviceInfoManager {
         };
         for (String prop : properties) {
             String value = getSystemProperty(prop);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+
+        // 2b. Android 16 新增 GPU 检测属性（通过 SystemPropertiesCompat）
+        String[] newGpuProps = {
+                "ro.hardware.gpu",
+                "ro.opengles.version"
+        };
+        for (String prop : newGpuProps) {
+            String value = SystemPropertiesCompat.get(prop);
             if (value != null && !value.isEmpty()) {
                 return value;
             }

@@ -392,7 +392,8 @@ public class BatteryMonitorService extends Service {
         }
 
         // 数据库查询在后台线程执行，避免阻塞服务主线程
-        new Thread(() -> {
+        if (ioExecutor != null) {
+            ioExecutor.submit(() -> {
             try {
                 BatteryHealthApplication app = (BatteryHealthApplication) getApplicationContext();
                 AppDatabase db = app.getDatabase();
@@ -422,7 +423,8 @@ public class BatteryMonitorService extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Error checking health degradation: " + e.getMessage());
             }
-        }).start();
+            });
+        }
     }
 
     /**
@@ -547,8 +549,7 @@ public class BatteryMonitorService extends Service {
         }
 
         // 先深拷贝，避免后台写入时修改 currentBatteryInfo 影响 UI/通知数据流
-        final BatteryInfo snapshot = new Gson().fromJson(
-                new Gson().toJson(currentBatteryInfo), BatteryInfo.class);
+        final BatteryInfo snapshot = currentBatteryInfo.copy();
         if (snapshot == null) return;
 
         snapshot.setId(0);
@@ -556,7 +557,7 @@ public class BatteryMonitorService extends Service {
         snapshot.setDeviceModel(android.os.Build.MODEL);
         snapshot.setDeviceBrand(android.os.Build.BRAND);
 
-        lastSavedBatteryInfo = new Gson().fromJson(new Gson().toJson(snapshot), BatteryInfo.class);
+        lastSavedBatteryInfo = snapshot.copy();
 
         new Thread(() -> {
             try {
@@ -569,9 +570,9 @@ public class BatteryMonitorService extends Service {
                         Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
                     }
 
-                    // 清理30天前的旧数据
-                    long thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
-                    db.batteryInfoDao().deleteOlderThan(thirtyDaysAgo);
+                    // 清理45天前的旧数据（保留余量给趋势图30天视图）
+                    long fortyFiveDaysAgo = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
+                    db.batteryInfoDao().deleteOlderThan(fortyFiveDaysAgo);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error saving battery data: " + e.getMessage());

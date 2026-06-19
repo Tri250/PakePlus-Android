@@ -34,6 +34,7 @@ import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -76,7 +77,8 @@ public class BatteryHealthFragment extends Fragment {
     private SharedPreferences prefs;
     private Handler mainHandler;
     private boolean isRunning = false;
-    
+    private boolean isFirstUpdate = true;
+
     // 定时更新UI的Runnable
     private Runnable updateRunnable = new Runnable() {
         @Override
@@ -258,7 +260,7 @@ public class BatteryHealthFragment extends Fragment {
         if (tvHealthGrade != null) tvHealthGrade.setText("--");
         if (tvHealthStatus != null) tvHealthStatus.setText(getString(R.string.status_detecting));
         if (tvCapacity != null) tvCapacity.setText("-- mAh");
-        if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.unit_days_fallback) + " " + getString(R.string.cycle_count_format, 0));
+        if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.cycle_count_unreadable));
         if (tvTemperature != null) tvTemperature.setText("-- °C");
         if (tvVoltage != null) tvVoltage.setText("-- V");
         if (tvBatterySource != null) tvBatterySource.setText(getString(R.string.status_detecting_short));
@@ -278,32 +280,35 @@ public class BatteryHealthFragment extends Fragment {
                 
                 // 更新健康度
                 float healthPercentage = info.getHealthPercentage();
+                boolean hasValidHealth = info.hasValidHealthData();
                 if (tvHealthPercentage != null) {
-                    if (info.hasValidHealthData()) {
-                        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
+                    if (hasValidHealth) {
+                        if (isFirstUpdate) {
+                            UiAnimationHelper.animateNumberText(tvHealthPercentage, healthPercentage, "%.1f%%");
+                        } else {
+                            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
+                        }
                     } else {
                         tvHealthPercentage.setText("--");
                     }
                 }
-                
+
                 if (tvHealthGrade != null) {
                     tvHealthGrade.setText(info.getHealthGrade());
                 }
-                
+
                 if (tvHealthStatus != null) {
+                    // healthSourceText 内部已包含置信度，不再重复拼接
                     String source = batteryDataManager.getHealthSourceText();
-                    float confidence = info.getHealthConfidence();
-                    String confidenceText = confidence > 0
-                            ? String.format(Locale.getDefault(), getString(R.string.health_confidence_format), confidence * 100)
-                            : "";
-                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source + confidenceText);
+                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source);
                 }
 
                 if (progressHealth != null) {
-                    if (info.hasValidHealthData()) {
-                        progressHealth.setProgress((int) healthPercentage);
+                    int targetProgress = hasValidHealth ? (int) healthPercentage : 0;
+                    if (isFirstUpdate && hasValidHealth) {
+                        UiAnimationHelper.animateProgressBar(progressHealth, targetProgress);
                     } else {
-                        progressHealth.setProgress(0);
+                        progressHealth.setProgress(targetProgress);
                     }
                 }
                 
@@ -381,12 +386,15 @@ public class BatteryHealthFragment extends Fragment {
                         tvCurrentNow.setText("-- mA");
                     }
                 }
+                if (isFirstUpdate) {
+                    isFirstUpdate = false;
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating UI: " + e.getMessage());
             }
         });
     }
-    
+
     private static final String PREFS_GLOBAL = "app_global_prefs";
     private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
 
@@ -413,39 +421,17 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void animateCardsEntry(View view) {
-        try {
-            if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
-                child.setAlpha(0f);
-                child.setTranslationY(60f);
-                child.setScaleX(0.94f);
-                child.setScaleY(0.94f);
-                child.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(300)
-                    .setStartDelay(i * 60L)
-                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.8f))
-                    .start();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
-        }
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     private int getHealthColor(float percentage) {
         try {
-            if (percentage >= 90) {
+            // 阈值与 BatteryInfo.getHealthGrade() / getHealthDescription() 保持一致
+            if (percentage >= 95) {
                 return ContextCompat.getColor(requireContext(), R.color.health_a_plus);
-            } else if (percentage >= 80) {
+            } else if (percentage >= 85) {
                 return ContextCompat.getColor(requireContext(), R.color.health_a);
-            } else if (percentage >= 70) {
+            } else if (percentage >= 75) {
                 return ContextCompat.getColor(requireContext(), R.color.health_c);
             } else if (percentage >= 60) {
                 return ContextCompat.getColor(requireContext(), R.color.health_d);
@@ -453,7 +439,6 @@ public class BatteryHealthFragment extends Fragment {
                 return ContextCompat.getColor(requireContext(), R.color.health_e);
             }
         } catch (Exception e) {
-            // 返回默认颜色
             return ContextCompat.getColor(requireContext(), R.color.ios_green);
         }
     }
@@ -463,11 +448,21 @@ public class BatteryHealthFragment extends Fragment {
             Context context = requireContext();
             EditText input = new EditText(context);
             input.setInputType(InputType.TYPE_CLASS_NUMBER);
-            input.setHint("输入当前实际电池容量（mAh）");
+            // 显示当前设计容量作为参考
+            int currentDesign = 0;
+            if (batteryDataManager != null) {
+                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                if (info != null) currentDesign = info.getDesignCapacity();
+            }
+            input.setHint(currentDesign > 0
+                    ? "当前设计容量: " + currentDesign + " mAh"
+                    : "输入电池出厂标称容量（mAh）");
 
             new AlertDialog.Builder(context)
                     .setTitle("校准电池容量")
-                    .setMessage("请输入当前电池的实际容量（mAh），用于更准确地计算健康度。")
+                    .setMessage("请输入电池的出厂标称容量（mAh），即官方规格中的设计容量。\n"
+                            + "健康度 = 当前满充容量 ÷ 设计容量 × 100%\n\n"
+                            + "提示：可在手机官网参数页查看电池容量。")
                     .setView(input)
                     .setPositiveButton("保存", (dialog, which) -> {
                         String value = input.getText().toString().trim();
@@ -478,7 +473,7 @@ public class BatteryHealthFragment extends Fragment {
                         try {
                             int capacity = Integer.parseInt(value);
                             if (capacity <= 0 || capacity > 20000) {
-                                Toast.makeText(context, "请输入合理的容量值", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "请输入合理的容量值（1-20000 mAh）", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             SharedPreferences prefs = context.getSharedPreferences(
@@ -487,7 +482,7 @@ public class BatteryHealthFragment extends Fragment {
                             if (batteryDataManager != null) {
                                 batteryDataManager.refreshAllDataAsync();
                             }
-                            Toast.makeText(context, "校准已保存", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "校准已保存，健康度将重新计算", Toast.LENGTH_SHORT).show();
                             updateUI();
                         } catch (NumberFormatException e) {
                             Toast.makeText(context, "输入格式错误", Toast.LENGTH_SHORT).show();

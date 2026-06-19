@@ -15,6 +15,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.core.graphics.Insets;
@@ -163,8 +164,10 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * Android 15+ 强制 edge-to-edge：为根视图和底部导航栏应用系统栏内边距，
-     * 避免底部导航被手势条遮挡。
+     * Android 15+ 强制 edge-to-edge：
+     * 1. 根视图仅保留状态栏/左右内边距，底部不设置 padding，保证底部导航可贴底。
+     * 2. 自定义底部导航栏高度 = 64dp 内容高度 + 系统导航栏/手势条高度，避免被遮挡或压缩。
+     * 3. ViewPager2 底部 margin 跟随底部导航栏总高度，确保内容不被导航栏覆盖。
      */
     private void applyEdgeToEdgeInsets() {
         try {
@@ -173,12 +176,36 @@ public class MainActivity extends AppCompatActivity {
             ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
                 Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
-                int bottom = Math.max(bars.bottom, ime.bottom);
-                v.setPadding(bars.left, bars.top, bars.right, bottom);
+                int bottomInset = Math.max(bars.bottom, ime.bottom);
+
+                // 状态栏顶边距 + 左右边距；底部不设置，由导航栏自身处理
+                v.setPadding(bars.left, bars.top, bars.right, 0);
+
+                // 底部导航栏动态增高并设置底部 padding，内容保持在手势条上方
+                CustomBottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+                if (bottomNav != null) {
+                    bottomNav.setPadding(bottomNav.getPaddingLeft(), bottomNav.getPaddingTop(),
+                            bottomNav.getPaddingRight(), bottomInset);
+                    bottomNav.applySystemBottomInset(bottomInset);
+
+                    // 等导航栏 layout 完成后，更新 ViewPager 底部 margin
+                    bottomNav.post(() -> updateViewPagerBottomMargin(bottomNav));
+                }
                 return WindowInsetsCompat.CONSUMED;
             });
         } catch (Exception e) {
             Log.e(TAG, "Error applying edge-to-edge insets: " + e.getMessage());
+        }
+    }
+
+    private void updateViewPagerBottomMargin(CustomBottomNavigationView bottomNav) {
+        if (viewPager == null || bottomNav == null) return;
+        int totalNavHeight = bottomNav.getMeasuredHeight();
+        if (totalNavHeight <= 0) return;
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) viewPager.getLayoutParams();
+        if (lp.bottomMargin != totalNavHeight) {
+            lp.bottomMargin = totalNavHeight;
+            viewPager.setLayoutParams(lp);
         }
     }
 

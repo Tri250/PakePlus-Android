@@ -86,12 +86,20 @@
     <string name="label_current_level">当前电量</string>
     <string name="label_discharge_rate">放电速率</string>
     <string name="label_estimated_full">预计充满</string>
+    <string name="section_top_consumers">应用耗电榜（24小时）</string>
+    <string name="status_no_usage_data">正在收集耗电数据，请打开应用并保持前台使用一段时间后查看</string>
+    <string name="consumption_summary_format">设备容量：%1$d mAh · 预估续航：%2$s</string>
+    <string name="consumption_summary_unknown">设备容量未知 · 持续监测后将提供更精准续航预估</string>
+    <string name="consumption_hours_format">%.1f 小时</string>
+    <string name="consumption_calculating">持续监测中</string>
 
     <!-- 充电功率 -->
     <string name="title_power">充电功率</string>
     <string name="status_not_charging">未充电</string>
     <string name="label_voltage">电压</string>
     <string name="label_charging_phase">充电阶段</string>
+    <string name="status_detecting_protocol">检测充电协议中…</string>
+    <string name="charge_protocol_standard">标准充电 · 请使用原装充电器以获得最佳速度</string>
 
     <!-- 趋势追踪 -->
     <string name="title_trend">趋势追踪</string>
@@ -100,14 +108,27 @@
     <string name="time_range_1day">1天</string>
     <string name="time_range_7days">7天</string>
     <string name="time_range_30days">30天</string>
+    <string name="time_range_90days">90天</string>
     <string name="chart_health_trend">健康度趋势</string>
     <string name="chart_level_trend">电量趋势</string>
     <string name="chart_temperature_trend">温度趋势</string>
     <string name="chart_power_trend">充电功率趋势</string>
+    <string name="action_export_csv">导出 CSV</string>
+    <string name="export_csv_no_data">暂无可导出的数据</string>
+    <string name="export_csv_success">CSV 已导出：%s</string>
+    <string name="export_csv_failed">CSV 导出失败：%s</string>
 
     <!-- 设置 -->
     <string name="section_settings">设置</string>
     <string name="label_show_background_notification">显示后台监控通知</string>
+    <string name="section_about">关于</string>
+    <string name="label_privacy_policy">隐私政策</string>
+    <string name="label_user_agreement">用户协议</string>
+    <string name="label_version">版本号</string>
+    <string name="privacy_policy_title">隐私政策</string>
+    <string name="privacy_policy_body">本应用为本地化电池健康监测工具，所有数据均存储在您的设备本地，不会上传至任何服务器。\n\n1. 收集的信息\n本应用读取设备的电池状态、运行内存、存储空间、屏幕参数及系统版本等设备信息，仅用于在本地进行健康度计算与展示。\n\n2. 权限使用说明\n• 前台服务权限：用于在后台持续监测电池状态\n• 通知权限：用于显示电池监控通知（Android 13+）\n• 网络状态权限：用于检测网络连接状态（可选）\n\n3. 数据存储\n所有电池历史数据、健康度、循环次数等仅保存在本地数据库，不包含任何个人信息。\n\n4. 第三方服务\n本应用不集成任何第三方分析、广告或追踪 SDK。\n\n5. 联系方式\n如有问题或建议，请通过应用商店评论区反馈。</string>
+    <string name="user_agreement_title">用户协议</string>
+    <string name="user_agreement_body">欢迎使用本应用。请仔细阅读以下条款：\n\n1. 功能说明\n本应用提供电池健康度估算、循环次数监测、充电状态分析、续航预测、性能基准测试等功能。计算结果仅供参考，最终以设备制造商数据为准。\n\n2. 使用规范\n• 请勿在飞行模式等极端情况下作为关键判断依据\n• 数据准确度受设备品牌/型号/系统版本影响存在差异\n• 请勿将本应用用于商业评估或质保索赔的唯一依据\n\n3. 免责声明\n本应用开发者不对因使用本应用数据而产生的任何直接或间接损失负责。\n\n4. 协议变更\n本协议可能随版本更新调整，更新后将通过应用商店说明告知。</string>
 
     <!-- 通用状态与提示 -->
     <string name="status_unknown">未知</string>

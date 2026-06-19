@@ -2,17 +2,20 @@
 <resources>
     <!-- 液态玻璃系统颜色 - 深色模式（仅覆盖在浅色模式中实际使用的资源） -->
     <color name="ios_background">#000000</color>
+    <color name="ios_background_gradient_start">#0D0D0F</color>
+    <color name="ios_background_gradient_end">#0A0A0C</color>
     <color name="ios_tertiary_background">#2C2C2E</color>
 
     <!-- 液态玻璃半透明叠加色 - 深色 -->
-    <color name="liquid_glass_surface">#BF1C1C1E</color>
-    <color name="liquid_glass_surface_subtle">#991C1C1E</color>
-    <color name="liquid_glass_border">#33FFFFFF</color>
-    <color name="liquid_glass_glow">#330A84FF</color>
+    <color name="liquid_glass_surface">#CC1C1C1E</color>
+    <color name="liquid_glass_surface_subtle">#B31C1C1E</color>
+    <color name="liquid_glass_border">#1AFFFFFF</color>
+    <color name="liquid_glass_border_strong">#33FFFFFF</color>
+    <color name="liquid_glass_glow">#400A84FF</color>
 
     <color name="ios_label">#FFFFFF</color>
-    <color name="ios_secondary_label">#EBEBF5CC</color>
-    <color name="ios_tertiary_label">#EBEBF5AA</color>
+    <color name="ios_secondary_label">#EBEBF599</color>
+    <color name="ios_tertiary_label">#EBEBF566</color>
 
     <color name="ios_separator">#38383A</color>
 

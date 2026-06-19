@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background"
+    android:background="@android:color/transparent"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -32,8 +32,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="1.5dp"
             app:strokeWidth="0.5dp"
             app:strokeColor="@color/liquid_glass_border">
 
@@ -75,8 +75,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="1.5dp"
             app:strokeWidth="0.5dp"
             app:strokeColor="@color/liquid_glass_border">
 
@@ -215,6 +215,56 @@
                         android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="1.5dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="22dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_top_consumers"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:paddingBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_consumption_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_data_collecting"
+                    android:textAppearance="@style/iOSBody.Secondary"
+                    android:paddingBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_consumption_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/iOSBody"
+                    android:lineSpacingExtra="6dp" />
+
+                <TextView
+                    android:id="@+id/tv_consumption_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_no_usage_data"
+                    android:textAppearance="@style/iOSBody.Secondary"
+                    android:visibility="gone" />
 
             </LinearLayout>
 

@@ -41,6 +41,10 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private int activeColor;
     private int inactiveColor;
     private LinearLayout container;
+    private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
+
+    private int baseHeightPx = -1;
+    private int bottomInset = 0;
 
     public CustomBottomNavigationView(@NonNull Context context) {
         this(context, null);
@@ -61,12 +65,13 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
         container = new LinearLayout(getContext());
         container.setOrientation(LinearLayout.HORIZONTAL);
+        // 默认撑满宽度，配合子项 layout_weight 实现平均分布
         container.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         addView(container);
 
         activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
-        inactiveColor = getResources().getColor(R.color.ios_secondary_label, getContext().getTheme());
+        inactiveColor = getResources().getColor(R.color.ios_tertiary_label, getContext().getTheme());
     }
 
     /**
@@ -84,10 +89,19 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
+        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 6 Tab，默认平均分配
+        boolean average = forceAverageWidth && items.size() > 0;
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
+
+            // 强制平均分布：每个 item 宽度 = 容器宽度 / 数量
+            if (average) {
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+                view.setLayoutParams(lp);
+            }
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
@@ -96,7 +110,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             label.setText(item.label);
 
             view.setOnClickListener(v -> {
-                if (listener != null) {
+                if (listener != null && position != selectedPosition) {
                     listener.onItemSelected(position);
                 }
             });
@@ -130,11 +144,58 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             icon.setSelected(selected);
             icon.setColorFilter(selected ? activeColor : inactiveColor);
             label.setTextColor(selected ? activeColor : inactiveColor);
+
+            // 选中态缩放动画：图标从 1.0 -> 1.12 -> 1.0，文字透明度变化
+            if (selected) {
+                icon.animate()
+                        .scaleX(1.12f)
+                        .scaleY(1.12f)
+                        .setDuration(120)
+                        .withEndAction(() -> icon.animate()
+                                .scaleX(1.0f)
+                                .scaleY(1.0f)
+                                .setDuration(120)
+                                .start())
+                        .start();
+                label.setAlpha(1.0f);
+            } else {
+                icon.setScaleX(1.0f);
+                icon.setScaleY(1.0f);
+                label.setAlpha(0.85f);
+            }
         }
     }
 
     public void setOnItemSelectedListener(OnItemSelectedListener listener) {
         this.listener = listener;
+    }
+
+    /**
+     * 应用系统底部导航栏/手势条高度：总高度 = 内容高度（XML 64dp）+ 系统 inset
+     */
+    public void applySystemBottomInset(int inset) {
+        ensureBaseHeight();
+        if (this.bottomInset == inset) {
+            return;
+        }
+        this.bottomInset = inset;
+        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp != null) {
+            lp.height = baseHeightPx + inset;
+            setLayoutParams(lp);
+        }
+    }
+
+    private void ensureBaseHeight() {
+        if (baseHeightPx > 0) {
+            return;
+        }
+        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp != null && lp.height > 0) {
+            baseHeightPx = lp.height;
+        } else {
+            baseHeightPx = (int) (64 * getResources().getDisplayMetrics().density + 0.5f);
+        }
     }
 
     /**

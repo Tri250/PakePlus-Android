@@ -117,6 +117,18 @@ public class BatteryInfo {
     @ColumnInfo(name = "battery_source_confidence")
     private float batterySourceConfidence; // 电池来源置信度 0-1
 
+    @ColumnInfo(name = "factory_loss_percent")
+    private float factoryLossPercent; // 出厂损耗百分比
+
+    @ColumnInfo(name = "cycle_loss_percent")
+    private float cycleLossPercent; // 循环损耗百分比
+
+    @ColumnInfo(name = "usage_loss_percent")
+    private float usageLossPercent; // 使用时长损耗百分比
+
+    @ColumnInfo(name = "battery_source_reason")
+    private String batterySourceReason; // 电池来源判定原因
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -370,15 +382,38 @@ public class BatteryInfo {
         this.batterySourceConfidence = batterySourceConfidence;
     }
 
-    /**
-     * 计算健康度
-     */
-    public void calculateHealthPercentage() {
-        if (designCapacity > 0 && currentCapacity > 0) {
-            this.healthPercentage = (currentCapacity * 100.0f) / designCapacity;
-        }
+    public float getFactoryLossPercent() {
+        return factoryLossPercent;
     }
-    
+
+    public void setFactoryLossPercent(float factoryLossPercent) {
+        this.factoryLossPercent = factoryLossPercent;
+    }
+
+    public float getCycleLossPercent() {
+        return cycleLossPercent;
+    }
+
+    public void setCycleLossPercent(float cycleLossPercent) {
+        this.cycleLossPercent = cycleLossPercent;
+    }
+
+    public float getUsageLossPercent() {
+        return usageLossPercent;
+    }
+
+    public void setUsageLossPercent(float usageLossPercent) {
+        this.usageLossPercent = usageLossPercent;
+    }
+
+    public String getBatterySourceReason() {
+        return batterySourceReason;
+    }
+
+    public void setBatterySourceReason(String batterySourceReason) {
+        this.batterySourceReason = batterySourceReason;
+    }
+
     /**
      * 计算充电功率
      */
@@ -390,42 +425,46 @@ public class BatteryInfo {
     
     /**
      * 获取健康等级
+     *
+     * 阈值与 BatteryDataManager / getHealthDescription() 保持一致：
+     * 95+ A+，85-94 A，75-84 B，60-74 C，<60 D。
      */
     public String getHealthGrade() {
         if (healthPercentage < 0) {
             return "--";
-        } else if (healthPercentage >= 90) {
+        } else if (healthPercentage >= 95) {
             return "A+";
         } else if (healthPercentage >= 85) {
             return "A";
-        } else if (healthPercentage >= 80) {
-            return "B+";
         } else if (healthPercentage >= 75) {
             return "B";
-        } else if (healthPercentage >= 70) {
-            return "C";
         } else if (healthPercentage >= 60) {
-            return "D";
+            return "C";
         } else {
-            return "E";
+            return "D";
         }
     }
     
     /**
      * 获取健康描述
+     *
+     * 阈值与 BatteryDataManager 的计算口径保持一致：
+     * 95+ 极佳，85+ 良好，75+ 一般，60+ 较差，<60 极差。
      */
     public String getHealthDescription() {
         // 注意：此处返回硬编码字符串仅作为数据模型默认值，实际展示文本由 UI 层通过 strings.xml 控制
         if (healthPercentage < 0) {
             return "无法获取电池健康数据";
-        } else if (healthPercentage >= 90) {
+        } else if (healthPercentage >= 95) {
             return "电池状态极佳";
-        } else if (healthPercentage >= 80) {
+        } else if (healthPercentage >= 85) {
             return "电池状态良好";
-        } else if (healthPercentage >= 70) {
+        } else if (healthPercentage >= 75) {
             return "电池状态一般";
+        } else if (healthPercentage >= 60) {
+            return "电池损耗明显";
         } else {
-            return "建议更换电池";
+            return "建议尽快更换电池";
         }
     }
     
@@ -441,5 +480,55 @@ public class BatteryInfo {
      */
     public boolean hasValidCycleCount() {
         return cycleCount >= 0;
+    }
+
+    /**
+     * 当前是否处于充电状态（status=2 充电中，5 已充满）。
+     */
+    public boolean isCharging() {
+        return status == 2 || status == 5;
+    }
+
+    /**
+     * 创建当前对象的深拷贝，避免 Gson 序列化/反序列化的性能开销。
+     */
+    public BatteryInfo copy() {
+        BatteryInfo snapshot = new BatteryInfo();
+        snapshot.id = this.id;
+        snapshot.timestamp = this.timestamp;
+        snapshot.designCapacity = this.designCapacity;
+        snapshot.currentCapacity = this.currentCapacity;
+        snapshot.chargeCounter = this.chargeCounter;
+        snapshot.healthPercentage = this.healthPercentage;
+        snapshot.healthStatus = this.healthStatus;
+        snapshot.cycleCount = this.cycleCount;
+        snapshot.temperature = this.temperature;
+        snapshot.voltage = this.voltage;
+        snapshot.currentNow = this.currentNow;
+        snapshot.status = this.status;
+        snapshot.plugged = this.plugged;
+        snapshot.level = this.level;
+        snapshot.technology = this.technology;
+        snapshot.batterySource = this.batterySource;
+        snapshot.batterySerial = this.batterySerial;
+        snapshot.chargingPower = this.chargingPower;
+        snapshot.chargingVoltage = this.chargingVoltage;
+        snapshot.chargingCurrent = this.chargingCurrent;
+        snapshot.deviceModel = this.deviceModel;
+        snapshot.deviceBrand = this.deviceBrand;
+        snapshot.cycleCountEstimated = this.cycleCountEstimated;
+        snapshot.cycleCountSource = this.cycleCountSource;
+        snapshot.designCapacitySource = this.designCapacitySource;
+        snapshot.currentCapacitySource = this.currentCapacitySource;
+        snapshot.healthDataSource = this.healthDataSource;
+        snapshot.healthConfidence = this.healthConfidence;
+        snapshot.systemHealth = this.systemHealth;
+        snapshot.energyCounter = this.energyCounter;
+        snapshot.batterySourceConfidence = this.batterySourceConfidence;
+        snapshot.factoryLossPercent = this.factoryLossPercent;
+        snapshot.cycleLossPercent = this.cycleLossPercent;
+        snapshot.usageLossPercent = this.usageLossPercent;
+        snapshot.batterySourceReason = this.batterySourceReason;
+        return snapshot;
     }
 }
