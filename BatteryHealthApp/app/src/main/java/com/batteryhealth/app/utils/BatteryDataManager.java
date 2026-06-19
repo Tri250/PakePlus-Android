@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.util.Log;
 
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
 import java.io.BufferedReader;
@@ -15,6 +16,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -59,7 +61,22 @@ public class BatteryDataManager {
             "/sys/class/power_supply/battery/battery_cycle_2",
             "/sys/class/power_supply/battery/charge_full_cycles",
             "/sys/class/power_supply/battery/mmi_cycle_count",
-            "/sys/class/power_supply/battery/batt_cycle_count"
+            "/sys/class/power_supply/battery/batt_cycle_count",
+            // 小米/红米
+            "/sys/class/power_supply/battery/cycle_count_complete",
+            "/sys/class/power_supply/bms/cycle_count_complete",
+            // OPPO/realme/一加
+            "/sys/class/power_supply/battery/ohm_cycle_count",
+            "/sys/class/power_supply/battery/battery_cycle_count",
+            // vivo/iQOO
+            "/sys/class/power_supply/battery/batt_cycle",
+            "/sys/class/power_supply/bms/batt_cycle",
+            // 华为/荣耀
+            "/sys/class/power_supply/battery/cycle_count_flags",
+            "/sys/class/power_supply/battery/charge_cycle",
+            // 通用
+            "/sys/class/power_supply/battery/health_cycle_count",
+            "/sys/class/power_supply/battery/battery_health_cycle"
     };
 
     // 容量 sysfs 候选路径
@@ -69,7 +86,29 @@ public class BatteryDataManager {
             "/sys/class/power_supply/maxfg/charge_full",
             "/sys/class/power_supply/battery/charge_full_raw",
             "/sys/class/power_supply/battery/charge_full_design",
-            "/sys/class/power_supply/battery/fcc"
+            "/sys/class/power_supply/battery/fcc",
+            // 厂商私有
+            "/sys/class/power_supply/battery/constant_charge_current_max",
+            "/sys/class/power_supply/bms/constant_charge_current_max",
+            "/sys/class/power_supply/battery/batt_full_capacity",
+            "/sys/class/power_supply/battery/learned_full_capacity",
+            "/sys/class/power_supply/bms/learned_full_capacity",
+            "/sys/class/power_supply/maxfg/learned_full_capacity",
+            "/sys/class/power_supply/battery/fg_full_capacity"
+    };
+
+    // 设计容量 sysfs 候选路径（独立于 CHARGE_FULL_PATHS，用于 getDesignCapacity）
+    private static final String[] DESIGN_CAPACITY_PATHS = {
+            "/sys/class/power_supply/battery/charge_full_design",
+            "/sys/class/power_supply/bms/charge_full_design",
+            "/sys/class/power_supply/battery/design_capacity",
+            "/sys/class/power_supply/bms/design_capacity",
+            "/sys/class/power_supply/battery/design_capacity_full",
+            "/sys/class/power_supply/battery/batt_design_capacity",
+            "/sys/class/power_supply/bms/batt_design_capacity",
+            "/sys/class/power_supply/battery/nominal_capacity",
+            "/sys/class/power_supply/battery/battery_design_capacity",
+            "/sys/class/power_supply/battery/fg_design_capacity"
     };
 
     // 电流 sysfs 候选路径
@@ -260,11 +299,12 @@ public class BatteryDataManager {
     }
 
     /**
-     * 设计容量：优先本地数据库，其次 sysfs charge_full_design，最后 BatteryManager。
+     * 设计容量：优先本地数据库，其次 sysfs，再次 BatteryManager CHARGE_FULL 兜底。
      *
-     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（device_database / sysfs / unknown）
+     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（device_database / sysfs / battery_manager / unknown）
      */
     private int getDesignCapacity(Intent intent, String[] sourceHolder) {
+        // 1. 本地机型数据库（最准确）
         int dbCapacity = deviceDb.getDesignCapacity();
         if (dbCapacity > 0) {
             if (sourceHolder != null && sourceHolder.length > 0) {
@@ -273,15 +313,36 @@ public class BatteryDataManager {
             return dbCapacity;
         }
 
-        int design = readSysfsInt(new String[]{
-                "/sys/class/power_supply/battery/charge_full_design",
-                "/sys/class/power_supply/bms/charge_full_design"
-        }, -1);
+        // 2. sysfs 多路径
+        int design = readSysfsInt(DESIGN_CAPACITY_PATHS, -1);
         if (design > 1000) {
+            // sysfs 返回值单位通常为 uAh，需转换为 mAh
             if (sourceHolder != null && sourceHolder.length > 0) {
                 sourceHolder[0] = "sysfs";
             }
             return design / 1000;
+        } else if (design > 100) {
+            // 部分设备直接返回 mAh
+            if (sourceHolder != null && sourceHolder.length > 0) {
+                sourceHolder[0] = "sysfs";
+            }
+            return design;
+        }
+
+        // 3. BatteryManager BATTERY_PROPERTY_CHARGE_FULL（部分设备该值接近设计容量）
+        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+        if (batteryManager != null) {
+            int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
+            if (microAh != Integer.MIN_VALUE && microAh > 1000) {
+                int mah = microAh / 1000;
+                // 仅当值在合理范围内（1000-10000 mAh）才采纳
+                if (mah >= 1000 && mah <= 10000) {
+                    if (sourceHolder != null && sourceHolder.length > 0) {
+                        sourceHolder[0] = "battery_manager";
+                    }
+                    return mah;
+                }
+            }
         }
 
         if (sourceHolder != null && sourceHolder.length > 0) {
@@ -318,7 +379,7 @@ public class BatteryDataManager {
     }
 
     /**
-     * 读取循环次数：系统 API + sysfs + 估算兜底。
+     * 读取循环次数：系统 API + sysfs + 充电历史估算兜底。
      */
     private int readCycleCount(BatteryManager batteryManager) {
         // 1. Android 14+ BatteryManager 隐藏 API
@@ -334,9 +395,45 @@ public class BatteryDataManager {
         int count = readSysfsInt(CYCLE_COUNT_PATHS, -1);
         if (count > 0 && count < 10000) return count;
 
-        // 3. 部分厂商把循环次数放在 charge_full 相关文件中，格式不同
-        // 兜底：不可读取时返回 -1，不允许臆造
+        // 3. 基于充电历史估算（从数据库统计完整 0→100% 充电次数）
+        int estimatedCycles = estimateCycleCountFromHistory();
+        if (estimatedCycles > 0) return estimatedCycles;
+
         return -1;
+    }
+
+    /**
+     * 从数据库历史记录估算循环次数。
+     * 统计从低电量（<20%）到高电量（>80%）的完整充电次数。
+     */
+    private int estimateCycleCountFromHistory() {
+        try {
+            com.batteryhealth.app.BatteryHealthApplication app =
+                    (com.batteryhealth.app.BatteryHealthApplication) context.getApplicationContext();
+            if (app == null) return -1;
+            AppDatabase db = app.getDatabase();
+            if (db == null) return -1;
+
+            // 取最近 180 天数据
+            long startTime = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
+            List<BatteryInfo> records = db.batteryInfoDao().getSince(startTime);
+            if (records == null || records.size() < 10) return -1;
+
+            int cycles = 0;
+            boolean wasLow = false;
+            for (BatteryInfo info : records) {
+                int level = info.getLevel();
+                if (level < 20) wasLow = true;
+                if (wasLow && level > 80) {
+                    cycles++;
+                    wasLow = false;
+                }
+            }
+            return cycles > 0 ? cycles : -1;
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to estimate cycle count from history: " + e.getMessage());
+            return -1;
+        }
     }
 
     /**

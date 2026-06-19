@@ -286,14 +286,71 @@ public class DeviceInfoManager {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                if (line.startsWith("Hardware") || line.startsWith("model name") || line.startsWith("Processor")) {
-                    cpuInfo.append(line).append("\n");
+                String lower = line.toLowerCase();
+                // 扩展匹配关键词：覆盖 ARM 设备常见的 SoC 标识字段
+                if (lower.startsWith("hardware") || lower.startsWith("model name")
+                        || lower.startsWith("processor") || lower.startsWith("chip name")
+                        || lower.startsWith("cpu part") || lower.startsWith("cpu implementer")
+                        || lower.startsWith("soc name") || lower.startsWith("platform")) {
+                    int idx = line.indexOf(':');
+                    if (idx >= 0 && idx < line.length() - 1) {
+                        String value = line.substring(idx + 1).trim();
+                        if (!value.isEmpty() && !value.equalsIgnoreCase("unknown")) {
+                            if (cpuInfo.length() > 0) cpuInfo.append(" · ");
+                            cpuInfo.append(value);
+                        }
+                    }
                 }
             }
         } catch (IOException e) {
             Log.e(TAG, "Failed to read cpuinfo", e);
         }
-        config.setCpuInfo(cpuInfo.toString().trim());
+
+        // 如果 /proc/cpuinfo 没有拿到有效信息，尝试 sysprop
+        String cpuResult = cpuInfo.toString().trim();
+        if (cpuResult.isEmpty()) {
+            String soc = SystemPropertiesCompat.getSoC();
+            if (soc != null && !soc.isEmpty()) {
+                cpuResult = soc;
+            }
+        }
+
+        // 最后兜底：使用 Build.HARDWARE（通常包含 qcom/mtk/exynos 等平台标识）
+        if (cpuResult.isEmpty() && Build.HARDWARE != null && !Build.HARDWARE.isEmpty()
+                && !Build.HARDWARE.equalsIgnoreCase("unknown")) {
+            cpuResult = formatHardwareName(Build.HARDWARE);
+        }
+
+        config.setCpuInfo(cpuResult);
+    }
+
+    /**
+     * 格式化 Build.HARDWARE 为更可读的处理器名称。
+     * 例如 "qcom" → "Qualcomm Snapdragon", "mt6789" → "MediaTek MT6789"
+     */
+    private String formatHardwareName(String hw) {
+        if (hw == null || hw.isEmpty()) return "";
+        String lower = hw.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("qcom") || lower.contains("snapdragon")) {
+            return "Qualcomm Snapdragon (" + hw + ")";
+        }
+        if (lower.startsWith("mt") || lower.startsWith("mtk")) {
+            return "MediaTek " + hw.toUpperCase(Locale.ROOT);
+        }
+        if (lower.startsWith("exynos")) {
+            return "Samsung Exynos (" + hw + ")";
+        }
+        if (lower.startsWith("kirin")) {
+            return "HiSilicon Kirin (" + hw + ")";
+        }
+        if (lower.contains("unisoc") || lower.startsWith("ud7") || lower.startsWith("t7")
+                || lower.startsWith("s8") || lower.startsWith("t3")) {
+            return "UNISOC (" + hw + ")";
+        }
+        if (lower.startsWith("google")) {
+            return "Google Tensor (" + hw + ")";
+        }
+        return hw;
     }
 
     private void collectMemoryInfo(DeviceConfig config) {
