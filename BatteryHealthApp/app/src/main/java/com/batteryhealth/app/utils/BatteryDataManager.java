@@ -638,14 +638,22 @@ public class BatteryDataManager {
         }
 
         if (chargeCounter > 0 && percentage > 0 && designCapacity > 0) {
-            // 次可信：charge_counter / 电量 * 设计容量
-            float currentMax = chargeCounter / (percentage / 100f);
-            float health = (currentMax / designCapacity) * 100f;
-            result.healthPercentage = clampHealth(health);
-            result.healthLevel = getHealthLevel(result.healthPercentage);
-            result.healthStatus = getHealthStatusString(result.healthLevel);
-            result.confidence = 0.70f;
-            return result;
+            // 次可信：charge_counter / 电量百分比 → 推算当前满充容量
+            // 注意：低电量时 charge_counter 偏差大，推算结果不可靠。
+            // AccuBattery 要求至少 5% 电量才使用此方法，此处设为 15%。
+            if (percentage < 15) {
+                // 电量过低，charge_counter 推算误差过大，跳过
+                // 继续走后续兜底逻辑
+            } else {
+                float currentMax = chargeCounter / (percentage / 100f);
+                float health = (currentMax / designCapacity) * 100f;
+                result.healthPercentage = clampHealth(health);
+                result.healthLevel = getHealthLevel(result.healthPercentage);
+                result.healthStatus = getHealthStatusString(result.healthLevel);
+                // 电量越低置信度越低：15% 时 0.50，80%+ 时 0.75
+                result.confidence = 0.50f + (percentage - 15) / 85f * 0.25f;
+                return result;
+            }
         }
 
         // 3. 兜底 1：基于使用天数的经验估算（仅用于完全无容量数据的场景，置信度低）

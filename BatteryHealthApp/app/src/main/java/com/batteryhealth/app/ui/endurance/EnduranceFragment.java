@@ -293,7 +293,10 @@ public class EnduranceFragment extends Fragment {
                         status == BatteryManager.BATTERY_STATUS_FULL;
                 int currentNowUa = info.getCurrentNow(); // 正值充电，负值放电
                 int designCapacity = info.getDesignCapacity();
-                int remainingCapacityMah = designCapacity > 0 ? (int) (designCapacity * level / 100.0) : -1;
+                // 优先使用 charge_counter（当前剩余电量 mAh），更精确
+                int remainingCapacityMah = info.getChargeCounter() > 0
+                        ? info.getChargeCounter() / 1000  // uAh → mAh
+                        : (designCapacity > 0 ? (int) (designCapacity * level / 100.0) : -1);
 
                 // 计算放电速率（%/h）
                 calculateDischargeRate(level);
@@ -410,19 +413,32 @@ public class EnduranceFragment extends Fragment {
     }
 
     /**
-     * 估算充满时间：80% 前按当前电流，80% 后考虑电流衰减。
+     * 估算充满时间：分段计算 CC（恒流）和 CV（恒压）阶段。
+     * CC 阶段（0-80%）：按当前充电电流估算。
+     * CV 阶段（80-100%）：电流逐渐衰减，平均约为 CC 阶段的 55%。
+     * 安兔兔/AccuBattery 均采用类似的分段模型。
      */
     private float estimateFullChargeHours(int level, int currentNowUa, int designCapacityMah) {
         if (currentNowUa <= 0 || designCapacityMah <= 0) return -1;
 
         float chargeMa = currentNowUa / 1000.0f;
+        if (chargeMa <= 0) return -1;
+
         float remainingMah = designCapacityMah * (100 - level) / 100.0f;
 
-        // 80% 后电流会下降，按 0.55 倍估算平均电流
-        float effectiveChargeMa = level < 80 ? chargeMa : chargeMa * 0.55f;
-        if (effectiveChargeMa <= 0) return -1;
-
-        return remainingMah / effectiveChargeMa;
+        if (level < 80) {
+            // CC 阶段：0→80% 按当前电流
+            float ccRemainingMah = designCapacityMah * (80 - level) / 100.0f;
+            float ccHours = ccRemainingMah / chargeMa;
+            // CV 阶段：80→100% 电流衰减，平均约 55%
+            float cvRemainingMah = designCapacityMah * 20 / 100.0f;
+            float cvHours = cvRemainingMah / (chargeMa * 0.55f);
+            return ccHours + cvHours;
+        } else {
+            // 已在 CV 阶段：电流衰减，平均约 55%
+            float cvHours = remainingMah / (chargeMa * 0.55f);
+            return cvHours;
+        }
     }
     
     /**

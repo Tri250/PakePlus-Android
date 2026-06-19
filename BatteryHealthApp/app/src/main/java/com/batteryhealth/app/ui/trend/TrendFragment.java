@@ -458,50 +458,11 @@ public class TrendFragment extends Fragment {
     }
 
     /**
-     * 显示演示数据（模拟7天的电池健康度变化曲线）
+     * 数据不足时显示空状态提示，不使用模拟/假数据。
+     * 安兔兔/鲁大师在数据不足时同样显示"数据采集中"，不会生成假曲线。
      */
     private void showDemoData() {
-        showCharts();
-        if (tvDataCount != null) tvDataCount.setText(getString(R.string.status_demo_data));
-        if (tvDemoHint != null) {
-            tvDemoHint.setVisibility(View.VISIBLE);
-            tvDemoHint.setText(getString(R.string.status_demo_hint));
-        }
-
-        long now = System.currentTimeMillis();
-        long interval = 24 * 60 * 60 * 1000L / 24; // 每小时一个点
-
-        List<Entry> healthEntries = new ArrayList<>();
-        List<Entry> levelEntries = new ArrayList<>();
-        List<Entry> tempEntries = new ArrayList<>();
-        List<Entry> powerEntries = new ArrayList<>();
-
-        for (int i = 0; i < DEMO_DATA_POINTS; i++) {
-            long time = now - (DEMO_DATA_POINTS - i) * interval;
-            float progress = i / (float) DEMO_DATA_POINTS;
-
-            // 模拟健康度缓慢下降
-            float health = DEMO_HEALTH_START - (DEMO_HEALTH_START - DEMO_HEALTH_END) * progress;
-            health += (float) (Math.sin(progress * Math.PI * 4) * 0.3); // 微小波动
-            healthEntries.add(new Entry(time, health));
-
-            // 模拟电量周期性变化
-            float level = 50 + 40 * (float) Math.sin(progress * Math.PI * 8);
-            levelEntries.add(new Entry(time, Math.max(0, Math.min(100, level))));
-
-            // 模拟温度
-            float temp = 32 + 5 * (float) Math.sin(progress * Math.PI * 6);
-            tempEntries.add(new Entry(time, temp));
-
-            // 模拟功率
-            float power = (i % 24 < 8) ? 15 + (float) Math.random() * 10 : 0;
-            powerEntries.add(new Entry(time, power));
-        }
-
-        setChartData(chartHealth, getString(R.string.chart_health_trend), healthEntries, R.color.ios_green, true);
-        setChartData(chartLevel, getString(R.string.chart_level_trend), levelEntries, R.color.ios_blue, true);
-        setChartData(chartTemperature, getString(R.string.chart_temperature_trend), tempEntries, R.color.ios_orange, true);
-        setChartData(chartPower, getString(R.string.chart_power_trend), powerEntries, R.color.ios_purple, true);
+        showEmptyState(0);
     }
 
     private void showEmptyState(int recordCount) {

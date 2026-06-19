@@ -450,11 +450,12 @@ public class BatteryHealthFragment extends Fragment {
 
     private int getHealthColor(float percentage) {
         try {
-            if (percentage >= 90) {
+            // 阈值与 BatteryInfo.getHealthGrade() / getHealthDescription() 保持一致
+            if (percentage >= 95) {
                 return ContextCompat.getColor(requireContext(), R.color.health_a_plus);
-            } else if (percentage >= 80) {
+            } else if (percentage >= 85) {
                 return ContextCompat.getColor(requireContext(), R.color.health_a);
-            } else if (percentage >= 70) {
+            } else if (percentage >= 75) {
                 return ContextCompat.getColor(requireContext(), R.color.health_c);
             } else if (percentage >= 60) {
                 return ContextCompat.getColor(requireContext(), R.color.health_d);
@@ -462,7 +463,6 @@ public class BatteryHealthFragment extends Fragment {
                 return ContextCompat.getColor(requireContext(), R.color.health_e);
             }
         } catch (Exception e) {
-            // 返回默认颜色
             return ContextCompat.getColor(requireContext(), R.color.ios_green);
         }
     }
@@ -472,11 +472,21 @@ public class BatteryHealthFragment extends Fragment {
             Context context = requireContext();
             EditText input = new EditText(context);
             input.setInputType(InputType.TYPE_CLASS_NUMBER);
-            input.setHint("输入当前实际电池容量（mAh）");
+            // 显示当前设计容量作为参考
+            int currentDesign = 0;
+            if (batteryDataManager != null) {
+                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                if (info != null) currentDesign = info.getDesignCapacity();
+            }
+            input.setHint(currentDesign > 0
+                    ? "当前设计容量: " + currentDesign + " mAh"
+                    : "输入电池出厂标称容量（mAh）");
 
             new AlertDialog.Builder(context)
                     .setTitle("校准电池容量")
-                    .setMessage("请输入当前电池的实际容量（mAh），用于更准确地计算健康度。")
+                    .setMessage("请输入电池的出厂标称容量（mAh），即官方规格中的设计容量。\n"
+                            + "健康度 = 当前满充容量 ÷ 设计容量 × 100%\n\n"
+                            + "提示：可在手机官网参数页查看电池容量。")
                     .setView(input)
                     .setPositiveButton("保存", (dialog, which) -> {
                         String value = input.getText().toString().trim();
@@ -487,7 +497,7 @@ public class BatteryHealthFragment extends Fragment {
                         try {
                             int capacity = Integer.parseInt(value);
                             if (capacity <= 0 || capacity > 20000) {
-                                Toast.makeText(context, "请输入合理的容量值", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "请输入合理的容量值（1-20000 mAh）", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             SharedPreferences prefs = context.getSharedPreferences(
@@ -496,7 +506,7 @@ public class BatteryHealthFragment extends Fragment {
                             if (batteryDataManager != null) {
                                 batteryDataManager.refreshAllDataAsync();
                             }
-                            Toast.makeText(context, "校准已保存", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "校准已保存，健康度将重新计算", Toast.LENGTH_SHORT).show();
                             updateUI();
                         } catch (NumberFormatException e) {
                             Toast.makeText(context, "输入格式错误", Toast.LENGTH_SHORT).show();

@@ -257,10 +257,14 @@ public class PerformanceFragment extends Fragment {
         if (!isAdded()) return;
         try {
             if (tvCpuUsage != null) {
-                tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
+                if (cpuUsage < 0) {
+                    tvCpuUsage.setText(getString(R.string.status_calculating_short));
+                } else {
+                    tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
+                }
             }
             if (progressCpu != null) {
-                progressCpu.setProgress((int) Math.min(cpuUsage, 100));
+                progressCpu.setProgress(cpuUsage < 0 ? 0 : (int) Math.min(cpuUsage, 100));
             }
 
             if (tvMemoryUsage != null) {
@@ -319,7 +323,7 @@ public class PerformanceFragment extends Fragment {
 
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
-                if (parts.length < 5) return 0;
+                if (parts.length < 5) return -1; // 无法计算
 
                 long user = Long.parseLong(parts[1]);
                 long nice = Long.parseLong(parts[2]);
@@ -331,7 +335,7 @@ public class PerformanceFragment extends Fragment {
                 long steal = parts.length > 8 ? Long.parseLong(parts[8]) : 0;
 
                 if (!hasLastStat) {
-                    // 第一次读取，只保存数据
+                    // 第一次读取，只保存数据，返回 -1 表示"尚未就绪"
                     lastUser = user;
                     lastNice = nice;
                     lastSystem = system;
@@ -341,7 +345,7 @@ public class PerformanceFragment extends Fragment {
                     lastSoftirq = softirq;
                     lastSteal = steal;
                     hasLastStat = true;
-                    return 0;
+                    return -1;
                 }
 
                 // 计算差值
@@ -375,7 +379,7 @@ public class PerformanceFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error reading CPU usage: " + e.getMessage());
         }
-        return 0;
+        return -1;
     }
     
     private float readMemoryUsage() {
@@ -417,14 +421,16 @@ public class PerformanceFragment extends Fragment {
 
     private int calculatePerformanceScore(float cpuUsage, float memoryUsage, float storageUsage) {
         // 资源余量：使用率越低越好
-        float cpuScore = Math.max(0, 100 - cpuUsage);
+        // CPU 使用率 < 0 表示尚未就绪，按 50% 中性值计算
+        float effectiveCpuUsage = cpuUsage < 0 ? 50f : cpuUsage;
+        float cpuScore = Math.max(0, 100 - effectiveCpuUsage);
         float memScore = Math.max(0, 100 - memoryUsage);
         float storageScore = Math.max(0, 100 - storageUsage * 0.5f);
         float resourceScore = cpuScore * CPU_USAGE_WEIGHT
                 + memScore * MEMORY_USAGE_WEIGHT
                 + storageScore * STORAGE_USAGE_WEIGHT;
 
-        // 硬件规格分：基于总内存与 CPU 最大频率
+        // 硬件规格分：基于总内存、CPU 核心数与最大频率
         float hardwareScore = calculateHardwareScore();
 
         float total = resourceScore + hardwareScore;
@@ -446,27 +452,35 @@ public class PerformanceFragment extends Fragment {
             }
             DeviceConfig config = dim.getDeviceConfig();
 
-            // 内存分：0-20
+            // 内存分：0-14
             long totalMemMb = config.getTotalMemory();
             float memScore;
-            if (totalMemMb >= 16384) memScore = 20;           // 16GB+
-            else if (totalMemMb >= 12288) memScore = 18;      // 12GB
-            else if (totalMemMb >= 8192) memScore = 15;       // 8GB
-            else if (totalMemMb >= 6144) memScore = 12;       // 6GB
-            else if (totalMemMb >= 4096) memScore = 10;       // 4GB
-            else memScore = Math.max(5, totalMemMb / 1024f * 2.5f);
+            if (totalMemMb >= 16384) memScore = 14;           // 16GB+
+            else if (totalMemMb >= 12288) memScore = 12;      // 12GB
+            else if (totalMemMb >= 8192) memScore = 10;       // 8GB
+            else if (totalMemMb >= 6144) memScore = 8;        // 6GB
+            else if (totalMemMb >= 4096) memScore = 6;        // 4GB
+            else memScore = Math.max(3, totalMemMb / 1024f * 1.5f);
 
-            // CPU 分：0-20
+            // CPU 频率分：0-14
             int cpuFreqMax = config.getCpuFreqMax();
-            float cpuScore;
-            if (cpuFreqMax >= 3200) cpuScore = 20;
-            else if (cpuFreqMax >= 2800) cpuScore = 17;
-            else if (cpuFreqMax >= 2400) cpuScore = 14;
-            else if (cpuFreqMax >= 2000) cpuScore = 11;
-            else if (cpuFreqMax >= 1800) cpuScore = 8;
-            else cpuScore = Math.max(3, cpuFreqMax / 400f);
+            float cpuFreqScore;
+            if (cpuFreqMax >= 3200) cpuFreqScore = 14;
+            else if (cpuFreqMax >= 2800) cpuFreqScore = 12;
+            else if (cpuFreqMax >= 2400) cpuFreqScore = 10;
+            else if (cpuFreqMax >= 2000) cpuFreqScore = 8;
+            else if (cpuFreqMax >= 1800) cpuFreqScore = 6;
+            else cpuFreqScore = Math.max(3, cpuFreqMax / 400f);
 
-            return memScore + cpuScore;
+            // CPU 核心数分：0-12（安兔兔/鲁大师均将核心数纳入评分）
+            int cores = config.getCpuCores();
+            float coreScore;
+            if (cores >= 8) coreScore = 12;
+            else if (cores >= 6) coreScore = 9;
+            else if (cores >= 4) coreScore = 6;
+            else coreScore = 3;
+
+            return Math.min(40, memScore + cpuFreqScore + coreScore);
         } catch (Exception e) {
             return 20;
         }
