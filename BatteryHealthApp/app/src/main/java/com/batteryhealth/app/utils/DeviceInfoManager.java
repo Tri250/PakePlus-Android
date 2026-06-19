@@ -7,6 +7,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.StatFs;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -19,13 +21,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 设备信息收集器
@@ -39,6 +40,8 @@ public class DeviceInfoManager {
     private final DeviceDatabaseManager deviceDb;
 
     private DeviceConfig cachedConfig;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // GPU 渲染器 sysfs / 属性候选路径
     private static final String[] GPU_RENDERER_PATHS = {
@@ -61,12 +64,36 @@ public class DeviceInfoManager {
     }
 
     /**
-     * 获取完整设备配置。
+     * 获取完整设备配置（同步，首次调用可能阻塞，建议 UI 层使用异步接口）。
      */
     public DeviceConfig getDeviceConfig() {
         if (cachedConfig != null) {
             return cachedConfig;
         }
+        cachedConfig = buildDeviceConfig();
+        return cachedConfig;
+    }
+
+    /**
+     * 异步获取完整设备配置，避免主线程阻塞。
+     */
+    public void getDeviceConfigAsync(DeviceConfigCallback callback) {
+        if (cachedConfig != null) {
+            callback.onConfigLoaded(cachedConfig);
+            return;
+        }
+        executor.submit(() -> {
+            try {
+                DeviceConfig config = buildDeviceConfig();
+                mainHandler.post(() -> callback.onConfigLoaded(config));
+            } catch (Exception e) {
+                Log.e(TAG, "Error building device config async", e);
+                mainHandler.post(() -> callback.onConfigLoadFailed(e));
+            }
+        });
+    }
+
+    private DeviceConfig buildDeviceConfig() {
         DeviceConfig config = new DeviceConfig();
 
         // 1. CPU 信息
@@ -87,7 +114,7 @@ public class DeviceInfoManager {
         // 6. 网络信息
         collectNetworkInfo(config);
 
-        // 7. 激活日期
+        // 7. 激活日期（优先电子保卡）
         ActivationInfo activation = collectActivationInfo();
         config.setActivationDate(activation.timestamp);
         config.setActivationDateStr(activation.dateStr);
@@ -95,10 +122,10 @@ public class DeviceInfoManager {
         config.setActivationSource(activation.source);
         config.setActivationConfidence(activation.confidence);
 
-        // 7. GPU 信息（保留主板字段原始值）
+        // 8. GPU 信息（保留主板字段原始值）
         String gpuInfo = collectGpuInfo();
 
-        // 8. 使用机型数据库覆盖营销名称/处理器/屏幕规格
+        // 9. 使用机型数据库覆盖营销名称/处理器/屏幕规格
         DeviceDatabaseManager.DeviceEntry entry = deviceDb.findDevice();
         if (entry != null) {
             if (entry.marketName != null && !entry.marketName.isEmpty()) {
@@ -113,8 +140,15 @@ public class DeviceInfoManager {
         }
         config.setGpuInfo(gpuInfo);
 
-        cachedConfig = config;
         return config;
+    }
+
+    /**
+     * 设备配置加载回调。
+     */
+    public interface DeviceConfigCallback {
+        void onConfigLoaded(DeviceConfig config);
+        void onConfigLoadFailed(Exception e);
     }
 
     /**
@@ -317,6 +351,13 @@ public class DeviceInfoManager {
     private ActivationInfo collectActivationInfo() {
         ActivationInfo info = new ActivationInfo();
 
+        // 0. 优先读取各品牌系统电子保卡激活日期（准确度最高）
+        long warrantyTime = readElectronicWarrantyActivation();
+        if (warrantyTime > 0) {
+            info.set(warrantyTime, "electronic_warranty_card", 0.98f);
+            return info;
+        }
+
         // 1. 系统 FIRST_BOOT_TIME（部分国产 ROM 如 MIUI/HarmonyOS 提供）
         try {
             long firstBoot = Settings.Global.getLong(context.getContentResolver(), "first_boot_time", -1);
@@ -377,6 +418,125 @@ public class DeviceInfoManager {
         // 7. 无法推断，标记为未知
         info.setUnknown();
         return info;
+    }
+
+    /**
+     * 读取手机系统电子保卡激活日期。各品牌实现不同，这里按品牌依次尝试常见 Setting/Property。
+     */
+    private long readElectronicWarrantyActivation() {
+        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
+        String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
+
+        // 小米 / 红米
+        if (brand.contains("xiaomi") || brand.contains("redmi") || manufacturer.contains("xiaomi")) {
+            long t = getSettingsLong(Settings.Secure.getUriFor("miui_activated").getLastPathSegment(), 0);
+            if (t > 0) return t;
+            t = getSettingsLong("miui_activated", 0);
+            if (t > 0) return t;
+            t = getSystemPropertyLong("ro.miui.activated");
+            if (t > 0) return t;
+        }
+
+        // OPPO / realme / OnePlus（ColorOS / OxygenOS / realme UI）
+        if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")
+                || manufacturer.contains("oppo") || manufacturer.contains("oneplus")) {
+            long t = getSettingsLong("oppo_activated", 0);
+            if (t > 0) return t;
+            t = getSettingsLong("coloros_activated", 0);
+            if (t > 0) return t;
+            t = getSystemPropertyLong("ro.oppo.activated");
+            if (t > 0) return t;
+        }
+
+        // vivo / iQOO
+        if (brand.contains("vivo") || brand.contains("iqoo") || manufacturer.contains("vivo")) {
+            long t = getSettingsLong("vivo_activated", 0);
+            if (t > 0) return t;
+            t = getSettingsLong("vivo_warranty_time", 0);
+            if (t > 0) return t;
+            t = getSystemPropertyLong("ro.vivo.activated");
+            if (t > 0) return t;
+        }
+
+        // 华为 / 荣耀
+        if (brand.contains("huawei") || brand.contains("honor")
+                || manufacturer.contains("huawei")) {
+            long t = getSettingsLong("huawei_warranty_time", 0);
+            if (t > 0) return t;
+            t = parseDateString(getSettingsString("huawei_activation_date"));
+            if (t > 0) return t;
+            t = getSystemPropertyLong("ro.hw.oem.activated");
+            if (t > 0) return t;
+        }
+
+        // 魅族
+        if (brand.contains("meizu") || manufacturer.contains("meizu")) {
+            long t = getSettingsLong("meizu_activated", 0);
+            if (t > 0) return t;
+        }
+
+        // 三星
+        if (brand.contains("samsung") || manufacturer.contains("samsung")) {
+            long t = getSettingsLong("samsung_activated", 0);
+            if (t > 0) return t;
+        }
+
+        // 通用电子保卡 key（部分 ROM 会写入）
+        long t = getSettingsLong("electronic_warranty_activated", 0);
+        if (t > 0) return t;
+        t = getSettingsLong("device_activated_time", 0);
+        if (t > 0) return t;
+        t = getSystemPropertyLong("ro.runtime.firstboot");
+        if (t > 0) return t;
+
+        return -1;
+    }
+
+    private long getSettingsLong(String key, long defaultValue) {
+        try {
+            return Settings.Secure.getLong(context.getContentResolver(), key, defaultValue);
+        } catch (Exception e) {
+            try {
+                return Settings.Global.getLong(context.getContentResolver(), key, defaultValue);
+            } catch (Exception ignored) {
+                return defaultValue;
+            }
+        }
+    }
+
+    private String getSettingsString(String key) {
+        try {
+            String value = Settings.Secure.getString(context.getContentResolver(), key);
+            if (value != null && !value.isEmpty()) return value;
+            return Settings.Global.getString(context.getContentResolver(), key);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private long getSystemPropertyLong(String propertyName) {
+        try {
+            String value = getSystemProperty(propertyName);
+            if (value != null && !value.isEmpty()) {
+                return Long.parseLong(value.trim());
+            }
+        } catch (Exception ignored) {
+        }
+        return -1;
+    }
+
+    private long parseDateString(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return -1;
+        String[] patterns = {"yyyy-MM-dd", "yyyy/MM/dd", "yyyy.MM.dd", "yyyy-MM-dd HH:mm:ss"};
+        for (String pattern : patterns) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.getDefault());
+                Date date = sdf.parse(dateStr.trim());
+                if (date != null) return date.getTime();
+            } catch (Exception ignored) {
+            }
+        }
+        return -1;
     }
 
     private long getPackageFirstInstallTime(String packageName) {

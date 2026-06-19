@@ -117,8 +117,11 @@
 
     <!-- ============================== -->
     <!-- 液态玻璃列表项（View 样式，必须指定 parent） -->
+    <!-- 修复：必须显式声明 layout_width/height，否则运行期 InflateException -->
     <!-- ============================== -->
     <style name="LiquidGlassListItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@android:color/transparent</item>
         <item name="android:paddingStart">22dp</item>
         <item name="android:paddingEnd">22dp</item>

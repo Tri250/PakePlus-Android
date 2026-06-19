@@ -32,6 +32,14 @@ public class DeviceConfigFragment extends Fragment {
     
     private DeviceInfoManager deviceInfoManager;
 
+    private TextView tvDeviceName;
+    private TextView tvAndroidVersion;
+    private TextView tvProcessor;
+    private TextView tvMemory;
+    private TextView tvStorage;
+    private TextView tvScreen;
+    private TextView tvActivation;
+    private TextView tvUsageDays;
     private TextView tvActivationSource;
     private TextView tvAvailableMemory;
     private TextView tvAvailableStorage;
@@ -50,58 +58,77 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private View createErrorView(Exception e) {
-        android.widget.TextView errorView = new android.widget.TextView(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) {
+            ctx = requireActivity();
+        }
+        android.widget.TextView errorView = new android.widget.TextView(ctx);
         String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
         errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
+        errorView.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
+        errorView.setBackgroundColor(ContextCompat.getColor(ctx, R.color.ios_background));
         return errorView;
     }
-    
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
+
         try {
             if (getActivity() instanceof MainActivity) {
                 deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
             }
-            
-            initViews(view);
+
+            bindViews(view);
+            setDefaultValues();
+            initHealthAlertSwitch(view);
             animateCardsEntry(view);
+
+            loadDeviceConfigAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
-    
-    private void initViews(View view) {
+
+    private void bindViews(View view) {
+        tvDeviceName = view.findViewById(R.id.tv_device_name);
+        tvAndroidVersion = view.findViewById(R.id.tv_android_version);
+        tvProcessor = view.findViewById(R.id.tv_processor);
+        tvMemory = view.findViewById(R.id.tv_memory);
+        tvStorage = view.findViewById(R.id.tv_storage);
+        tvScreen = view.findViewById(R.id.tv_screen);
+        tvActivation = view.findViewById(R.id.tv_activation);
+        tvUsageDays = view.findViewById(R.id.tv_usage_days);
+        tvActivationSource = view.findViewById(R.id.tv_activation_source);
+        tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
+        tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
+        tvNetworkType = view.findViewById(R.id.tv_network_type);
+    }
+
+    private void loadDeviceConfigAsync() {
+        if (deviceInfoManager == null) {
+            return;
+        }
+        deviceInfoManager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
+            @Override
+            public void onConfigLoaded(DeviceConfig config) {
+                if (!isAdded()) return;
+                updateViews(config);
+            }
+
+            @Override
+            public void onConfigLoadFailed(Exception e) {
+                Log.e(TAG, "Failed to load device config", e);
+            }
+        });
+    }
+
+    private void updateViews(DeviceConfig config) {
+        if (config == null || !isAdded()) return;
+
         try {
-            if (deviceInfoManager == null) {
-                setDefaultValues(view);
-                return;
-            }
-            
-            DeviceConfig config = deviceInfoManager.getDeviceConfig();
-            if (config == null) {
-                setDefaultValues(view);
-                return;
-            }
-            
-            TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
-            TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
-            TextView tvProcessor = view.findViewById(R.id.tv_processor);
-            TextView tvMemory = view.findViewById(R.id.tv_memory);
-            TextView tvStorage = view.findViewById(R.id.tv_storage);
-            TextView tvScreen = view.findViewById(R.id.tv_screen);
-            TextView tvActivation = view.findViewById(R.id.tv_activation);
-            TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
-            tvActivationSource = view.findViewById(R.id.tv_activation_source);
-            tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
-            tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
-            tvNetworkType = view.findViewById(R.id.tv_network_type);
-            
             if (tvDeviceName != null) {
                 tvDeviceName.setText(config.getFullModelName());
             }
@@ -109,7 +136,7 @@ public class DeviceConfigFragment extends Fragment {
                 tvAndroidVersion.setText(config.getAndroidCodename());
             }
             if (tvProcessor != null) {
-                tvProcessor.setText(deviceInfoManager.getProcessorInfo());
+                tvProcessor.setText(deviceInfoManager != null ? deviceInfoManager.getProcessorInfo() : "--");
             }
             if (tvMemory != null) {
                 tvMemory.setText(config.getFormattedMemory());
@@ -131,18 +158,17 @@ public class DeviceConfigFragment extends Fragment {
 
             // 激活来源与可信度
             if (tvActivationSource != null) {
-                String sourceText = deviceInfoManager.getActivationSourceText();
-                float confidence = deviceInfoManager.getActivationConfidence();
-                String sourceLabel = "unknown".equals(sourceText) ? "未知" : sourceText;
-                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", sourceLabel, confidence * 100));
+                String sourceText = config.getActivationSource();
+                float confidence = config.getActivationConfidence();
+                tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", getActivationSourceLabel(sourceText), confidence * 100));
             }
             // 可用内存
             if (tvAvailableMemory != null) {
                 long availMem = config.getAvailableMemory();
                 if (availMem > 0) {
                     tvAvailableMemory.setText(availMem >= 1024
-                        ? String.format(Locale.getDefault(), "%.1f GB", availMem / 1024.0)
-                        : availMem + " MB");
+                            ? String.format(Locale.getDefault(), "%.1f GB", availMem / 1024.0)
+                            : availMem + " MB");
                 } else {
                     tvAvailableMemory.setText("--");
                 }
@@ -161,11 +187,8 @@ public class DeviceConfigFragment extends Fragment {
                 String networkType = config.getNetworkType();
                 tvNetworkType.setText(networkType != null ? networkType : "--");
             }
-
-            initHealthAlertSwitch(view);
         } catch (Exception e) {
-            Log.e(TAG, "Error initializing views: " + e.getMessage());
-            setDefaultValues(view);
+            Log.e(TAG, "Error updating views: " + e.getMessage());
         }
     }
 
@@ -218,16 +241,29 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
 
-    private void setDefaultValues(View view) {
-        TextView tvDeviceName = view.findViewById(R.id.tv_device_name);
-        TextView tvAndroidVersion = view.findViewById(R.id.tv_android_version);
-        TextView tvProcessor = view.findViewById(R.id.tv_processor);
-        TextView tvMemory = view.findViewById(R.id.tv_memory);
-        TextView tvStorage = view.findViewById(R.id.tv_storage);
-        TextView tvScreen = view.findViewById(R.id.tv_screen);
-        TextView tvActivation = view.findViewById(R.id.tv_activation);
-        TextView tvUsageDays = view.findViewById(R.id.tv_usage_days);
-        
+    private String getActivationSourceLabel(String source) {
+        if (source == null || "unknown".equals(source)) return "未知";
+        switch (source) {
+            case "electronic_warranty_card":
+                return "电子保卡";
+            case "system_first_boot_time":
+                return "系统首次开机";
+            case "device_policy_manager":
+                return "设备管理策略";
+            case "gms_first_install":
+                return "Google 服务首次安装";
+            case "system_framework_install":
+                return "系统框架安装";
+            case "app_first_install":
+                return "本应用首次安装";
+            case "app_data_directory":
+                return "应用数据目录";
+            default:
+                return source;
+        }
+    }
+
+    private void setDefaultValues() {
         if (tvDeviceName != null) tvDeviceName.setText("--");
         if (tvAndroidVersion != null) tvAndroidVersion.setText("--");
         if (tvProcessor != null) tvProcessor.setText("--");

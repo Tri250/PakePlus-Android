@@ -7,7 +7,7 @@
     <string name="battery_monitor_channel_name">电池监控</string>
     <string name="battery_monitor_channel_description">实时监控电池状态</string>
     <string name="battery_monitor_notification_title">电池监控运行中</string>
-    <string name="battery_monitor_notification_content">电量 %d%% · 温度 %.1f°C · 健康度 %.1f%%</string>
+    <string name="battery_monitor_notification_content">电量 %1$d%% · 温度 %2$.1f°C · 健康度 %3$.1f%%</string>
     <string name="battery_monitor_notification_fallback">电池监控服务运行中</string>
 
     <string name="health_alert_channel_name">电池健康提醒</string>
