@@ -26,6 +26,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -300,9 +301,13 @@ public class BatteryMonitorService extends Service {
             return;
         }
 
+        if (currentBatteryInfo == null) {
+            return;
+        }
+
         final float threshold = prefs.getFloat(PREF_DEGRADATION_THRESHOLD, DEFAULT_DEGRADATION_THRESHOLD);
         final float currentHealth = currentBatteryInfo.getHealthPercentage();
-        if (currentHealth <= 0.0f || currentHealth > 100.0f) {
+        if (currentHealth <= 0.0f || currentHealth > 100.0f || Float.isNaN(currentHealth)) {
             return;
         }
 
@@ -328,7 +333,7 @@ public class BatteryMonitorService extends Service {
                 }
 
                 float averageHealth = db.batteryInfoDao().getAverageHealthSince(monthAgo);
-                if (averageHealth <= 0.0f) {
+                if (averageHealth <= 0.0f || Float.isNaN(averageHealth)) {
                     return;
                 }
 
@@ -391,12 +396,13 @@ public class BatteryMonitorService extends Service {
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this, 0, intent, PendingIntent.FLAG_IMMUTABLE
             );
-            
+
+            BatteryInfo info = currentBatteryInfo != null ? currentBatteryInfo : new BatteryInfo();
             String content = String.format(
                     getString(R.string.battery_monitor_notification_content),
-                    currentBatteryInfo.getLevel(),
-                    currentBatteryInfo.getTemperature(),
-                    currentBatteryInfo.getHealthPercentage());
+                    info.getLevel(),
+                    info.getTemperature(),
+                    info.getHealthPercentage());
 
             return new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle(getString(R.string.battery_monitor_notification_title))
@@ -449,22 +455,27 @@ public class BatteryMonitorService extends Service {
      * 保存电池数据到数据库
      */
     private void saveBatteryData() {
+        if (currentBatteryInfo == null) return;
+
+        // 先深拷贝，避免后台写入时修改 currentBatteryInfo 影响 UI/通知数据流
+        final BatteryInfo snapshot = new Gson().fromJson(
+                new Gson().toJson(currentBatteryInfo), BatteryInfo.class);
+        if (snapshot == null) return;
+
+        snapshot.setId(0);
+        snapshot.setTimestamp(System.currentTimeMillis());
+        snapshot.setDeviceModel(android.os.Build.MODEL);
+        snapshot.setDeviceBrand(android.os.Build.BRAND);
+
         new Thread(() -> {
             try {
                 com.batteryhealth.app.BatteryHealthApplication app =
                     (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
-                if (db != null && currentBatteryInfo != null) {
-                    // 每次保存生成新记录，避免复用对象导致主键冲突
-                    BatteryInfo record = currentBatteryInfo;
-                    record.setId(0);
-                    record.setTimestamp(System.currentTimeMillis());
-                    record.setDeviceModel(android.os.Build.MODEL);
-                    record.setDeviceBrand(android.os.Build.BRAND);
-
-                    db.batteryInfoDao().insert(record);
+                if (db != null) {
+                    db.batteryInfoDao().insert(snapshot);
                     if (com.batteryhealth.app.BuildConfig.DEBUG) {
-                        Log.d(TAG, "Battery data saved: level=" + record.getLevel() + "% health=" + record.getHealthPercentage() + "%");
+                        Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
                     }
 
                     // 清理30天前的旧数据

@@ -29,6 +29,8 @@ import com.batteryhealth.app.utils.DeviceInfoManager;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 性能分析Fragment
@@ -55,6 +57,7 @@ public class PerformanceFragment extends Fragment {
     
     private Handler handler;
     private Runnable updateTask;
+    private ExecutorService executor;
     private boolean isRunning = false;
     
     @Nullable
@@ -100,6 +103,7 @@ public class PerformanceFragment extends Fragment {
             animateCardsEntry(view);
 
             handler = new Handler(Looper.getMainLooper());
+            executor = Executors.newSingleThreadExecutor();
 
             updateTask = new Runnable() {
                 @Override
@@ -179,21 +183,44 @@ public class PerformanceFragment extends Fragment {
         if (handler != null && updateTask != null) {
             handler.removeCallbacks(updateTask);
         }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
     }
     
     private void updatePerformanceData() {
+        if (executor == null || executor.isShutdown()) return;
+
+        executor.submit(() -> {
+            try {
+                final float cpuUsage = readCpuUsage();
+                final float memoryUsage = readMemoryUsage();
+                final float storageUsage = readStorageUsage();
+                final int score = calculatePerformanceScore(cpuUsage, memoryUsage, storageUsage);
+                final String gpuInfo = readGpuInfo();
+
+                if (handler != null) {
+                    handler.post(() -> updatePerformanceUi(cpuUsage, memoryUsage, storageUsage, score, gpuInfo));
+                }
+
+                savePerformanceData(cpuUsage, memoryUsage, storageUsage, score);
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating performance data: " + e.getMessage());
+            }
+        });
+    }
+
+    private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo) {
+        if (!isAdded()) return;
         try {
-            // 获取CPU使用率
-            float cpuUsage = readCpuUsage();
             if (tvCpuUsage != null) {
                 tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
             }
             if (progressCpu != null) {
                 progressCpu.setProgress((int) Math.min(cpuUsage, 100));
             }
-            
-            // 获取内存使用率
-            float memoryUsage = readMemoryUsage();
+
             if (tvMemoryUsage != null) {
                 tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
             }
@@ -201,8 +228,6 @@ public class PerformanceFragment extends Fragment {
                 progressMemory.setProgress((int) Math.min(memoryUsage, 100));
             }
 
-            // 存储使用率
-            float storageUsage = readStorageUsage();
             if (tvStorageUsage != null) {
                 tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
             }
@@ -210,8 +235,6 @@ public class PerformanceFragment extends Fragment {
                 progressStorage.setProgress((int) Math.min(storageUsage, 100));
             }
 
-            // 性能评分
-            int score = calculatePerformanceScore(cpuUsage, memoryUsage, storageUsage);
             if (tvPerformanceScore != null) {
                 tvPerformanceScore.setText(score + " 分");
                 if (score >= 80) {
@@ -226,16 +249,11 @@ public class PerformanceFragment extends Fragment {
                 progressScore.setProgress(score);
             }
 
-            // GPU信息
             if (tvGpuInfo != null) {
-                String gpuInfo = readGpuInfo();
                 tvGpuInfo.setText(gpuInfo);
             }
-
-            // 保存性能数据到数据库
-            savePerformanceData(cpuUsage, memoryUsage, storageUsage, score);
         } catch (Exception e) {
-            Log.e(TAG, "Error updating performance data: " + e.getMessage());
+            Log.e(TAG, "Error updating performance UI: " + e.getMessage());
         }
     }
     
@@ -422,7 +440,7 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void savePerformanceData(float cpuUsage, float memoryUsage, float storageUsage, int score) {
-        new Thread(() -> {
+        Runnable saveTask = () -> {
             try {
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
                 if (app == null) return;
@@ -445,7 +463,12 @@ public class PerformanceFragment extends Fragment {
             } catch (Exception e) {
                 Log.e(TAG, "Error saving performance data: " + e.getMessage());
             }
-        }).start();
+        };
+        if (executor != null && !executor.isShutdown()) {
+            executor.submit(saveTask);
+        } else {
+            saveTask.run();
+        }
     }
 
     private long getTotalMemory() {

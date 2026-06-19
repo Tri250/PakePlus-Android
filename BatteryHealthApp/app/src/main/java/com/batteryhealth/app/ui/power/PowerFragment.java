@@ -30,10 +30,12 @@ import com.batteryhealth.app.utils.DeviceDatabaseManager;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 充电功率Fragment
- * 
+ *
  * 注意：电池广播由BatteryMonitorService统一处理，此Fragment使用定时轮询
  */
 public class PowerFragment extends Fragment {
@@ -50,6 +52,7 @@ public class PowerFragment extends Fragment {
     private TextView tvBatteryTemp;
 
     private Handler mainHandler;
+    private ExecutorService executor;
     private boolean isRunning = false;
 
     // 本地滑动窗口，用于在 UI 层辅助判断充电阶段
@@ -108,7 +111,8 @@ public class PowerFragment extends Fragment {
         
         try {
             mainHandler = new Handler(Looper.getMainLooper());
-            
+            executor = Executors.newSingleThreadExecutor();
+
             tvPower = view.findViewById(R.id.tv_power);
             tvVoltage = view.findViewById(R.id.tv_voltage);
             tvCurrent = view.findViewById(R.id.tv_current);
@@ -177,6 +181,10 @@ public class PowerFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.removeCallbacks(updateRunnable);
         }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
     }
     
     private void setDefaultValues() {
@@ -190,15 +198,30 @@ public class PowerFragment extends Fragment {
     }
     
     private void updatePowerData() {
+        if (executor == null || executor.isShutdown()) return;
+
+        executor.submit(() -> {
+            try {
+                final float voltage = readVoltage();
+                final float current = readCurrent();
+                final float power = voltage * current;
+                final int level = readBatteryLevel();
+                final float temperature = readBatteryTemperature();
+
+                addSample(voltage, current, power, level);
+
+                if (mainHandler != null) {
+                    mainHandler.post(() -> updatePowerUi(voltage, current, power, level, temperature));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating power data: " + e.getMessage());
+            }
+        });
+    }
+
+    private void updatePowerUi(float voltage, float current, float power, int level, float temperature) {
+        if (!isAdded()) return;
         try {
-            float voltage = readVoltage();
-            float current = readCurrent();
-            float power = voltage * current;
-            int level = readBatteryLevel();
-
-            // 记录样本用于阶段判断
-            addSample(voltage, current, power, level);
-
             if (tvVoltage != null) {
                 tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltage));
             }
@@ -218,12 +241,10 @@ public class PowerFragment extends Fragment {
                 }
             }
 
-            // 更新电池电量
             if (tvBatteryLevel != null) {
                 tvBatteryLevel.setText(level + "%");
             }
 
-            // 更新充电阶段
             if (tvChargingPhase != null) {
                 if (power > 0) {
                     tvChargingPhase.setText(detectChargingPhase(level, power));
@@ -232,29 +253,39 @@ public class PowerFragment extends Fragment {
                 }
             }
 
-            // 更新电池温度
             if (tvBatteryTemp != null) {
-                try {
-                    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-                    Intent batteryStatus;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        batteryStatus = getContext().registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
-                    } else {
-                        batteryStatus = getContext().registerReceiver(null, filter);
-                    }
-                    if (batteryStatus != null) {
-                        int temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-                        if (temp != -1) {
-                            tvBatteryTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temp / 10.0f));
-                        }
-                    }
-                } catch (Exception e) {
+                if (temperature > -100) {
+                    tvBatteryTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temperature));
+                } else {
                     tvBatteryTemp.setText("--°C");
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating power data: " + e.getMessage());
+            Log.e(TAG, "Error updating power UI: " + e.getMessage());
         }
+    }
+
+    private float readBatteryTemperature() {
+        Context ctx = getContext();
+        if (ctx == null) return -1000;
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                batteryStatus = ctx.registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                batteryStatus = ctx.registerReceiver(null, filter);
+            }
+            if (batteryStatus != null) {
+                int temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+                if (temp != -1) {
+                    return temp / 10.0f;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading battery temperature: " + e.getMessage());
+        }
+        return -1000;
     }
 
     private void addSample(float voltage, float current, float power, int level) {
@@ -315,59 +346,67 @@ public class PowerFragment extends Fragment {
     }
     
     private float readVoltage() {
-        try {
-            File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
-            if (voltageFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(voltageFile));
+        File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
+        if (voltageFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
                 String line = reader.readLine();
-                reader.close();
-                if (line != null) {
+                if (line != null && !line.trim().isEmpty()) {
                     return Long.parseLong(line.trim()) / 1000000.0f;
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading voltage from sysfs: " + e.getMessage());
             }
-            
-            if (getContext() != null) {
+        }
+
+        Context ctx = getContext();
+        if (ctx != null) {
+            try {
                 IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                 Intent batteryStatus;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    batteryStatus = getContext().registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+                    batteryStatus = ctx.registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
                 } else {
-                    batteryStatus = getContext().registerReceiver(null, filter);
+                    batteryStatus = ctx.registerReceiver(null, filter);
                 }
                 if (batteryStatus != null) {
                     int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-                    if (voltageMv != -1) {
+                    if (voltageMv > 0) {
                         return voltageMv / 1000.0f;
                     }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading voltage from BatteryManager: " + e.getMessage());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return 0;
     }
-    
+
     private float readCurrent() {
-        try {
-            File currentFile = new File("/sys/class/power_supply/battery/current_now");
-            if (currentFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(currentFile));
+        File currentFile = new File("/sys/class/power_supply/battery/current_now");
+        if (currentFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
                 String line = reader.readLine();
-                reader.close();
-                if (line != null) {
+                if (line != null && !line.trim().isEmpty()) {
                     return Math.abs(Long.parseLong(line.trim())) / 1000000.0f;
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading current from sysfs: " + e.getMessage());
             }
-            
-            if (getContext() != null) {
-                BatteryManager batteryManager = (BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
+        }
+
+        Context ctx = getContext();
+        if (ctx != null) {
+            try {
+                BatteryManager batteryManager = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
                 if (batteryManager != null) {
                     int currentUa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                    return Math.abs(currentUa) / 1000000.0f;
+                    if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
+                        return Math.abs(currentUa) / 1000000.0f;
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading current from BatteryManager: " + e.getMessage());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return 0;
     }

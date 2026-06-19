@@ -33,6 +33,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 充电监测服务
@@ -51,8 +53,9 @@ public class ChargingMonitorService extends Service {
     private static final long UPDATE_INTERVAL = 3000; // 3秒更新一次
     
     private Handler handler;
+    private ExecutorService executor;
     private String currentSessionId;
-    private boolean isCharging = false;
+    private volatile boolean isCharging = false;
     private boolean foregroundStarted = false;
     private long chargingStartTime;
 
@@ -81,18 +84,27 @@ public class ChargingMonitorService extends Service {
         }
     };
     
-    // 定时更新任务
+    // 定时更新任务：UI 调度在 Handler，IO 与数据库操作下沉到 executor
     private Runnable updateTask = new Runnable() {
         @Override
         public void run() {
-            if (isCharging) {
-                readChargingPower();
-                updateNotification();
-                if (dataListener != null) {
-                    dataListener.onChargingDataUpdated(getCurrentPowerHistory());
-                }
+            if (isCharging && executor != null) {
+                executor.submit(() -> {
+                    PowerHistory history = readChargingPower();
+                    if (history != null) {
+                        handler.post(() -> {
+                            if (!isCharging) return;
+                            updateNotification(history);
+                            if (dataListener != null) {
+                                dataListener.onChargingDataUpdated(history);
+                            }
+                        });
+                    }
+                });
             }
-            handler.postDelayed(this, UPDATE_INTERVAL);
+            if (handler != null) {
+                handler.postDelayed(this, UPDATE_INTERVAL);
+            }
         }
     };
     
@@ -144,13 +156,14 @@ public class ChargingMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         handler = new Handler(Looper.getMainLooper());
-        
+        executor = Executors.newSingleThreadExecutor();
+
         createNotificationChannel();
         registerChargingReceiver();
-        
+
         // 启动定时更新
         handler.post(updateTask);
-        
+
         // 检查当前是否在充电
         checkChargingStatus();
     }
@@ -191,6 +204,10 @@ public class ChargingMonitorService extends Service {
         }
         if (handler != null) {
             handler.removeCallbacks(updateTask);
+        }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
         }
     }
     
@@ -250,7 +267,7 @@ public class ChargingMonitorService extends Service {
     /**
      * 开始充电会话
      */
-    private void startChargingSession() {
+    private synchronized void startChargingSession() {
         if (isCharging) return;
 
         isCharging = true;
@@ -278,7 +295,7 @@ public class ChargingMonitorService extends Service {
     /**
      * 结束充电会话
      */
-    private void endChargingSession() {
+    private synchronized void endChargingSession() {
         if (!isCharging) return;
 
         isCharging = false;
@@ -305,30 +322,33 @@ public class ChargingMonitorService extends Service {
     }
     
     /**
-     * 读取充电功率
+     * 读取充电功率并生成历史记录（应在后台线程调用）。
+     *
+     * @return 生成的 {@link PowerHistory}，失败时返回 null
      */
-    private void readChargingPower() {
+    private PowerHistory readChargingPower() {
         try {
             PowerHistory history = new PowerHistory();
             history.setSessionId(currentSessionId);
-            
+            history.setTimestamp(System.currentTimeMillis());
+
             // 读取电压
             float voltage = readVoltage();
             history.setVoltage(voltage);
-            
+
             // 读取电流
             float current = readCurrent();
             history.setCurrent(current);
-            
+
             // 计算功率
             history.calculatePower();
-            
+
             // 读取电池电量
             history.setBatteryLevel(readBatteryLevel());
-            
+
             // 读取电池温度
             history.setBatteryTemp(readBatteryTemperature());
-            
+
             // 记录采样点用于智能阶段判断
             addPowerSample(voltage, current, history.getPower(), history.getBatteryLevel());
 
@@ -337,7 +357,7 @@ public class ChargingMonitorService extends Service {
 
             // 判断充电类型
             history.setChargeType(detectChargeType(history.getPower()));
-            
+
             // 更新统计数据
             float power = history.getPower();
             if (power > maxPower) {
@@ -345,72 +365,80 @@ public class ChargingMonitorService extends Service {
             }
             totalPower += power;
             powerSampleCount++;
-            
+
             // 保存到数据库
             savePowerHistory(history);
-            
+
+            return history;
         } catch (Exception e) {
             Log.e(TAG, "Error reading charging power: " + e.getMessage());
+            return null;
         }
     }
     
     /**
-     * 读取电压
+     * 读取电压（单位：V）
      */
     private float readVoltage() {
-        try {
-            File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
-            if (voltageFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(voltageFile));
+        File voltageFile = new File("/sys/class/power_supply/battery/voltage_now");
+        if (voltageFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(voltageFile))) {
                 String line = reader.readLine();
-                reader.close();
-                if (line != null) {
+                if (line != null && !line.trim().isEmpty()) {
                     long voltageUv = Long.parseLong(line.trim());
-                    return voltageUv / 1000000.0f; // 转换为V
+                    return voltageUv / 1000000.0f;
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading voltage from sysfs: " + e.getMessage());
             }
-            
-            // 尝试从BatteryManager读取
+        }
+
+        // 尝试从 BatteryManager 读取
+        try {
             BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 Intent batteryStatus = getBatteryIntent();
                 if (batteryStatus != null) {
                     int voltageMv = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-                    if (voltageMv != -1) {
-                        return voltageMv / 1000.0f; // 转换为V
+                    if (voltageMv > 0) {
+                        return voltageMv / 1000.0f;
                     }
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error reading voltage: " + e.getMessage());
+            Log.e(TAG, "Error reading voltage from BatteryManager: " + e.getMessage());
         }
         return 0;
     }
-    
+
     /**
-     * 读取电流
+     * 读取电流（单位：A，取绝对值）
      */
     private float readCurrent() {
-        try {
-            File currentFile = new File("/sys/class/power_supply/battery/current_now");
-            if (currentFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(currentFile));
+        File currentFile = new File("/sys/class/power_supply/battery/current_now");
+        if (currentFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(currentFile))) {
                 String line = reader.readLine();
-                reader.close();
-                if (line != null) {
+                if (line != null && !line.trim().isEmpty()) {
                     long currentUa = Long.parseLong(line.trim());
-                    return Math.abs(currentUa) / 1000000.0f; // 转换为A，取绝对值
+                    return Math.abs(currentUa) / 1000000.0f;
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error reading current from sysfs: " + e.getMessage());
             }
-            
-            // 尝试从BatteryManager读取
+        }
+
+        // 尝试从 BatteryManager 读取
+        try {
             BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 int currentUa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                return Math.abs(currentUa) / 1000000.0f; // 转换为A
+                if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
+                    return Math.abs(currentUa) / 1000000.0f;
+                }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error reading current: " + e.getMessage());
+            Log.e(TAG, "Error reading current from BatteryManager: " + e.getMessage());
         }
         return 0;
     }
@@ -524,18 +552,20 @@ public class ChargingMonitorService extends Service {
             return "fast";
         } else if (power >= 5) {
             return "normal";
+        } else if (power > 0) {
+            return "slow";
         } else {
-            return "wireless";
+            return "none";
         }
     }
     
     /**
-     * 保存功率历史记录
+     * 保存功率历史记录（调用方已在后台线程时可直接执行，否则提交到 executor）
      */
     private void savePowerHistory(PowerHistory history) {
-        new Thread(() -> {
+        Runnable saveTask = () -> {
             try {
-                com.batteryhealth.app.BatteryHealthApplication app = 
+                com.batteryhealth.app.BatteryHealthApplication app =
                     (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
@@ -547,7 +577,12 @@ public class ChargingMonitorService extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Error saving power history: " + e.getMessage());
             }
-        }).start();
+        };
+        if (executor != null) {
+            executor.submit(saveTask);
+        } else {
+            saveTask.run();
+        }
     }
     
     /**
@@ -585,15 +620,14 @@ public class ChargingMonitorService extends Service {
     /**
      * 构建通知
      */
-    private Notification buildNotification() {
+    private Notification buildNotification(PowerHistory history) {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_IMMUTABLE
         );
-        
+
         String content;
-        if (isCharging) {
-            PowerHistory history = getCurrentPowerHistory();
+        if (isCharging && history != null) {
             content = String.format(
                     getString(R.string.charging_monitor_notification_content_charging),
                     history.getPower(),
@@ -612,15 +646,29 @@ public class ChargingMonitorService extends Service {
                 .setOnlyAlertOnce(true)
                 .build();
     }
-    
+
     /**
      * 更新通知
      */
-    private void updateNotification() {
+    private void updateNotification(PowerHistory history) {
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager != null) {
-            manager.notify(NOTIFICATION_ID, buildNotification());
+            manager.notify(NOTIFICATION_ID, buildNotification(history));
         }
+    }
+
+    /**
+     * 构建通知（无参版本，使用最新历史记录）
+     */
+    private Notification buildNotification() {
+        return buildNotification(getCurrentPowerHistory());
+    }
+
+    /**
+     * 更新通知（使用最新生成的历史记录）
+     */
+    private void updateNotification() {
+        updateNotification(getCurrentPowerHistory());
     }
     
     /**

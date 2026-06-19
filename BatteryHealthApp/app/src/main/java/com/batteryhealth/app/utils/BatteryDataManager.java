@@ -169,12 +169,13 @@ public class BatteryDataManager {
         info.setTechnology(technology.isEmpty() ? "锂离子" : technology);
 
         // 7. 容量相关（关键：用于健康度）
-        int designCapacity = getDesignCapacity(intent);
+        String[] designSource = new String[1];
+        int designCapacity = getDesignCapacity(intent, designSource);
         int fullCapacity = getFullCapacity(batteryManager);
         int chargeCounterMah = getChargeCounter(batteryManager);
 
         info.setDesignCapacity(designCapacity);
-        info.setDesignCapacitySource(designCapacity > 0 ? "device_database" : "unknown");
+        info.setDesignCapacitySource(designCapacity > 0 ? designSource[0] : "unknown");
         info.setCurrentCapacity(fullCapacity);
         info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
         info.setChargeCounter(chargeCounterMah * 1000); // uAh
@@ -254,18 +255,32 @@ public class BatteryDataManager {
 
     /**
      * 设计容量：优先本地数据库，其次 sysfs charge_full_design，最后 BatteryManager。
+     *
+     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（device_database / sysfs / unknown）
      */
-    private int getDesignCapacity(Intent intent) {
+    private int getDesignCapacity(Intent intent, String[] sourceHolder) {
         int dbCapacity = deviceDb.getDesignCapacity();
-        if (dbCapacity > 0) return dbCapacity;
+        if (dbCapacity > 0) {
+            if (sourceHolder != null && sourceHolder.length > 0) {
+                sourceHolder[0] = "device_database";
+            }
+            return dbCapacity;
+        }
 
         int design = readSysfsInt(new String[]{
                 "/sys/class/power_supply/battery/charge_full_design",
                 "/sys/class/power_supply/bms/charge_full_design"
         }, -1);
-        if (design > 1000) return design / 1000;
+        if (design > 1000) {
+            if (sourceHolder != null && sourceHolder.length > 0) {
+                sourceHolder[0] = "sysfs";
+            }
+            return design / 1000;
+        }
 
-        // Intent 中没有设计容量字段，直接返回未知
+        if (sourceHolder != null && sourceHolder.length > 0) {
+            sourceHolder[0] = "unknown";
+        }
         return -1;
     }
 

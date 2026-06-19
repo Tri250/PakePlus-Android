@@ -7,6 +7,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -48,19 +49,30 @@ public class DeviceDatabaseManager {
     }
 
     private void loadDatabase(Context context) {
-        try (InputStream is = context.getAssets().open(ASSET_FILE)) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            int read = is.read(buffer);
-            if (read > 0) {
-                String json = new String(buffer, StandardCharsets.UTF_8);
-                database = new Gson().fromJson(json, DeviceDatabase.class);
-                Log.i(TAG, "Loaded device database: " + (database != null && database.devices != null ? database.devices.size() : 0) + " entries");
+        try (InputStream is = context.getAssets().open(ASSET_FILE);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, read);
             }
+            String json = baos.toString(StandardCharsets.UTF_8.name());
+            database = new Gson().fromJson(json, DeviceDatabase.class);
+            if (database == null) {
+                database = new DeviceDatabase();
+            }
+            if (database.devices == null) {
+                database.devices = new ArrayList<>();
+            }
+            if (database.brands == null) {
+                database.brands = new ArrayList<>();
+            }
+            Log.i(TAG, "Loaded device database: " + database.devices.size() + " entries");
         } catch (Exception e) {
             Log.e(TAG, "Failed to load device database", e);
             database = new DeviceDatabase();
             database.devices = new ArrayList<>();
+            database.brands = new ArrayList<>();
         }
     }
 
@@ -137,12 +149,12 @@ public class DeviceDatabaseManager {
     }
 
     private String normalizeModel(String model) {
-        if (model == null) return "";
+        if (model == null || model.trim().isEmpty()) return "";
         return model.toLowerCase(Locale.ROOT).replaceAll("[\\s-_]+", "").trim();
     }
 
     private String normalizeBrand(String brand) {
-        if (brand == null) return "";
+        if (brand == null || brand.trim().isEmpty()) return "";
         String lower = brand.toLowerCase(Locale.ROOT).trim();
         switch (lower) {
             case "荣耀":
