@@ -60,6 +60,14 @@
                     android:textAppearance="@style/iOSBody.Secondary"
                     android:layout_marginTop="12dp" />
 
+                <TextView
+                    android:id="@+id/tv_charge_protocol"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_detecting_protocol"
+                    android:textAppearance="@style/iOSCaption"
+                    android:layout_marginTop="6dp" />
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>

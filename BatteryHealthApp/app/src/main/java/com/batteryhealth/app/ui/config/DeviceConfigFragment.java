@@ -2,6 +2,7 @@ package com.batteryhealth.app.ui.config;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import java.util.Locale;
@@ -18,10 +19,12 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BuildConfig;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
+import com.batteryhealth.app.ui.policy.PolicyActivity;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
@@ -46,6 +49,9 @@ public class DeviceConfigFragment extends Fragment {
     private TextView tvAvailableMemory;
     private TextView tvAvailableStorage;
     private TextView tvNetworkType;
+    private TextView tvAppVersion;
+    private View rowPrivacyPolicy;
+    private View rowUserAgreement;
 
     @Nullable
     @Override
@@ -86,6 +92,7 @@ public class DeviceConfigFragment extends Fragment {
             bindViews(view);
             setDefaultValues();
             initHealthAlertSwitch(view);
+            initPolicyEntries(view);
             animateCardsEntry(view);
 
             loadDeviceConfigAsync();
@@ -107,6 +114,9 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
+        tvAppVersion = view.findViewById(R.id.tv_app_version);
+        rowPrivacyPolicy = view.findViewById(R.id.row_privacy_policy);
+        rowUserAgreement = view.findViewById(R.id.row_user_agreement);
     }
 
     private void loadDeviceConfigAsync() {
@@ -260,5 +270,40 @@ public class DeviceConfigFragment extends Fragment {
         if (tvAvailableMemory != null) tvAvailableMemory.setText("--");
         if (tvAvailableStorage != null) tvAvailableStorage.setText("--");
         if (tvNetworkType != null) tvNetworkType.setText("--");
+        if (tvAppVersion != null) {
+            try {
+                tvAppVersion.setText(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+            } catch (Exception e) {
+                tvAppVersion.setText("--");
+            }
+        }
+    }
+
+    /**
+     * 初始化隐私政策/用户协议入口点击。
+     */
+    private void initPolicyEntries(View view) {
+        if (rowPrivacyPolicy != null) {
+            rowPrivacyPolicy.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(requireContext(), PolicyActivity.class);
+                    intent.putExtra(PolicyActivity.EXTRA_TYPE, PolicyActivity.TYPE_PRIVACY);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "open privacy policy failed: " + e.getMessage());
+                }
+            });
+        }
+        if (rowUserAgreement != null) {
+            rowUserAgreement.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(requireContext(), PolicyActivity.class);
+                    intent.putExtra(PolicyActivity.EXTRA_TYPE, PolicyActivity.TYPE_AGREEMENT);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "open user agreement failed: " + e.getMessage());
+                }
+            });
+        }
     }
 }

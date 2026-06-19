@@ -4,6 +4,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -48,6 +49,7 @@ public final class ActivationDateHelper {
         if (context == null) {
             return unknown();
         }
+        lastDetectionLogs.clear();
         Context app = context.getApplicationContext();
 
         long t = readElectronicWarrantyActivation(app);
@@ -131,238 +133,276 @@ public final class ActivationDateHelper {
         return timestamp;
     }
 
+    private static final String TAG = "ActivationDateHelper";
+
+    /**
+     * 记录本次检测命中了哪些键，便于调试与自检。
+     */
+    public static final class DetectionLog {
+        public final String key;
+        public final long value;
+        public final boolean isSystemProperty;
+
+        public DetectionLog(String key, long value, boolean isSystemProperty) {
+            this.key = key;
+            this.value = value;
+            this.isSystemProperty = isSystemProperty;
+        }
+
+        @Override
+        public String toString() {
+            String isoTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    .format(new java.util.Date(value));
+            return (isSystemProperty ? "[prop]" : "[setting]") + " " + key + " = " + isoTime;
+        }
+    }
+
+    public static java.util.List<DetectionLog> lastDetectionLogs = new java.util.ArrayList<>();
+
+    private static long firstPositive(String key, java.util.concurrent.Callable<Long> supplier) {
+        try {
+            Long v = supplier.call();
+            if (v != null && v > 0) {
+                lastDetectionLogs.add(new DetectionLog(key, v, key.startsWith("ro.")));
+                return v;
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "key read failed: " + key);
+        }
+        return -1;
+    }
+
     private static long readElectronicWarrantyActivation(Context context) {
         String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
         String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
 
         // 小米/红米：MIUI / 澎湃 OS 激活时间
         if (brand.contains("xiaomi") || brand.contains("redmi") || manufacturer.contains("xiaomi")) {
-            long t = settingsLong(context, "miui_activated_time");
+            long t = firstPositive("miui_activated_time", () -> settingsLong(context, "miui_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "miui_activation_time");
+            t = firstPositive("miui_activation_time", () -> settingsLong(context, "miui_activation_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "miui_activated");
+            t = firstPositive("miui_activated", () -> settingsLong(context, "miui_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "miui_active_time");
+            t = firstPositive("miui_active_time", () -> settingsLong(context, "miui_active_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "miui_vip_activated");
+            t = firstPositive("miui_vip_activated", () -> settingsLong(context, "miui_vip_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "activate_time");
+            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activated_time");
+            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.miui.activated_time");
+            // ro.miui.saledate 是出厂日期，置信度低，留给通用兜底
+            t = firstPositive("ro.miui.activated_time", () -> systemPropertyLong("ro.miui.activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.miui.activated");
+            t = firstPositive("ro.miui.activated", () -> systemPropertyLong("ro.miui.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vendor.miui.activated_time");
-            if (t > 0) return t;
-            t = systemPropertyLong("ro.miui.saledate");
+            t = firstPositive("ro.vendor.miui.activated_time", () -> systemPropertyLong("ro.vendor.miui.activated_time"));
             if (t > 0) return t;
         }
 
         // OPPO/realme/一加：ColorOS/OxygenOS / realme UI 激活时间
         if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")
                 || manufacturer.contains("oppo") || manufacturer.contains("oneplus")) {
-            long t = settingsLong(context, "oppo_activate_time");
+            long t = firstPositive("oppo_activate_time", () -> settingsLong(context, "oppo_activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "oppo_activated_time");
+            t = firstPositive("oppo_activated_time", () -> settingsLong(context, "oppo_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "oppo_activated");
+            t = firstPositive("oppo_activated", () -> settingsLong(context, "oppo_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "coloros_activated_time");
+            t = firstPositive("coloros_activated_time", () -> settingsLong(context, "coloros_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "coloros_activated");
+            t = firstPositive("coloros_activated", () -> settingsLong(context, "coloros_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "coloros_activate_time");
+            t = firstPositive("coloros_activate_time", () -> settingsLong(context, "coloros_activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "oneplus_activated_time");
+            t = firstPositive("oneplus_activated_time", () -> settingsLong(context, "oneplus_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "oplus_activated_time");
+            t = firstPositive("oplus_activated_time", () -> settingsLong(context, "oplus_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "oplus_activated");
+            t = firstPositive("oplus_activated", () -> settingsLong(context, "oplus_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "heytap_activated_time");
+            t = firstPositive("heytap_activated_time", () -> settingsLong(context, "heytap_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "heytap_activated");
+            t = firstPositive("heytap_activated", () -> settingsLong(context, "heytap_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "realme_activated_time");
+            t = firstPositive("realme_activated_time", () -> settingsLong(context, "realme_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "realme_activated");
+            t = firstPositive("realme_activated", () -> settingsLong(context, "realme_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "activate_time");
+            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activated_time");
+            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.oppo.activated_time");
+            t = firstPositive("ro.oppo.activated_time", () -> systemPropertyLong("ro.oppo.activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.oppo.activated");
+            t = firstPositive("ro.oppo.activated", () -> systemPropertyLong("ro.oppo.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vendor.oppo.activated_time");
+            t = firstPositive("ro.vendor.oppo.activated_time", () -> systemPropertyLong("ro.vendor.oppo.activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.oplus.activated_time");
+            t = firstPositive("ro.oplus.activated_time", () -> systemPropertyLong("ro.oplus.activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.oplus.activated");
+            t = firstPositive("ro.oplus.activated", () -> systemPropertyLong("ro.oplus.activated"));
             if (t > 0) return t;
         }
 
         // vivo/iQOO：OriginOS/FuntouchOS 激活时间
         if (brand.contains("vivo") || brand.contains("iqoo") || manufacturer.contains("vivo")) {
-            long t = settingsLong(context, "vivo_active_time");
+            long t = firstPositive("vivo_active_time", () -> settingsLong(context, "vivo_active_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "vivo_activated_time");
+            t = firstPositive("vivo_activated_time", () -> settingsLong(context, "vivo_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "vivo_activated");
+            t = firstPositive("vivo_activated", () -> settingsLong(context, "vivo_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "vivo_warranty_time");
+            t = firstPositive("vivo_warranty_time", () -> settingsLong(context, "vivo_warranty_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "vivo_activate_time");
+            t = firstPositive("vivo_activate_time", () -> settingsLong(context, "vivo_activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "bbk_active_time");
+            t = firstPositive("bbk_active_time", () -> settingsLong(context, "bbk_active_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "bbk_activated_time");
+            t = firstPositive("bbk_activated_time", () -> settingsLong(context, "bbk_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "originos_activated_time");
+            t = firstPositive("originos_activated_time", () -> settingsLong(context, "originos_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "originos_activated");
+            t = firstPositive("originos_activated", () -> settingsLong(context, "originos_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "activate_time");
+            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activated_time");
+            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vivo.activated_time");
+            t = firstPositive("ro.vivo.activated_time", () -> systemPropertyLong("ro.vivo.activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vivo.activated");
+            t = firstPositive("ro.vivo.activated", () -> systemPropertyLong("ro.vivo.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vendor.vivo.activated_time");
+            t = firstPositive("ro.vendor.vivo.activated_time", () -> systemPropertyLong("ro.vendor.vivo.activated_time"));
             if (t > 0) return t;
         }
 
         // 华为/荣耀：EMUI/MagicUI / HarmonyOS 激活时间
         if (brand.contains("huawei") || brand.contains("honor") || manufacturer.contains("huawei")) {
-            long t = settingsLong(context, "huawei_first_boot_time");
+            long t = firstPositive("huawei_first_boot_time", () -> settingsLong(context, "huawei_first_boot_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "huawei_warranty_time");
+            t = firstPositive("huawei_warranty_time", () -> settingsLong(context, "huawei_warranty_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "huawei_activated_time");
+            t = firstPositive("huawei_activated_time", () -> settingsLong(context, "huawei_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "huawei_activation_time");
+            t = firstPositive("huawei_activation_time", () -> settingsLong(context, "huawei_activation_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "hw_activation_time");
+            t = firstPositive("hw_activation_time", () -> settingsLong(context, "hw_activation_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "hw_activated_time");
+            t = firstPositive("hw_activated_time", () -> settingsLong(context, "hw_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "hw_warranty_time");
+            t = firstPositive("hw_warranty_time", () -> settingsLong(context, "hw_warranty_time"));
             if (t > 0) return t;
-            t = parseDateString(settingsString(context, "huawei_activation_date"));
+            t = firstPositive("huawei_activation_date", () -> parseDateString(settingsString(context, "huawei_activation_date")));
             if (t > 0) return t;
-            t = settingsLong(context, "honor_first_boot_time");
+            t = firstPositive("honor_first_boot_time", () -> settingsLong(context, "honor_first_boot_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "honor_activated_time");
+            t = firstPositive("honor_activated_time", () -> settingsLong(context, "honor_activated_time"));
             if (t > 0) return t;
-            t = parseDateString(settingsString(context, "honor_activation_date"));
+            t = firstPositive("honor_activation_date", () -> parseDateString(settingsString(context, "honor_activation_date")));
             if (t > 0) return t;
-            t = settingsLong(context, "hms_activate_time");
+            t = firstPositive("hms_activate_time", () -> settingsLong(context, "hms_activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activate_time");
+            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activated_time");
+            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.hw.oem.activated");
+            t = firstPositive("ro.hw.oem.activated", () -> systemPropertyLong("ro.hw.oem.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.vendor.hw.activated");
+            t = firstPositive("ro.vendor.hw.activated", () -> systemPropertyLong("ro.vendor.hw.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.honor.activated");
+            t = firstPositive("ro.honor.activated", () -> systemPropertyLong("ro.honor.activated"));
             if (t > 0) return t;
-            t = systemPropertyLong("ro.honor.activated_time");
+            t = firstPositive("ro.honor.activated_time", () -> systemPropertyLong("ro.honor.activated_time"));
             if (t > 0) return t;
         }
 
         // 魅族：Flyme 激活时间
         if (brand.contains("meizu") || manufacturer.contains("meizu")) {
-            long t = settingsLong(context, "meizu_activated_time");
+            long t = firstPositive("meizu_activated_time", () -> settingsLong(context, "meizu_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "meizu_activated");
+            t = firstPositive("meizu_activated", () -> settingsLong(context, "meizu_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "meizu_activation_time");
+            t = firstPositive("meizu_activation_time", () -> settingsLong(context, "meizu_activation_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "flyme_activated_time");
+            t = firstPositive("flyme_activated_time", () -> settingsLong(context, "flyme_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "flyme_activated");
+            t = firstPositive("flyme_activated", () -> settingsLong(context, "flyme_activated"));
             if (t > 0) return t;
         }
 
         // 三星：One UI 激活时间
         if (brand.contains("samsung") || manufacturer.contains("samsung")) {
-            long t = settingsLong(context, "samsung_activated_time");
+            long t = firstPositive("samsung_activated_time", () -> settingsLong(context, "samsung_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "samsung_activated");
+            t = firstPositive("samsung_activated", () -> settingsLong(context, "samsung_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "sec_activated_time");
+            t = firstPositive("sec_activated_time", () -> settingsLong(context, "sec_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "sec_active_time");
+            t = firstPositive("sec_active_time", () -> settingsLong(context, "sec_active_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "sec_activated");
+            t = firstPositive("sec_activated", () -> settingsLong(context, "sec_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "sec_warranty_time");
+            t = firstPositive("sec_warranty_time", () -> settingsLong(context, "sec_warranty_time"));
             if (t > 0) return t;
-            t = parseDateString(settingsString(context, "knox_activation_date"));
+            t = firstPositive("knox_activation_date", () -> parseDateString(settingsString(context, "knox_activation_date")));
             if (t > 0) return t;
-            t = settingsLong(context, "activate_time");
+            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "activated_time");
+            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
             if (t > 0) return t;
         }
 
         // 中兴/努比亚/红魔
         if (brand.contains("nubia") || brand.contains("redmagic") || brand.contains("zte")
                 || manufacturer.contains("nubia") || manufacturer.contains("zte")) {
-            long t = settingsLong(context, "nubia_activated_time");
+            long t = firstPositive("nubia_activated_time", () -> settingsLong(context, "nubia_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "nubia_activated");
+            t = firstPositive("nubia_activated", () -> settingsLong(context, "nubia_activated"));
             if (t > 0) return t;
-            t = settingsLong(context, "redmagic_activated_time");
+            t = firstPositive("redmagic_activated_time", () -> settingsLong(context, "redmagic_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "zte_activated_time");
+            t = firstPositive("zte_activated_time", () -> settingsLong(context, "zte_activated_time"));
             if (t > 0) return t;
-            t = settingsLong(context, "zte_activated");
+            t = firstPositive("zte_activated", () -> settingsLong(context, "zte_activated"));
             if (t > 0) return t;
         }
 
         // 通用：尝试常见的通用电子保卡/激活时间键名
         // 注意：first_boot_time / ro.runtime.firstboot 属于“首次开机”而非电子保卡，
         // 交给 detect() 的后续 fallback 处理，避免置信度虚高。
-        long t = settingsLong(context, "electronic_warranty_activated_time");
+        long t = firstPositive("electronic_warranty_activated_time", () -> settingsLong(context, "electronic_warranty_activated_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "electronic_warranty_activated");
+        t = firstPositive("electronic_warranty_activated", () -> settingsLong(context, "electronic_warranty_activated"));
         if (t > 0) return t;
-        t = settingsLong(context, "device_activated_time");
+        t = firstPositive("device_activated_time", () -> settingsLong(context, "device_activated_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "device_activate_time");
+        t = firstPositive("device_activate_time", () -> settingsLong(context, "device_activate_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "device_activated_date");
+        t = firstPositive("device_activated_date", () -> settingsLong(context, "device_activated_date"));
         if (t > 0) return t;
-        t = settingsLong(context, "first_activate_time");
+        t = firstPositive("first_activate_time", () -> settingsLong(context, "first_activate_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "first_use_time");
+        t = firstPositive("first_use_time", () -> settingsLong(context, "first_use_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "device_first_use_time");
+        t = firstPositive("device_first_use_time", () -> settingsLong(context, "device_first_use_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "activation_date");
+        t = firstPositive("activation_date", () -> settingsLong(context, "activation_date"));
         if (t > 0) return t;
-        t = parseDateString(settingsString(context, "activation_date"));
+        t = firstPositive("activation_date_str", () -> parseDateString(settingsString(context, "activation_date")));
         if (t > 0) return t;
-        t = settingsLong(context, "warranty_start_date");
+        t = firstPositive("warranty_start_date", () -> settingsLong(context, "warranty_start_date"));
         if (t > 0) return t;
-        t = parseDateString(settingsString(context, "warranty_start_date"));
+        t = firstPositive("warranty_start_date_str", () -> parseDateString(settingsString(context, "warranty_start_date")));
         if (t > 0) return t;
-        t = settingsLong(context, "warranty_time");
+        t = firstPositive("warranty_time", () -> settingsLong(context, "warranty_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "device_warranty_time");
+        t = firstPositive("device_warranty_time", () -> settingsLong(context, "device_warranty_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "activate_time");
+        t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
         if (t > 0) return t;
-        t = settingsLong(context, "activated_time");
+        t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
         if (t > 0) return t;
         return -1;
     }

@@ -117,6 +117,18 @@ public class BatteryInfo {
     @ColumnInfo(name = "battery_source_confidence")
     private float batterySourceConfidence; // 电池来源置信度 0-1
 
+    @ColumnInfo(name = "factory_loss_percent")
+    private float factoryLossPercent; // 出厂损耗百分比
+
+    @ColumnInfo(name = "cycle_loss_percent")
+    private float cycleLossPercent; // 循环损耗百分比
+
+    @ColumnInfo(name = "usage_loss_percent")
+    private float usageLossPercent; // 使用时长损耗百分比
+
+    @ColumnInfo(name = "battery_source_reason")
+    private String batterySourceReason; // 电池来源判定原因
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -370,6 +382,38 @@ public class BatteryInfo {
         this.batterySourceConfidence = batterySourceConfidence;
     }
 
+    public float getFactoryLossPercent() {
+        return factoryLossPercent;
+    }
+
+    public void setFactoryLossPercent(float factoryLossPercent) {
+        this.factoryLossPercent = factoryLossPercent;
+    }
+
+    public float getCycleLossPercent() {
+        return cycleLossPercent;
+    }
+
+    public void setCycleLossPercent(float cycleLossPercent) {
+        this.cycleLossPercent = cycleLossPercent;
+    }
+
+    public float getUsageLossPercent() {
+        return usageLossPercent;
+    }
+
+    public void setUsageLossPercent(float usageLossPercent) {
+        this.usageLossPercent = usageLossPercent;
+    }
+
+    public String getBatterySourceReason() {
+        return batterySourceReason;
+    }
+
+    public void setBatterySourceReason(String batterySourceReason) {
+        this.batterySourceReason = batterySourceReason;
+    }
+
     /**
      * 计算充电功率
      */
@@ -439,6 +483,13 @@ public class BatteryInfo {
     }
 
     /**
+     * 当前是否处于充电状态（status=2 充电中，5 已充满）。
+     */
+    public boolean isCharging() {
+        return status == 2 || status == 5;
+    }
+
+    /**
      * 创建当前对象的深拷贝，避免 Gson 序列化/反序列化的性能开销。
      */
     public BatteryInfo copy() {
@@ -474,6 +525,10 @@ public class BatteryInfo {
         snapshot.systemHealth = this.systemHealth;
         snapshot.energyCounter = this.energyCounter;
         snapshot.batterySourceConfidence = this.batterySourceConfidence;
+        snapshot.factoryLossPercent = this.factoryLossPercent;
+        snapshot.cycleLossPercent = this.cycleLossPercent;
+        snapshot.usageLossPercent = this.usageLossPercent;
+        snapshot.batterySourceReason = this.batterySourceReason;
         return snapshot;
     }
 }

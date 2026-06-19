@@ -23,12 +23,15 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Collections;
 import java.util.Locale;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 续航分析Fragment
@@ -53,9 +56,13 @@ public class EnduranceFragment extends Fragment {
     private TextView tvChargeStatus;
     private TextView tvBatteryTemp;
     private TextView tvFullChargeTime;
-    
+    private TextView tvConsumptionSummary;
+    private TextView tvConsumptionList;
+    private TextView tvConsumptionEmpty;
+
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
+    private ExecutorService ioExecutor;
     private boolean isRunning = false;
     
     // 放电速率计算
@@ -121,17 +128,19 @@ public class EnduranceFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
+
         try {
             mainHandler = new Handler(Looper.getMainLooper());
-            
+            ioExecutor = Executors.newSingleThreadExecutor();
+
             if (getActivity() instanceof MainActivity) {
                 batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
             }
-            
+
             initViews(view);
             loadHistoricalDischargeRate();
             updateUI();
+            refreshConsumptionAsync();
             animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
@@ -197,6 +206,8 @@ public class EnduranceFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.post(updateRunnable);
         }
+        // 进入页面时拉取一次真实耗电榜
+        refreshConsumptionAsync();
     }
     
     @Override
@@ -215,8 +226,12 @@ public class EnduranceFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.removeCallbacks(updateRunnable);
         }
+        if (ioExecutor != null) {
+            ioExecutor.shutdown();
+            ioExecutor = null;
+        }
     }
-    
+
     private void initViews(View view) {
         tvEnduranceTime = view.findViewById(R.id.tv_endurance_time);
         tvEnduranceStatus = view.findViewById(R.id.tv_endurance_status);
@@ -225,6 +240,74 @@ public class EnduranceFragment extends Fragment {
         tvChargeStatus = view.findViewById(R.id.tv_charge_status);
         tvBatteryTemp = view.findViewById(R.id.tv_battery_temp);
         tvFullChargeTime = view.findViewById(R.id.tv_full_charge_time);
+        tvConsumptionSummary = view.findViewById(R.id.tv_consumption_summary);
+        tvConsumptionList = view.findViewById(R.id.tv_consumption_list);
+        tvConsumptionEmpty = view.findViewById(R.id.tv_consumption_empty);
+    }
+
+    /**
+     * 异步刷新耗电榜（24 小时窗口）。
+     * 数据源：android.app.usage.BatteryStatsManager（通过 "batterystats" 字符串获取隐藏服务），
+     *         配合 UsageStatsManager 获取前台应用列表，最终给出真实耗电排名。
+     */
+    private void refreshConsumptionAsync() {
+        if (!isAdded() || ioExecutor == null || ioExecutor.isShutdown()) return;
+        ioExecutor.submit(() -> {
+            try {
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final BatteryConsumptionAnalyzer.Result result = BatteryConsumptionAnalyzer.analyze(ctx, 24L * 60 * 60 * 1000);
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (!isAdded() || isDetached()) return;
+                        renderConsumption(result);
+                    });
+                }
+            } catch (Throwable t) {
+                Log.e(TAG, "refreshConsumptionAsync failed: " + t.getMessage(), t);
+            }
+        });
+    }
+
+    private void renderConsumption(BatteryConsumptionAnalyzer.Result result) {
+        if (tvConsumptionSummary == null || tvConsumptionList == null || tvConsumptionEmpty == null) return;
+        if (result == null) {
+            tvConsumptionSummary.setText(R.string.consumption_calculating);
+            tvConsumptionList.setText("");
+            tvConsumptionEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        // 顶部摘要：电池容量 + 系统预估续航
+        String hoursStr;
+        if (result.systemEstimatedHours > 0) {
+            hoursStr = String.format(Locale.getDefault(), getString(R.string.consumption_hours_format), result.systemEstimatedHours);
+        } else {
+            hoursStr = getString(R.string.consumption_calculating);
+        }
+        if (result.batteryCapacityMah > 0) {
+            tvConsumptionSummary.setText(String.format(Locale.getDefault(),
+                    getString(R.string.consumption_summary_format), result.batteryCapacityMah, hoursStr));
+        } else {
+            tvConsumptionSummary.setText(R.string.consumption_summary_unknown);
+        }
+
+        // 耗电榜列表
+        if (result.topConsumers == null || result.topConsumers.isEmpty()) {
+            tvConsumptionList.setText("");
+            tvConsumptionEmpty.setVisibility(View.VISIBLE);
+        } else {
+            tvConsumptionEmpty.setVisibility(View.GONE);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < result.topConsumers.size(); i++) {
+                BatteryConsumptionAnalyzer.AppConsumption c = result.topConsumers.get(i);
+                if (c == null) continue;
+                if (i > 0) sb.append("\n");
+                sb.append(String.format(Locale.getDefault(), "%d. %s  %.1f%% · %d mAh",
+                        i + 1, c.displayName, c.percent, c.totalMahConsumed));
+            }
+            tvConsumptionList.setText(sb.toString());
+        }
     }
     
     private void updateUI() {

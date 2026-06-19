@@ -61,19 +61,35 @@
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
 
+        <activity
+            android:name=".ui.policy.PolicyActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
         <!-- 电池监测服务 -->
         <service
             android:name=".service.BatteryMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync|health" />
-        
+
         <!-- 充电监测服务 -->
         <service
             android:name=".service.ChargingMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync|health" />
-            
+
+        <!-- FileProvider：用于分享导出的 CSV 文件 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 </manifest>

@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.DeviceDatabaseManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
@@ -53,6 +54,7 @@ public class PowerFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvChargeType;
+    private TextView tvChargeProtocol;
     private TextView tvBatteryLevel;
     private TextView tvChargingPhase;
     private TextView tvBatteryTemp;
@@ -123,6 +125,7 @@ public class PowerFragment extends Fragment {
             tvVoltage = view.findViewById(R.id.tv_voltage);
             tvCurrent = view.findViewById(R.id.tv_current);
             tvChargeType = view.findViewById(R.id.tv_charge_type);
+            tvChargeProtocol = view.findViewById(R.id.tv_charge_protocol);
             tvBatteryLevel = view.findViewById(R.id.tv_power_battery_level);
             tvChargingPhase = view.findViewById(R.id.tv_charging_phase);
             tvBatteryTemp = view.findViewById(R.id.tv_power_battery_temp);
@@ -176,6 +179,7 @@ public class PowerFragment extends Fragment {
         if (tvVoltage != null) tvVoltage.setText("0.00 V");
         if (tvCurrent != null) tvCurrent.setText("0.00 A");
         if (tvChargeType != null) tvChargeType.setText(getString(R.string.status_not_charging_short));
+        if (tvChargeProtocol != null) tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
         if (tvChargingPhase != null) tvChargingPhase.setText("--");
         if (tvBatteryTemp != null) tvBatteryTemp.setText("--°C");
@@ -222,6 +226,29 @@ public class PowerFragment extends Fragment {
                     tvChargeType.setText(chargeType + " · " + phase);
                 } else {
                     tvChargeType.setText(chargeType);
+                }
+            }
+
+            // 充电协议识别（基于系统属性 + 厂商 + 实时功率）
+            if (tvChargeProtocol != null) {
+                Context ctx = getContext();
+                if (ctx == null) {
+                    tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
+                } else if (power <= 0) {
+                    tvChargeProtocol.setText(getString(R.string.charge_protocol_standard));
+                } else {
+                    try {
+                        ChargeProtocolDetector.Result pr = ChargeProtocolDetector.detect(ctx, power);
+                        StringBuilder protocolText = new StringBuilder();
+                        protocolText.append(pr.primary);
+                        if (pr.detail != null && !pr.detail.isEmpty()) {
+                            protocolText.append(" · ").append(pr.detail);
+                        }
+                        tvChargeProtocol.setText(protocolText.toString());
+                    } catch (Throwable t) {
+                        Log.w(TAG, "detect charge protocol failed: " + t.getMessage());
+                        tvChargeProtocol.setText(getString(R.string.status_detecting_protocol));
+                    }
                 }
             }
 

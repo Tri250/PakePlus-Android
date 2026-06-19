@@ -2,17 +2,22 @@ package com.batteryhealth.app.ui.trend;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -21,6 +26,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.UiAnimationHelper;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.chip.Chip;
 import com.github.mikephil.charting.charts.LineChart;
@@ -31,6 +37,9 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -64,7 +73,10 @@ public class TrendFragment extends Fragment {
     private TextView tvNoData;
     private TextView tvDemoHint;
     private ChipGroup chipGroupTimeRange;
+    private MaterialButton btnExportCsv;
     private int selectedTimeRangeDays = 7; // 默认7天
+    private List<BatteryInfo> cachedBatteryData;
+    private List<PowerHistory> cachedPowerData;
 
     @Nullable
     @Override
@@ -102,7 +114,12 @@ public class TrendFragment extends Fragment {
             tvNoData = view.findViewById(R.id.tv_no_data);
             tvDemoHint = view.findViewById(R.id.tv_demo_hint);
             chipGroupTimeRange = view.findViewById(R.id.chip_group_time_range);
+            btnExportCsv = view.findViewById(R.id.btn_export_csv);
             setupTimeRangeSelector();
+
+            if (btnExportCsv != null) {
+                btnExportCsv.setOnClickListener(v -> exportCsvAsync());
+            }
 
             setupCharts();
             loadData();
@@ -133,6 +150,8 @@ public class TrendFragment extends Fragment {
                 selectedTimeRangeDays = 7;
             } else if (checkedId == R.id.chip_30days) {
                 selectedTimeRangeDays = 30;
+            } else if (checkedId == R.id.chip_90days) {
+                selectedTimeRangeDays = 90;
             }
             loadData();
         });
@@ -221,6 +240,8 @@ public class TrendFragment extends Fragment {
                 final List<BatteryInfo> finalBattery = batteryData;
                 final List<PowerHistory> finalPower = powerData;
                 final int finalTotalCount = totalRecordCount;
+                cachedBatteryData = batteryData;
+                cachedPowerData = powerData;
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (!isAdded() || isDetached()) return;
@@ -299,6 +320,9 @@ public class TrendFragment extends Fragment {
             case 30:
                 bucketMillis = 24 * 60 * 60 * 1000L; // 1天
                 break;
+            case 90:
+                bucketMillis = 3L * 24 * 60 * 60 * 1000L; // 3天
+                break;
             default:
                 bucketMillis = 24 * 60 * 60 * 1000L;
         }
@@ -345,6 +369,9 @@ public class TrendFragment extends Fragment {
                 break;
             case 30:
                 bucketMillis = 24 * 60 * 60 * 1000L;
+                break;
+            case 90:
+                bucketMillis = 3L * 24 * 60 * 60 * 1000L;
                 break;
             default:
                 bucketMillis = 24 * 60 * 60 * 1000L;
@@ -470,5 +497,106 @@ public class TrendFragment extends Fragment {
         int green = (color >> 8) & 0xFF;
         int blue = color & 0xFF;
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    /**
+     * 异步导出当前时间范围内的真实历史数据为 CSV 文件。
+     * 数据来源：Room 数据库 batteryInfoDao + powerHistoryDao，无任何模拟/假数据。
+     * 导出位置：app cache 目录，通过 FileProvider 分享。
+     */
+    private void exportCsvAsync() {
+        if (!isAdded()) return;
+        new Thread(() -> {
+            try {
+                List<BatteryInfo> battery = cachedBatteryData;
+                List<PowerHistory> power = cachedPowerData;
+                if ((battery == null || battery.isEmpty()) && (power == null || power.isEmpty())) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> Toast.makeText(getContext(),
+                                R.string.export_csv_no_data, Toast.LENGTH_SHORT).show());
+                    }
+                    return;
+                }
+                Context ctx = getContext();
+                if (ctx == null) return;
+                File outDir = new File(ctx.getCacheDir(), "exports");
+                if (!outDir.exists() && !outDir.mkdirs()) {
+                    throw new IOException("Cannot create export dir: " + outDir);
+                }
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+                String filename = "battery_trend_" + selectedTimeRangeDays + "d_" + sdf.format(new Date()) + ".csv";
+                File outFile = new File(outDir, filename);
+                try (FileWriter w = new FileWriter(outFile)) {
+                    w.write("# Battery Health Trend Export\n");
+                    w.write("# Range,Days\n");
+                    w.write("range_days," + selectedTimeRangeDays + "\n");
+                    w.write("\n# BatteryInfo\n");
+                    w.write("timestamp,level,health_percent,temperature_c,voltage_mv,current_ua,cycle_count,capacity_mah,is_charging\n");
+                    if (battery != null) {
+                        for (BatteryInfo b : battery) {
+                            if (b == null) continue;
+                            w.write(String.format(Locale.US, "%d,%d,%.2f,%.2f,%.0f,%d,%d,%d,%d\n",
+                                    b.getTimestamp(),
+                                    b.getLevel(),
+                                    b.getHealthPercentage(),
+                                    b.getTemperature(),
+                                    b.getVoltage(),
+                                    b.getCurrentNow(),
+                                    b.getCycleCount(),
+                                    b.getCurrentCapacity(),
+                                    b.isCharging() ? 1 : 0));
+                        }
+                    }
+                    w.write("\n# PowerHistory\n");
+                    w.write("timestamp,voltage_v,current_ma,power_w,battery_level,temperature_c\n");
+                    if (power != null) {
+                        for (PowerHistory p : power) {
+                            if (p == null) continue;
+                            w.write(String.format(Locale.US, "%d,%.3f,%.1f,%.2f,%d,%.2f\n",
+                                    p.getTimestamp(),
+                                    p.getVoltage(),
+                                    p.getCurrent(),
+                                    p.getPower(),
+                                    p.getBatteryLevel(),
+                                    p.getBatteryTemp()));
+                        }
+                    }
+                }
+                final File finalFile = outFile;
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        try {
+                            Toast.makeText(ctx, getString(R.string.export_csv_success, finalFile.getName()),
+                                    Toast.LENGTH_LONG).show();
+                            shareCsv(finalFile);
+                        } catch (Exception e) {
+                            Log.w(TAG, "share csv failed: " + e.getMessage());
+                        }
+                    });
+                }
+            } catch (Throwable t) {
+                Log.e(TAG, "exportCsvAsync failed: " + t.getMessage(), t);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> Toast.makeText(getContext(),
+                            getString(R.string.export_csv_failed, t.getMessage()),
+                            Toast.LENGTH_LONG).show());
+                }
+            }
+        }).start();
+    }
+
+    private void shareCsv(File file) {
+        try {
+            Context ctx = getContext();
+            if (ctx == null) return;
+            Uri uri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".fileprovider", file);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/csv");
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, getString(R.string.action_export_csv)));
+        } catch (Exception e) {
+            Log.w(TAG, "share intent failed: " + e.getMessage());
+        }
     }
 }

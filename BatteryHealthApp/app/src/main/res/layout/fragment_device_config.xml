@@ -369,6 +369,105 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_about"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    android:id="@+id/row_privacy_policy"
+                    style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_privacy_policy"
+                        android:textAppearance="@style/iOSBody"
+                        android:lineSpacingExtra="3dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    android:id="@+id/row_user_agreement"
+                    style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_user_agreement"
+                        android:textAppearance="@style/iOSBody"
+                        android:lineSpacingExtra="3dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:minHeight="48dp"
+                    android:paddingBottom="22dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_version"
+                        android:textAppearance="@style/iOSBody"
+                        android:lineSpacingExtra="3dp" />
+                    <TextView
+                        android:id="@+id/tv_app_version"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

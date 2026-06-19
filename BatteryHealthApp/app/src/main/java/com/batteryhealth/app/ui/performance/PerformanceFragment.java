@@ -27,6 +27,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.PerformanceBenchmark;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -121,6 +122,20 @@ public class PerformanceFragment extends Fragment {
                     }
                 }
             };
+
+            // 异步运行完整基准测试，结果仅在 UI 回调中使用
+            if (executor != null) {
+                executor.submit(() -> {
+                    try {
+                        PerformanceBenchmark.Result r = PerformanceBenchmark.runFullBenchmark(requireContext());
+                        if (handler != null) {
+                            handler.post(() -> applyBenchmarkResult(r));
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Benchmark skipped: " + e.getMessage());
+                    }
+                });
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
@@ -562,6 +577,35 @@ public class PerformanceFragment extends Fragment {
             }
         } catch (Exception ignored) {}
         return 0;
+    }
+
+    private void applyBenchmarkResult(PerformanceBenchmark.Result r) {
+        if (r == null || !isAdded()) return;
+        int normalized = PerformanceBenchmark.normalizeOverallScore(r.overallScore);
+        if (tvPerformanceScore != null) {
+            tvPerformanceScore.setText(String.format(Locale.getDefault(), "%,d", normalized));
+        }
+        if (progressScore != null) {
+            int progress = (int) Math.min(100, Math.max(0, normalized / 1000));
+            UiAnimationHelper.animateProgressBar(progressScore, progress);
+        }
+        if (tvGpuInfo != null) {
+            String text = String.format(Locale.getDefault(),
+                    "CPU单核 %,d · 多核 %,d · 内存 %,d MB/s · 读 %,d MB/s · 写 %,d MB/s",
+                    r.cpuSingleCoreScore, r.cpuMultiCoreScore,
+                    r.memoryBandwidthMBps, r.storageReadMBps, r.storageWriteMBps);
+            tvGpuInfo.setText(text);
+        }
+        // 修正评分颜色
+        if (tvPerformanceScore != null) {
+            if (normalized >= 80000) {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
+            } else if (normalized >= 50000) {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_yellow));
+            } else {
+                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_red));
+            }
+        }
     }
 
     /**
