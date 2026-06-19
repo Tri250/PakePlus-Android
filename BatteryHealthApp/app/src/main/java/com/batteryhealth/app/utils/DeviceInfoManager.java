@@ -1,12 +1,14 @@
 package com.batteryhealth.app.utils;
 
 import android.app.ActivityManager;
+import android.app.usage.StorageStatsManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
+import android.os.storage.StorageManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
@@ -369,12 +371,59 @@ public class DeviceInfoManager {
     }
 
     private void collectStorageInfo(DeviceConfig config) {
-        StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
-        long blockSize = statFs.getBlockSizeLong();
-        long totalBlocks = statFs.getBlockCountLong();
-        long availableBlocks = statFs.getAvailableBlocksLong();
-        config.setTotalStorage(totalBlocks * blockSize / (1024 * 1024 * 1024));         // GB
-        config.setAvailableStorage(availableBlocks * blockSize / (1024 * 1024 * 1024)); // GB
+        long totalBytes = -1;
+        long availableBytes = -1;
+
+        // Android 8+ 优先使用 StorageStatsManager，返回的是整机存储（与系统设置一致）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                StorageStatsManager ssm = (StorageStatsManager) context.getSystemService(Context.STORAGE_STATS_SERVICE);
+                StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+                if (ssm != null && sm != null) {
+                    java.util.UUID uuid = sm.getPrimaryStorageVolume().getUuid() != null
+                            ? java.util.UUID.fromString(sm.getPrimaryStorageVolume().getUuid())
+                            : StorageManager.UUID_DEFAULT;
+                    totalBytes = ssm.getTotalBytes(uuid);
+                    availableBytes = ssm.getFreeBytes(uuid);
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "StorageStatsManager failed, fallback to StatFs: " + e.getMessage());
+            }
+        }
+
+        // 回退：使用外部存储目录 StatFs
+        if (totalBytes <= 0 || availableBytes <= 0) {
+            try {
+                File path = Environment.getExternalStorageDirectory();
+                if (path != null) {
+                    StatFs statFs = new StatFs(path.getPath());
+                    long blockSize = statFs.getBlockSizeLong();
+                    totalBytes = statFs.getBlockCountLong() * blockSize;
+                    availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "External storage StatFs failed: " + e.getMessage());
+            }
+        }
+
+        // 最后兜底：/data 分区
+        if (totalBytes <= 0 || availableBytes <= 0) {
+            try {
+                StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
+                long blockSize = statFs.getBlockSizeLong();
+                totalBytes = statFs.getBlockCountLong() * blockSize;
+                availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+            } catch (Exception e) {
+                Log.d(TAG, "Data directory StatFs failed: " + e.getMessage());
+            }
+        }
+
+        if (totalBytes > 0) {
+            config.setTotalStorage(totalBytes / (1024 * 1024 * 1024));         // GB
+        }
+        if (availableBytes > 0) {
+            config.setAvailableStorage(availableBytes / (1024 * 1024 * 1024)); // GB
+        }
     }
 
     private void collectScreenInfo(DeviceConfig config) {
@@ -387,8 +436,10 @@ public class DeviceInfoManager {
         config.setScreenDensity(metrics.density);
         config.setScreenDpi(metrics.densityDpi);
 
-        double widthInches = metrics.widthPixels / (double) metrics.xdpi;
-        double heightInches = metrics.heightPixels / (double) metrics.ydpi;
+        // 使用 densityDpi 计算对角线，xdpi/ydpi 在很多设备上不准确
+        int dpi = metrics.densityDpi > 0 ? metrics.densityDpi : 160;
+        double widthInches = metrics.widthPixels / (double) dpi;
+        double heightInches = metrics.heightPixels / (double) dpi;
         double size = Math.sqrt(widthInches * widthInches + heightInches * heightInches);
         config.setScreenSize((float) size);
     }

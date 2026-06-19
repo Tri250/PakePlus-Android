@@ -409,22 +409,50 @@ public class DeviceConfig {
     }
     
     /**
-     * 获取格式化的内存大小
+     * 获取格式化的内存大小（按营销规格取整，如 11.7 GB 显示为 12 GB）。
      */
     public String getFormattedMemory() {
-        if (totalMemory <= 0) return "Unknown";
-        if (totalMemory >= 1024) {
-            return String.format(Locale.getDefault(), "%.1f GB", totalMemory / 1024.0);
+        int gb = getMarketingTotalMemoryGb();
+        if (gb > 0) {
+            return String.format(Locale.getDefault(), "%d GB", gb);
         }
-        return String.format(Locale.getDefault(), "%d MB", totalMemory);
+        if (totalMemory > 0) {
+            return totalMemory >= 1024
+                    ? String.format(Locale.getDefault(), "%.1f GB", totalMemory / 1024.0)
+                    : String.format(Locale.getDefault(), "%d MB", totalMemory);
+        }
+        return "Unknown";
     }
-    
+
     /**
-     * 获取格式化的存储大小
+     * 按标准 RAM 营销规格取整：根据实际总内存字节数匹配 1/2/3/4/6/8/12/16/18/24/32/48/64 GB。
+     */
+    public int getMarketingTotalMemoryGb() {
+        if (totalMemory <= 0) return 0;
+        double actualGb = totalMemory / 1024.0;
+        int[] standards = {1, 2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 48, 64};
+        int best = standards[standards.length - 1];
+        double minDiff = Double.MAX_VALUE;
+        for (int size : standards) {
+            double diff = Math.abs(actualGb - size);
+            if (diff < minDiff) {
+                minDiff = diff;
+                best = size;
+            }
+        }
+        // 偏差超过 3GB 时放弃匹配，保持原始值
+        if (minDiff > 3.0) return 0;
+        return best;
+    }
+
+    /**
+     * 获取格式化的存储大小（保留一位小数，更贴近系统设置显示）。
      */
     public String getFormattedStorage() {
         if (totalStorage <= 0) return "Unknown";
-        return String.format(Locale.getDefault(), "%d GB", totalStorage);
+        return totalStorage >= 100
+                ? String.format(Locale.getDefault(), "%d GB", totalStorage)
+                : String.format(Locale.getDefault(), "%.1f GB", totalStorage / 1.0);
     }
     
     /**

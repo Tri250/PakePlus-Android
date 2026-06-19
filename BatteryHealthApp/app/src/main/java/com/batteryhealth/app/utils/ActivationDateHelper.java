@@ -107,16 +107,27 @@ public final class ActivationDateHelper {
     }
 
     /**
-     * 归一化时间戳：部分厂商 Setting/Property 存储的是秒级时间戳，需转换为毫秒。
-     * 当前毫秒时间戳约 1.7e12，秒级约 1.7e9；位于两者之间时按秒处理。
+     * 归一化时间戳：部分厂商 Setting/Property 存储的是秒级或微秒级时间戳，需转换为毫秒。
+     * 当前毫秒时间戳约 1.7e12，秒级约 1.7e9，微秒级约 1.7e15。
      */
     private static long normalizeTimestamp(long timestamp) {
         if (timestamp <= 0) return -1;
+
+        // 微秒级 -> 毫秒
+        if (timestamp > 10_000_000_000_000L) {
+            timestamp /= 1000L;
+        }
+
+        // 秒级 -> 毫秒
         if (timestamp < 1_000_000_000L) return -1; // 2001 年之前或无效
         if (timestamp < 1_000_000_000_000L) {
-            // 秒级时间戳
-            return timestamp * 1000L;
+            timestamp *= 1000L;
         }
+
+        // 未来超过 1 年视为无效
+        long now = System.currentTimeMillis();
+        if (timestamp > now + 365L * 24 * 60 * 60 * 1000) return -1;
+
         return timestamp;
     }
 
@@ -135,6 +146,10 @@ public final class ActivationDateHelper {
             t = settingsLong(context, "miui_active_time");
             if (t > 0) return t;
             t = settingsLong(context, "miui_vip_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.miui.activated_time");
             if (t > 0) return t;
@@ -169,7 +184,15 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "heytap_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "heytap_activated");
+            if (t > 0) return t;
             t = settingsLong(context, "realme_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "realme_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.oppo.activated_time");
             if (t > 0) return t;
@@ -178,6 +201,8 @@ public final class ActivationDateHelper {
             t = systemPropertyLong("ro.vendor.oppo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.oplus.activated_time");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.oplus.activated");
             if (t > 0) return t;
         }
 
@@ -199,6 +224,12 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "originos_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "originos_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "activated_time");
+            if (t > 0) return t;
             t = systemPropertyLong("ro.vivo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.vivo.activated");
@@ -217,6 +248,12 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "huawei_activation_time");
             if (t > 0) return t;
+            t = settingsLong(context, "hw_activation_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "hw_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "hw_warranty_time");
+            if (t > 0) return t;
             t = parseDateString(settingsString(context, "huawei_activation_date"));
             if (t > 0) return t;
             t = settingsLong(context, "honor_first_boot_time");
@@ -227,11 +264,17 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "hms_activate_time");
             if (t > 0) return t;
+            t = settingsLong(context, "activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "activated_time");
+            if (t > 0) return t;
             t = systemPropertyLong("ro.hw.oem.activated");
             if (t > 0) return t;
             t = systemPropertyLong("ro.vendor.hw.activated");
             if (t > 0) return t;
             t = systemPropertyLong("ro.honor.activated");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.honor.activated_time");
             if (t > 0) return t;
         }
 
@@ -257,9 +300,17 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "sec_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "sec_active_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "sec_activated");
+            if (t > 0) return t;
             t = settingsLong(context, "sec_warranty_time");
             if (t > 0) return t;
             t = parseDateString(settingsString(context, "knox_activation_date"));
+            if (t > 0) return t;
+            t = settingsLong(context, "activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "activated_time");
             if (t > 0) return t;
         }
 
@@ -289,11 +340,29 @@ public final class ActivationDateHelper {
         if (t > 0) return t;
         t = settingsLong(context, "device_activate_time");
         if (t > 0) return t;
+        t = settingsLong(context, "device_activated_date");
+        if (t > 0) return t;
         t = settingsLong(context, "first_activate_time");
         if (t > 0) return t;
         t = settingsLong(context, "first_use_time");
         if (t > 0) return t;
         t = settingsLong(context, "device_first_use_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "activation_date");
+        if (t > 0) return t;
+        t = parseDateString(settingsString(context, "activation_date"));
+        if (t > 0) return t;
+        t = settingsLong(context, "warranty_start_date");
+        if (t > 0) return t;
+        t = parseDateString(settingsString(context, "warranty_start_date"));
+        if (t > 0) return t;
+        t = settingsLong(context, "warranty_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "device_warranty_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "activate_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "activated_time");
         if (t > 0) return t;
         return -1;
     }

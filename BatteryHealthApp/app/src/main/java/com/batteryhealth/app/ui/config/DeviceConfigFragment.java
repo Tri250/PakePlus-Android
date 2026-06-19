@@ -146,7 +146,9 @@ public class DeviceConfigFragment extends Fragment {
                 tvStorage.setText(config.getFormattedStorage());
             }
             if (tvScreen != null) {
-                tvScreen.setText(config.getScreenResolution());
+                String resolution = config.getScreenResolution();
+                String size = config.getFormattedScreenSize();
+                tvScreen.setText(resolution + " · " + size);
             }
             if (tvActivation != null) {
                 String dateStr = config.getActivationDateStr();
@@ -178,7 +180,9 @@ public class DeviceConfigFragment extends Fragment {
             if (tvAvailableStorage != null) {
                 long availStorage = config.getAvailableStorage();
                 if (availStorage > 0) {
-                    tvAvailableStorage.setText(availStorage + " GB");
+                    tvAvailableStorage.setText(availStorage >= 100
+                            ? String.format(Locale.getDefault(), "%d GB", availStorage)
+                            : String.format(Locale.getDefault(), "%.1f GB", availStorage / 1.0));
                 } else {
                     tvAvailableStorage.setText("--");
                 }
