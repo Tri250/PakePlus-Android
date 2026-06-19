@@ -376,6 +376,11 @@ public class BatteryInfo {
     public void calculateHealthPercentage() {
         if (designCapacity > 0 && currentCapacity > 0) {
             this.healthPercentage = (currentCapacity * 100.0f) / designCapacity;
+            if (this.healthPercentage > 100.0f) {
+                this.healthPercentage = 100.0f;
+            } else if (this.healthPercentage < 0.0f) {
+                this.healthPercentage = 0.0f;
+            }
         }
     }
     
@@ -390,19 +395,21 @@ public class BatteryInfo {
     
     /**
      * 获取健康等级
+     *
+     * 阈值与健康描述保持一致：95+ A+，90-94 A，85-89 B+，80-84 B，75-79 C，60-74 D，<60 E。
      */
     public String getHealthGrade() {
         if (healthPercentage < 0) {
             return "--";
-        } else if (healthPercentage >= 90) {
+        } else if (healthPercentage >= 95) {
             return "A+";
-        } else if (healthPercentage >= 85) {
+        } else if (healthPercentage >= 90) {
             return "A";
-        } else if (healthPercentage >= 80) {
+        } else if (healthPercentage >= 85) {
             return "B+";
-        } else if (healthPercentage >= 75) {
+        } else if (healthPercentage >= 80) {
             return "B";
-        } else if (healthPercentage >= 70) {
+        } else if (healthPercentage >= 75) {
             return "C";
         } else if (healthPercentage >= 60) {
             return "D";
@@ -413,19 +420,24 @@ public class BatteryInfo {
     
     /**
      * 获取健康描述
+     *
+     * 阈值与 BatteryDataManager 的计算口径保持一致：
+     * 95+ 极佳，85+ 良好，75+ 一般，60+ 较差，<60 极差。
      */
     public String getHealthDescription() {
         // 注意：此处返回硬编码字符串仅作为数据模型默认值，实际展示文本由 UI 层通过 strings.xml 控制
         if (healthPercentage < 0) {
             return "无法获取电池健康数据";
-        } else if (healthPercentage >= 90) {
+        } else if (healthPercentage >= 95) {
             return "电池状态极佳";
-        } else if (healthPercentage >= 80) {
+        } else if (healthPercentage >= 85) {
             return "电池状态良好";
-        } else if (healthPercentage >= 70) {
+        } else if (healthPercentage >= 75) {
             return "电池状态一般";
+        } else if (healthPercentage >= 60) {
+            return "电池损耗明显";
         } else {
-            return "建议更换电池";
+            return "建议尽快更换电池";
         }
     }
     

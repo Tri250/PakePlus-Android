@@ -175,6 +175,13 @@ public class MainActivity extends AppCompatActivity {
                 Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
                 int bottom = Math.max(bars.bottom, ime.bottom);
                 v.setPadding(bars.left, bars.top, bars.right, bottom);
+
+                // 底部导航栏额外下沉系统导航栏高度，确保内容不被手势条遮挡
+                View bottomNav = findViewById(R.id.bottom_navigation);
+                if (bottomNav != null) {
+                    bottomNav.setPadding(bottomNav.getPaddingLeft(), bottomNav.getPaddingTop(),
+                            bottomNav.getPaddingRight(), bars.bottom);
+                }
                 return WindowInsetsCompat.CONSUMED;
             });
         } catch (Exception e) {

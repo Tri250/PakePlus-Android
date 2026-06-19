@@ -158,8 +158,7 @@
     <!-- ============================== -->
     <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
         <item name="android:thumbTint">@color/white</item>
-        <item name="android:trackTint">@color/ios_tertiary_background</item>
-        <item name="android:backgroundTint">@color/ios_blue</item>
+        <item name="android:trackTint">@color/ios_blue</item>
     </style>
 
     <!-- ============================== -->

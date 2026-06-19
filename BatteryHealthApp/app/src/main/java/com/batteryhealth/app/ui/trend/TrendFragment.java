@@ -139,11 +139,10 @@ public class TrendFragment extends Fragment {
     private void animateCardsEntry(View view) {
         try {
             if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
+            java.util.List<View> cards = new java.util.ArrayList<>();
+            collectCards(view, cards);
+            for (int i = 0; i < cards.size(); i++) {
+                View child = cards.get(i);
                 child.setAlpha(0f);
                 child.setTranslationY(60f);
                 child.setScaleX(0.94f);
@@ -159,7 +158,20 @@ public class TrendFragment extends Fragment {
                     .start();
             }
         } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
+            Log.d(TAG, "Card entry animation skipped: " + e.getMessage());
+        }
+    }
+
+    private void collectCards(View view, java.util.List<View> cards) {
+        if (view instanceof com.google.android.material.card.MaterialCardView) {
+            cards.add(view);
+            return;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectCards(group.getChildAt(i), cards);
+            }
         }
     }
 

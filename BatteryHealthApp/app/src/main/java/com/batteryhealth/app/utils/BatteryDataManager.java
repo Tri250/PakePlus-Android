@@ -91,18 +91,14 @@ public class BatteryDataManager {
             "/sys/class/power_supply/battery/battery_health_cycle"
     };
 
-    // 容量 sysfs 候选路径
+    // 容量 sysfs 候选路径（仅当前满充容量 FCC，不含设计容量或充电电流限制）
     private static final String[] CHARGE_FULL_PATHS = {
             "/sys/class/power_supply/battery/charge_full",
             "/sys/class/power_supply/bms/charge_full",
             "/sys/class/power_supply/maxfg/charge_full",
             "/sys/class/power_supply/battery/charge_full_raw",
-            "/sys/class/power_supply/battery/charge_full_design",
             "/sys/class/power_supply/battery/fcc",
-            // 厂商私有
-            "/sys/class/power_supply/battery/constant_charge_current_max",
-            "/sys/class/power_supply/bms/constant_charge_current_max",
-            "/sys/class/power_supply/battery/batt_full_capacity",
+            // 厂商私有（当前满充容量）
             "/sys/class/power_supply/battery/learned_full_capacity",
             "/sys/class/power_supply/bms/learned_full_capacity",
             "/sys/class/power_supply/maxfg/learned_full_capacity",
@@ -237,7 +233,7 @@ public class BatteryDataManager {
 
         // 7. 容量相关（关键：用于健康度）
         String[] designSource = new String[1];
-        int designCapacity = getDesignCapacity(intent, designSource);
+        int designCapacity = getDesignCapacity(designSource);
         int fullCapacity = getFullCapacity(batteryManager);
         int chargeCounterMah = getChargeCounter(batteryManager);
 
@@ -277,13 +273,26 @@ public class BatteryDataManager {
     /**
      * 读取当前电流（mA），正值充电，负值放电。
      * 带单位判断：部分设备 BatteryManager 返回 mA 而非 µA。
+     * 优先读取 sysfs（单位通常为 µA，更稳定），再用 BatteryManager 兜底。
      */
     public int readCurrentNow(BatteryManager batteryManager) {
+        // 1. sysfs 优先：标准节点单位统一为 µA
+        long sysfsRaw = readSysfsLong(CURRENT_NOW_PATHS, 0);
+        if (sysfsRaw != 0) {
+            long absRaw = Math.abs(sysfsRaw);
+            if (absRaw > 100000) {
+                return (int) (sysfsRaw / 1000); // µA → mA
+            }
+            // 部分 sysfs 节点直接返回 mA（数值通常 <= 100000）
+            return (int) sysfsRaw;
+        }
+
+        // 2. BatteryManager 兜底
         if (batteryManager != null) {
             int currentRaw = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
             if (currentRaw != Integer.MIN_VALUE && currentRaw != 0) {
                 int absCurrent = Math.abs(currentRaw);
-                // 正常充电电流：500mA-10A = 500000-10000000 µA
+                // 正常手机电流：µA 时数值通常在 100000 以上；mA 时通常在 10000 以下。
                 if (absCurrent > 100000) {
                     // µA → mA
                     return currentRaw / 1000;
@@ -291,15 +300,6 @@ public class BatteryDataManager {
                     // 已经是 mA
                     return currentRaw;
                 }
-            }
-        }
-        long sysfsRaw = readSysfsLong(CURRENT_NOW_PATHS, 0);
-        if (sysfsRaw != 0) {
-            long absRaw = Math.abs(sysfsRaw);
-            if (absRaw > 100000) {
-                return (int) (sysfsRaw / 1000); // µA → mA
-            } else {
-                return (int) sysfsRaw; // 已经是 mA
             }
         }
         return 0;
@@ -339,11 +339,13 @@ public class BatteryDataManager {
     }
 
     /**
-     * 设计容量：优先用户校准值，其次本地数据库，再次 sysfs，再次 BatteryManager CHARGE_FULL 兜底。
+     * 设计容量：优先用户校准值，其次本地机型数据库，再次 sysfs 设计容量节点。
+     * 注意：BatteryManager BATTERY_PROPERTY_CHARGE_FULL 为当前满充容量（FCC），
+     * 不可当作设计容量，否则健康度会被虚高为 100%。
      *
-     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（user_calibrated / device_database / sysfs / battery_manager / unknown）
+     * @param sourceHolder 长度为 1 的数组，用于回传容量来源（user_calibrated / device_database / sysfs / unknown）
      */
-    private int getDesignCapacity(Intent intent, String[] sourceHolder) {
+    private int getDesignCapacity(String[] sourceHolder) {
         // 1. 用户校准值（最优先）
         android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         int calibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1);
@@ -379,21 +381,9 @@ public class BatteryDataManager {
             return design;
         }
 
-        // 4. BatteryManager BATTERY_PROPERTY_CHARGE_FULL（部分设备该值接近设计容量）
-        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-        if (batteryManager != null) {
-            int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
-            if (microAh != Integer.MIN_VALUE && microAh > 1000) {
-                int mah = microAh / 1000;
-                // 仅当值在合理范围内（1000-10000 mAh）才采纳
-                if (mah >= 1000 && mah <= 10000) {
-                    if (sourceHolder != null && sourceHolder.length > 0) {
-                        sourceHolder[0] = "battery_manager";
-                    }
-                    return mah;
-                }
-            }
-        }
+        // 4. BatteryManager BATTERY_PROPERTY_CHARGE_FULL 为当前满充容量（FCC），
+        //    并非设计容量，不能作为设计容量使用，否则会导致健康度被高估为 100%。
+        //    因此此处不再兜底，交由 calculateHealth 使用 charge_counter 或使用时长估算。
 
         if (sourceHolder != null && sourceHolder.length > 0) {
             sourceHolder[0] = "unknown";
@@ -455,13 +445,17 @@ public class BatteryDataManager {
         int estimatedCycles = estimateCycleCountFromHistory();
         if (estimatedCycles > 0) return estimatedCycles;
 
-        // 4. 基于使用天数估算兜底（假设每天约 0.8 次完整充电循环）
+        // 4. 基于使用天数估算兜底。
+        //    安兔兔/鲁大师等同类的经验值：普通用户日均完整循环约 0.55~0.75 次，
+        //    此处取 0.65 并做上限保护，避免极端估算。
         int effectiveUsageDays = usageDays;
         if (effectiveUsageDays < 0 && activation != null) {
             effectiveUsageDays = activation.usageDays;
         }
         if (effectiveUsageDays > 0) {
-            return Math.max(1, (int) (effectiveUsageDays * 0.8f));
+            int estimate = Math.max(1, (int) (effectiveUsageDays * 0.65f));
+            // 循环次数不应超过使用天数（理论上最多一天一次完整循环也极少持续）
+            return Math.min(estimate, effectiveUsageDays);
         }
 
         return -1;
@@ -655,9 +649,10 @@ public class BatteryDataManager {
         }
 
         // 3. 兜底 1：基于使用天数的经验估算（仅用于完全无容量数据的场景，置信度低）
+        //    参考行业经验：普通用户日均约 0.65 次完整循环，每完整循环约衰减 0.04%。
+        //    折算为 0.026 / 天，约 9.5%/年，与主流工具（安兔兔/鲁大师）的参考区间一致。
         if (effectiveUsageDays > 0 && designCapacity > 0) {
-            // 锂电池典型衰减：约 7%/年（365 天），使用 4 年后约 75%
-            float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
+            float estimatedHealth = 100f - (effectiveUsageDays * 0.026f);
             result.healthPercentage = clampHealth(estimatedHealth);
             result.healthLevel = getHealthLevel(result.healthPercentage);
             result.healthStatus = getHealthStatusString(result.healthLevel) + context.getString(R.string.confidence_format, 35);
@@ -667,7 +662,7 @@ public class BatteryDataManager {
 
         // 4. 兜底 2：仅有使用天数无设计容量，给出参考值
         if (effectiveUsageDays > 0) {
-            float estimatedHealth = 100f - (effectiveUsageDays * 0.018f);
+            float estimatedHealth = 100f - (effectiveUsageDays * 0.026f);
             result.healthPercentage = clampHealth(estimatedHealth);
             result.healthLevel = getHealthLevel(result.healthPercentage);
             result.healthStatus = getHealthStatusString(result.healthLevel) + context.getString(R.string.confidence_format, 20);

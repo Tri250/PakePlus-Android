@@ -258,7 +258,7 @@ public class BatteryHealthFragment extends Fragment {
         if (tvHealthGrade != null) tvHealthGrade.setText("--");
         if (tvHealthStatus != null) tvHealthStatus.setText(getString(R.string.status_detecting));
         if (tvCapacity != null) tvCapacity.setText("-- mAh");
-        if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.unit_days_fallback) + " " + getString(R.string.cycle_count_format, 0));
+        if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.cycle_count_unreadable));
         if (tvTemperature != null) tvTemperature.setText("-- °C");
         if (tvVoltage != null) tvVoltage.setText("-- V");
         if (tvBatterySource != null) tvBatterySource.setText(getString(R.string.status_detecting_short));
@@ -291,12 +291,9 @@ public class BatteryHealthFragment extends Fragment {
                 }
                 
                 if (tvHealthStatus != null) {
+                    // healthSourceText 内部已包含置信度，不再重复拼接
                     String source = batteryDataManager.getHealthSourceText();
-                    float confidence = info.getHealthConfidence();
-                    String confidenceText = confidence > 0
-                            ? String.format(Locale.getDefault(), getString(R.string.health_confidence_format), confidence * 100)
-                            : "";
-                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source + confidenceText);
+                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source);
                 }
 
                 if (progressHealth != null) {
@@ -415,11 +412,10 @@ public class BatteryHealthFragment extends Fragment {
     private void animateCardsEntry(View view) {
         try {
             if (shouldSkipAnimations()) return;
-            if (!(view instanceof android.view.ViewGroup)) return;
-            android.view.ViewGroup root = (android.view.ViewGroup) view;
-            for (int i = 0; i < root.getChildCount(); i++) {
-                View child = root.getChildAt(i);
-                if (child.getId() == R.id.view_pager) continue;
+            java.util.List<View> cards = new java.util.ArrayList<>();
+            collectCards(view, cards);
+            for (int i = 0; i < cards.size(); i++) {
+                View child = cards.get(i);
                 child.setAlpha(0f);
                 child.setTranslationY(60f);
                 child.setScaleX(0.94f);
@@ -435,7 +431,20 @@ public class BatteryHealthFragment extends Fragment {
                     .start();
             }
         } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
+            Log.d(TAG, "Card entry animation skipped: " + e.getMessage());
+        }
+    }
+
+    private void collectCards(View view, java.util.List<View> cards) {
+        if (view instanceof com.google.android.material.card.MaterialCardView) {
+            cards.add(view);
+            return;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectCards(group.getChildAt(i), cards);
+            }
         }
     }
 

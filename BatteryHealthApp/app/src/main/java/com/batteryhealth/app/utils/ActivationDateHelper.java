@@ -72,6 +72,9 @@ public final class ActivationDateHelper {
         long sys = packageFirstInstallTime(app, "android");
         if (sys > 0) return build(sys, "system_framework_install", 0.80f);
 
+        long runtimeFirstBoot = systemPropertyLong("ro.runtime.firstboot");
+        if (runtimeFirstBoot > 0) return build(runtimeFirstBoot, "system_first_boot_time", 0.75f);
+
         long appInstall = packageFirstInstallTime(app, app.getPackageName());
         if (appInstall > 0) return build(appInstall, "app_first_install", 0.60f);
 
@@ -91,6 +94,7 @@ public final class ActivationDateHelper {
     }
 
     private static Result build(long timestamp, String source, float confidence) {
+        timestamp = normalizeTimestamp(timestamp);
         int usageDays = -1;
         if (timestamp > 0) {
             long now = System.currentTimeMillis();
@@ -102,27 +106,52 @@ public final class ActivationDateHelper {
         return new Result(timestamp, source, confidence, usageDays);
     }
 
+    /**
+     * 归一化时间戳：部分厂商 Setting/Property 存储的是秒级时间戳，需转换为毫秒。
+     * 当前毫秒时间戳约 1.7e12，秒级约 1.7e9；位于两者之间时按秒处理。
+     */
+    private static long normalizeTimestamp(long timestamp) {
+        if (timestamp <= 0) return -1;
+        if (timestamp < 1_000_000_000L) return -1; // 2001 年之前或无效
+        if (timestamp < 1_000_000_000_000L) {
+            // 秒级时间戳
+            return timestamp * 1000L;
+        }
+        return timestamp;
+    }
+
     private static long readElectronicWarrantyActivation(Context context) {
         String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
         String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
 
-        // 小米/红米：MIUI 激活时间
+        // 小米/红米：MIUI / 澎湃 OS 激活时间
         if (brand.contains("xiaomi") || brand.contains("redmi") || manufacturer.contains("xiaomi")) {
-            // MIUI 12+ 使用 miui_activated_time（毫秒时间戳）
             long t = settingsLong(context, "miui_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "miui_activation_time");
+            if (t > 0) return t;
             t = settingsLong(context, "miui_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "miui_active_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "miui_vip_activated");
             if (t > 0) return t;
             t = systemPropertyLong("ro.miui.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.miui.activated");
             if (t > 0) return t;
+            t = systemPropertyLong("ro.vendor.miui.activated_time");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.miui.saledate");
+            if (t > 0) return t;
         }
 
-        // OPPO/realme/一加：ColorOS/OxygenOS 激活时间
+        // OPPO/realme/一加：ColorOS/OxygenOS / realme UI 激活时间
         if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")
                 || manufacturer.contains("oppo") || manufacturer.contains("oneplus")) {
             long t = settingsLong(context, "oppo_activate_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "oppo_activated_time");
             if (t > 0) return t;
             t = settingsLong(context, "oppo_activated");
             if (t > 0) return t;
@@ -130,11 +159,25 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "coloros_activated");
             if (t > 0) return t;
+            t = settingsLong(context, "coloros_activate_time");
+            if (t > 0) return t;
             t = settingsLong(context, "oneplus_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "oplus_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "oplus_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "heytap_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "realme_activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.oppo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.oppo.activated");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.vendor.oppo.activated_time");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.oplus.activated_time");
             if (t > 0) return t;
         }
 
@@ -142,23 +185,37 @@ public final class ActivationDateHelper {
         if (brand.contains("vivo") || brand.contains("iqoo") || manufacturer.contains("vivo")) {
             long t = settingsLong(context, "vivo_active_time");
             if (t > 0) return t;
+            t = settingsLong(context, "vivo_activated_time");
+            if (t > 0) return t;
             t = settingsLong(context, "vivo_activated");
             if (t > 0) return t;
             t = settingsLong(context, "vivo_warranty_time");
             if (t > 0) return t;
             t = settingsLong(context, "vivo_activate_time");
             if (t > 0) return t;
+            t = settingsLong(context, "bbk_active_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "bbk_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "originos_activated_time");
+            if (t > 0) return t;
             t = systemPropertyLong("ro.vivo.activated_time");
             if (t > 0) return t;
             t = systemPropertyLong("ro.vivo.activated");
             if (t > 0) return t;
+            t = systemPropertyLong("ro.vendor.vivo.activated_time");
+            if (t > 0) return t;
         }
 
-        // 华为/荣耀：EMUI/MagicUI 激活时间
+        // 华为/荣耀：EMUI/MagicUI / HarmonyOS 激活时间
         if (brand.contains("huawei") || brand.contains("honor") || manufacturer.contains("huawei")) {
             long t = settingsLong(context, "huawei_first_boot_time");
             if (t > 0) return t;
             t = settingsLong(context, "huawei_warranty_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "huawei_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "huawei_activation_time");
             if (t > 0) return t;
             t = parseDateString(settingsString(context, "huawei_activation_date"));
             if (t > 0) return t;
@@ -166,7 +223,15 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "honor_activated_time");
             if (t > 0) return t;
+            t = parseDateString(settingsString(context, "honor_activation_date"));
+            if (t > 0) return t;
+            t = settingsLong(context, "hms_activate_time");
+            if (t > 0) return t;
             t = systemPropertyLong("ro.hw.oem.activated");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.vendor.hw.activated");
+            if (t > 0) return t;
+            t = systemPropertyLong("ro.honor.activated");
             if (t > 0) return t;
         }
 
@@ -176,7 +241,11 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "meizu_activated");
             if (t > 0) return t;
+            t = settingsLong(context, "meizu_activation_time");
+            if (t > 0) return t;
             t = settingsLong(context, "flyme_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "flyme_activated");
             if (t > 0) return t;
         }
 
@@ -188,6 +257,10 @@ public final class ActivationDateHelper {
             if (t > 0) return t;
             t = settingsLong(context, "sec_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "sec_warranty_time");
+            if (t > 0) return t;
+            t = parseDateString(settingsString(context, "knox_activation_date"));
+            if (t > 0) return t;
         }
 
         // 中兴/努比亚/红魔
@@ -195,11 +268,19 @@ public final class ActivationDateHelper {
                 || manufacturer.contains("nubia") || manufacturer.contains("zte")) {
             long t = settingsLong(context, "nubia_activated_time");
             if (t > 0) return t;
+            t = settingsLong(context, "nubia_activated");
+            if (t > 0) return t;
+            t = settingsLong(context, "redmagic_activated_time");
+            if (t > 0) return t;
             t = settingsLong(context, "zte_activated_time");
+            if (t > 0) return t;
+            t = settingsLong(context, "zte_activated");
             if (t > 0) return t;
         }
 
-        // 通用：尝试常见的通用激活时间键名
+        // 通用：尝试常见的通用电子保卡/激活时间键名
+        // 注意：first_boot_time / ro.runtime.firstboot 属于“首次开机”而非电子保卡，
+        // 交给 detect() 的后续 fallback 处理，避免置信度虚高。
         long t = settingsLong(context, "electronic_warranty_activated_time");
         if (t > 0) return t;
         t = settingsLong(context, "electronic_warranty_activated");
@@ -210,7 +291,9 @@ public final class ActivationDateHelper {
         if (t > 0) return t;
         t = settingsLong(context, "first_activate_time");
         if (t > 0) return t;
-        t = systemPropertyLong("ro.runtime.firstboot");
+        t = settingsLong(context, "first_use_time");
+        if (t > 0) return t;
+        t = settingsLong(context, "device_first_use_time");
         if (t > 0) return t;
         return -1;
     }
@@ -221,8 +304,12 @@ public final class ActivationDateHelper {
         } catch (Exception e) {
             try {
                 return Settings.Global.getLong(context.getContentResolver(), key, -1);
-            } catch (Exception ignored) {
-                return -1;
+            } catch (Exception e2) {
+                try {
+                    return Settings.System.getLong(context.getContentResolver(), key, -1);
+                } catch (Exception ignored) {
+                    return -1;
+                }
             }
         }
     }
@@ -231,7 +318,9 @@ public final class ActivationDateHelper {
         try {
             String value = Settings.Secure.getString(context.getContentResolver(), key);
             if (value != null && !value.isEmpty()) return value;
-            return Settings.Global.getString(context.getContentResolver(), key);
+            value = Settings.Global.getString(context.getContentResolver(), key);
+            if (value != null && !value.isEmpty()) return value;
+            return Settings.System.getString(context.getContentResolver(), key);
         } catch (Exception e) {
             return null;
         }
