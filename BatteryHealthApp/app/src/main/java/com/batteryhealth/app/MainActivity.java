@@ -35,7 +35,7 @@ import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
-import com.batteryhealth.app.ui.endurance.EnduranceFragment;
+import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
                     case 3:
                         return new DeviceConfigFragment();
                     case 4:
-                        return new EnduranceFragment();
+                        return new PerformanceFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航（5项，匹配图片风格）
+     * 设置底部导航（5项：电池健康、充电功率、电池江湖、配置查询、性能分析）
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
@@ -296,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_community), R.drawable.ic_endurance));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_mine), R.drawable.ic_performance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {

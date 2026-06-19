@@ -34,6 +34,7 @@ import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ReportGenerator;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.text.SimpleDateFormat;
@@ -72,6 +73,9 @@ public class BatteryHealthFragment extends Fragment {
     private View btnCalibrate;
     private SwitchCompat switchNotification;
     private View btnChargingHistory;
+    private View btnWeeklyReport;
+    private View btnMonthlyReport;
+    private View btnViewTrend;
 
     private BatteryDataManager batteryDataManager;
     private SharedPreferences prefs;
@@ -198,6 +202,9 @@ public class BatteryHealthFragment extends Fragment {
             btnCalibrate = view.findViewById(R.id.btn_calibrate);
             switchNotification = view.findViewById(R.id.switch_notification);
             btnChargingHistory = view.findViewById(R.id.btn_charging_history);
+            btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
+            btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
+            btnViewTrend = view.findViewById(R.id.btn_view_trend);
 
             if (btnCalibrate != null) {
                 btnCalibrate.setOnClickListener(v -> showCalibrateDialog());
@@ -205,6 +212,18 @@ public class BatteryHealthFragment extends Fragment {
 
             if (btnChargingHistory != null) {
                 btnChargingHistory.setOnClickListener(v -> showChargingHistoryDialog());
+            }
+
+            if (btnWeeklyReport != null) {
+                btnWeeklyReport.setOnClickListener(v -> showReportDialog(true));
+            }
+
+            if (btnMonthlyReport != null) {
+                btnMonthlyReport.setOnClickListener(v -> showReportDialog(false));
+            }
+
+            if (btnViewTrend != null) {
+                btnViewTrend.setOnClickListener(v -> navigateToTrend());
             }
 
             // 初始化通知开关
@@ -568,5 +587,48 @@ public class BatteryHealthFragment extends Fragment {
             Log.e(TAG, "Error loading charging history: " + e.getMessage());
         }
         return result;
+    }
+
+    private void showReportDialog(boolean isWeekly) {
+        try {
+            Context context = requireContext();
+            new Thread(() -> {
+                ReportGenerator generator = new ReportGenerator(context);
+                ReportGenerator.BatteryReport report = isWeekly
+                        ? generator.generateWeeklyReport()
+                        : generator.generateMonthlyReport();
+
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (!isAdded()) return;
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                        builder.setTitle(report.title);
+                        if (report.summary == null || report.summary.startsWith("暂无")) {
+                            builder.setMessage(report.summary != null ? report.summary : "暂无足够数据生成报告");
+                        } else {
+                            String msg = report.summary
+                                    + "\n\n" + "记录数: " + report.recordCount
+                                    + "\n" + report.period
+                                    + "\n\n" + "【建议】\n" + report.recommendation;
+                            builder.setMessage(msg);
+                        }
+                        builder.setPositiveButton("确定", null);
+                        builder.show();
+                    });
+                }
+            }).start();
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing report dialog: " + e.getMessage());
+        }
+    }
+
+    private void navigateToTrend() {
+        try {
+            Intent intent = new Intent(requireContext(), com.batteryhealth.app.ui.trend.TrendActivity.class);
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Error navigating to trend: " + e.getMessage());
+            Toast.makeText(requireContext(), "趋势页面打开失败", Toast.LENGTH_SHORT).show();
+        }
     }
 }

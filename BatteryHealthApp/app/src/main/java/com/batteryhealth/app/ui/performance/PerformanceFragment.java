@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
 import android.util.Log;
+import android.view.Choreographer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,12 +61,22 @@ public class PerformanceFragment extends Fragment {
     private TextView tvStorageUsage;
     private ProgressBar progressStorage;
     private TextView tvGpuInfo;
+    private TextView tvFrameRate;
+    private TextView tvJankInfo;
     
     private Handler handler;
     private Runnable updateTask;
     private ExecutorService executor;
     private boolean isRunning = false;
     private boolean isFirstUpdate = true;
+
+    // 帧率监测
+    private Choreographer.FrameCallback frameCallback;
+    private long lastFrameTimeNanos = 0;
+    private int frameCount = 0;
+    private int jankCount = 0;
+    private float currentFps = 0;
+    private static final long JANK_THRESHOLD_NS = 26_666_666L; // 约 26.7ms，低于 37.5fps 判定为卡顿
 
     @Nullable
     @Override
@@ -104,6 +115,8 @@ public class PerformanceFragment extends Fragment {
             tvStorageUsage = view.findViewById(R.id.tv_storage_usage);
             progressStorage = view.findViewById(R.id.progress_storage);
             tvGpuInfo = view.findViewById(R.id.tv_gpu_info);
+            tvFrameRate = view.findViewById(R.id.tv_frame_rate);
+            tvJankInfo = view.findViewById(R.id.tv_jank_info);
             
             // 设置默认值
             setDefaultValues();
@@ -152,6 +165,7 @@ public class PerformanceFragment extends Fragment {
         if (handler != null && updateTask != null) {
             handler.post(updateTask);
         }
+        startFrameMonitoring();
     }
 
     @Override
@@ -161,6 +175,7 @@ public class PerformanceFragment extends Fragment {
         if (handler != null && updateTask != null) {
             handler.removeCallbacks(updateTask);
         }
+        stopFrameMonitoring();
     }
 
     private void setDefaultValues() {
@@ -173,6 +188,8 @@ public class PerformanceFragment extends Fragment {
         if (tvStorageUsage != null) tvStorageUsage.setText("--");
         if (progressStorage != null) progressStorage.setProgress(0);
         if (tvGpuInfo != null) tvGpuInfo.setText("--");
+        if (tvFrameRate != null) tvFrameRate.setText("-- fps");
+        if (tvJankInfo != null) tvJankInfo.setText("--");
     }
 
     @Override
@@ -417,7 +434,7 @@ public class PerformanceFragment extends Fragment {
         float effectiveCpuUsage = cpuUsage < 0 ? 50f : cpuUsage;
         float cpuScore = Math.max(0, 100 - effectiveCpuUsage);
         float memScore = Math.max(0, 100 - memoryUsage);
-        float storageScore = Math.max(0, 100 - storageUsage * 0.5f);
+        float storageScore = Math.max(0, 100 - storageUsage);
         float resourceScore = cpuScore * CPU_USAGE_WEIGHT
                 + memScore * MEMORY_USAGE_WEIGHT
                 + storageScore * STORAGE_USAGE_WEIGHT;
@@ -626,6 +643,68 @@ public class PerformanceFragment extends Fragment {
                 Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
             });
             return t;
+        }
+    }
+
+    // 帧率监测
+    private void startFrameMonitoring() {
+        frameCount = 0;
+        jankCount = 0;
+        lastFrameTimeNanos = 0;
+        currentFps = 0;
+        frameCallback = new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                if (lastFrameTimeNanos > 0) {
+                    frameCount++;
+                    long diff = frameTimeNanos - lastFrameTimeNanos;
+                    if (diff > JANK_THRESHOLD_NS) {
+                        jankCount++;
+                    }
+                    if (frameCount >= 30) {
+                        currentFps = 1_000_000_000f / diff * frameCount;
+                        frameCount = 0;
+                        updateFrameDisplay();
+                    }
+                }
+                lastFrameTimeNanos = frameTimeNanos;
+                if (isRunning && frameCallback != null) {
+                    Choreographer.getInstance().postFrameCallback(this);
+                }
+            }
+        };
+        Choreographer.getInstance().postFrameCallback(frameCallback);
+    }
+
+    private void stopFrameMonitoring() {
+        try {
+            if (frameCallback != null) {
+                Choreographer.getInstance().removeFrameCallback(frameCallback);
+                frameCallback = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping frame monitoring: " + e.getMessage());
+        }
+    }
+
+    private void updateFrameDisplay() {
+        try {
+            if (tvFrameRate != null && isAdded()) {
+                tvFrameRate.setText(String.format(Locale.getDefault(), "%.1f fps", currentFps));
+            }
+            if (tvJankInfo != null && isAdded()) {
+                String status;
+                if (currentFps >= 55) {
+                    status = "流畅";
+                } else if (currentFps >= 40) {
+                    status = "轻微卡顿";
+                } else {
+                    status = "严重卡顿";
+                }
+                tvJankInfo.setText(status + " (" + jankCount + "次)");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating frame display: " + e.getMessage());
         }
     }
 }

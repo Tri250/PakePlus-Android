@@ -290,6 +290,7 @@
     <string name="nav_performance">性能</string>
     <string name="nav_endurance">续航</string>
     <string name="nav_trend">趋势</string>
+    <string name="title_trend">趋势追踪</string>
     <string name="nav_power">充电</string>
     <string name="nav_community">电池江湖</string>
     <string name="nav_mine">我的</string>

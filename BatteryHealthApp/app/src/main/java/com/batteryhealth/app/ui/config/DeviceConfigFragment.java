@@ -12,9 +12,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -26,6 +28,7 @@ import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.ui.policy.PolicyActivity;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.BugreportHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 /**
@@ -52,6 +55,7 @@ public class DeviceConfigFragment extends Fragment {
     private TextView tvAppVersion;
     private View rowPrivacyPolicy;
     private View rowUserAgreement;
+    private View rowBugreport;
 
     @Nullable
     @Override
@@ -117,6 +121,7 @@ public class DeviceConfigFragment extends Fragment {
         tvAppVersion = view.findViewById(R.id.tv_app_version);
         rowPrivacyPolicy = view.findViewById(R.id.row_privacy_policy);
         rowUserAgreement = view.findViewById(R.id.row_user_agreement);
+        rowBugreport = view.findViewById(R.id.row_bugreport);
     }
 
     private void loadDeviceConfigAsync() {
@@ -304,6 +309,30 @@ public class DeviceConfigFragment extends Fragment {
                     Log.e(TAG, "open user agreement failed: " + e.getMessage());
                 }
             });
+        }
+        if (rowBugreport != null) {
+            rowBugreport.setOnClickListener(v -> showBugreportDialog());
+        }
+    }
+
+    private void showBugreportDialog() {
+        try {
+            BugreportHelper.BugreportInfo info = BugreportHelper.getBugreportInfo();
+            String msg = "品牌: " + info.brandName
+                    + "\n\n拨号盘指令:\n" + info.method
+                    + "\n\nADB 指令:\n" + info.adbCommand
+                    + "\n\n提示: 生成 bugreport 后，可在文件管理器中找到并分享。";
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Bugreport 获取指南")
+                    .setMessage(msg)
+                    .setPositiveButton("复制ADB指令", (dialog, which) -> {
+                        BugreportHelper.copyAdbCommand(requireContext());
+                        Toast.makeText(requireContext(), "已复制到剪贴板", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("关闭", null)
+                    .show();
+        } catch (Exception e) {
+            Log.e(TAG, "show bugreport dialog failed: " + e.getMessage());
         }
     }
 }
