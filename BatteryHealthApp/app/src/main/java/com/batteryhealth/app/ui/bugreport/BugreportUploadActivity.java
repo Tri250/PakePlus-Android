@@ -20,7 +20,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryHealthReport;
 import com.batteryhealth.app.utils.BugreportParser;
 
@@ -147,7 +149,10 @@ public class BugreportUploadActivity extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                BatteryHealthReport report = BugreportParser.parse(selectedFile);
+                BatteryHealthReport report = BugreportParser.parse(this, selectedFile);
+                if (report != null) {
+                    saveReport(report);
+                }
                 runOnUiThread(() -> {
                     progressUpload.setVisibility(View.GONE);
                     btnSelectFile.setEnabled(true);
@@ -169,6 +174,19 @@ public class BugreportUploadActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    private void saveReport(BatteryHealthReport report) {
+        try {
+            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+            if (app == null) return;
+            AppDatabase db = app.getDatabase();
+            if (db == null) return;
+            db.batteryHealthReportDao().insert(report);
+            Log.d(TAG, "Bugreport saved to database");
+        } catch (Exception e) {
+            Log.e(TAG, "保存解析报告失败", e);
+        }
     }
 
     private File uriToFile(Uri uri) {

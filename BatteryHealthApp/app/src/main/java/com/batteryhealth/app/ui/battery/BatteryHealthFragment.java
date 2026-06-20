@@ -24,6 +24,7 @@ import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.BatteryHealthReport;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.endurance.EnduranceActivity;
 import com.batteryhealth.app.ui.trend.TrendActivity;
@@ -85,6 +86,7 @@ public class BatteryHealthFragment extends Fragment {
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
     private boolean isRunning = false;
+    private BatteryHealthReport latestBugreport;
     
     // 定时更新UI的Runnable
     private Runnable updateRunnable = new Runnable() {
@@ -263,31 +265,42 @@ public class BatteryHealthFragment extends Fragment {
                     }
                 }
 
-                // 更新健康度
+                // 更新健康度（Bugreport 数据作为补充/兜底）
                 float healthPercentage = info.getHealthPercentage();
+                String healthGrade = info.getHealthGrade();
+                String healthDescription = info.getHealthDescription();
+                String healthSource = batteryDataManager.getHealthSourceText();
+                float healthConfidence = info.getHealthConfidence();
+                if (!info.hasValidHealthData() && latestBugreport != null && latestBugreport.getBatteryHealthPercentage() > 0) {
+                    healthPercentage = latestBugreport.getBatteryHealthPercentage();
+                    healthGrade = latestBugreport.getHealthGrade() != null ? latestBugreport.getHealthGrade() : healthGrade;
+                    healthDescription = latestBugreport.getBatteryHealthLevel() != null ? latestBugreport.getBatteryHealthLevel() : healthDescription;
+                    healthSource = getString(R.string.source_bugreport);
+                    healthConfidence = latestBugreport.getBatterySourceConfidence();
+                }
+
                 if (tvHealthPercentage != null) {
-                    if (info.hasValidHealthData()) {
+                    if (healthPercentage > 0 || info.hasValidHealthData()) {
                         tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
                     } else {
                         tvHealthPercentage.setText("--");
                     }
                 }
-                
+
                 if (tvHealthGrade != null) {
-                    tvHealthGrade.setText(info.getHealthGrade());
+                    tvHealthGrade.setText(healthGrade != null && !healthGrade.isEmpty() ? healthGrade : "--");
                 }
-                
+
                 if (tvHealthStatus != null) {
-                    String source = batteryDataManager.getHealthSourceText();
-                    float confidence = info.getHealthConfidence();
-                    String confidenceText = confidence > 0
-                            ? String.format(Locale.getDefault(), " (可信度 %.0f%%)", confidence * 100)
+                    String confidenceText = healthConfidence > 0
+                            ? String.format(Locale.getDefault(), " (可信度 %.0f%%)", healthConfidence * 100)
                             : "";
-                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source + confidenceText);
+                    tvHealthStatus.setText((healthDescription != null ? healthDescription : getString(R.string.status_detecting))
+                            + " · " + (healthSource != null ? healthSource : getString(R.string.status_detecting)) + confidenceText);
                 }
 
                 if (progressHealth != null) {
-                    if (info.hasValidHealthData()) {
+                    if (healthPercentage > 0 || info.hasValidHealthData()) {
                         progressHealth.setProgress((int) healthPercentage);
                     } else {
                         progressHealth.setProgress(0);
@@ -308,10 +321,14 @@ public class BatteryHealthFragment extends Fragment {
                     tvHealthPercentage.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_tertiary_label));
                 }
                 
-                // 更新详细信息
+                // 更新详细信息（Bugreport 数据作为补充）
                 if (tvCapacity != null) {
                     int currentCap = info.getCurrentCapacity();
                     int designCap = info.getDesignCapacity();
+                    if ((currentCap <= 0 || designCap <= 0) && latestBugreport != null) {
+                        if (currentCap <= 0) currentCap = latestBugreport.getCurrentCapacityMah();
+                        if (designCap <= 0) designCap = latestBugreport.getDesignCapacityMah();
+                    }
                     if (currentCap > 0 && designCap > 0) {
                         tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap));
                     } else {
@@ -320,9 +337,15 @@ public class BatteryHealthFragment extends Fragment {
                 }
 
                 if (tvCycleCount != null) {
-                    if (info.hasValidCycleCount()) {
-                        String estimatedMark = info.isCycleCountEstimated() ? " · 估算" : "";
-                        tvCycleCount.setText(String.format(Locale.getDefault(), "%d 次%s", info.getCycleCount(), estimatedMark));
+                    int cycleCount = info.getCycleCount();
+                    boolean estimated = info.isCycleCountEstimated();
+                    if (!info.hasValidCycleCount() && latestBugreport != null && latestBugreport.getCycleCount() > 0) {
+                        cycleCount = latestBugreport.getCycleCount();
+                        estimated = true;
+                    }
+                    if (cycleCount > 0) {
+                        String estimatedMark = estimated ? " · 估算" : "";
+                        tvCycleCount.setText(String.format(Locale.getDefault(), "%d 次%s", cycleCount, estimatedMark));
                     } else {
                         tvCycleCount.setText(R.string.unknown);
                     }
@@ -337,7 +360,12 @@ public class BatteryHealthFragment extends Fragment {
                 }
                 
                 if (tvBatterySource != null) {
-                    tvBatterySource.setText(batteryDataManager.getBatterySourceText());
+                    String source = batteryDataManager.getBatterySourceText();
+                    if ((source == null || source.isEmpty() || getString(R.string.status_detecting).equals(source))
+                            && latestBugreport != null && latestBugreport.getBatterySource() != null) {
+                        source = latestBugreport.getBatterySource();
+                    }
+                    tvBatterySource.setText(source != null && !source.isEmpty() ? source : getString(R.string.status_detecting));
                 }
                 
                 if (tvTechnology != null) {
@@ -510,10 +538,13 @@ public class BatteryHealthFragment extends Fragment {
 
                 long oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
                 List<BatteryInfo> records = db.batteryInfoDao().getSince(oneWeekAgo);
+                BatteryHealthReport report = db.batteryHealthReportDao().getLatest();
 
                 if (mainHandler != null) {
                     mainHandler.post(() -> {
                         if (!isAdded()) return;
+                        latestBugreport = report;
+                        updateUI();
                         updateMiniTrend(records);
                         updateHistoryList(records);
                     });

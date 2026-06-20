@@ -92,7 +92,7 @@ public class DeviceInfoManager {
     }
 
     private DeviceConfig buildDeviceConfig() {
-        DeviceConfig config = new DeviceConfig();
+        DeviceConfig config = new DeviceConfig(true);
 
         // 1. CPU 信息
         collectCpuInfo(config);
@@ -117,6 +117,7 @@ public class DeviceInfoManager {
         config.setActivationDate(activation.timestamp);
         config.setActivationDateStr(activation.dateStr);
         config.setUsageDays(activation.usageDays);
+        config.setUsedDays(activation.usageDays);
         config.setActivationSource(activation.source);
         config.setActivationConfidence(activation.confidence);
 
@@ -138,7 +139,52 @@ public class DeviceInfoManager {
         }
         config.setGpuInfo(gpuInfo);
 
+        // 10. 零部件供应商映射与配置评分
+        config.setComponentSuppliers(getComponentSuppliers(config));
+        config.setConfigScore(calculateConfigScore(config));
+
         return config;
+    }
+
+    /**
+     * 计算配置评分（0-10），综合内存、存储、CPU 频率与屏幕分辨率。
+     */
+    public float calculateConfigScore(DeviceConfig config) {
+        if (config == null) return 6.0f;
+        try {
+            float score = 0;
+            long totalMem = config.getTotalMemory();
+            if (totalMem >= 12288) score += 3.0f;
+            else if (totalMem >= 8192) score += 2.5f;
+            else if (totalMem >= 6144) score += 2.0f;
+            else if (totalMem >= 4096) score += 1.5f;
+            else score += 1.0f;
+
+            long totalStorage = config.getTotalStorage();
+            if (totalStorage >= 512) score += 2.0f;
+            else if (totalStorage >= 256) score += 1.7f;
+            else if (totalStorage >= 128) score += 1.4f;
+            else if (totalStorage >= 64) score += 1.0f;
+            else score += 0.6f;
+
+            int cpuFreqMax = config.getCpuFreqMax();
+            if (cpuFreqMax >= 3200) score += 3.0f;
+            else if (cpuFreqMax >= 2800) score += 2.5f;
+            else if (cpuFreqMax >= 2400) score += 2.0f;
+            else if (cpuFreqMax >= 2000) score += 1.5f;
+            else score += 1.0f;
+
+            int screenPixels = config.getScreenWidth() * config.getScreenHeight();
+            if (screenPixels >= 3000000) score += 2.0f;
+            else if (screenPixels >= 2000000) score += 1.6f;
+            else if (screenPixels >= 1500000) score += 1.2f;
+            else score += 0.8f;
+
+            return Math.min(10.0f, score);
+        } catch (Exception e) {
+            Log.d(TAG, "Failed to calculate config score: " + e.getMessage());
+            return 6.0f;
+        }
     }
 
     /**

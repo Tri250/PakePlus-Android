@@ -19,8 +19,10 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.ui.bugreport.BugreportGuideActivity;
@@ -128,6 +130,7 @@ public class DeviceConfigFragment extends Fragment {
             public void onConfigLoaded(DeviceConfig config) {
                 if (!isAdded()) return;
                 updateViews(config);
+                saveDeviceConfig(config);
             }
 
             @Override
@@ -135,6 +138,22 @@ public class DeviceConfigFragment extends Fragment {
                 Log.e(TAG, "Failed to load device config", e);
             }
         });
+    }
+
+    private void saveDeviceConfig(DeviceConfig config) {
+        if (config == null) return;
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+                if (app == null) return;
+                AppDatabase db = app.getDatabase();
+                if (db == null) return;
+                db.deviceConfigDao().insert(config);
+                Log.d(TAG, "DeviceConfig saved to database");
+            } catch (Exception e) {
+                Log.e(TAG, "保存设备配置失败", e);
+            }
+        }).start();
     }
 
     private void updateViews(DeviceConfig config) {
@@ -157,7 +176,13 @@ public class DeviceConfigFragment extends Fragment {
                 tvStorage.setText(config.getFormattedStorage());
             }
             if (tvScreen != null) {
-                tvScreen.setText(config.getScreenResolution());
+                String resolution = config.getScreenResolution();
+                float size = config.getScreenSize();
+                if (size > 0) {
+                    tvScreen.setText(String.format(Locale.getDefault(), "%s · %.1f\"", resolution, size));
+                } else {
+                    tvScreen.setText(resolution);
+                }
             }
             if (tvActivation != null) {
                 String dateStr = config.getActivationDateStr();
@@ -192,7 +217,10 @@ public class DeviceConfigFragment extends Fragment {
                 }
             }
 
-            float score = calculateConfigScore(config);
+            float score = config.getConfigScore();
+            if (score <= 0 && deviceInfoManager != null) {
+                score = deviceInfoManager.calculateConfigScore(config);
+            }
             if (tvConfigScore != null) {
                 tvConfigScore.setText(String.format(Locale.getDefault(), getString(R.string.config_score_format), score));
                 tvConfigScore.setTextColor(ContextCompat.getColor(requireContext(), score >= 8.0f ? R.color.primary_green : score >= 5.0f ? R.color.orange : R.color.red));
@@ -201,42 +229,6 @@ public class DeviceConfigFragment extends Fragment {
             renderSuppliers(config);
         } catch (Exception e) {
             Log.e(TAG, "Error updating views: " + e.getMessage());
-        }
-    }
-
-    private float calculateConfigScore(DeviceConfig config) {
-        try {
-            float score = 0;
-            long totalMem = config.getTotalMemory();
-            if (totalMem >= 12288) score += 3.0f;
-            else if (totalMem >= 8192) score += 2.5f;
-            else if (totalMem >= 6144) score += 2.0f;
-            else if (totalMem >= 4096) score += 1.5f;
-            else score += 1.0f;
-
-            long totalStorage = config.getTotalStorage();
-            if (totalStorage >= 512) score += 2.0f;
-            else if (totalStorage >= 256) score += 1.7f;
-            else if (totalStorage >= 128) score += 1.4f;
-            else if (totalStorage >= 64) score += 1.0f;
-            else score += 0.6f;
-
-            int cpuFreqMax = config.getCpuFreqMax();
-            if (cpuFreqMax >= 3200) score += 3.0f;
-            else if (cpuFreqMax >= 2800) score += 2.5f;
-            else if (cpuFreqMax >= 2400) score += 2.0f;
-            else if (cpuFreqMax >= 2000) score += 1.5f;
-            else score += 1.0f;
-
-            int screenPixels = config.getScreenWidth() * config.getScreenHeight();
-            if (screenPixels >= 3000000) score += 2.0f;
-            else if (screenPixels >= 2000000) score += 1.6f;
-            else if (screenPixels >= 1500000) score += 1.2f;
-            else score += 0.8f;
-
-            return Math.min(10.0f, score);
-        } catch (Exception e) {
-            return 6.0f;
         }
     }
 

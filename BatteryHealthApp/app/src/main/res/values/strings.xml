@@ -136,6 +136,7 @@
     <string name="battery_source_replaced_original">更换原厂电池</string>
     <string name="battery_source_third_party">第三方电池</string>
     <string name="battery_source_unknown">无法判断</string>
+    <string name="source_bugreport">Bugreport 解析</string>
     <string name="what_does_this_mean">这些是什么意思？</string>
     <string name="battery_source_explanation">系统会综合电池序列号前缀、当前容量与设计容量偏差、循环次数、技术类型等信息判断电池来源。原装/更换原厂电池通常容量偏差小、序列号规则匹配；第三方电池往往容量偏差大或序列号无法匹配。</string>
     <string name="history_item_format">%1$s · 健康度 %2$.1f%% · 充电 %3$d 次</string>
