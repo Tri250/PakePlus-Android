@@ -5,9 +5,6 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 import android.util.Log;
 
-import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKey;
-
 import java.io.File;
 import java.security.SecureRandom;
 import java.util.List;
@@ -213,21 +210,8 @@ public class DatabaseEncryptionHelper {
     }
 
     private static SharedPreferences getEncryptedSharedPreferences(Context context) {
-        try {
-            MasterKey masterKey = new MasterKey.Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-            return EncryptedSharedPreferences.create(
-                    context,
-                    PREFS_FILE,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to initialize encrypted preferences", e);
-            return null;
-        }
+        // androidx.security.crypto 已移除，直接返回 null 以走普通 SharedPreferences 降级路径
+        return null;
     }
 
     private static byte[] generatePassphrase() {

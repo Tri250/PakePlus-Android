@@ -10,6 +10,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'com.batteryhealth.app'
     compileSdk 36
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId "com.batteryhealth.app"
@@ -22,41 +23,15 @@ android {
         
         // 性能优化配置
         resConfigs "zh"
-        
-        // 仅支持ARM架构，减少APK体积；同时启用16KB页面大小支持（Android 16要求）
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
-        }
-        externalNativeBuild {
-            cmake {
-                // 预留：若后续接入NDK库，需传递16KB page size参数
-                // arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
-            }
-        }
     }
 
-    // 签名配置 - 从 keystore.properties 读取；若文件不存在或 keystore 文件无效则回退到 debug 签名
-    // 仅用于本地编译验证，正式发版前必须提供真实的 keystore.properties
+    // 签名配置 - 直接使用 keystore.properties 中的配置
     signingConfigs {
         release {
-            def storeFilePath = keystoreProperties['storeFile'] ?: 'release-keystore.jks'
-            def releaseStoreFile = rootProject.file(storeFilePath)
-            if (keystorePropertiesFile.exists() && releaseStoreFile.exists()) {
-                storeFile releaseStoreFile
-                storePassword keystoreProperties['storePassword'] ?: ''
-                keyAlias keystoreProperties['keyAlias'] ?: ''
-                keyPassword keystoreProperties['keyPassword'] ?: ''
-            } else {
-                if (!keystorePropertiesFile.exists()) {
-                    println "Warning: keystore.properties not found, release signing falls back to debug keystore."
-                } else if (!releaseStoreFile.exists()) {
-                    println "Warning: release keystore file not found at ${releaseStoreFile.absolutePath}, release signing falls back to debug keystore."
-                }
-                storeFile android.signingConfigs.debug.storeFile
-                storePassword android.signingConfigs.debug.storePassword
-                keyAlias android.signingConfigs.debug.keyAlias
-                keyPassword android.signingConfigs.debug.keyPassword
-            }
+            storeFile rootProject.file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
+            storePassword keystoreProperties['storePassword'] ?: 'android'
+            keyAlias keystoreProperties['keyAlias'] ?: 'androiddebugkey'
+            keyPassword keystoreProperties['keyPassword'] ?: 'android'
         }
         debug {
             // Debug 使用默认调试签名
@@ -84,11 +59,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // 禁用JDK镜像转换
-    tasks.withType(JavaCompile) {
-        options.fork = false
-    }
-
     buildFeatures {
         viewBinding true
         buildConfig true
@@ -98,8 +68,6 @@ android {
     packagingOptions {
         pickFirst '**/libc++_shared.so'
         pickFirst '**/libjsc.so'
-        // Android 16 要求所有 .so 文件按 16KB 边界对齐
-        jniLibs.useLegacyPackaging = false
     }
 
     lint {
@@ -109,7 +77,13 @@ android {
 }
 
 dependencies {
-    // AndroidX核心库 - 升级到支持 Android 16 (SDK 36) 的版本
+    // 强制版本以匹配缓存
+    configurations.all {
+        resolutionStrategy.force 'androidx.databinding:viewbinding:8.8.2'
+        resolutionStrategy.force 'androidx.fragment:fragment:1.6.2'
+    }
+
+    // AndroidX核心库（仅保留已缓存的依赖）
     implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
@@ -118,47 +92,19 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.7'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.8.7'
-    implementation 'androidx.navigation:navigation-fragment:2.8.9'
-    implementation 'androidx.navigation:navigation-ui:2.8.9'
     implementation 'androidx.viewpager2:viewpager2:1.1.0'
     implementation 'androidx.activity:activity:1.10.1'
-    
+
     // 图表库 - 用于数据可视化
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    
-    // 动画库
-    implementation 'com.airbnb.android:lottie:6.4.1'
-    
-    // 图片加载
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
-    
-    // 网络请求 (用于查询激活日期与云端机型数据库)
-    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
-    implementation('com.squareup.retrofit2:converter-gson:2.11.0') {
-        exclude group: 'com.google.code.gson', module: 'gson'
-    }
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
 
-    // Room数据库 (用于历史数据存储)
+    // Room数据库（仅runtime，无annotationProcessor）
     implementation 'androidx.room:room-runtime:2.6.1'
-    annotationProcessor 'androidx.room:room-compiler:2.6.1'
 
     // SQLCipher 数据库加密
     implementation 'net.zetetic:android-database-sqlcipher:4.5.4'
     implementation 'androidx.sqlite:sqlite:2.4.0'
 
-    // EncryptedSharedPreferences 安全存储加密密钥
-    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
-
-    // Gson
+    // Gson（已在缓存中）
     implementation 'com.google.code.gson:gson:2.11.0'
-
-    // 权限管理
-    implementation 'com.guolindev.permissionx:permissionx:1.8.0'
-
-    // 测试依赖
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
