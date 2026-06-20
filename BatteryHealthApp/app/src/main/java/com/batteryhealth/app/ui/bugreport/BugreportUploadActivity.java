@@ -1,13 +1,8 @@
 package com.batteryhealth.app.ui.bugreport;
 
 import android.content.ContentResolver;
-import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkCapabilities;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
@@ -27,10 +22,7 @@ import androidx.core.content.ContextCompat;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryHealthReport;
-import com.batteryhealth.app.data.model.BugreportUploadResponse;
-import com.batteryhealth.app.data.repository.BugreportRepository;
 import com.batteryhealth.app.utils.BugreportParser;
-import com.batteryhealth.app.utils.NetworkConfig;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,13 +30,9 @@ import java.io.FileOutputStream;
 import java.util.List;
 import java.util.Locale;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 /**
- * Bugreport 上传与分析页面
- * 支持从系统文件选择器选择 bugreport ZIP/TXT 文件，先进行本地解析预览，再上传到后端深度分析。
+ * Bugreport 本地分析页面
+ * 支持从系统文件选择器选择 bugreport ZIP/TXT 文件，仅进行本地解析（已移除上传功能）。
  */
 public class BugreportUploadActivity extends AppCompatActivity {
     private static final String TAG = "BugreportUploadActivity";
@@ -60,10 +48,8 @@ public class BugreportUploadActivity extends AppCompatActivity {
     private View cardResult;
     private ProgressBar progressUpload;
     private View btnSelectFile;
-    private View btnUpload;
     private View btnLocalParse;
 
-    private BugreportRepository repository;
     private Uri selectedUri;
     private File selectedFile;
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
@@ -84,10 +70,9 @@ public class BugreportUploadActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Bugreport 分析");
+            getSupportActionBar().setTitle(R.string.title_bugreport_upload);
         }
 
-        repository = new BugreportRepository(this);
         bindViews();
         setupListeners();
     }
@@ -104,31 +89,15 @@ public class BugreportUploadActivity extends AppCompatActivity {
         cardResult = findViewById(R.id.card_result);
         progressUpload = findViewById(R.id.progress_upload);
         btnSelectFile = findViewById(R.id.btn_select_file);
-        btnUpload = findViewById(R.id.btn_upload);
         btnLocalParse = findViewById(R.id.btn_local_parse);
     }
 
     private void setupListeners() {
         btnSelectFile.setOnClickListener(v -> openFilePicker());
-        btnUpload.setOnClickListener(v -> {
-            if (selectedUri == null) {
-                Toast.makeText(this, "请先选择 bugreport 文件", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (!NetworkConfig.isBaseUrlConfigured(this)) {
-                Toast.makeText(this, "后端服务地址未配置，请先前往配置页面设置", Toast.LENGTH_LONG).show();
-                return;
-            }
-            if (!isNetworkAvailable()) {
-                Toast.makeText(this, "网络不可用，请连接网络后上传，或尝试本地上传解析", Toast.LENGTH_LONG).show();
-                return;
-            }
-            uploadFile();
-        });
         if (btnLocalParse != null) {
             btnLocalParse.setOnClickListener(v -> {
                 if (selectedUri == null) {
-                    Toast.makeText(this, "请先选择 bugreport 文件", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.please_select_bugreport, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 parseLocal();
@@ -162,78 +131,18 @@ public class BugreportUploadActivity extends AppCompatActivity {
         if (result == null) {
             result = uri.getLastPathSegment();
         }
-        return result != null ? result : "未知文件";
-    }
-
-    private boolean isNetworkAvailable() {
-        try {
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (cm == null) return false;
-            android.net.Network network = cm.getActiveNetwork();
-            if (network == null) return false;
-            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
-            return capabilities != null && (
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
-        } catch (Exception e) {
-            Log.e(TAG, "检查网络状态失败", e);
-            return false;
-        }
-    }
-
-    private void uploadFile() {
-        selectedFile = uriToFile(selectedUri);
-        if (selectedFile == null) {
-            Toast.makeText(this, "文件读取失败", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        progressUpload.setVisibility(View.VISIBLE);
-        btnUpload.setEnabled(false);
-        if (btnLocalParse != null) btnLocalParse.setEnabled(false);
-
-        String brand = Build.BRAND != null ? Build.BRAND : "";
-        String model = Build.MODEL != null ? Build.MODEL : "";
-
-        repository.uploadBugreport(selectedFile, brand, model, new Callback<BugreportUploadResponse>() {
-            @Override
-            public void onResponse(Call<BugreportUploadResponse> call, Response<BugreportUploadResponse> response) {
-                runOnUiThread(() -> {
-                    progressUpload.setVisibility(View.GONE);
-                    btnUpload.setEnabled(true);
-                    if (btnLocalParse != null) btnLocalParse.setEnabled(true);
-                    if (response.isSuccessful() && response.body() != null) {
-                        showResult(response.body());
-                    } else {
-                        Toast.makeText(BugreportUploadActivity.this,
-                                "分析失败：" + response.code() + "，可尝试本地解析", Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(Call<BugreportUploadResponse> call, Throwable t) {
-                runOnUiThread(() -> {
-                    progressUpload.setVisibility(View.GONE);
-                    btnUpload.setEnabled(true);
-                    if (btnLocalParse != null) btnLocalParse.setEnabled(true);
-                    Toast.makeText(BugreportUploadActivity.this,
-                            "上传失败：" + t.getMessage() + "，可尝试本地解析", Toast.LENGTH_LONG).show();
-                });
-            }
-        });
+        return result != null ? result : getString(R.string.unknown_file);
     }
 
     private void parseLocal() {
         selectedFile = uriToFile(selectedUri);
         if (selectedFile == null) {
-            Toast.makeText(this, "文件读取失败", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_read_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
         progressUpload.setVisibility(View.VISIBLE);
-        btnUpload.setEnabled(false);
+        btnSelectFile.setEnabled(false);
         if (btnLocalParse != null) btnLocalParse.setEnabled(false);
 
         new Thread(() -> {
@@ -241,22 +150,22 @@ public class BugreportUploadActivity extends AppCompatActivity {
                 BatteryHealthReport report = BugreportParser.parse(selectedFile);
                 runOnUiThread(() -> {
                     progressUpload.setVisibility(View.GONE);
-                    btnUpload.setEnabled(true);
+                    btnSelectFile.setEnabled(true);
                     if (btnLocalParse != null) btnLocalParse.setEnabled(true);
                     if (report != null) {
                         showReport(report);
-                        Toast.makeText(this, "本地解析完成", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.local_parse_done, Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(this, "本地解析失败，未识别有效电池数据", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, R.string.local_parse_failed, Toast.LENGTH_LONG).show();
                     }
                 });
             } catch (Exception e) {
                 Log.e(TAG, "本地解析异常", e);
                 runOnUiThread(() -> {
                     progressUpload.setVisibility(View.GONE);
-                    btnUpload.setEnabled(true);
+                    btnSelectFile.setEnabled(true);
                     if (btnLocalParse != null) btnLocalParse.setEnabled(true);
-                    Toast.makeText(this, "本地解析异常：" + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, getString(R.string.local_parse_error, e.getMessage()), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
@@ -284,34 +193,28 @@ public class BugreportUploadActivity extends AppCompatActivity {
         }
     }
 
-    private void showResult(BugreportUploadResponse response) {
-        if (!response.isSuccess() || response.getData() == null) {
-            Toast.makeText(this, response.getMessage() != null ? response.getMessage() : "分析结果为空", Toast.LENGTH_LONG).show();
-            return;
-        }
-        showReport(response.getData());
-    }
-
     private void showReport(BatteryHealthReport report) {
         if (report == null) {
-            Toast.makeText(this, "分析结果为空", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.analysis_result_empty, Toast.LENGTH_LONG).show();
             return;
         }
         cardResult.setVisibility(View.VISIBLE);
 
-        tvResultHealth.setText(String.format(Locale.getDefault(), "健康度：%.1f%% (%s)",
-                report.getBatteryHealthPercentage(), report.getBatteryHealthLevel()));
-        tvResultCapacity.setText(String.format(Locale.getDefault(), "容量：%d / %d mAh",
-                report.getCurrentCapacityMah(), report.getDesignCapacityMah()));
-        tvResultCycle.setText(String.format(Locale.getDefault(), "循环次数：%d 次", report.getCycleCount()));
-        tvResultSource.setText(String.format(Locale.getDefault(), "电池来源：%s",
-                report.getBatterySource() != null ? report.getBatterySource() : "未知"));
-        tvResultTemp.setText(String.format(Locale.getDefault(), "当前温度：%.1f°C", report.getTemperatureNowCelsius()));
+        tvResultHealth.setText(String.format(Locale.getDefault(), "%s：%.1f%% (%s)",
+                getString(R.string.label_health), report.getBatteryHealthPercentage(), report.getBatteryHealthLevel()));
+        tvResultCapacity.setText(String.format(Locale.getDefault(), "%s：%d / %d mAh",
+                getString(R.string.label_capacity), report.getCurrentCapacityMah(), report.getDesignCapacityMah()));
+        tvResultCycle.setText(String.format(Locale.getDefault(), "%s：%d %s",
+                getString(R.string.label_cycle_count), report.getCycleCount(), getString(R.string.unit_times)));
+        tvResultSource.setText(String.format(Locale.getDefault(), "%s：%s",
+                getString(R.string.label_battery_source), report.getBatterySource() != null ? report.getBatterySource() : getString(R.string.unknown)));
+        tvResultTemp.setText(String.format(Locale.getDefault(), "%s：%.1f°C",
+                getString(R.string.label_temperature), report.getTemperatureNowCelsius()));
 
         layoutRecommendations.removeAllViews();
         List<BatteryHealthReport.Recommendation> recommendations = report.getRecommendations();
-        if (recommendations.isEmpty()) {
-            addText(layoutRecommendations, "暂无建议", true);
+        if (recommendations == null || recommendations.isEmpty()) {
+            addText(layoutRecommendations, getString(R.string.no_recommendations), true);
         } else {
             for (BatteryHealthReport.Recommendation rec : recommendations) {
                 String text = (rec.getTitle() != null ? rec.getTitle() + "\n" : "")
@@ -322,13 +225,13 @@ public class BugreportUploadActivity extends AppCompatActivity {
 
         layoutAppConsumption.removeAllViews();
         List<BatteryHealthReport.AppConsumption> apps = report.getAppConsumption();
-        if (apps.isEmpty()) {
-            addText(layoutAppConsumption, "暂无耗电数据", true);
+        if (apps == null || apps.isEmpty()) {
+            addText(layoutAppConsumption, getString(R.string.no_power_data), true);
         } else {
             for (BatteryHealthReport.AppConsumption app : apps) {
                 String name = app.getAppName() != null ? app.getAppName() : app.getPackageName();
-                addText(layoutAppConsumption, String.format(Locale.getDefault(), "%s：%.1f%%（%d 分钟）",
-                        name != null ? name : "未知", app.getConsumptionPercent(), app.getUsageMinutes()), false);
+                addText(layoutAppConsumption, String.format(Locale.getDefault(), "%s：%.1f%%（%d %s）",
+                        name != null ? name : getString(R.string.unknown), app.getConsumptionPercent(), app.getUsageMinutes(), getString(R.string.unit_minutes)), false);
             }
         }
     }
@@ -337,7 +240,7 @@ public class BugreportUploadActivity extends AppCompatActivity {
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(15);
-        tv.setTextColor(ContextCompat.getColor(this, secondary ? R.color.ios_secondary_label : R.color.ios_label));
+        tv.setTextColor(ContextCompat.getColor(this, secondary ? R.color.text_secondary : R.color.text_primary));
         tv.setLineSpacing(0, 1.2f);
         tv.setPadding(0, 8, 0, 8);
         parent.addView(tv);

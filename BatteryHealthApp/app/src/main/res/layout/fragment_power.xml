@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background"
+    android:background="@color/background"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -22,7 +22,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_power"
-            android:textAppearance="@style/iOSTitle.Large"
+            android:textAppearance="@style/AppTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
             android:layout_marginBottom="32dp" />
@@ -31,11 +31,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -48,16 +46,16 @@
                     android:id="@+id/tv_power"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0.0 W"
-                    android:textAppearance="@style/iOSLargeNumber"
-                    android:textColor="@color/ios_blue" />
+                    android:text="@string/status_not_charging"
+                    android:textAppearance="@style/AppLargeNumber"
+                    android:textColor="@color/primary_green" />
 
                 <TextView
                     android:id="@+id/tv_charge_type"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/status_not_charging"
-                    android:textAppearance="@style/iOSBody.Secondary"
+                    android:textAppearance="@style/AppBody.Secondary"
                     android:layout_marginTop="12dp" />
 
             </LinearLayout>
@@ -67,11 +65,10 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -82,100 +79,121 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/section_details"
-                    android:textAppearance="@style/iOSSubtitle"
+                    android:textAppearance="@style/AppSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
                     android:paddingStart="22dp"
                     android:paddingEnd="22dp" />
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_voltage"
-                        android:textAppearance="@style/iOSBody"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_voltage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.00 V"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_current"
-                        android:textAppearance="@style/iOSBody"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_current"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.00 A"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_battery_level"
-                        android:textAppearance="@style/iOSBody"
+                        android:text="@string/label_ui_battery_level"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_power_battery_level"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="--%"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_system_battery_level"
+                        android:textAppearance="@style/AppBody"
+                        android:lineSpacingExtra="3dp" />
+                    <TextView
+                        android:id="@+id/tv_system_battery_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+                <View style="@style/AppSeparator" />
+
+                <LinearLayout
+                    style="@style/AppListItem"
                     android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_charging_phase"
-                        android:textAppearance="@style/iOSBody"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_charging_phase"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
                     android:minHeight="48dp"
                     android:paddingBottom="22dp">
                     <TextView
@@ -183,16 +201,128 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_battery_temperature"
-                        android:textAppearance="@style/iOSBody"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
                     <TextView
                         android:id="@+id/tv_power_battery_temp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="--°C"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:text="@string/unknown"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="22dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_segmented_power"
+                    android:textAppearance="@style/AppSubtitle"
+                    android:layout_marginBottom="14dp" />
+
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/chart_segment_power"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
+
+                <TextView
+                    android:id="@+id/tv_segment_power_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_no_data"
+                    android:textAppearance="@style/AppBody.Secondary"
+                    android:gravity="center"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="22dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_calibration"
+                    android:textAppearance="@style/AppSubtitle"
+                    android:layout_marginBottom="14dp" />
+
+                <TextView
+                    android:id="@+id/tv_calibration_power"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_calibration_power"
+                    android:textAppearance="@style/AppBody"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_calibration_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_calibration_time"
+                    android:textAppearance="@style/AppBody"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_calibration_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_last_calibration_duration"
+                    android:textAppearance="@style/AppBody"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_stop_background_detection"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="@string/btn_stop_background_detection"
+                    android:textAppearance="@style/AppButton"
+                    android:textColor="@color/primary_green"
+                    app:backgroundTint="@color/white"
+                    app:cornerRadius="24dp"
+                    app:strokeColor="@color/primary_green"
+                    app:strokeWidth="1dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_power_instructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/power_usage_instructions"
+                    android:textAppearance="@style/AppButton"
+                    android:textColor="@color/primary_green"
+                    app:backgroundTint="@color/white"
+                    app:cornerRadius="24dp"
+                    app:strokeColor="@color/primary_green"
+                    app:strokeWidth="1dp" />
 
             </LinearLayout>
 

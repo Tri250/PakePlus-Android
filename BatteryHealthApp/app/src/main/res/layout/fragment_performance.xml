@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ios_background"
+    android:background="@color/background"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -22,7 +22,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_performance"
-            android:textAppearance="@style/iOSTitle.Large"
+            android:textAppearance="@style/AppTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
             android:layout_marginBottom="32dp" />
@@ -31,11 +31,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,14 +45,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_cpu_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
+                    android:textAppearance="@style/AppSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_cpu_usage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0%"
-                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textAppearance="@style/AppMediumNumber"
                     android:layout_marginTop="18dp" />
 
                 <ProgressBar
@@ -75,11 +73,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -91,14 +87,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_memory_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
+                    android:textAppearance="@style/AppSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_memory_usage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0%"
-                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textAppearance="@style/AppMediumNumber"
                     android:layout_marginTop="18dp" />
 
                 <ProgressBar
@@ -119,11 +115,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -135,14 +129,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_performance_score"
-                    android:textAppearance="@style/iOSSubtitle" />
+                    android:textAppearance="@style/AppSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_performance_score"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textAppearance="@style/AppMediumNumber"
                     android:layout_marginTop="18dp" />
 
                 <ProgressBar
@@ -163,11 +157,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -179,14 +171,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_storage_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
+                    android:textAppearance="@style/AppSubtitle" />
 
                 <TextView
                     android:id="@+id/tv_storage_usage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textAppearance="@style/iOSMediumNumber"
+                    android:textAppearance="@style/AppMediumNumber"
                     android:layout_marginTop="18dp" />
 
                 <ProgressBar
@@ -206,11 +198,43 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="26dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_fps"
+                    android:textAppearance="@style/AppSubtitle" />
+
+                <TextView
+                    android:id="@+id/tv_fps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/fps_unavailable"
+                    android:textAppearance="@style/AppMediumNumber"
+                    android:textColor="@color/primary_green"
+                    android:layout_marginTop="18dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -221,16 +245,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_gpu_info"
-                    android:textAppearance="@style/iOSSubtitle"
+                    android:textAppearance="@style/AppSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
                     android:paddingStart="22dp"
                     android:paddingEnd="22dp" />
 
-                <View style="@style/iOSSeparator" />
+                <View style="@style/AppSeparator" />
 
                 <LinearLayout
-                    style="@style/iOSListItem"
+                    style="@style/AppListItem"
                     android:minHeight="48dp"
                     android:paddingBottom="22dp">
 
@@ -239,7 +263,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_gpu_renderer"
-                        android:textAppearance="@style/iOSBody"
+                        android:textAppearance="@style/AppBody"
                         android:lineSpacingExtra="3dp" />
 
                     <TextView
@@ -247,10 +271,70 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:textAppearance="@style/AppBody.Secondary"
                         android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="22dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/section_jank_apps"
+                        android:textAppearance="@style/AppSubtitle" />
+
+                    <TextView
+                        android:id="@+id/tv_jank_meaning"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/jank_meaning"
+                        android:textAppearance="@style/AppBody"
+                        android:textColor="@color/primary_green"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:background="@drawable/bg_tag_green" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_jank_apps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/tv_jank_empty"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/jank_empty"
+                    android:textAppearance="@style/AppBody.Secondary"
+                    android:visibility="gone" />
 
             </LinearLayout>
 

@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,14 +20,27 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.endurance.EnduranceActivity;
 import com.batteryhealth.app.ui.trend.TrendActivity;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ReportGenerator;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -54,6 +68,14 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvBatteryLevel;
     private TextView tvChargingStatus;
     private TextView tvCurrentNow;
+
+    private TextView tvDeviceModelHeader;
+    private TextView tvBeyondDevices;
+    private TextView tvAgingPrediction;
+    private TextView tvSourceExplanation;
+    private LineChart chartHealthTrend;
+    private LinearLayout layoutHistory;
+    private TextView tvHistoryEmpty;
 
     private View btnWeeklyReport;
     private View btnMonthlyReport;
@@ -120,6 +142,7 @@ public class BatteryHealthFragment extends Fragment {
             
             initViews(view);
             updateUI();
+            loadTrendAndHistory();
             animateCardsEntry(view);
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
@@ -180,6 +203,14 @@ public class BatteryHealthFragment extends Fragment {
             tvChargingStatus = view.findViewById(R.id.tv_charging_status);
             tvCurrentNow = view.findViewById(R.id.tv_current_now);
 
+            tvDeviceModelHeader = view.findViewById(R.id.tv_device_model_header);
+            tvBeyondDevices = view.findViewById(R.id.tv_beyond_devices);
+            tvAgingPrediction = view.findViewById(R.id.tv_aging_prediction);
+            tvSourceExplanation = view.findViewById(R.id.tv_source_explanation);
+            chartHealthTrend = view.findViewById(R.id.chart_health_trend);
+            layoutHistory = view.findViewById(R.id.layout_history);
+            tvHistoryEmpty = view.findViewById(R.id.tv_history_empty);
+
             btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
             btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
             btnTrend = view.findViewById(R.id.btn_trend);
@@ -197,16 +228,18 @@ public class BatteryHealthFragment extends Fragment {
     private void setDefaultValues() {
         if (tvHealthPercentage != null) tvHealthPercentage.setText("--");
         if (tvHealthGrade != null) tvHealthGrade.setText("--");
-        if (tvHealthStatus != null) tvHealthStatus.setText("正在检测...");
+        if (tvHealthStatus != null) tvHealthStatus.setText(R.string.status_detecting);
         if (tvCapacity != null) tvCapacity.setText("-- mAh");
         if (tvCycleCount != null) tvCycleCount.setText("-- 次");
         if (tvTemperature != null) tvTemperature.setText("-- °C");
         if (tvVoltage != null) tvVoltage.setText("-- mV");
-        if (tvBatterySource != null) tvBatterySource.setText("检测中");
+        if (tvBatterySource != null) tvBatterySource.setText(R.string.status_detecting);
         if (tvTechnology != null) tvTechnology.setText("--");
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
         if (tvChargingStatus != null) tvChargingStatus.setText("--");
         if (tvCurrentNow != null) tvCurrentNow.setText("-- mA");
+        if (tvBeyondDevices != null) tvBeyondDevices.setText(R.string.beyond_devices_unavailable);
+        if (tvAgingPrediction != null) tvAgingPrediction.setText(R.string.aging_prediction_unavailable);
     }
     
     private void updateUI() {
@@ -217,6 +250,19 @@ public class BatteryHealthFragment extends Fragment {
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info == null) return;
                 
+                // 更新设备型号与超越设备
+                if (tvDeviceModelHeader != null) {
+                    tvDeviceModelHeader.setText(info.getDeviceModel() != null ? info.getDeviceModel() : getString(R.string.label_device_model));
+                }
+                if (tvBeyondDevices != null) {
+                    int beyond = batteryDataManager.getBeyondDevicesPercent();
+                    if (beyond >= 0) {
+                        tvBeyondDevices.setText(String.format(Locale.getDefault(), getString(R.string.beyond_devices_format), beyond));
+                    } else {
+                        tvBeyondDevices.setText(R.string.beyond_devices_unavailable);
+                    }
+                }
+
                 // 更新健康度
                 float healthPercentage = info.getHealthPercentage();
                 if (tvHealthPercentage != null) {
@@ -269,7 +315,7 @@ public class BatteryHealthFragment extends Fragment {
                     if (currentCap > 0 && designCap > 0) {
                         tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap));
                     } else {
-                        tvCapacity.setText("无法读取");
+                        tvCapacity.setText(R.string.unknown);
                     }
                 }
 
@@ -278,7 +324,7 @@ public class BatteryHealthFragment extends Fragment {
                         String estimatedMark = info.isCycleCountEstimated() ? " · 估算" : "";
                         tvCycleCount.setText(String.format(Locale.getDefault(), "%d 次%s", info.getCycleCount(), estimatedMark));
                     } else {
-                        tvCycleCount.setText("无法读取");
+                        tvCycleCount.setText(R.string.unknown);
                     }
                 }
                 
@@ -318,14 +364,41 @@ public class BatteryHealthFragment extends Fragment {
                         tvCurrentNow.setText("-- mA");
                     }
                 }
+
+                // 更新老化预测
+                updateAgingPrediction();
             } catch (Exception e) {
                 Log.e(TAG, "Error updating UI: " + e.getMessage());
             }
         });
     }
+
+    private void updateAgingPrediction() {
+        if (tvAgingPrediction == null || batteryDataManager == null) return;
+        try {
+            int[] prediction = batteryDataManager.getAgingPrediction();
+            if (prediction != null) {
+                if (prediction[0] == 0 && prediction[1] == 0) {
+                    tvAgingPrediction.setText(R.string.aging_prediction_unavailable);
+                } else {
+                    tvAgingPrediction.setText(String.format(Locale.getDefault(), getString(R.string.aging_prediction_format), prediction[0], prediction[1]));
+                }
+            } else {
+                tvAgingPrediction.setText(R.string.aging_prediction_unavailable);
+            }
+        } catch (Exception e) {
+            tvAgingPrediction.setText(R.string.aging_prediction_unavailable);
+        }
+    }
     
     private void setupActionButtons() {
         try {
+            if (tvSourceExplanation != null) {
+                tvSourceExplanation.setOnClickListener(v -> showSourceExplanationDialog());
+            }
+            if (tvBatterySource != null) {
+                tvBatterySource.setOnClickListener(v -> showSourceExplanationDialog());
+            }
             if (btnWeeklyReport != null) {
                 btnWeeklyReport.setOnClickListener(v -> showReport(false));
             }
@@ -352,6 +425,19 @@ public class BatteryHealthFragment extends Fragment {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error setting up action buttons: " + e.getMessage());
+        }
+    }
+
+    private void showSourceExplanationDialog() {
+        if (!isAdded()) return;
+        try {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.what_does_this_mean)
+                    .setMessage(R.string.battery_source_explanation)
+                    .setPositiveButton(R.string.close, null)
+                    .show();
+        } catch (Exception e) {
+            Log.e(TAG, "显示来源说明失败", e);
         }
     }
 
@@ -386,11 +472,11 @@ public class BatteryHealthFragment extends Fragment {
         if (!isAdded()) return;
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-            builder.setTitle(report.title != null ? report.title : (report.title = "电池健康报告"))
+            builder.setTitle(report.title != null ? report.title : (report.title = getString(R.string.report_title_weekly)))
                     .setMessage((report.summary != null ? report.summary : "")
                             + "\n\n建议：\n" + (report.recommendation != null ? report.recommendation : ""))
                     .setPositiveButton(R.string.report_share, (dialog, which) -> shareReport(report))
-                    .setNegativeButton("关闭", null)
+                    .setNegativeButton(R.string.close, null)
                     .show();
         } catch (Exception e) {
             Log.e(TAG, "显示报告弹窗失败", e);
@@ -399,7 +485,7 @@ public class BatteryHealthFragment extends Fragment {
 
     private void shareReport(ReportGenerator.BatteryReport report) {
         try {
-            String shareText = (report.title != null ? report.title : "电池健康报告") + "\n\n"
+            String shareText = (report.title != null ? report.title : getString(R.string.report_title_weekly)) + "\n\n"
                     + (report.period != null ? report.period + "\n" : "")
                     + (report.summary != null ? report.summary + "\n\n" : "")
                     + "建议：\n" + (report.recommendation != null ? report.recommendation : "");
@@ -407,10 +493,158 @@ public class BatteryHealthFragment extends Fragment {
             intent.setType("text/plain");
             intent.putExtra(Intent.EXTRA_SUBJECT, report.title);
             intent.putExtra(Intent.EXTRA_TEXT, shareText);
-            startActivity(Intent.createChooser(intent, "分享电池健康报告"));
+            startActivity(Intent.createChooser(intent, getString(R.string.report_share)));
         } catch (Exception e) {
             Log.e(TAG, "分享报告失败", e);
             Toast.makeText(requireContext(), "分享失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void loadTrendAndHistory() {
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+                if (app == null) return;
+                AppDatabase db = app.getDatabase();
+                if (db == null) return;
+
+                long oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
+                List<BatteryInfo> records = db.batteryInfoDao().getSince(oneWeekAgo);
+
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (!isAdded()) return;
+                        updateMiniTrend(records);
+                        updateHistoryList(records);
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "加载趋势与历史数据失败", e);
+            }
+        }).start();
+    }
+
+    private void updateMiniTrend(List<BatteryInfo> records) {
+        if (chartHealthTrend == null || !isAdded()) return;
+        try {
+            setupMiniChart();
+
+            if (records == null || records.isEmpty()) {
+                chartHealthTrend.setNoDataText(getString(R.string.status_no_data));
+                chartHealthTrend.invalidate();
+                return;
+            }
+
+            List<Entry> healthEntries = new ArrayList<>();
+            List<Entry> capacityEntries = new ArrayList<>();
+            int index = 0;
+            for (BatteryInfo info : records) {
+                if (info.hasValidHealthData()) {
+                    healthEntries.add(new Entry(index, info.getHealthPercentage()));
+                }
+                if (info.getCurrentCapacity() > 0) {
+                    capacityEntries.add(new Entry(index, info.getCurrentCapacity()));
+                }
+                index++;
+            }
+
+            if (healthEntries.isEmpty() && capacityEntries.isEmpty()) {
+                chartHealthTrend.setNoDataText(getString(R.string.status_no_data));
+                chartHealthTrend.invalidate();
+                return;
+            }
+
+            LineData lineData = new LineData();
+            if (!healthEntries.isEmpty()) {
+                LineDataSet healthSet = createDataSet(healthEntries, getString(R.string.label_health), R.color.primary_green);
+                lineData.addDataSet(healthSet);
+            }
+            if (!capacityEntries.isEmpty()) {
+                LineDataSet capSet = createDataSet(capacityEntries, getString(R.string.label_capacity), R.color.blue);
+                lineData.addDataSet(capSet);
+            }
+            chartHealthTrend.setData(lineData);
+            chartHealthTrend.invalidate();
+        } catch (Exception e) {
+            Log.e(TAG, "更新趋势图失败", e);
+        }
+    }
+
+    private LineDataSet createDataSet(List<Entry> entries, String label, int colorRes) {
+        int color = ContextCompat.getColor(requireContext(), colorRes);
+        LineDataSet dataSet = new LineDataSet(entries, label);
+        dataSet.setColor(color);
+        dataSet.setLineWidth(2f);
+        dataSet.setDrawCircles(false);
+        dataSet.setDrawValues(false);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(color);
+        dataSet.setFillAlpha(30);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        return dataSet;
+    }
+
+    private void setupMiniChart() {
+        chartHealthTrend.getDescription().setEnabled(false);
+        chartHealthTrend.setTouchEnabled(false);
+        chartHealthTrend.setDragEnabled(false);
+        chartHealthTrend.setScaleEnabled(false);
+        chartHealthTrend.setDrawGridBackground(false);
+        chartHealthTrend.getLegend().setEnabled(true);
+        chartHealthTrend.getLegend().setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
+
+        XAxis xAxis = chartHealthTrend.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setDrawLabels(false);
+
+        YAxis leftAxis = chartHealthTrend.getAxisLeft();
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setDrawLabels(false);
+        leftAxis.setAxisMinimum(0f);
+
+        chartHealthTrend.getAxisRight().setEnabled(false);
+    }
+
+    private void updateHistoryList(List<BatteryInfo> records) {
+        if (layoutHistory == null || tvHistoryEmpty == null || !isAdded()) return;
+        try {
+            layoutHistory.removeAllViews();
+            if (records == null || records.isEmpty()) {
+                tvHistoryEmpty.setVisibility(View.VISIBLE);
+                return;
+            }
+            tvHistoryEmpty.setVisibility(View.GONE);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
+            LayoutInflater inflater = LayoutInflater.from(requireContext());
+            int count = 0;
+            for (int i = records.size() - 1; i >= 0 && count < 7; i--) {
+                BatteryInfo info = records.get(i);
+                View item = inflater.inflate(R.layout.item_list_row, layoutHistory, false);
+                TextView tvTitle = item.findViewById(R.id.tv_title);
+                TextView tvSubtitle = item.findViewById(R.id.tv_subtitle);
+                TextView tvDetail = item.findViewById(R.id.tv_detail);
+                View icon = item.findViewById(R.id.iv_icon);
+                if (icon != null) icon.setVisibility(View.GONE);
+
+                if (tvTitle != null) {
+                    tvTitle.setText(sdf.format(new Date(info.getTimestamp())));
+                }
+                if (tvSubtitle != null) {
+                    tvSubtitle.setText(String.format(Locale.getDefault(), getString(R.string.history_item_format),
+                            info.getLevel(), info.getHealthPercentage(), info.getCycleCount()));
+                }
+                if (tvDetail != null) {
+                    tvDetail.setText(String.format(Locale.getDefault(), getString(R.string.history_item_detail_format),
+                            "--", 0));
+                    tvDetail.setVisibility(View.VISIBLE);
+                }
+                layoutHistory.addView(item);
+                count++;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "更新历史记录失败", e);
         }
     }
 

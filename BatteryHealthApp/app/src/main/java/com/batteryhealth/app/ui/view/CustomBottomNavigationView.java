@@ -21,7 +21,7 @@ import java.util.List;
  * 自定义底部导航栏
  *
  * 重构原因：
- * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 6 个 Tab。
+ * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 5 个 Tab。
  * 2. BottomNavigationView 在低版本 ROM / 特定 Material 组件版本下解析自定义
  *    TextAppearance 时会出现 Binary XML 崩溃。
  * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
@@ -55,8 +55,8 @@ public class CustomBottomNavigationView extends LinearLayout {
 
     private void init() {
         setOrientation(HORIZONTAL);
-        activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
-        inactiveColor = getResources().getColor(R.color.ios_secondary_label, getContext().getTheme());
+        activeColor = getResources().getColor(R.color.primary_green, getContext().getTheme());
+        inactiveColor = getResources().getColor(R.color.text_tertiary, getContext().getTheme());
     }
 
     /**
@@ -135,7 +135,7 @@ public class CustomBottomNavigationView extends LinearLayout {
         @DrawableRes
         public final int iconRes;
 
-        public NavItem(String label, int iconRes) {
+        public NavItem(String label, @DrawableRes int iconRes) {
             this.label = label;
             this.iconRes = iconRes;
         }

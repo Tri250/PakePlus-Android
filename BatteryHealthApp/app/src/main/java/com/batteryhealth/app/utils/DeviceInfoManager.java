@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -261,6 +263,64 @@ public class DeviceInfoManager {
     public int getUsageDays() {
         DeviceConfig config = getDeviceConfig();
         return config != null ? config.getUsageDays() : -1;
+    }
+
+    /**
+     * 根据设备品牌/型号返回常见零部件供应商参考信息。
+     * 数据基于公开拆机资料与行业常见组合，仅作参考。
+     */
+    public Map<String, String> getComponentSuppliers(DeviceConfig config) {
+        Map<String, String> suppliers = new HashMap<>();
+        if (config == null) {
+            return suppliers;
+        }
+        String brand = config.getBrand();
+        String brandLower = brand != null ? brand.toLowerCase(Locale.ROOT) : "";
+        String model = config.getModel();
+        String modelLower = model != null ? model.toLowerCase(Locale.ROOT) : "";
+
+        if (brandLower.contains("xiaomi") || brandLower.contains("redmi")) {
+            suppliers.put("屏幕", "华星光电 / 三星 / 天马");
+            suppliers.put("后置摄像头", "索尼 / 三星 / OmniVision");
+            suppliers.put("电池", "ATL / 飞毛腿");
+            suppliers.put("硬盘/闪存", "三星 / 海力士 / 铠侠");
+        } else if (brandLower.contains("huawei") || brandLower.contains("honor")) {
+            suppliers.put("屏幕", "京东方 / 维信诺 / 天马");
+            suppliers.put("后置摄像头", "索尼 / 豪威");
+            suppliers.put("电池", "ATL / 欣旺达");
+            suppliers.put("硬盘/闪存", "长江存储 / 三星");
+        } else if (brandLower.contains("oppo") || brandLower.contains("oneplus") || brandLower.contains("realme")) {
+            suppliers.put("屏幕", "三星 / 京东方 / 天马");
+            suppliers.put("后置摄像头", "索尼 / 三星");
+            suppliers.put("电池", "ATL / 欣旺达");
+            suppliers.put("硬盘/闪存", "三星 / 海力士");
+        } else if (brandLower.contains("vivo") || brandLower.contains("iqoo")) {
+            suppliers.put("屏幕", "三星 / 京东方 / 维信诺");
+            suppliers.put("后置摄像头", "索尼 / 三星");
+            suppliers.put("电池", "ATL / 飞毛腿");
+            suppliers.put("硬盘/闪存", "三星 / 海力士");
+        } else if (brandLower.contains("meizu")) {
+            suppliers.put("屏幕", "三星 / 京东方");
+            suppliers.put("后置摄像头", "索尼 / 三星");
+            suppliers.put("电池", "ATL / 欣旺达");
+            suppliers.put("硬盘/闪存", "三星 / 海力士");
+        } else if (brandLower.contains("nubia") || brandLower.contains("redmagic")) {
+            suppliers.put("屏幕", "京东方 / 维信诺");
+            suppliers.put("后置摄像头", "索尼 / 三星");
+            suppliers.put("电池", "ATL / 欣旺达");
+            suppliers.put("硬盘/闪存", "三星 / 海力士");
+        } else {
+            suppliers.put("屏幕", "参考数据");
+            suppliers.put("后置摄像头", "参考数据");
+            suppliers.put("电池", "ATL / 宁德时代");
+            suppliers.put("硬盘/闪存", "三星 / 海力士 / 铠侠");
+        }
+
+        // 根据型号关键词做少量细化
+        if (modelLower.contains("ultra") || modelLower.contains("pro+") || modelLower.contains("ultimate")) {
+            suppliers.put("屏幕", "三星 / 顶级国产屏");
+        }
+        return suppliers;
     }
 
     // region CPU / Memory / Storage / Screen

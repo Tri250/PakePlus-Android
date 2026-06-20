@@ -2,16 +2,14 @@ package com.batteryhealth.app.ui.config;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import java.util.Locale;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,21 +21,22 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
-import com.batteryhealth.app.data.api.ApiClient;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
+import com.batteryhealth.app.ui.bugreport.BugreportGuideActivity;
 import com.batteryhealth.app.ui.bugreport.BugreportUploadActivity;
-import com.batteryhealth.app.utils.BugreportHelper;
 import com.batteryhealth.app.utils.DeviceInfoManager;
-import com.batteryhealth.app.utils.NetworkConfig;
+
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * 设备配置Fragment
  */
 public class DeviceConfigFragment extends Fragment {
-    
+
     private static final String TAG = "DeviceConfigFragment";
-    
+
     private DeviceInfoManager deviceInfoManager;
 
     private TextView tvDeviceName;
@@ -51,13 +50,9 @@ public class DeviceConfigFragment extends Fragment {
     private TextView tvActivationSource;
     private TextView tvAvailableMemory;
     private TextView tvAvailableStorage;
-    private TextView tvNetworkType;
 
-    private TextView tvBugreportBrand;
-    private TextView tvBugreportDial;
-    private TextView tvBugreportMethod;
-    private TextView tvBugreportSaveHint;
-    private TextView tvCurrentBaseUrl;
+    private TextView tvConfigScore;
+    private LinearLayout layoutSuppliers;
 
     @Nullable
     @Override
@@ -79,10 +74,10 @@ public class DeviceConfigFragment extends Fragment {
         android.widget.TextView errorView = new android.widget.TextView(ctx);
         String message = "界面加载失败\n" + e.getClass().getSimpleName() + ": " + e.getMessage();
         errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+        errorView.setTextColor(ContextCompat.getColor(ctx, R.color.text_primary));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(ctx, R.color.ios_background));
+        errorView.setBackgroundColor(ContextCompat.getColor(ctx, R.color.background));
         return errorView;
     }
 
@@ -99,7 +94,6 @@ public class DeviceConfigFragment extends Fragment {
             setDefaultValues();
             initHealthAlertSwitch(view);
             initBugreportSection(view);
-            initNetworkConfigSection(view);
             animateCardsEntry(view);
 
             loadDeviceConfigAsync();
@@ -120,13 +114,9 @@ public class DeviceConfigFragment extends Fragment {
         tvActivationSource = view.findViewById(R.id.tv_activation_source);
         tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
-        tvNetworkType = view.findViewById(R.id.tv_network_type);
 
-        tvBugreportBrand = view.findViewById(R.id.tv_bugreport_brand);
-        tvBugreportDial = view.findViewById(R.id.tv_bugreport_dial);
-        tvBugreportMethod = view.findViewById(R.id.tv_bugreport_method);
-        tvBugreportSaveHint = view.findViewById(R.id.tv_bugreport_save_hint);
-        tvCurrentBaseUrl = view.findViewById(R.id.tv_current_base_url);
+        tvConfigScore = view.findViewById(R.id.tv_config_score);
+        layoutSuppliers = view.findViewById(R.id.layout_suppliers);
     }
 
     private void loadDeviceConfigAsync() {
@@ -178,13 +168,11 @@ public class DeviceConfigFragment extends Fragment {
                 tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
             }
 
-            // 激活来源与可信度
             if (tvActivationSource != null) {
                 String sourceText = config.getActivationSource();
                 float confidence = config.getActivationConfidence();
                 tvActivationSource.setText(String.format(Locale.getDefault(), "%s (可信度 %.0f%%)", getActivationSourceLabel(sourceText), confidence * 100));
             }
-            // 可用内存
             if (tvAvailableMemory != null) {
                 long availMem = config.getAvailableMemory();
                 if (availMem > 0) {
@@ -195,7 +183,6 @@ public class DeviceConfigFragment extends Fragment {
                     tvAvailableMemory.setText("--");
                 }
             }
-            // 可用存储
             if (tvAvailableStorage != null) {
                 long availStorage = config.getAvailableStorage();
                 if (availStorage > 0) {
@@ -204,19 +191,80 @@ public class DeviceConfigFragment extends Fragment {
                     tvAvailableStorage.setText("--");
                 }
             }
-            // 网络类型
-            if (tvNetworkType != null) {
-                String networkType = config.getNetworkType();
-                tvNetworkType.setText(networkType != null ? networkType : "--");
+
+            float score = calculateConfigScore(config);
+            if (tvConfigScore != null) {
+                tvConfigScore.setText(String.format(Locale.getDefault(), getString(R.string.config_score_format), score));
+                tvConfigScore.setTextColor(ContextCompat.getColor(requireContext(), score >= 8.0f ? R.color.primary_green : score >= 5.0f ? R.color.orange : R.color.red));
             }
+
+            renderSuppliers(config);
         } catch (Exception e) {
             Log.e(TAG, "Error updating views: " + e.getMessage());
         }
     }
 
-    /**
-     * 初始化健康度衰减预警开关
-     */
+    private float calculateConfigScore(DeviceConfig config) {
+        try {
+            float score = 0;
+            long totalMem = config.getTotalMemory();
+            if (totalMem >= 12288) score += 3.0f;
+            else if (totalMem >= 8192) score += 2.5f;
+            else if (totalMem >= 6144) score += 2.0f;
+            else if (totalMem >= 4096) score += 1.5f;
+            else score += 1.0f;
+
+            long totalStorage = config.getTotalStorage();
+            if (totalStorage >= 512) score += 2.0f;
+            else if (totalStorage >= 256) score += 1.7f;
+            else if (totalStorage >= 128) score += 1.4f;
+            else if (totalStorage >= 64) score += 1.0f;
+            else score += 0.6f;
+
+            int cpuFreqMax = config.getCpuFreqMax();
+            if (cpuFreqMax >= 3200) score += 3.0f;
+            else if (cpuFreqMax >= 2800) score += 2.5f;
+            else if (cpuFreqMax >= 2400) score += 2.0f;
+            else if (cpuFreqMax >= 2000) score += 1.5f;
+            else score += 1.0f;
+
+            int screenPixels = config.getScreenWidth() * config.getScreenHeight();
+            if (screenPixels >= 3000000) score += 2.0f;
+            else if (screenPixels >= 2000000) score += 1.6f;
+            else if (screenPixels >= 1500000) score += 1.2f;
+            else score += 0.8f;
+
+            return Math.min(10.0f, score);
+        } catch (Exception e) {
+            return 6.0f;
+        }
+    }
+
+    private void renderSuppliers(DeviceConfig config) {
+        if (layoutSuppliers == null || !isAdded()) return;
+        layoutSuppliers.removeAllViews();
+        Map<String, String> suppliers = deviceInfoManager != null ? deviceInfoManager.getComponentSuppliers(config) : null;
+        if (suppliers == null || suppliers.isEmpty()) {
+            addSupplierRow(layoutSuppliers, getString(R.string.supplier_screen), "参考数据");
+            addSupplierRow(layoutSuppliers, getString(R.string.supplier_battery), "ATL / 宁德时代");
+            addSupplierRow(layoutSuppliers, getString(R.string.supplier_storage), "三星 / 海力士 / 铠侠");
+            return;
+        }
+        for (Map.Entry<String, String> entry : suppliers.entrySet()) {
+            addSupplierRow(layoutSuppliers, entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void addSupplierRow(LinearLayout parent, String name, String value) {
+        if (!isAdded()) return;
+        View row = LayoutInflater.from(requireContext()).inflate(R.layout.item_supplier_row, parent, false);
+        TextView tvName = row.findViewById(R.id.tv_supplier_name);
+        TextView tvValue = row.findViewById(R.id.tv_supplier_value);
+        if (tvName != null) tvName.setText(name);
+        if (tvValue != null) tvValue.setText(value);
+        parent.addView(row);
+    }
+
     private void initHealthAlertSwitch(View view) {
         try {
             SwitchCompat switchAlert = view.findViewById(R.id.switch_health_alert);
@@ -236,102 +284,32 @@ public class DeviceConfigFragment extends Fragment {
             Log.e(TAG, "Error initializing health alert switch: " + e.getMessage());
         }
     }
-    
+
     private void initBugreportSection(View view) {
         try {
-            BugreportHelper.BugreportInfo info = BugreportHelper.getBugreportInfo();
-            if (tvBugreportBrand != null) {
-                tvBugreportBrand.setText("适配品牌：" + info.brandName);
-            }
-            if (tvBugreportDial != null) {
-                tvBugreportDial.setText("拨号指令：" + info.dialCode);
-            }
-            if (tvBugreportMethod != null) {
-                tvBugreportMethod.setText(info.method);
-            }
-            if (tvBugreportSaveHint != null) {
-                tvBugreportSaveHint.setText(String.format(Locale.getDefault(),
-                        getString(R.string.bugreport_save_hint), info.savePathHint));
-            }
+            View btnOpenGuide = view.findViewById(R.id.btn_open_guide);
+            View btnOpenUpload = view.findViewById(R.id.btn_open_upload);
 
-            View btnOpenDial = view.findViewById(R.id.btn_open_dial);
-            View btnCopyAdb = view.findViewById(R.id.btn_copy_adb);
-            View btnUploadBugreport = view.findViewById(R.id.btn_upload_bugreport);
-
-            if (btnOpenDial != null) {
-                btnOpenDial.setOnClickListener(v -> BugreportHelper.openDialPad(requireContext(), info.dialCode));
-            }
-            if (btnCopyAdb != null) {
-                btnCopyAdb.setOnClickListener(v -> {
-                    BugreportHelper.copyAdbCommand(requireContext());
-                    Toast.makeText(requireContext(), R.string.adb_copied, Toast.LENGTH_SHORT).show();
+            if (btnOpenGuide != null) {
+                btnOpenGuide.setOnClickListener(v -> {
+                    try {
+                        startActivity(new Intent(requireContext(), BugreportGuideActivity.class));
+                    } catch (Exception e) {
+                        Log.e(TAG, "启动 Bugreport 引导页失败", e);
+                    }
                 });
             }
-            if (btnUploadBugreport != null) {
-                btnUploadBugreport.setOnClickListener(v -> {
+            if (btnOpenUpload != null) {
+                btnOpenUpload.setOnClickListener(v -> {
                     try {
                         startActivity(new Intent(requireContext(), BugreportUploadActivity.class));
                     } catch (Exception e) {
-                        Log.e(TAG, "启动上传页面失败", e);
+                        Log.e(TAG, "启动本地解析页失败", e);
                     }
                 });
             }
         } catch (Exception e) {
             Log.e(TAG, "Error initializing bugreport section: " + e.getMessage());
-        }
-    }
-
-    private void initNetworkConfigSection(View view) {
-        try {
-            updateBaseUrlDisplay();
-
-            View btnSetBaseUrl = view.findViewById(R.id.btn_set_base_url);
-            if (btnSetBaseUrl != null) {
-                btnSetBaseUrl.setOnClickListener(v -> showBaseUrlDialog());
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing network config section: " + e.getMessage());
-        }
-    }
-
-    private void updateBaseUrlDisplay() {
-        if (tvCurrentBaseUrl == null) return;
-        Context ctx = requireContext();
-        String url = NetworkConfig.getBaseUrl(ctx);
-        if (url.isEmpty()) {
-            tvCurrentBaseUrl.setText("未配置，请先设置后端服务地址");
-        } else {
-            tvCurrentBaseUrl.setText(url);
-        }
-    }
-
-    private void showBaseUrlDialog() {
-        try {
-            Context ctx = requireContext();
-            EditText input = new EditText(ctx);
-            input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-            String current = NetworkConfig.getBaseUrl(ctx);
-            input.setText(current);
-            input.setHint(R.string.base_url_hint);
-
-            new AlertDialog.Builder(ctx)
-                    .setTitle("设置后端服务地址")
-                    .setView(input)
-                    .setPositiveButton("保存", (dialog, which) -> {
-                        String url = input.getText() != null ? input.getText().toString().trim() : "";
-                        boolean success = NetworkConfig.setBaseUrl(ctx, url);
-                        if (success) {
-                            ApiClient.reset();
-                            updateBaseUrlDisplay();
-                            Toast.makeText(ctx, R.string.base_url_updated, Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(ctx, "地址格式错误，请输入 http:// 或 https:// 开头的合法 URL", Toast.LENGTH_LONG).show();
-                        }
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-        } catch (Exception e) {
-            Log.e(TAG, "显示后端地址对话框失败", e);
         }
     }
 
@@ -357,7 +335,7 @@ public class DeviceConfigFragment extends Fragment {
                     .start();
             }
         } catch (Exception e) {
-            Log.d(TAG, "Liquid glass card animation skipped: " + e.getMessage());
+            Log.d(TAG, "Card animation skipped: " + e.getMessage());
         }
     }
 
@@ -395,6 +373,6 @@ public class DeviceConfigFragment extends Fragment {
         if (tvActivationSource != null) tvActivationSource.setText("--");
         if (tvAvailableMemory != null) tvAvailableMemory.setText("--");
         if (tvAvailableStorage != null) tvAvailableStorage.setText("--");
-        if (tvNetworkType != null) tvNetworkType.setText("--");
+        if (tvConfigScore != null) tvConfigScore.setText("--");
     }
 }

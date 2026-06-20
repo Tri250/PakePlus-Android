@@ -1,38 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 液态玻璃系统颜色 - 浅色模式 -->
-    <color name="ios_background">#EFEFF4</color>
-    <color name="ios_tertiary_background">#F2F2F7</color>
+    <!-- V4.4.6 设计规范主色 -->
+    <color name="primary_green">#34C759</color>
+    <color name="primary_light">#E8F9ED</color>
+    <color name="background">#F5F7FA</color>
+    <color name="card">#FFFFFF</color>
+    <color name="text_primary">#1C1C1E</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="divider">#E5E7EB</color>
+    <color name="orange">#FF9500</color>
+    <color name="red">#FF3B30</color>
+    <color name="blue">#007AFF</color>
+    <color name="purple">#AF52DE</color>
 
-    <!-- 液态玻璃半透明叠加色 -->
+    <!-- 兼容性别名（旧名称） -->
+    <color name="ios_background">#F5F7FA</color>
+    <color name="ios_tertiary_background">#F2F2F7</color>
+    <color name="ios_label">#1C1C1E</color>
+    <color name="ios_secondary_label">#6B7280</color>
+    <color name="ios_tertiary_label">#9CA3AF</color>
+    <color name="ios_separator">#E5E7EB</color>
+    <color name="ios_red">#FF3B30</color>
+    <color name="ios_orange">#FF9500</color>
+    <color name="ios_yellow">#FFB800</color>
+    <color name="ios_green">#34C759</color>
+    <color name="ios_mint">#66D4CF</color>
+    <color name="ios_cyan">#64D2FF</color>
+    <color name="ios_blue">#007AFF</color>
+    <color name="ios_purple">#AF52DE</color>
+
+    <!-- 液态玻璃半透明叠加色（保留） -->
     <color name="liquid_glass_surface">#CCFFFFFF</color>
     <color name="liquid_glass_surface_subtle">#B3FFFFFF</color>
     <color name="liquid_glass_border">#1F000000</color>
     <color name="liquid_glass_glow">#1A007AFF</color>
 
-    <color name="ios_label">#1C1C1E</color>
-    <color name="ios_secondary_label">#3C3C4399</color>
-    <color name="ios_tertiary_label">#3C3C4366</color>
-
-    <color name="ios_separator">#C6C6C8</color>
-
-    <!-- 液态玻璃强调色板（高饱和度、发光感） -->
-    <color name="ios_red">#FF453A</color>
-    <color name="ios_orange">#FF9F0A</color>
-    <color name="ios_yellow">#FFD60A</color>
-    <color name="ios_green">#32D74B</color>
-    <color name="ios_mint">#66D4CF</color>
-    <color name="ios_cyan">#64D2FF</color>
-    <color name="ios_blue">#0A84FF</color>
-    <color name="ios_purple">#BF5AF2</color>
-
     <!-- 通用颜色 -->
     <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 
-    <!-- 健康度等级颜色（仅实际使用的等级） -->
-    <color name="health_a_plus">#32D74B</color>
-    <color name="health_a">#32D74B</color>
-    <color name="health_c">#FFD60A</color>
-    <color name="health_d">#FF9F0A</color>
-    <color name="health_e">#FF453A</color>
+    <!-- 健康度等级颜色 -->
+    <color name="health_a_plus">#34C759</color>
+    <color name="health_a">#34C759</color>
+    <color name="health_b">#34C759</color>
+    <color name="health_c">#FF9500</color>
+    <color name="health_d">#FF3B30</color>
+    <color name="health_e">#FF3B30</color>
 </resources>

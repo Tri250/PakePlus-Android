@@ -21,11 +21,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="电池江湖"
+            android:text="@string/title_community"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="24dp" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -41,7 +41,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="32dp"
+                android:padding="28dp"
                 android:gravity="center">
 
                 <TextView
@@ -53,7 +53,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="加入电池社区"
+                    android:text="@string/section_community"
                     android:textAppearance="@style/iOSTitle"
                     android:textColor="@color/ios_label"
                     android:layout_marginTop="12dp" />
@@ -61,153 +61,335 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="分享电池使用心得，交流保养技巧"
+                    android:text="@string/community_local_tip"
                     android:textAppearance="@style/iOSBody.Secondary"
+                    android:gravity="center"
                     android:layout_marginTop="6dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_community"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="分享养护贴士"
-                    android:textAppearance="@style/iOSBody"
-                    app:backgroundTint="@color/ios_blue"
-                    app:cornerRadius="14dp"
-                    app:strokeWidth="0dp" />
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_share_experience"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="@string/btn_share_experience"
+                        android:textAppearance="@style/iOSBody"
+                        android:textColor="@color/white"
+                        app:backgroundTint="@color/ios_green"
+                        app:cornerRadius="24dp"
+                        app:strokeWidth="0dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_share_care_tips"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/btn_share_care_tips"
+                        android:textAppearance="@style/iOSBody"
+                        android:textColor="@color/ios_green"
+                        app:backgroundTint="@color/white"
+                        app:cornerRadius="24dp"
+                        app:strokeColor="@color/ios_green"
+                        app:strokeWidth="1dp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.card.MaterialCardView
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_care_tips"
+            android:textAppearance="@style/iOSSubtitle"
+            android:layout_marginBottom="16dp" />
+
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:columnCount="2"
+            android:useDefaultMargins="false"
+            android:layout_marginBottom="24dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="电池养护小贴士"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
-
-                <View style="@style/iOSSeparator" />
+                android:layout_columnWeight="1"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
 
                 <LinearLayout
-                    style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="避免过度充电"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="电量保持 20%-80%"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
-
-                </LinearLayout>
-
-                <View style="@style/iOSSeparator" />
-
-                <LinearLayout
-                    style="@style/iOSListItem"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="避免深度放电"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:text="⚡"
+                        android:textSize="24sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="低于 10% 会加速老化"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
-
-                </LinearLayout>
-
-                <View style="@style/iOSSeparator" />
-
-                <LinearLayout
-                    style="@style/iOSListItem"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="避免高温环境"
+                        android:text="@string/care_tip_title_format"
                         android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="充电时保持通风"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="@string/tip_1"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
 
                 </LinearLayout>
 
-                <View style="@style/iOSSeparator" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
 
                 <LinearLayout
-                    style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:paddingBottom="22dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="使用原装充电器"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="兼容快充更安全高效"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="🔋"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/care_tip_title_format"
+                        android:textAppearance="@style/iOSBody"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tip_2"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
 
                 </LinearLayout>
 
-            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌡️"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/care_tip_title_format"
+                        android:textAppearance="@style/iOSBody"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tip_3"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔌"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/care_tip_title_format"
+                        android:textAppearance="@style/iOSBody"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tip_4"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginEnd="6dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛡️"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/care_tip_title_format"
+                        android:textAppearance="@style/iOSBody"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tip_5"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginStart="6dp"
+                app:cardBackgroundColor="@color/liquid_glass_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0.5dp"
+                app:strokeColor="@color/liquid_glass_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📊"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/care_tip_title_format"
+                        android:textAppearance="@style/iOSBody"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tip_6"
+                        android:textAppearance="@style/iOSCaption"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </GridLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_community"
+            android:textAppearance="@style/iOSSubtitle"
+            android:layout_marginBottom="16dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_community_posts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
 
     </LinearLayout>
 

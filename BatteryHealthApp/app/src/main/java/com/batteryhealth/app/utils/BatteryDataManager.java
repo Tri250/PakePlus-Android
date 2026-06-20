@@ -437,12 +437,18 @@ public class BatteryDataManager {
     }
 
     /**
-     * 电池来源判定：综合数据库 + 序列号 + 容量偏差。
+     * 电池来源判定：综合序列号 + 容量偏差 + 循环次数。
+     * 支持识别原装、更换原厂、第三方、无法验证四种状态。
      */
     private BatterySourceResult determineBatterySource(Intent intent, int fullCapacity, int designCapacity) {
         BatterySourceResult result = new BatterySourceResult();
 
         String serial = readBatterySerial(intent);
+        int cycleCount = -1;
+        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+        if (batteryManager != null) {
+            cycleCount = readCycleCount(batteryManager);
+        }
 
         // 1. 序列号分析
         if (serial != null && !serial.isEmpty() && !serial.equalsIgnoreCase("unknown")) {
@@ -451,7 +457,6 @@ public class BatteryDataManager {
 
             boolean matchesBrandPattern = false;
             if (brand.contains("xiaomi") || brand.contains("redmi")) {
-                // 小米/红米电池序列号常见 15 位纯数字或特定前缀
                 matchesBrandPattern = upper.matches("^[0-9A-Z]{12,20}$");
             } else if (brand.contains("oppo") || brand.contains("oneplus") || brand.contains("realme")) {
                 matchesBrandPattern = upper.matches("^[0-9A-Z]{10,18}$");
@@ -479,13 +484,32 @@ public class BatteryDataManager {
                 // 容量严重偏离官方规格，强烈怀疑非原装
                 result.source = "第三方";
                 result.confidence = Math.min(result.confidence + 0.25f, 0.95f);
-            } else if (ratio >= 0.85f && ratio <= 1.05f && result.confidence < 0.85f) {
-                result.source = "原装";
-                result.confidence = 0.85f;
+            } else if (ratio >= 0.85f && ratio <= 1.05f) {
+                if (result.confidence < 0.85f) {
+                    result.source = "原装";
+                    result.confidence = 0.85f;
+                }
+            } else if (ratio >= 0.70f && ratio < 0.85f) {
+                // 容量衰减较大但仍在原厂范围内，判断为已更换原厂电池
+                if (!"第三方".equals(result.source)) {
+                    result.source = "更换原厂";
+                    result.confidence = 0.70f;
+                }
             }
         }
 
-        // 3. 无法获取任何有效信息
+        // 3. 结合循环次数进一步判断
+        if (cycleCount > 0) {
+            if (cycleCount > 600 && "原装".equals(result.source)) {
+                result.source = "更换原厂";
+                result.confidence = 0.65f;
+            } else if (cycleCount > 100 && "无法验证".equals(result.source)) {
+                result.source = "更换原厂";
+                result.confidence = 0.40f;
+            }
+        }
+
+        // 4. 无法获取任何有效信息
         if (result.source == null || result.source.isEmpty()) {
             result.source = "无法验证";
             result.confidence = 0.0f;
@@ -653,6 +677,8 @@ public class BatteryDataManager {
         switch (source) {
             case "原装":
                 return "original";
+            case "更换原厂":
+                return "replaced_original";
             case "第三方":
                 return "third_party";
             default:
@@ -897,8 +923,64 @@ public class BatteryDataManager {
         String source = info.getBatterySource();
         float conf = info.getBatterySourceConfidence();
         if ("original".equals(source)) return "原装（置信度 " + (int) (conf * 100) + "%）";
+        if ("replaced_original".equals(source)) return "更换原厂（置信度 " + (int) (conf * 100) + "%）";
         if ("third_party".equals(source)) return "第三方（置信度 " + (int) (conf * 100) + "%）";
         return "无法验证";
+    }
+
+    /**
+     * 计算超越了百分之多少的同类设备（基于健康度的经验分布估算）。
+     *
+     * @return 0-100 的整数，-1 表示无法计算
+     */
+    public int getBeyondDevicesPercent() {
+        BatteryInfo info = getCurrentBatteryInfo();
+        if (info == null || !info.hasValidHealthData()) return -1;
+        float health = info.getHealthPercentage();
+        // 经验分布：健康度 95+ 约超越 90%；80+ 约 60%；70+ 约 35%；60+ 约 15%；低于 60 约 5%
+        if (health >= 95) return 90 + (int) ((health - 95) * 2);
+        if (health >= 85) return 70 + (int) ((health - 85) * 2);
+        if (health >= 75) return 45 + (int) ((health - 75) * 2.5);
+        if (health >= 60) return 15 + (int) ((health - 60) * 2);
+        return Math.max(0, (int) (health / 4));
+    }
+
+    /**
+     * 预测电池健康度衰减到 80% 所需的剩余时间。
+     *
+     * @return 数组 [年, 月]，返回 null 表示无法预测
+     */
+    public int[] getAgingPrediction() {
+        BatteryInfo info = getCurrentBatteryInfo();
+        if (info == null || !info.hasValidHealthData()) return null;
+        float health = info.getHealthPercentage();
+        if (health < 80) return new int[]{0, 0};
+
+        // 优先从激活信息获取使用天数
+        int days = usageDays;
+        if (days < 0 && activation != null) {
+            days = activation.usageDays;
+        }
+
+        // 估算年化衰减率
+        float annualDecay;
+        if (days > 30 && health < 100) {
+            float totalDecay = 100f - health;
+            float yearsUsed = days / 365.0f;
+            annualDecay = totalDecay / Math.max(yearsUsed, 0.1f);
+        } else {
+            // 无足够历史数据，采用经验默认值 7%/年
+            annualDecay = 7.0f;
+        }
+
+        // 限制合理范围：2% - 15%/年
+        annualDecay = Math.max(2.0f, Math.min(annualDecay, 15.0f));
+
+        float remainingDrop = health - 80f;
+        float yearsTo80 = remainingDrop / annualDecay;
+        int totalMonths = Math.round(yearsTo80 * 12);
+        if (totalMonths < 1) totalMonths = 1;
+        return new int[]{totalMonths / 12, totalMonths % 12};
     }
 
     // endregion

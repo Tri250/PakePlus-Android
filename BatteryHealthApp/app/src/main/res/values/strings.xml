@@ -32,15 +32,83 @@
     <string name="error_continue">继续使用</string>
     <string name="error_copied">已复制到剪贴板</string>
 
+    <!-- 通用 -->
+    <string name="unknown">未知</string>
+    <string name="expand">展开</string>
+    <string name="share">分享</string>
+    <string name="close">关闭</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="unit_times">次</string>
+    <string name="unit_minutes">分钟</string>
+    <string name="unit_hours">小时</string>
+    <string name="unit_days">天</string>
+    <string name="reference_data">参考数据</string>
+
+    <!-- Bugreport -->
+    <string name="title_bugreport_guide">如何抓取 Bugreport 日志</string>
+    <string name="bugreport_guide_intro">Bugreport 日志包含电池、电量、应用耗电等系统级详细信息。通过本页指引生成日志后，可在本应用进行本地解析，无需上传服务器。</string>
+    <string name="section_brand_methods">按品牌查看方法</string>
+    <string name="section_save_location">保存位置提示</string>
+    <string name="bugreport_save_locations">生成的文件通常位于：内部存储/bugreports/、MIUI/debug_log/、Download/、Android/data/ 等目录下，具体以系统通知或文件管理器为准。</string>
+    <string name="btn_select_bugreport_file">去选择 Bugreport 文件</string>
+    <string name="title_bugreport_upload">Bugreport 本地分析</string>
+    <string name="select_bugreport_file">选择 bugreport 文件</string>
+    <string name="no_file_selected">未选择文件</string>
+    <string name="btn_select_file">选择文件</string>
+    <string name="btn_local_parse">本地解析</string>
+    <string name="please_select_bugreport">请先选择 bugreport 文件</string>
+    <string name="file_read_failed">文件读取失败</string>
+    <string name="local_parse_done">本地解析完成</string>
+    <string name="local_parse_failed">本地解析失败，未识别有效电池数据</string>
+    <string name="local_parse_error">本地解析异常：%s</string>
+    <string name="analysis_result_empty">分析结果为空</string>
+    <string name="unknown_file">未知文件</string>
+    <string name="analysis_result">分析结果</string>
+    <string name="recommendations">建议</string>
+    <string name="app_power_ranking">应用耗电排行</string>
+    <string name="no_recommendations">暂无建议</string>
+    <string name="no_power_data">暂无耗电数据</string>
+    <string name="brand_xiaomi">小米 / 红米</string>
+    <string name="method_xiaomi">设置 → 我的设备 → 全部参数与信息 → 连续点击“OS版本”开启开发者模式 → 更多设置 → 开发者选项 → 提交错误报告 → 选择“完整报告”</string>
+    <string name="brand_huawei_honor">华为 / 荣耀</string>
+    <string name="method_huawei_honor">设置 → 关于手机 → 连续点击“版本号”开启开发者模式 → 系统和更新 → 开发人员选项 → 提交错误报告 → 选择“完整报告”</string>
+    <string name="brand_oppo_oneplus_realme">OPPO / 一加 / realme</string>
+    <string name="method_oppo_oneplus_realme">设置 → 关于手机 → 版本信息 → 连续点击“版本号” → 其他设置/系统设置 → 开发者选项 → 提交错误报告</string>
+    <string name="brand_vivo_iqoo">vivo / iQOO</string>
+    <string name="method_vivo_iqoo">设置 → 系统管理/更多设置 → 关于手机 → 版本信息 → 连续点击“软件版本号” → 开发者选项 → 提交错误报告</string>
+    <string name="brand_meizu">魅族</string>
+    <string name="method_meizu">设置 → 关于手机 → 连续点击“版本号” → 辅助功能 → 开发者选项 → 提交错误报告</string>
+    <string name="brand_nubia_redmagic">努比亚 / 红魔</string>
+    <string name="method_nubia_redmagic">设置 → 关于手机 → 连续点击“版本号” → 开发者选项 → 提交错误报告</string>
+    <string name="brand_generic">通用方法</string>
+    <string name="method_generic">拨号盘输入 *#*#284#*#* 或 *#*#2846579#*#*（部分华为/荣耀机型），按提示生成完整报告。</string>
+
+    <!-- 标签 -->
+    <string name="label_health">健康度</string>
+    <string name="label_capacity">容量</string>
+    <string name="label_cycle_count">循环次数</string>
+    <string name="label_battery_source">电池来源</string>
+    <string name="label_temperature">温度</string>
+    <string name="health_colon">健康度：--</string>
+    <string name="capacity_colon">容量：--</string>
+    <string name="cycle_colon">循环次数：--</string>
+    <string name="source_colon">电池来源：--</string>
+    <string name="temperature_colon">当前温度：--</string>
+
     <!-- 设置项 -->
     <string name="health_alert_setting_title">电池健康度提醒</string>
     <string name="health_alert_setting_summary">当电池健康度出现明显衰减时通知我</string>
 
     <!-- 电池健康 -->
     <string name="title_battery_health">电池健康</string>
+    <string name="device_model_format">%1$s · Android %2$s</string>
     <string name="section_current_status">当前状态</string>
     <string name="section_details">详细信息</string>
     <string name="section_reports">报告与分析</string>
+    <string name="section_history">最近 7 天记录</string>
+    <string name="section_aging_prediction">老化预测</string>
+    <string name="section_mini_trend">健康度 / 容量趋势</string>
     <string name="btn_weekly_report">周报</string>
     <string name="btn_monthly_report">月报</string>
     <string name="btn_trend">趋势追踪</string>
@@ -49,18 +117,33 @@
     <string name="report_title_monthly">电池健康月报</string>
     <string name="report_share">分享报告</string>
     <string name="status_detecting">正在检测...</string>
+    <string name="status_charging">充电中</string>
+    <string name="status_fully_charged">已充满</string>
     <string name="label_battery_level">电池电量</string>
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
     <string name="label_battery_capacity">电池容量</string>
-    <string name="label_cycle_count">循环次数</string>
     <string name="label_battery_temperature">电池温度</string>
     <string name="label_battery_voltage">电池电压</string>
-    <string name="label_battery_source">电池来源</string>
     <string name="label_battery_technology">电池技术</string>
+    <string name="label_device_model">设备型号</string>
+    <string name="label_beyond_devices">超越设备</string>
+    <string name="beyond_devices_format">超越了 %1$d%% 的设备</string>
+    <string name="beyond_devices_unavailable">暂无对比数据</string>
+    <string name="aging_prediction_format">约 %1$d 年 %2$d 个月到 80%%</string>
+    <string name="aging_prediction_unavailable">暂无足够数据预测老化</string>
+    <string name="battery_source_original">原装电池</string>
+    <string name="battery_source_replaced_original">更换原厂电池</string>
+    <string name="battery_source_third_party">第三方电池</string>
+    <string name="battery_source_unknown">无法判断</string>
+    <string name="what_does_this_mean">这些是什么意思？</string>
+    <string name="battery_source_explanation">系统会综合电池序列号前缀、当前容量与设计容量偏差、循环次数、技术类型等信息判断电池来源。原装/更换原厂电池通常容量偏差小、序列号规则匹配；第三方电池往往容量偏差大或序列号无法匹配。</string>
+    <string name="history_item_format">%1$s · 健康度 %2$.1f%% · 充电 %3$d 次</string>
+    <string name="history_item_detail_format">亮屏 %1$s · 卡顿 %2$d 次</string>
+    <string name="history_empty">暂无历史记录</string>
 
     <!-- 设备配置 -->
-    <string name="title_device_config">设备配置</string>
+    <string name="title_device_config">配置查询</string>
     <string name="section_device_info">设备信息</string>
     <string name="label_device_name">设备名称</string>
     <string name="label_android_version">Android版本</string>
@@ -75,16 +158,21 @@
     <string name="label_available_storage">可用存储</string>
     <string name="label_network_type">网络类型</string>
     <string name="section_alert_settings">预警设置</string>
-    <string name="section_bugreport">Bugreport 获取指南</string>
-    <string name="section_network_config">后端服务地址</string>
-    <string name="btn_open_dial">打开拨号盘</string>
-    <string name="btn_copy_adb">复制 ADB 命令</string>
-    <string name="btn_upload_bugreport">上传并分析 Bugreport</string>
-    <string name="btn_set_base_url">设置后端地址</string>
-    <string name="adb_copied">ADB 命令已复制</string>
-    <string name="bugreport_save_hint">文件位置：%s</string>
-    <string name="base_url_hint">输入后端地址，如 http://10.0.2.2:8080/</string>
-    <string name="base_url_updated">后端地址已更新</string>
+    <string name="section_bugreport">Bugreport 导入</string>
+    <string name="section_suppliers">配置厂商列表</string>
+    <string name="section_config_score">配置评分</string>
+    <string name="config_score_format">%1$.1f 分</string>
+    <string name="btn_import_bugreport">导入</string>
+    <string name="btn_open_guide">如何抓取 Bugreport</string>
+    <string name="btn_open_upload">本地解析 Bugreport</string>
+    <string name="supplier_screen">屏幕</string>
+    <string name="supplier_rear_camera">后置摄像头</string>
+    <string name="supplier_ultrawide">超广角</string>
+    <string name="supplier_telephoto">长焦</string>
+    <string name="supplier_front_camera">前置摄像头</string>
+    <string name="supplier_battery">电池</string>
+    <string name="supplier_storage">硬盘/闪存</string>
+    <string name="data_reference_tip">* 供应商数据为基于公开信息的参考数据，非官方拆机报告。</string>
 
     <!-- 性能分析 -->
     <string name="title_performance">性能分析</string>
@@ -94,22 +182,137 @@
     <string name="label_storage_usage">存储使用率</string>
     <string name="label_gpu_info">GPU信息</string>
     <string name="label_gpu_renderer">GPU渲染器</string>
+    <string name="label_fps">实时帧率</string>
+    <string name="fps_format">%1$d FPS</string>
+    <string name="fps_unavailable">-- FPS</string>
+    <string name="section_jank_apps">Top 5 卡顿应用</string>
+    <string name="jank_meaning">卡顿含义</string>
+    <string name="jank_explanation">卡顿指应用在运行中出现帧率下降、响应延迟或动画不流畅的现象。常见原因包括后台占用过高、内存不足、CPU 调度受限等。</string>
+    <string name="jank_item_format">%1$s · 卡顿 %2$d 次 · 平均 %3$.0f ms</string>
+    <string name="jank_empty">暂无卡顿记录</string>
+    <string name="performance_score_format">%1$d 分</string>
+    <string name="gpu_unrecognized">未识别</string>
+    <string name="performance_issue_low">综合性能评分低于60，建议关闭后台应用</string>
+    <string name="performance_issue_frame_drop">检测到帧率低于45，存在卡顿现象</string>
 
     <!-- 续航分析 -->
     <string name="title_endurance">续航分析</string>
     <string name="label_estimated_endurance">预计续航时间</string>
+    <string name="label_endurance_score">续航评分</string>
     <string name="hours_placeholder">-- 小时</string>
     <string name="status_calculating">正在计算...</string>
     <string name="section_battery_usage_details">电池使用详情</string>
     <string name="label_current_level">当前电量</string>
     <string name="label_discharge_rate">放电速率</string>
     <string name="label_estimated_full">预计充满</string>
+    <string name="label_screen_on_time">亮屏时长</string>
+    <string name="label_charging_duration">充电时长</string>
+    <string name="section_core_data">核心数据</string>
+    <string name="label_rated_capacity">额定容量</string>
+    <string name="label_factory_capacity">出厂容量</string>
+    <string name="label_temp_range">温度区间</string>
+    <string name="label_running_time">运行时长</string>
+    <string name="section_app_power_rank">应用耗电排行 Top 5</string>
+    <string name="section_app_jank_count">应用卡顿次数 Top 5</string>
+    <string name="section_watch_endurance">手表专属续航</string>
+    <string name="watch_endurance_tip">当前设备被识别为可穿戴设备，以下为手表专属续航分析参考。</string>
+    <string name="normal_phone_endurance">当前为普通手机/平板续航分析。</string>
+    <string name="share_endurance">分享续航分析</string>
+    <string name="endurance_share_format">续航分析\n预计续航：%1$s\n放电速率：%2$s\n%3$s</string>
+    <string name="endurance_date_format">%1$tY年%1$tm月%1$td日</string>
+    <string name="endurance_score_format">%1$d 分</string>
+    <string name="endurance_score_label">续航评分</string>
+    <string name="endurance_score_excellent">续航优秀</string>
+    <string name="endurance_score_good">续航良好</string>
+    <string name="endurance_score_average">续航一般</string>
+    <string name="endurance_score_poor">续航较差</string>
+    <string name="card_health_title">电池健康</string>
+    <string name="card_capacity_title">当前容量</string>
+    <string name="card_cycle_title">循环次数</string>
+    <string name="label_active_charging_time">主动充电</string>
+    <string name="app_power_item_format">%1$s · 耗电 %2$d mAh</string>
+    <string name="jank_count_item_format">%1$s · 卡顿 %2$d 次</string>
+    <string name="no_app_power_data">暂无应用耗电数据</string>
+    <string name="no_jank_data">暂无卡顿数据</string>
+    <string name="watch_endurance_hours_format">约 %1$d 小时</string>
+    <string name="typical_usage_format">典型使用 %1$s</string>
+    <string name="btn_stop_background_detection">结束后台检测</string>
+    <string name="background_detection_stopped">已结束后台检测</string>
 
     <!-- 充电功率 -->
     <string name="title_power">充电功率</string>
     <string name="status_not_charging">未充电</string>
     <string name="label_voltage">电压</string>
     <string name="label_charging_phase">充电阶段</string>
+    <string name="label_ui_battery_level">UI 电量</string>
+    <string name="label_system_battery_level">系统电量</string>
+    <string name="label_calibration">校准信息</string>
+    <string name="label_calibration_power">校准功率</string>
+    <string name="label_calibration_time">校准时间</string>
+    <string name="label_last_calibration_duration">上次校准耗时</string>
+    <string name="section_segmented_power">分段充电功率</string>
+    <string name="btn_start_calibration">开始校准</string>
+    <string name="power_usage_instructions">使用说明</string>
+    <string name="power_instructions_content">充电功率 = 电压 × 电流，单位为瓦特（W）。充电过程中，功率会随电量、温度、充电器协议及电池管理策略动态变化。图表展示每 10% 电量区间的平均功率，收集的数据越多越准确。</string>
+    <string name="power_calculation_title">功率计算方法</string>
+    <string name="label_system_battery_level_value">系统电量：%1$d%%</string>
+    <string name="label_ui_battery_level_value">UI 电量：%1$d%%</string>
+    <string name="last_calibration_format">%1$d 分钟</string>
+    <string name="calibration_not_done">尚未校准</string>
+    <string name="power_segment_format">%1$d%%-%2$d%%</string>
+    <string name="calibration_power_format">校准功率：%1$.1f W</string>
+    <string name="calibration_time_format">校准时间：%1$s</string>
+    <string name="calibration_duration_format">上次耗时：%1$d 分钟</string>
+    <string name="charging_phase_full">已充满</string>
+    <string name="charging_phase_constant_voltage">恒压阶段</string>
+    <string name="charging_phase_constant_current">恒流阶段</string>
+    <string name="charging_phase_trickle">涓流阶段</string>
+    <string name="charge_type_super">超级快充</string>
+    <string name="charge_type_fast">快速充电</string>
+    <string name="charge_type_normal">普通充电</string>
+    <string name="charge_type_slow">慢速充电</string>
+    <string name="charge_type_not_charging">未充电</string>
+
+    <!-- 电池江湖 -->
+    <string name="title_community">电池江湖</string>
+    <string name="section_care_tips">电池养护小贴士</string>
+    <string name="tip_1">避免电量长期低于 20%，深度放电会加速电池老化。</string>
+    <string name="tip_2" formatted="false">日常保持电量在 20%–80% 之间，可显著延长电池寿命。</string>
+    <string name="tip_3">避免在高温环境下充电，充电时尽量不要覆盖手机。</string>
+    <string name="tip_4">建议使用原装或认证充电器，避免劣质充电设备。</string>
+    <string name="tip_5">整晚充电可开启智能充电保护，减少满充时间。</string>
+    <string name="tip_6">定期查看电池健康度，发现异常及时处理。</string>
+    <string name="btn_share_experience">分享电池使用心得</string>
+    <string name="btn_share_care_tips">交流保养技巧</string>
+    <string name="section_community">同好交流</string>
+    <string name="post_title_1">三年老机电池健康度还能保持 90%，我是这样做的</string>
+    <string name="post_title_2">快充伤电池？实测一年后的数据分享</string>
+    <string name="post_title_3">大家一般用到多少健康度换电池？</string>
+    <string name="post_title_4">新换第三方电池一个月体验</string>
+    <string name="post_title_5">手机发热掉电快，这些设置关掉就好</string>
+    <string name="post_title_6">续航焦虑？聊聊我的充电习惯</string>
+    <string name="post_title_7">从 85% 到换电池，我经历了什么</string>
+    <string name="post_title_8">电池健康度显示不准？看这里</string>
+    <string name="post_author_1">电池达人</string>
+    <string name="post_author_2">快充研究员</string>
+    <string name="post_author_3">换电池小白</string>
+    <string name="post_author_4">第三方电池体验官</string>
+    <string name="post_author_5">省电攻略组</string>
+    <string name="post_author_6">续航焦虑症患者</string>
+    <string name="post_author_7">老用户阿明</string>
+    <string name="post_author_8">电池校准助手</string>
+    <string name="post_time_1">2 小时前</string>
+    <string name="post_time_2">5 小时前</string>
+    <string name="post_time_3">1 天前</string>
+    <string name="post_time_4">1 天前</string>
+    <string name="post_time_5">2 天前</string>
+    <string name="post_time_6">2 天前</string>
+    <string name="post_time_7">3 天前</string>
+    <string name="post_time_8">3 天前</string>
+    <string name="post_author_format">%1$s · %2$s</string>
+    <string name="post_like_count">%1$d 赞</string>
+    <string name="community_local_tip">以下为本地示例帖子，真实社区功能将在后续版本开放。</string>
+    <string name="care_tip_title_format">小贴士 %1$d</string>
 
     <!-- 趋势追踪 -->
     <string name="title_trend">趋势追踪</string>
@@ -119,7 +322,29 @@
     <string name="time_range_7days">7天</string>
     <string name="time_range_30days">30天</string>
     <string name="chart_health_trend">健康度趋势</string>
+    <string name="chart_capacity_trend">容量趋势</string>
+    <string name="chart_cycle_trend">循环次数趋势</string>
     <string name="chart_level_trend">电量趋势</string>
     <string name="chart_temperature_trend">温度趋势</string>
     <string name="chart_power_trend">充电功率趋势</string>
+    <string name="trend_health">健康度</string>
+    <string name="trend_capacity">容量</string>
+    <string name="trend_cycle">循环次数</string>
+    <string name="trend_dimension">趋势维度</string>
+    <string name="data_simulated_tip">* 当前为基于历史数据的模拟趋势，数据越多越准确。</string>
+    <string name="trend_stat_max">最高</string>
+    <string name="trend_stat_min">最低</string>
+    <string name="trend_stat_avg">平均</string>
+    <string name="trend_change_rate">较上期变化</string>
+    <string name="trend_change_rate_format">%1$s%2$.2f%%</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_health">电池健康</string>
+    <string name="nav_power">充电功率</string>
+    <string name="nav_community">电池江湖</string>
+    <string name="nav_config">配置查询</string>
+    <string name="nav_performance">性能分析</string>
+
+    <!-- 快捷入口 -->
+    <string name="section_shortcuts">快捷入口</string>
 </resources>

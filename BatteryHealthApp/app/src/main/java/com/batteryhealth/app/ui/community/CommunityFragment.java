@@ -50,9 +50,13 @@ public class CommunityFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         try {
-            View btnCommunity = view.findViewById(R.id.btn_community);
-            if (btnCommunity != null) {
-                btnCommunity.setOnClickListener(v -> shareBatteryTips());
+            View btnShareExperience = view.findViewById(R.id.btn_share_experience);
+            if (btnShareExperience != null) {
+                btnShareExperience.setOnClickListener(v -> shareBatteryTips());
+            }
+            View btnShareCareTips = view.findViewById(R.id.btn_share_care_tips);
+            if (btnShareCareTips != null) {
+                btnShareCareTips.setOnClickListener(v -> shareBatteryTips());
             }
             animateCardsEntry(view);
         } catch (Exception e) {

@@ -134,13 +134,6 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
     
-    // 网络请求 (用于查询激活日期与云端机型数据库)
-    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
-    implementation('com.squareup.retrofit2:converter-gson:2.11.0') {
-        exclude group: 'com.google.code.gson', module: 'gson'
-    }
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
-
     // Room数据库 (用于历史数据存储)
     implementation 'androidx.room:room-runtime:2.6.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'

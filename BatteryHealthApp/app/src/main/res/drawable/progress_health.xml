@@ -1,25 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 背景 - 液态玻璃轨道 -->
+    <!-- 背景轨道 -->
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <corners android:radius="6dp" />
-            <solid android:color="@color/liquid_glass_surface_subtle" />
-            <stroke
-                android:width="0.5dp"
-                android:color="@color/liquid_glass_border" />
+            <solid android:color="@color/primary_light" />
         </shape>
     </item>
 
-    <!-- 进度 - 液态玻璃光泽渐变 -->
+    <!-- 进度 - 清新绿渐变 -->
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
                 <corners android:radius="6dp" />
                 <gradient
-                    android:startColor="@color/ios_blue"
-                    android:centerColor="@color/ios_cyan"
-                    android:endColor="@color/ios_mint"
+                    android:startColor="#30D158"
+                    android:endColor="@color/primary_green"
                     android:angle="0"
                     android:type="linear" />
             </shape>
