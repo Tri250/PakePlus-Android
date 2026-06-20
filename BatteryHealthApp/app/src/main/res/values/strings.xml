@@ -290,9 +290,29 @@
     <string name="nav_performance">性能</string>
     <string name="nav_endurance">续航</string>
     <string name="nav_trend">趋势</string>
-    <string name="title_trend">趋势追踪</string>
     <string name="nav_power">充电</string>
     <string name="nav_community">电池江湖</string>
+    <string name="nav_mine">我的</string>
+    <string name="nav_health_check">自检</string>
+
+    <!-- 自检报告 -->
+    <string name="title_health_check">自检报告</string>
+    <string name="health_check_label_ready">设备综合评分</string>
+    <string name="health_check_label_running">检测中…</string>
+    <string name="health_check_action_start">一键检测</string>
+    <string name="health_check_action_recheck">重新检测</string>
+    <string name="health_check_action_checking">检测中…</string>
+    <string name="health_check_action_report">复制报告</string>
+    <string name="health_check_action_fix">去设置</string>
+    <string name="health_check_no_data">暂无检测数据，请先点击「一键检测」。</string>
+    <string name="health_check_export_success">诊断报告已复制到剪贴板。</string>
+    <string name="health_check_export_failed">报告生成失败，请重试。</string>
+    <string name="health_check_fix_failed">无法跳转到相应设置页。</string>
+    <string name="health_check_score_excellent">状态极佳</string>
+    <string name="health_check_score_good">状态良好</string>
+    <string name="health_check_score_normal">状态一般</string>
+    <string name="health_check_score_warning">需要关注</string>
+    <string name="health_check_score_critical">请立即处理</string>
     <string name="nav_mine">我的</string>
 
     <!-- GPU 信息 -->
