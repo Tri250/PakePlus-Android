@@ -65,6 +65,22 @@
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
 
+        <activity
+            android:name=".ui.bugreport.BugreportUploadActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.trend.TrendActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
+        <activity
+            android:name=".ui.endurance.EnduranceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
         <!-- 电池监测服务 -->
         <service
             android:name=".service.BatteryMonitorService"

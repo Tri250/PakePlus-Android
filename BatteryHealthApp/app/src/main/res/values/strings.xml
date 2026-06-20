@@ -13,12 +13,12 @@
     <string name="health_alert_channel_name">电池健康提醒</string>
     <string name="health_alert_channel_description">电池健康度异常时通知</string>
     <string name="health_alert_title">电池健康提醒</string>
-    <string name="health_alert_content">电池健康度已出现明显衰减</string>
+    <string name="health_alert_content">电池健康度已下降 %1$.1f%%（从 %2$.1f%% 至 %3$.1f%%）</string>
 
     <string name="charging_monitor_channel_name">充电监控</string>
     <string name="charging_monitor_channel_description">充电状态与功率实时通知</string>
     <string name="charging_monitor_notification_title">充电监控运行中</string>
-    <string name="charging_monitor_notification_content_charging">正在充电</string>
+    <string name="charging_monitor_notification_content_charging">正在充电 · %1$.1fW · 电量%2$d%% · %3$s</string>
     <string name="charging_monitor_notification_content_idle">未在充电</string>
 
     <!-- 错误页 -->
@@ -40,6 +40,14 @@
     <string name="title_battery_health">电池健康</string>
     <string name="section_current_status">当前状态</string>
     <string name="section_details">详细信息</string>
+    <string name="section_reports">报告与分析</string>
+    <string name="btn_weekly_report">周报</string>
+    <string name="btn_monthly_report">月报</string>
+    <string name="btn_trend">趋势追踪</string>
+    <string name="btn_endurance">续航分析</string>
+    <string name="report_title_weekly">电池健康周报</string>
+    <string name="report_title_monthly">电池健康月报</string>
+    <string name="report_share">分享报告</string>
     <string name="status_detecting">正在检测...</string>
     <string name="label_battery_level">电池电量</string>
     <string name="label_charging_status">充电状态</string>
@@ -67,6 +75,16 @@
     <string name="label_available_storage">可用存储</string>
     <string name="label_network_type">网络类型</string>
     <string name="section_alert_settings">预警设置</string>
+    <string name="section_bugreport">Bugreport 获取指南</string>
+    <string name="section_network_config">后端服务地址</string>
+    <string name="btn_open_dial">打开拨号盘</string>
+    <string name="btn_copy_adb">复制 ADB 命令</string>
+    <string name="btn_upload_bugreport">上传并分析 Bugreport</string>
+    <string name="btn_set_base_url">设置后端地址</string>
+    <string name="adb_copied">ADB 命令已复制</string>
+    <string name="bugreport_save_hint">文件位置：%s</string>
+    <string name="base_url_hint">输入后端地址，如 http://10.0.2.2:8080/</string>
+    <string name="base_url_updated">后端地址已更新</string>
 
     <!-- 性能分析 -->
     <string name="title_performance">性能分析</string>

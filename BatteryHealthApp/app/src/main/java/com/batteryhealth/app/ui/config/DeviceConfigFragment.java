@@ -1,15 +1,19 @@
 package com.batteryhealth.app.ui.config;
 
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
-
 import java.util.Locale;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,9 +23,13 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.api.ApiClient;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.service.BatteryMonitorService;
+import com.batteryhealth.app.ui.bugreport.BugreportUploadActivity;
+import com.batteryhealth.app.utils.BugreportHelper;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.NetworkConfig;
 
 /**
  * 设备配置Fragment
@@ -44,6 +52,12 @@ public class DeviceConfigFragment extends Fragment {
     private TextView tvAvailableMemory;
     private TextView tvAvailableStorage;
     private TextView tvNetworkType;
+
+    private TextView tvBugreportBrand;
+    private TextView tvBugreportDial;
+    private TextView tvBugreportMethod;
+    private TextView tvBugreportSaveHint;
+    private TextView tvCurrentBaseUrl;
 
     @Nullable
     @Override
@@ -84,6 +98,8 @@ public class DeviceConfigFragment extends Fragment {
             bindViews(view);
             setDefaultValues();
             initHealthAlertSwitch(view);
+            initBugreportSection(view);
+            initNetworkConfigSection(view);
             animateCardsEntry(view);
 
             loadDeviceConfigAsync();
@@ -105,6 +121,12 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableMemory = view.findViewById(R.id.tv_available_memory);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
+
+        tvBugreportBrand = view.findViewById(R.id.tv_bugreport_brand);
+        tvBugreportDial = view.findViewById(R.id.tv_bugreport_dial);
+        tvBugreportMethod = view.findViewById(R.id.tv_bugreport_method);
+        tvBugreportSaveHint = view.findViewById(R.id.tv_bugreport_save_hint);
+        tvCurrentBaseUrl = view.findViewById(R.id.tv_current_base_url);
     }
 
     private void loadDeviceConfigAsync() {
@@ -215,6 +237,104 @@ public class DeviceConfigFragment extends Fragment {
         }
     }
     
+    private void initBugreportSection(View view) {
+        try {
+            BugreportHelper.BugreportInfo info = BugreportHelper.getBugreportInfo();
+            if (tvBugreportBrand != null) {
+                tvBugreportBrand.setText("适配品牌：" + info.brandName);
+            }
+            if (tvBugreportDial != null) {
+                tvBugreportDial.setText("拨号指令：" + info.dialCode);
+            }
+            if (tvBugreportMethod != null) {
+                tvBugreportMethod.setText(info.method);
+            }
+            if (tvBugreportSaveHint != null) {
+                tvBugreportSaveHint.setText(String.format(Locale.getDefault(),
+                        getString(R.string.bugreport_save_hint), info.savePathHint));
+            }
+
+            View btnOpenDial = view.findViewById(R.id.btn_open_dial);
+            View btnCopyAdb = view.findViewById(R.id.btn_copy_adb);
+            View btnUploadBugreport = view.findViewById(R.id.btn_upload_bugreport);
+
+            if (btnOpenDial != null) {
+                btnOpenDial.setOnClickListener(v -> BugreportHelper.openDialPad(requireContext(), info.dialCode));
+            }
+            if (btnCopyAdb != null) {
+                btnCopyAdb.setOnClickListener(v -> {
+                    BugreportHelper.copyAdbCommand(requireContext());
+                    Toast.makeText(requireContext(), R.string.adb_copied, Toast.LENGTH_SHORT).show();
+                });
+            }
+            if (btnUploadBugreport != null) {
+                btnUploadBugreport.setOnClickListener(v -> {
+                    try {
+                        startActivity(new Intent(requireContext(), BugreportUploadActivity.class));
+                    } catch (Exception e) {
+                        Log.e(TAG, "启动上传页面失败", e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing bugreport section: " + e.getMessage());
+        }
+    }
+
+    private void initNetworkConfigSection(View view) {
+        try {
+            updateBaseUrlDisplay();
+
+            View btnSetBaseUrl = view.findViewById(R.id.btn_set_base_url);
+            if (btnSetBaseUrl != null) {
+                btnSetBaseUrl.setOnClickListener(v -> showBaseUrlDialog());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing network config section: " + e.getMessage());
+        }
+    }
+
+    private void updateBaseUrlDisplay() {
+        if (tvCurrentBaseUrl == null) return;
+        Context ctx = requireContext();
+        String url = NetworkConfig.getBaseUrl(ctx);
+        if (url.isEmpty()) {
+            tvCurrentBaseUrl.setText("未配置，请先设置后端服务地址");
+        } else {
+            tvCurrentBaseUrl.setText(url);
+        }
+    }
+
+    private void showBaseUrlDialog() {
+        try {
+            Context ctx = requireContext();
+            EditText input = new EditText(ctx);
+            input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+            String current = NetworkConfig.getBaseUrl(ctx);
+            input.setText(current);
+            input.setHint(R.string.base_url_hint);
+
+            new AlertDialog.Builder(ctx)
+                    .setTitle("设置后端服务地址")
+                    .setView(input)
+                    .setPositiveButton("保存", (dialog, which) -> {
+                        String url = input.getText() != null ? input.getText().toString().trim() : "";
+                        boolean success = NetworkConfig.setBaseUrl(ctx, url);
+                        if (success) {
+                            ApiClient.reset();
+                            updateBaseUrlDisplay();
+                            Toast.makeText(ctx, R.string.base_url_updated, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(ctx, "地址格式错误，请输入 http:// 或 https:// 开头的合法 URL", Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        } catch (Exception e) {
+            Log.e(TAG, "显示后端地址对话框失败", e);
+        }
+    }
+
     private void animateCardsEntry(View view) {
         try {
             if (!(view instanceof android.view.ViewGroup)) return;

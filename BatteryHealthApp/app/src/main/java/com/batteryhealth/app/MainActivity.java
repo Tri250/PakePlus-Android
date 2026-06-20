@@ -23,10 +23,9 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
+import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
-import com.batteryhealth.app.ui.endurance.EnduranceFragment;
-import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -195,15 +194,13 @@ public class MainActivity extends AppCompatActivity {
                     case 0:
                         return new BatteryHealthFragment();
                     case 1:
-                        return new DeviceConfigFragment();
-                    case 2:
-                        return new PerformanceFragment();
-                    case 3:
-                        return new EnduranceFragment();
-                    case 4:
-                        return new TrendFragment();
-                    case 5:
                         return new PowerFragment();
+                    case 2:
+                        return new CommunityFragment();
+                    case 3:
+                        return new DeviceConfigFragment();
+                    case 4:
+                        return new PerformanceFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -211,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 6;
+                return 5;
             }
         });
 
@@ -250,11 +247,10 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
         navItems.add(new CustomBottomNavigationView.NavItem("健康", R.drawable.ic_battery_health));
+        navItems.add(new CustomBottomNavigationView.NavItem("充电", R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem("江湖", R.drawable.ic_battery));
         navItems.add(new CustomBottomNavigationView.NavItem("配置", R.drawable.ic_device));
         navItems.add(new CustomBottomNavigationView.NavItem("性能", R.drawable.ic_performance));
-        navItems.add(new CustomBottomNavigationView.NavItem("续航", R.drawable.ic_endurance));
-        navItems.add(new CustomBottomNavigationView.NavItem("趋势", R.drawable.ic_trend));
-        navItems.add(new CustomBottomNavigationView.NavItem("充电", R.drawable.ic_power));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {

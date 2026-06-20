@@ -163,6 +163,7 @@
     <!-- ============================== -->
     <!-- 旧名称兼容层（被 layout 实际引用） -->
     <!-- ============================== -->
+    <style name="iOSTitle" parent="LiquidGlassTitle" />
     <style name="iOSTitle.Large" parent="LiquidGlassTitle.Large" />
     <style name="iOSSubtitle" parent="LiquidGlassSubtitle" />
     <style name="iOSBody" parent="LiquidGlassBody" />

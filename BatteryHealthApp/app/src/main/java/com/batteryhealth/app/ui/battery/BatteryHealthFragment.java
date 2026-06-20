@@ -1,5 +1,7 @@
 package com.batteryhealth.app.ui.battery;
 
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,7 +22,10 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.ui.endurance.EnduranceActivity;
+import com.batteryhealth.app.ui.trend.TrendActivity;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ReportGenerator;
 
 import java.util.Locale;
 
@@ -48,7 +54,12 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvBatteryLevel;
     private TextView tvChargingStatus;
     private TextView tvCurrentNow;
-    
+
+    private View btnWeeklyReport;
+    private View btnMonthlyReport;
+    private View btnTrend;
+    private View btnEndurance;
+
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
     private boolean isRunning = false;
@@ -168,7 +179,14 @@ public class BatteryHealthFragment extends Fragment {
             tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
             tvChargingStatus = view.findViewById(R.id.tv_charging_status);
             tvCurrentNow = view.findViewById(R.id.tv_current_now);
-            
+
+            btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
+            btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
+            btnTrend = view.findViewById(R.id.btn_trend);
+            btnEndurance = view.findViewById(R.id.btn_endurance);
+
+            setupActionButtons();
+
             // 设置默认值
             setDefaultValues();
         } catch (Exception e) {
@@ -306,6 +324,96 @@ public class BatteryHealthFragment extends Fragment {
         });
     }
     
+    private void setupActionButtons() {
+        try {
+            if (btnWeeklyReport != null) {
+                btnWeeklyReport.setOnClickListener(v -> showReport(false));
+            }
+            if (btnMonthlyReport != null) {
+                btnMonthlyReport.setOnClickListener(v -> showReport(true));
+            }
+            if (btnTrend != null) {
+                btnTrend.setOnClickListener(v -> {
+                    try {
+                        startActivity(new Intent(requireContext(), TrendActivity.class));
+                    } catch (Exception e) {
+                        Log.e(TAG, "启动趋势页面失败", e);
+                    }
+                });
+            }
+            if (btnEndurance != null) {
+                btnEndurance.setOnClickListener(v -> {
+                    try {
+                        startActivity(new Intent(requireContext(), EnduranceActivity.class));
+                    } catch (Exception e) {
+                        Log.e(TAG, "启动续航页面失败", e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up action buttons: " + e.getMessage());
+        }
+    }
+
+    private void showReport(boolean monthly) {
+        try {
+            new Thread(() -> {
+                try {
+                    ReportGenerator generator = new ReportGenerator(requireContext());
+                    ReportGenerator.BatteryReport report = monthly
+                            ? generator.generateMonthlyReport()
+                            : generator.generateWeeklyReport();
+                    if (mainHandler != null) {
+                        mainHandler.post(() -> {
+                            if (!isAdded()) return;
+                            showReportDialog(report);
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "生成报告失败", e);
+                    if (mainHandler != null) {
+                        mainHandler.post(() -> Toast.makeText(requireContext(),
+                                "生成报告失败：" + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    }
+                }
+            }).start();
+        } catch (Exception e) {
+            Log.e(TAG, "启动报告生成失败", e);
+        }
+    }
+
+    private void showReportDialog(ReportGenerator.BatteryReport report) {
+        if (!isAdded()) return;
+        try {
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle(report.title != null ? report.title : (report.title = "电池健康报告"))
+                    .setMessage((report.summary != null ? report.summary : "")
+                            + "\n\n建议：\n" + (report.recommendation != null ? report.recommendation : ""))
+                    .setPositiveButton(R.string.report_share, (dialog, which) -> shareReport(report))
+                    .setNegativeButton("关闭", null)
+                    .show();
+        } catch (Exception e) {
+            Log.e(TAG, "显示报告弹窗失败", e);
+        }
+    }
+
+    private void shareReport(ReportGenerator.BatteryReport report) {
+        try {
+            String shareText = (report.title != null ? report.title : "电池健康报告") + "\n\n"
+                    + (report.period != null ? report.period + "\n" : "")
+                    + (report.summary != null ? report.summary + "\n\n" : "")
+                    + "建议：\n" + (report.recommendation != null ? report.recommendation : "");
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_SUBJECT, report.title);
+            intent.putExtra(Intent.EXTRA_TEXT, shareText);
+            startActivity(Intent.createChooser(intent, "分享电池健康报告"));
+        } catch (Exception e) {
+            Log.e(TAG, "分享报告失败", e);
+            Toast.makeText(requireContext(), "分享失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void animateCardsEntry(View view) {
         try {
             if (!(view instanceof android.view.ViewGroup)) return;
