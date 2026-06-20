@@ -9,6 +9,9 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.animation.ObjectAnimator;
+import android.animation.AnimatorSet;
+import android.animation.ValueAnimator;
 import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,6 +21,8 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.batteryhealth.app.ui.view.HealthRingView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -60,6 +65,8 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvHealthGrade;
     private TextView tvHealthStatus;
     private ProgressBar progressHealth;
+    private HealthRingView healthRing;
+    private View liveDot;
 
     private TextView tvCapacity;
     private TextView tvCycleCount;
@@ -82,6 +89,7 @@ public class BatteryHealthFragment extends Fragment {
     private Handler mainHandler;
     private boolean isRunning = false;
     private boolean isFirstUpdate = true;
+    private AnimatorSet liveDotAnimator;
 
     // 定时更新UI的Runnable
     private Runnable updateRunnable = new Runnable() {
@@ -179,6 +187,46 @@ public class BatteryHealthFragment extends Fragment {
         if (mainHandler != null) {
             mainHandler.removeCallbacks(updateRunnable);
         }
+        stopLiveDotAnimation();
+    }
+
+    private void startLiveDotAnimation() {
+        if (liveDot == null) return;
+        try {
+            stopLiveDotAnimation();
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(liveDot, "alpha", 1f, 0.3f);
+            fadeOut.setDuration(800);
+            ObjectAnimator fadeIn = ObjectAnimator.ofFloat(liveDot, "alpha", 0.3f, 1f);
+            fadeIn.setDuration(800);
+            liveDotAnimator = new AnimatorSet();
+            liveDotAnimator.playSequentially(fadeOut, fadeIn);
+            liveDotAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(android.animation.Animator animation) {
+                    if (liveDotAnimator != null) {
+                        liveDotAnimator.start();
+                    }
+                }
+            });
+            liveDotAnimator.start();
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting live dot animation: " + e.getMessage());
+        }
+    }
+
+    private void stopLiveDotAnimation() {
+        try {
+            if (liveDotAnimator != null) {
+                liveDotAnimator.removeAllListeners();
+                liveDotAnimator.cancel();
+                liveDotAnimator = null;
+            }
+            if (liveDot != null) {
+                liveDot.setAlpha(1f);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping live dot animation: " + e.getMessage());
+        }
     }
     
     private void initViews(View view) {
@@ -188,7 +236,10 @@ public class BatteryHealthFragment extends Fragment {
             tvHealthGrade = view.findViewById(R.id.tv_health_grade);
             tvHealthStatus = view.findViewById(R.id.tv_health_status);
             progressHealth = view.findViewById(R.id.progress_health);
-            
+            healthRing = view.findViewById(R.id.health_ring);
+            liveDot = view.findViewById(R.id.live_dot);
+            startLiveDotAnimation();
+
             // 详细信息
             tvCapacity = view.findViewById(R.id.tv_capacity);
             tvCycleCount = view.findViewById(R.id.tv_cycle_count);
@@ -313,7 +364,21 @@ public class BatteryHealthFragment extends Fragment {
                 }
 
                 if (tvHealthGrade != null) {
-                    tvHealthGrade.setText(info.getHealthGrade());
+                    String grade = info.getHealthGrade();
+                    if (grade != null && !"--".equals(grade)) {
+                        tvHealthGrade.setText(getString(R.string.health_grade_format, grade));
+                    } else {
+                        tvHealthGrade.setText("--");
+                    }
+                }
+
+                if (healthRing != null) {
+                    int targetProgress = hasValidHealth ? (int) healthPercentage : 0;
+                    if (isFirstUpdate && hasValidHealth) {
+                        UiAnimationHelper.animateRingProgress(healthRing, targetProgress);
+                    } else {
+                        healthRing.setProgress(targetProgress);
+                    }
                 }
 
                 if (tvHealthStatus != null) {

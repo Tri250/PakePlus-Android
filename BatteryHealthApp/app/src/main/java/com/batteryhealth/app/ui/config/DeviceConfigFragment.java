@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 import java.util.Locale;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ public class DeviceConfigFragment extends Fragment {
     private DeviceInfoManager deviceInfoManager;
 
     private TextView tvDeviceName;
+    private TextView tvDeviceModel;
     private TextView tvAndroidVersion;
     private TextView tvProcessor;
     private TextView tvMemory;
@@ -103,6 +105,7 @@ public class DeviceConfigFragment extends Fragment {
 
     private void bindViews(View view) {
         tvDeviceName = view.findViewById(R.id.tv_device_name);
+        tvDeviceModel = view.findViewById(R.id.tv_device_model);
         tvAndroidVersion = view.findViewById(R.id.tv_android_version);
         tvProcessor = view.findViewById(R.id.tv_processor);
         tvMemory = view.findViewById(R.id.tv_memory);
@@ -143,6 +146,10 @@ public class DeviceConfigFragment extends Fragment {
         try {
             if (tvDeviceName != null) {
                 tvDeviceName.setText(config.getFullModelName());
+            }
+            if (tvDeviceModel != null) {
+                String model = Build.MODEL;
+                tvDeviceModel.setText(model != null && !model.isEmpty() ? model : "--");
             }
             if (tvAndroidVersion != null) {
                 tvAndroidVersion.setText(config.getAndroidCodename());
@@ -259,6 +266,7 @@ public class DeviceConfigFragment extends Fragment {
 
     private void setDefaultValues() {
         if (tvDeviceName != null) tvDeviceName.setText("--");
+        if (tvDeviceModel != null) tvDeviceModel.setText("--");
         if (tvAndroidVersion != null) tvAndroidVersion.setText("--");
         if (tvProcessor != null) tvProcessor.setText("--");
         if (tvMemory != null) tvMemory.setText("--");

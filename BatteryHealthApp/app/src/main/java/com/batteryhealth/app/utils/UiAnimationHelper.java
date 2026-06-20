@@ -14,6 +14,7 @@ import android.view.animation.PathInterpolator;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.batteryhealth.app.ui.view.HealthRingView;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
@@ -224,6 +225,25 @@ public class UiAnimationHelper {
         }
 
         ObjectAnimator animator = ObjectAnimator.ofInt(progressBar, "progress", start, targetProgress);
+        animator.setDuration(PROGRESS_DURATION);
+        animator.setInterpolator(EASE_OUT_CUBIC);
+        animator.start();
+    }
+
+    /**
+     * 平滑过渡 HealthRingView 进度。
+     */
+    public static void animateRingProgress(HealthRingView ring, int targetProgress) {
+        if (ring == null) return;
+        Context context = ring.getContext();
+        if (context != null && shouldSkipAnimations(context)) {
+            ring.setProgress(targetProgress);
+            return;
+        }
+
+        // 读取当前进度
+        // HealthRingView 不暴露 getProgress，通过 ObjectAnimator 反射 setProgress
+        ObjectAnimator animator = ObjectAnimator.ofFloat(ring, "progress", 0f, targetProgress);
         animator.setDuration(PROGRESS_DURATION);
         animator.setInterpolator(EASE_OUT_CUBIC);
         animator.start();

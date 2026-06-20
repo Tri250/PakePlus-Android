@@ -82,6 +82,27 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:text="@string/label_device_model"
+                        android:textAppearance="@style/iOSBody"
+                        android:lineSpacingExtra="3dp" />
+                    <TextView
+                        android:id="@+id/tv_device_model"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/iOSBody.Secondary"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:minHeight="48dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/label_android_version"
                         android:textAppearance="@style/iOSBody"
                         android:lineSpacingExtra="3dp" />

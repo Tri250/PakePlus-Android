@@ -41,6 +41,7 @@
     <string name="section_current_status">当前状态</string>
     <string name="section_details">详细信息</string>
     <string name="status_detecting">正在检测...</string>
+    <string name="status_live_monitoring">实时监测中</string>
     <string name="label_battery_level">电池电量</string>
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
@@ -50,11 +51,13 @@
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
     <string name="label_battery_technology">电池技术</string>
+    <string name="health_grade_format">等级 %s</string>
 
     <!-- 设备配置 -->
     <string name="title_device_config">设备配置</string>
     <string name="section_device_info">设备信息</string>
     <string name="label_device_name">设备名称</string>
+    <string name="label_device_model">设备型号</string>
     <string name="label_android_version">Android版本</string>
     <string name="label_processor">处理器</string>
     <string name="label_memory">内存</string>
@@ -76,6 +79,12 @@
     <string name="label_storage_usage">存储使用率</string>
     <string name="label_gpu_info">GPU信息</string>
     <string name="label_gpu_renderer">GPU渲染器</string>
+    <string name="section_this_app">本应用</string>
+    <string name="label_this_app_cpu">本应用 CPU</string>
+    <string name="label_this_app_memory">本应用内存</string>
+    <string name="label_app_runtime">运行时间</string>
+    <string name="label_foreground_services">前台服务</string>
+    <string name="value_foreground_services">电池监测 · 充电监测</string>
 
     <!-- 续航分析 -->
     <string name="title_endurance">续航分析</string>
@@ -100,9 +109,19 @@
     <string name="label_charging_phase">充电阶段</string>
     <string name="status_detecting_protocol">检测充电协议中…</string>
     <string name="charge_protocol_standard">标准充电 · 请使用原装充电器以获得最佳速度</string>
+    <string name="section_today_charging">今日充电</string>
+    <string name="label_charge_count">充电次数</string>
+    <string name="label_avg_power">平均功率</string>
+    <string name="label_total_duration">累计时长</string>
+    <string name="label_total_input">累计充入</string>
 
     <!-- 趋势追踪 -->
     <string name="title_trend">趋势追踪</string>
+    <string name="section_key_stats">关键统计</string>
+    <string name="label_initial_health">初始健康度</string>
+    <string name="label_current_health">当前健康度</string>
+    <string name="label_total_decay">总衰减</string>
+    <string name="label_monthly_decay">月均衰减</string>
     <string name="status_no_data">暂无数据</string>
     <string name="trend_no_data_description">使用应用一段时间后，这里将显示电池数据的趋势变化图表</string>
     <string name="time_range_1day">1天</string>

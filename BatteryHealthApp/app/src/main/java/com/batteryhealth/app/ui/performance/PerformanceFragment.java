@@ -8,6 +8,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.LayoutInflater;
@@ -25,6 +26,7 @@ import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
+import android.os.Debug;
 import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.utils.DeviceInfoManager;
@@ -63,6 +65,10 @@ public class PerformanceFragment extends Fragment {
     private TextView tvGpuInfo;
     private TextView tvFrameRate;
     private TextView tvJankInfo;
+    private TextView tvAppCpu;
+    private TextView tvAppMemory;
+    private TextView tvAppRuntime;
+    private TextView tvForegroundServices;
     
     private Handler handler;
     private Runnable updateTask;
@@ -117,7 +123,11 @@ public class PerformanceFragment extends Fragment {
             tvGpuInfo = view.findViewById(R.id.tv_gpu_info);
             tvFrameRate = view.findViewById(R.id.tv_frame_rate);
             tvJankInfo = view.findViewById(R.id.tv_jank_info);
-            
+            tvAppCpu = view.findViewById(R.id.tv_app_cpu);
+            tvAppMemory = view.findViewById(R.id.tv_app_memory);
+            tvAppRuntime = view.findViewById(R.id.tv_app_runtime);
+            tvForegroundServices = view.findViewById(R.id.tv_foreground_services);
+
             // 设置默认值
             setDefaultValues();
             animateCardsEntry(view);
@@ -190,6 +200,10 @@ public class PerformanceFragment extends Fragment {
         if (tvGpuInfo != null) tvGpuInfo.setText("--");
         if (tvFrameRate != null) tvFrameRate.setText("-- fps");
         if (tvJankInfo != null) tvJankInfo.setText("--");
+        if (tvAppCpu != null) tvAppCpu.setText("--");
+        if (tvAppMemory != null) tvAppMemory.setText("--");
+        if (tvAppRuntime != null) tvAppRuntime.setText("--");
+        if (tvForegroundServices != null) tvForegroundServices.setText(getString(R.string.value_foreground_services));
     }
 
     @Override
@@ -215,9 +229,13 @@ public class PerformanceFragment extends Fragment {
                 final float storageUsage = readStorageUsage();
                 final int score = calculatePerformanceScore(cpuUsage, memoryUsage, storageUsage);
                 final String gpuInfo = readGpuInfo();
+                final float appCpu = readAppCpuUsage();
+                final String appMemory = readAppMemoryUsage();
+                final String appRuntime = readAppRuntime();
 
                 if (handler != null) {
-                    handler.post(() -> updatePerformanceUi(cpuUsage, memoryUsage, storageUsage, score, gpuInfo));
+                    handler.post(() -> updatePerformanceUi(cpuUsage, memoryUsage, storageUsage, score, gpuInfo,
+                            appCpu, appMemory, appRuntime));
                 }
 
                 savePerformanceData(cpuUsage, memoryUsage, storageUsage, score);
@@ -227,7 +245,8 @@ public class PerformanceFragment extends Fragment {
         });
     }
 
-    private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo) {
+    private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo,
+                                     float appCpu, String appMemory, String appRuntime) {
         if (!isAdded()) return;
         try {
             boolean animate = isFirstUpdate;
@@ -306,6 +325,23 @@ public class PerformanceFragment extends Fragment {
                 tvGpuInfo.setText(gpuInfo);
             }
 
+            if (tvAppCpu != null) {
+                if (appCpu < 0) {
+                    tvAppCpu.setText(getString(R.string.status_calculating_short));
+                } else {
+                    tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", appCpu));
+                }
+            }
+            if (tvAppMemory != null) {
+                tvAppMemory.setText(appMemory);
+            }
+            if (tvAppRuntime != null) {
+                tvAppRuntime.setText(appRuntime);
+            }
+            if (tvForegroundServices != null) {
+                tvForegroundServices.setText(getString(R.string.value_foreground_services));
+            }
+
             if (isFirstUpdate) {
                 isFirstUpdate = false;
             }
@@ -325,6 +361,62 @@ public class PerformanceFragment extends Fragment {
     private long lastSteal = 0;
     private boolean hasLastStat = false;
     private PerformanceData lastSavedPerformanceData;
+
+    private float readAppCpuUsage() {
+        try {
+            if (getContext() == null) return -1;
+            long elapsedMs = SystemClock.elapsedRealtime();
+            long cpuTimeMs = android.os.Process.getElapsedCpuTime();
+            if (elapsedMs <= 0) return -1;
+            // 进程 CPU 时间 / 进程运行时间，得到近似 CPU 占用率
+            float usage = (cpuTimeMs * 100f) / elapsedMs;
+            // 限制到合理范围（单进程通常不超过 100%，多核可能更高，此处封顶 100%）
+            return Math.min(usage, 100f);
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading app CPU usage: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    private String readAppMemoryUsage() {
+        try {
+            if (getContext() == null) return "--";
+            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return "--";
+            int pid = android.os.Process.myPid();
+            Debug.MemoryInfo[] memInfos = am.getProcessMemoryInfo(new int[]{pid});
+            if (memInfos == null || memInfos.length == 0) return "--";
+            int totalPssKb = memInfos[0].getTotalPss();
+            if (totalPssKb <= 0) return "--";
+            return String.format(Locale.getDefault(), "%.1f MB", totalPssKb / 1024.0f);
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading app memory usage: " + e.getMessage());
+        }
+        return "--";
+    }
+
+    private String readAppRuntime() {
+        try {
+            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+            if (app == null) return "--";
+            long start = app.getAppStartTime();
+            if (start <= 0) return "--";
+            long runtimeMs = System.currentTimeMillis() - start;
+            long seconds = runtimeMs / 1000;
+            if (seconds < 60) {
+                return String.format(Locale.getDefault(), "%d 秒", seconds);
+            } else if (seconds < 3600) {
+                return String.format(Locale.getDefault(), "%d 分钟", seconds / 60);
+            } else if (seconds < 86400) {
+                return String.format(Locale.getDefault(), "%.1f 小时", seconds / 3600.0f);
+            } else {
+                return String.format(Locale.getDefault(), "%d 天 %d 小时", seconds / 86400, (seconds % 86400) / 3600);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading app runtime: " + e.getMessage());
+        }
+        return "--";
+    }
 
     private float readCpuUsage() {
         try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {

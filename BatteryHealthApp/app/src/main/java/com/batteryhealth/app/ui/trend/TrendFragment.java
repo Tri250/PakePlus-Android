@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -74,6 +75,10 @@ public class TrendFragment extends Fragment {
     private TextView tvDemoHint;
     private ChipGroup chipGroupTimeRange;
     private MaterialButton btnExportCsv;
+    private TextView tvStatInitialHealth;
+    private TextView tvStatCurrentHealth;
+    private TextView tvStatTotalDecay;
+    private TextView tvStatMonthlyDecay;
     private int selectedTimeRangeDays = 7; // 默认7天
     private List<BatteryInfo> cachedBatteryData;
     private List<PowerHistory> cachedPowerData;
@@ -115,6 +120,10 @@ public class TrendFragment extends Fragment {
             tvDemoHint = view.findViewById(R.id.tv_demo_hint);
             chipGroupTimeRange = view.findViewById(R.id.chip_group_time_range);
             btnExportCsv = view.findViewById(R.id.btn_export_csv);
+            tvStatInitialHealth = view.findViewById(R.id.tv_stat_initial_health);
+            tvStatCurrentHealth = view.findViewById(R.id.tv_stat_current_health);
+            tvStatTotalDecay = view.findViewById(R.id.tv_stat_total_decay);
+            tvStatMonthlyDecay = view.findViewById(R.id.tv_stat_monthly_decay);
             setupTimeRangeSelector();
 
             if (btnExportCsv != null) {
@@ -260,6 +269,7 @@ public class TrendFragment extends Fragment {
             boolean isDemoMode = totalRecordCount < 5;
 
             if (isDemoMode) {
+                updateStats(DEMO_HEALTH_START, DEMO_HEALTH_END);
                 showDemoData();
                 return;
             }
@@ -267,9 +277,13 @@ public class TrendFragment extends Fragment {
             // 正常数据处理
             boolean hasEnoughData = recordCount >= 10;
             if (!hasEnoughData) {
+                clearStats();
                 showEmptyState(recordCount);
                 return;
             }
+
+            // 计算关键统计
+            computeAndShowStats(batteryData);
 
             showCharts();
             if (tvDemoHint != null) tvDemoHint.setVisibility(View.GONE);
@@ -429,6 +443,50 @@ public class TrendFragment extends Fragment {
      * 数据不足时显示空状态提示，不使用模拟/假数据。
      * 安兔兔/鲁大师在数据不足时同样显示"数据采集中"，不会生成假曲线。
      */
+    private void computeAndShowStats(List<BatteryInfo> data) {
+        if (data == null || data.isEmpty()) {
+            clearStats();
+            return;
+        }
+        // 按时间排序
+        List<BatteryInfo> sorted = new ArrayList<>(data);
+        Collections.sort(sorted, (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+        BatteryInfo first = sorted.get(0);
+        BatteryInfo last = sorted.get(sorted.size() - 1);
+        float initial = first.getHealthPercentage();
+        float current = last.getHealthPercentage();
+        // 若健康度无效，回退到使用默认值
+        if (initial < 0) initial = 100f;
+        if (current < 0) current = initial;
+        updateStats(initial, current);
+    }
+
+    private void updateStats(float initialHealth, float currentHealth) {
+        float totalDecay = initialHealth - currentHealth;
+        long days = Math.max(1, selectedTimeRangeDays);
+        float monthlyDecay = totalDecay / days * 30f;
+
+        if (tvStatInitialHealth != null) {
+            tvStatInitialHealth.setText(String.format(Locale.getDefault(), "%.1f%%", initialHealth));
+        }
+        if (tvStatCurrentHealth != null) {
+            tvStatCurrentHealth.setText(String.format(Locale.getDefault(), "%.1f%%", currentHealth));
+        }
+        if (tvStatTotalDecay != null) {
+            tvStatTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", totalDecay));
+        }
+        if (tvStatMonthlyDecay != null) {
+            tvStatMonthlyDecay.setText(String.format(Locale.getDefault(), "%.2f%%", monthlyDecay));
+        }
+    }
+
+    private void clearStats() {
+        if (tvStatInitialHealth != null) tvStatInitialHealth.setText("--");
+        if (tvStatCurrentHealth != null) tvStatCurrentHealth.setText("--");
+        if (tvStatTotalDecay != null) tvStatTotalDecay.setText("--");
+        if (tvStatMonthlyDecay != null) tvStatMonthlyDecay.setText("--");
+    }
+
     private void showDemoData() {
         showEmptyState(0);
     }

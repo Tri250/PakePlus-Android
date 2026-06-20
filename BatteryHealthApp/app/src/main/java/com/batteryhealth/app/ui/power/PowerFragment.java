@@ -1,5 +1,7 @@
 package com.batteryhealth.app.ui.power;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.Locale;
@@ -25,8 +28,11 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.DeviceDatabaseManager;
@@ -58,10 +64,17 @@ public class PowerFragment extends Fragment {
     private TextView tvBatteryLevel;
     private TextView tvChargingPhase;
     private TextView tvBatteryTemp;
+    private ProgressBar progressCharge;
+    private View powerTypeDot;
+    private TextView tvTodayCount;
+    private TextView tvTodayAvgPower;
+    private TextView tvTodayDuration;
+    private TextView tvTodayInput;
 
     private Handler mainHandler;
     private ExecutorService executor;
     private boolean isRunning = false;
+    private AnimatorSet powerTypeDotAnimator;
 
     // 本地滑动窗口，用于在 UI 层辅助判断充电阶段
     private static final int MAX_SAMPLES = 20;
@@ -129,9 +142,16 @@ public class PowerFragment extends Fragment {
             tvBatteryLevel = view.findViewById(R.id.tv_power_battery_level);
             tvChargingPhase = view.findViewById(R.id.tv_charging_phase);
             tvBatteryTemp = view.findViewById(R.id.tv_power_battery_temp);
-            
+            progressCharge = view.findViewById(R.id.progress_charge);
+            powerTypeDot = view.findViewById(R.id.power_type_dot);
+            tvTodayCount = view.findViewById(R.id.tv_today_count);
+            tvTodayAvgPower = view.findViewById(R.id.tv_today_avg_power);
+            tvTodayDuration = view.findViewById(R.id.tv_today_duration);
+            tvTodayInput = view.findViewById(R.id.tv_today_input);
+
             // 设置默认值
             setDefaultValues();
+            startPowerTypeDotAnimation();
             updatePowerData();
             animateCardsEntry(view);
         } catch (Exception e) {
@@ -161,19 +181,6 @@ public class PowerFragment extends Fragment {
         }
     }
     
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        isRunning = false;
-        if (mainHandler != null) {
-            mainHandler.removeCallbacks(updateRunnable);
-        }
-        if (executor != null) {
-            executor.shutdown();
-            executor = null;
-        }
-    }
-    
     private void setDefaultValues() {
         if (tvPower != null) tvPower.setText("0.0 W");
         if (tvVoltage != null) tvVoltage.setText("0.00 V");
@@ -183,6 +190,11 @@ public class PowerFragment extends Fragment {
         if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
         if (tvChargingPhase != null) tvChargingPhase.setText("--");
         if (tvBatteryTemp != null) tvBatteryTemp.setText("--°C");
+        if (progressCharge != null) progressCharge.setProgress(0);
+        if (tvTodayCount != null) tvTodayCount.setText("--");
+        if (tvTodayAvgPower != null) tvTodayAvgPower.setText("--");
+        if (tvTodayDuration != null) tvTodayDuration.setText("--");
+        if (tvTodayInput != null) tvTodayInput.setText("--");
     }
     
     private void updatePowerData() {
@@ -195,11 +207,12 @@ public class PowerFragment extends Fragment {
                 final float power = voltage * current;
                 final int level = readBatteryLevel();
                 final float temperature = readBatteryTemperature();
+                final TodayChargingStats todayStats = computeTodayChargingStats();
 
                 addSample(voltage, current, power, level);
 
                 if (mainHandler != null) {
-                    mainHandler.post(() -> updatePowerUi(voltage, current, power, level, temperature));
+                    mainHandler.post(() -> updatePowerUi(voltage, current, power, level, temperature, todayStats));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating power data: " + e.getMessage());
@@ -207,7 +220,8 @@ public class PowerFragment extends Fragment {
         });
     }
 
-    private void updatePowerUi(float voltage, float current, float power, int level, float temperature) {
+    private void updatePowerUi(float voltage, float current, float power, int level, float temperature,
+                               TodayChargingStats todayStats) {
         if (!isAdded()) return;
         try {
             if (tvVoltage != null) {
@@ -221,12 +235,13 @@ public class PowerFragment extends Fragment {
             }
             if (tvChargeType != null) {
                 String chargeType = getChargeTypeDescription(power);
-                String phase = detectChargingPhase(level, power);
-                if (power > 0) {
-                    tvChargeType.setText(chargeType + " · " + phase);
-                } else {
-                    tvChargeType.setText(chargeType);
-                }
+                tvChargeType.setText(chargeType);
+            }
+            if (progressCharge != null) {
+                progressCharge.setProgress(level);
+            }
+            if (powerTypeDot != null) {
+                powerTypeDot.setVisibility(power > 0 ? View.VISIBLE : View.GONE);
             }
 
             // 充电协议识别（基于系统属性 + 厂商 + 实时功率）
@@ -270,6 +285,13 @@ public class PowerFragment extends Fragment {
                 } else {
                     tvBatteryTemp.setText("--°C");
                 }
+            }
+
+            if (todayStats != null) {
+                if (tvTodayCount != null) tvTodayCount.setText(todayStats.count >= 0 ? String.valueOf(todayStats.count) : "--");
+                if (tvTodayAvgPower != null) tvTodayAvgPower.setText(todayStats.avgPower > 0 ? String.format(Locale.getDefault(), "%.1f W", todayStats.avgPower) : "--");
+                if (tvTodayDuration != null) tvTodayDuration.setText(todayStats.durationText != null ? todayStats.durationText : "--");
+                if (tvTodayInput != null) tvTodayInput.setText(todayStats.totalInputText != null ? todayStats.totalInputText : "--");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating power UI: " + e.getMessage());
@@ -490,6 +512,164 @@ public class PowerFragment extends Fragment {
         if (power >= 30) return getString(R.string.charge_power_fast);
         if (power >= 10) return getString(R.string.charge_power_standard);
         return getString(R.string.charge_power_slow);
+    }
+
+    private static class TodayChargingStats {
+        int count;
+        float avgPower;
+        String durationText;
+        String totalInputText;
+    }
+
+    private TodayChargingStats computeTodayChargingStats() {
+        TodayChargingStats stats = new TodayChargingStats();
+        stats.count = -1;
+        try {
+            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+            if (app == null) return stats;
+            AppDatabase db = app.getDatabase();
+            if (db == null) return stats;
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            cal.set(java.util.Calendar.MINUTE, 0);
+            cal.set(java.util.Calendar.SECOND, 0);
+            cal.set(java.util.Calendar.MILLISECOND, 0);
+            long startOfDay = cal.getTimeInMillis();
+            long now = System.currentTimeMillis();
+
+            java.util.List<PowerHistory> records = db.powerHistoryDao().getBetween(startOfDay, now);
+            if (records == null || records.isEmpty()) {
+                stats.count = 0;
+                return stats;
+            }
+
+            // 按 session 分组统计
+            java.util.Map<String, java.util.List<PowerHistory>> sessions = new java.util.HashMap<>();
+            for (PowerHistory r : records) {
+                if (r == null) continue;
+                String sid = r.getSessionId();
+                if (sid == null || sid.isEmpty()) sid = "default";
+                java.util.List<PowerHistory> list = sessions.get(sid);
+                if (list == null) {
+                    list = new java.util.ArrayList<>();
+                    sessions.put(sid, list);
+                }
+                list.add(r);
+            }
+
+            int sessionCount = sessions.size();
+            float totalPower = 0;
+            int powerSamples = 0;
+            long totalDurationMs = 0;
+            float totalInputMah = 0;
+
+            for (java.util.List<PowerHistory> list : sessions.values()) {
+                if (list == null || list.isEmpty()) continue;
+                PowerHistory first = list.get(0);
+                PowerHistory last = list.get(list.size() - 1);
+                long durationMs = last.getTimestamp() - first.getTimestamp();
+                if (durationMs < 0) durationMs = 0;
+                totalDurationMs += durationMs;
+
+                for (PowerHistory r : list) {
+                    if (r == null) continue;
+                    if (r.getPower() > 0) {
+                        totalPower += r.getPower();
+                        powerSamples++;
+                    }
+                    // 估算充入电量：功率(W) * 时间(s) / 电压(V) ≈ mAh
+                    // 由于采样间隔未知，按每条记录 60 秒估算；这里仅做粗略展示
+                    float voltage = r.getVoltage() > 0 ? r.getVoltage() : 3.8f;
+                    totalInputMah += (r.getPower() * 60f) / voltage;
+                }
+            }
+
+            stats.count = sessionCount;
+            stats.avgPower = powerSamples > 0 ? totalPower / powerSamples : 0;
+
+            if (totalDurationMs < 60_000) {
+                stats.durationText = String.format(Locale.getDefault(), "%d 秒", totalDurationMs / 1000);
+            } else if (totalDurationMs < 60 * 60_000) {
+                stats.durationText = String.format(Locale.getDefault(), "%d 分钟", totalDurationMs / 60_000);
+            } else {
+                stats.durationText = String.format(Locale.getDefault(), "%.1f 小时", totalDurationMs / (60f * 60_000));
+            }
+
+            if (totalInputMah >= 1000) {
+                stats.totalInputText = String.format(Locale.getDefault(), "%.2f Ah", totalInputMah / 1000f);
+            } else {
+                stats.totalInputText = String.format(Locale.getDefault(), "%.0f mAh", totalInputMah);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error computing today charging stats: " + e.getMessage());
+        }
+        return stats;
+    }
+
+    private void startPowerTypeDotAnimation() {
+        if (powerTypeDot == null) return;
+        try {
+            stopPowerTypeDotAnimation();
+            ObjectAnimator scaleXOut = ObjectAnimator.ofFloat(powerTypeDot, "scaleX", 1f, 1.4f);
+            ObjectAnimator scaleYOut = ObjectAnimator.ofFloat(powerTypeDot, "scaleY", 1f, 1.4f);
+            ObjectAnimator alphaOut = ObjectAnimator.ofFloat(powerTypeDot, "alpha", 1f, 0.5f);
+            AnimatorSet out = new AnimatorSet();
+            out.playTogether(scaleXOut, scaleYOut, alphaOut);
+            out.setDuration(700);
+
+            ObjectAnimator scaleXIn = ObjectAnimator.ofFloat(powerTypeDot, "scaleX", 1.4f, 1f);
+            ObjectAnimator scaleYIn = ObjectAnimator.ofFloat(powerTypeDot, "scaleY", 1.4f, 1f);
+            ObjectAnimator alphaIn = ObjectAnimator.ofFloat(powerTypeDot, "alpha", 0.5f, 1f);
+            AnimatorSet in = new AnimatorSet();
+            in.playTogether(scaleXIn, scaleYIn, alphaIn);
+            in.setDuration(700);
+
+            powerTypeDotAnimator = new AnimatorSet();
+            powerTypeDotAnimator.playSequentially(out, in);
+            powerTypeDotAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(android.animation.Animator animation) {
+                    if (powerTypeDotAnimator != null) {
+                        powerTypeDotAnimator.start();
+                    }
+                }
+            });
+            powerTypeDotAnimator.start();
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting power type dot animation: " + e.getMessage());
+        }
+    }
+
+    private void stopPowerTypeDotAnimation() {
+        try {
+            if (powerTypeDotAnimator != null) {
+                powerTypeDotAnimator.removeAllListeners();
+                powerTypeDotAnimator.cancel();
+                powerTypeDotAnimator = null;
+            }
+            if (powerTypeDot != null) {
+                powerTypeDot.setAlpha(1f);
+                powerTypeDot.setScaleX(1f);
+                powerTypeDot.setScaleY(1f);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping power type dot animation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        isRunning = false;
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(updateRunnable);
+        }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
+        stopPowerTypeDotAnimation();
     }
 
     /**

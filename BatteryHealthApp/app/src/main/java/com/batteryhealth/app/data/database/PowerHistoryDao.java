@@ -37,7 +37,10 @@ public interface PowerHistoryDao {
     
     @Query("SELECT * FROM power_history WHERE timestamp >= :startTime ORDER BY timestamp ASC")
     List<PowerHistory> getSince(long startTime);
-    
+
+    @Query("SELECT * FROM power_history WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp ASC")
+    List<PowerHistory> getBetween(long startTime, long endTime);
+
     @Query("SELECT AVG(power) FROM power_history WHERE session_id = :sessionId")
     float getAveragePowerBySession(String sessionId);
     

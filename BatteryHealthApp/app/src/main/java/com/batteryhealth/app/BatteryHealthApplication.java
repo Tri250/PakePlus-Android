@@ -35,7 +35,8 @@ public class BatteryHealthApplication extends Application {
     private static BatteryHealthApplication instance;
     private AppDatabase database;
     private Handler mainHandler;
-    
+    private long appStartTime;
+
     private final Object dbInitLock = new Object();
     private volatile CountDownLatch dbInitLatch;
     
@@ -44,6 +45,7 @@ public class BatteryHealthApplication extends Application {
         super.onCreate();
         try {
             instance = this;
+            appStartTime = System.currentTimeMillis();
             mainHandler = new Handler(Looper.getMainLooper());
 
             // 注册全局未捕获异常处理器，跳转错误兜底页
@@ -249,6 +251,13 @@ public class BatteryHealthApplication extends Application {
      */
     public Handler getMainHandler() {
         return mainHandler;
+    }
+
+    /**
+     * 获取应用启动时间（毫秒时间戳）
+     */
+    public long getAppStartTime() {
+        return appStartTime;
     }
     
     /**

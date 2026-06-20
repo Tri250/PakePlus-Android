@@ -66,6 +66,9 @@ public class EnduranceFragment extends Fragment {
     private TextView tvConsumptionSummary;
     private TextView tvConsumptionList;
     private TextView tvConsumptionEmpty;
+    private TextView tvClusterLevel;
+    private TextView tvClusterRate;
+    private TextView tvClusterTemp;
 
     private BatteryDataManager batteryDataManager;
     private Handler mainHandler;
@@ -250,6 +253,9 @@ public class EnduranceFragment extends Fragment {
         tvConsumptionSummary = view.findViewById(R.id.tv_consumption_summary);
         tvConsumptionList = view.findViewById(R.id.tv_consumption_list);
         tvConsumptionEmpty = view.findViewById(R.id.tv_consumption_empty);
+        tvClusterLevel = view.findViewById(R.id.tv_cluster_level);
+        tvClusterRate = view.findViewById(R.id.tv_cluster_rate);
+        tvClusterTemp = view.findViewById(R.id.tv_cluster_temp);
     }
 
     /**
@@ -354,6 +360,23 @@ public class EnduranceFragment extends Fragment {
                 // 更新当前电量
                 if (tvCurrentLevel != null) {
                     tvCurrentLevel.setText(level + "%");
+                }
+
+                // 快速指标簇
+                if (tvClusterLevel != null) {
+                    tvClusterLevel.setText(level + "%");
+                }
+                if (tvClusterRate != null) {
+                    if (isCharging) {
+                        tvClusterRate.setText(getString(R.string.status_charging));
+                    } else if (dischargeRate > 0) {
+                        tvClusterRate.setText(String.format(Locale.getDefault(), "%.1f", dischargeRate));
+                    } else {
+                        tvClusterRate.setText("--");
+                    }
+                }
+                if (tvClusterTemp != null) {
+                    tvClusterTemp.setText(String.format(Locale.getDefault(), "%.1f°C", temperature));
                 }
 
                 // 更新放电速率
