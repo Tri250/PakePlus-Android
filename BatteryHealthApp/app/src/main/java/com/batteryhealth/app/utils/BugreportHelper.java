@@ -9,6 +9,8 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
+import java.util.Locale;
+
 /**
  * Bugreport 获取指南助手
  * 提供按品牌的拨号指令、ADB 命令复制、USB 调试检测等能力。
@@ -44,7 +46,7 @@ public class BugreportHelper {
      * 根据当前设备品牌返回对应的 Bugreport 获取指南。
      */
     public static BugreportInfo getBugreportInfo() {
-        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase() : "";
+        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
         String defaultSaveHint = "文件通常保存在系统通知栏提示位置，或通过 ADB 保存在当前电脑目录。";
 
         if (brand.contains("xiaomi") || brand.contains("redmi") || brand.contains("poco")) {

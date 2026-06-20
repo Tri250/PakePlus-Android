@@ -3,6 +3,8 @@ package com.batteryhealth.app.data.repository;
 import android.content.Context;
 
 import com.batteryhealth.app.data.api.ApiClient;
+
+import java.util.Locale;
 import com.batteryhealth.app.data.api.BugreportApiService;
 import com.batteryhealth.app.data.model.BugreportUploadResponse;
 
@@ -37,7 +39,7 @@ public class BugreportRepository {
 
     private String getContentType(File file) {
         if (file == null) return "application/octet-stream";
-        String name = file.getName().toLowerCase();
+        String name = file.getName().toLowerCase(Locale.ROOT);
         if (name.endsWith(".zip")) {
             return "application/zip";
         } else if (name.endsWith(".txt")) {

@@ -289,7 +289,7 @@ public class TrendFragment extends Fragment {
             if (recordCount == 0) {
                 tvNoData.setText("数据收集中\n\n趋势图表需要至少 10 条记录。保持应用在后台运行约 10 分钟后即可查看。");
             } else {
-                tvNoData.setText(String.format("已收集 %d 条记录\n\n继续监测约 %d 分钟后即可生成趋势图表。", recordCount, (10 - recordCount) * 1));
+                tvNoData.setText(String.format(Locale.getDefault(), "已收集 %d 条记录\n\n继续监测约 %d 分钟后即可生成趋势图表。", recordCount, (10 - recordCount) * 1));
             }
         }
         if (tvDataCount != null) tvDataCount.setText("暂无数据");

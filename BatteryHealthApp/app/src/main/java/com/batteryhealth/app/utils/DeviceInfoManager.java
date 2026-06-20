@@ -206,7 +206,7 @@ public class DeviceInfoManager {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String lower = line.toLowerCase();
+                String lower = line.toLowerCase(Locale.ROOT);
                 if (lower.startsWith("hardware") || lower.startsWith("model name")
                         || lower.startsWith("processor") || lower.startsWith("chip name")) {
                     int idx = line.indexOf(':');
@@ -286,7 +286,7 @@ public class DeviceInfoManager {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String lower = line.toLowerCase();
+                String lower = line.toLowerCase(Locale.ROOT);
                 // 扩展匹配关键词：覆盖 ARM 设备常见的 SoC 标识字段
                 if (lower.startsWith("hardware") || lower.startsWith("model name")
                         || lower.startsWith("processor") || lower.startsWith("chip name")
