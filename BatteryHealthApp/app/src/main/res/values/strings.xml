@@ -1,47 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 应用信息 -->
     <string name="app_name">电池健康</string>
-
-    <!-- 通知通道 -->
-    <string name="battery_monitor_channel_name">电池监控</string>
-    <string name="battery_monitor_channel_description">实时监控电池状态</string>
-    <string name="battery_monitor_notification_title">电池监控运行中</string>
-    <string name="battery_monitor_notification_content">电量 %1$d%% · 温度 %2$.1f°C · 健康度 %3$.1f%%</string>
-    <string name="battery_monitor_notification_fallback">电池监控服务运行中</string>
-
-    <string name="health_alert_channel_name">电池健康提醒</string>
-    <string name="health_alert_channel_description">电池健康度异常时通知</string>
-    <string name="health_alert_title">电池健康提醒</string>
-    <string name="health_alert_content">电池健康度已出现明显衰减</string>
-
-    <string name="charging_monitor_channel_name">充电监控</string>
-    <string name="charging_monitor_channel_description">充电状态与功率实时通知</string>
-    <string name="charging_monitor_notification_title">充电监控运行中</string>
-    <string name="charging_monitor_notification_content_charging">正在充电</string>
-    <string name="charging_monitor_notification_content_idle">未在充电</string>
-
-    <!-- 错误页 -->
-    <string name="error_title">出错了</string>
-    <string name="error_unknown">未知错误</string>
-    <string name="error_icon_desc">错误图标</string>
-    <string name="error_view_details">查看详情</string>
-    <string name="error_hide_details">隐藏详情</string>
-    <string name="error_copy">复制错误信息</string>
-    <string name="error_restart">重新启动应用</string>
-    <string name="error_continue">继续使用</string>
-    <string name="error_copied">已复制到剪贴板</string>
-
-    <!-- 设置项 -->
-    <string name="health_alert_setting_title">电池健康度提醒</string>
-    <string name="health_alert_setting_summary">当电池健康度出现明显衰减时通知我</string>
-
-    <!-- 电池健康 -->
+    <string name="nav_health">健康</string>
+    <string name="nav_power">充电</string>
+    <string name="nav_community">电池江湖</string>
+    <string name="nav_config">配置</string>
+    <string name="nav_performance">性能</string>
+    <string name="nav_health_check">自检</string>
+    <string name="nav_endurance">续航</string>
+    <string name="nav_trend">趋势</string>
     <string name="title_battery_health">电池健康</string>
+    <string name="title_power">充电功率</string>
+    <string name="title_community">电池江湖</string>
+    <string name="title_device_config">设备配置</string>
+    <string name="title_performance">性能分析</string>
+    <string name="title_health_check">电池自检</string>
+    <string name="title_endurance">续航分析</string>
+    <string name="title_trend">趋势追踪</string>
+    <string name="status_live_monitoring">实时监测中</string>
+    <string name="status_charging_monitoring">充电监测中</string>
+    <string name="label_max_capacity">最大容量</string>
+    <string name="status_detecting">检测中…</string>
+    <string name="status_excellent">电池状态极佳</string>
+    <string name="status_good">电池状态良好</string>
+    <string name="status_fair">电池状态一般</string>
+    <string name="status_poor">建议更换电池</string>
+    <string name="status_charging">充电中</string>
+    <string name="status_discharging">放电中</string>
+    <string name="status_not_charging">未充电</string>
+    <string name="status_running">运行中</string>
+    <string name="status_calculating">计算中</string>
+    <string name="status_fast_charge">快充</string>
+    <string name="status_super_fast_charge">超快闪充</string>
+    <string name="status_normal_charge">普通充电</string>
+    <string name="stage_fast">快速充电</string>
+    <string name="stage_trickle">涓流充电</string>
+    <string name="source_internal">内置</string>
     <string name="section_current_status">当前状态</string>
     <string name="section_details">详细信息</string>
-    <string name="status_detecting">正在检测...</string>
-    <string name="status_live_monitoring">实时监测中</string>
+    <string name="section_device_info">设备信息</string>
+    <string name="section_alert_settings">预警设置</string>
+    <string name="section_quick_metrics">快速指标</string>
+    <string name="section_battery_usage_details">电池使用详情</string>
+    <string name="section_key_stats">关键统计</string>
+    <string name="section_this_app">本应用</string>
+    <string name="section_gpu_info">GPU 信息</string>
+    <string name="section_charge_details">充电详情</string>
+    <string name="section_today_charge">今日充电</string>
     <string name="label_battery_level">电池电量</string>
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
@@ -51,291 +56,149 @@
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
     <string name="label_battery_technology">电池技术</string>
-    <string name="health_grade_format">等级 %s</string>
-
-    <!-- 设备配置 -->
-    <string name="title_device_config">设备配置</string>
-    <string name="section_device_info">设备信息</string>
     <string name="label_device_name">设备名称</string>
     <string name="label_device_model">设备型号</string>
     <string name="label_android_version">Android版本</string>
     <string name="label_processor">处理器</string>
-    <string name="label_memory">内存</string>
-    <string name="label_storage">存储</string>
+    <string name="label_ram">运行内存</string>
+    <string name="label_storage">存储空间</string>
     <string name="label_screen">屏幕</string>
     <string name="label_activation_date">激活日期</string>
     <string name="label_usage_days">使用天数</string>
     <string name="label_activation_source">激活来源</string>
-    <string name="label_available_memory">可用内存</string>
+    <string name="label_available_ram">可用内存</string>
     <string name="label_available_storage">可用存储</string>
     <string name="label_network_type">网络类型</string>
-    <string name="section_alert_settings">预警设置</string>
-
-    <!-- 性能分析 -->
-    <string name="title_performance">性能分析</string>
-    <string name="label_cpu_usage">CPU使用率</string>
+    <string name="label_health_decay_alert">电池健康度衰减预警</string>
+    <string name="desc_health_decay_alert">当电池健康度低于80%时提醒您</string>
+    <string name="label_cpu_usage">CPU 使用率</string>
     <string name="label_memory_usage">内存使用率</string>
     <string name="label_performance_score">性能评分</string>
     <string name="label_storage_usage">存储使用率</string>
-    <string name="label_gpu_info">GPU信息</string>
+    <string name="label_app_cpu">本应用CPU</string>
+    <string name="label_app_memory">本应用内存</string>
+    <string name="label_runtime">运行时间</string>
+    <string name="label_foreground_service">前台服务</string>
     <string name="label_gpu_renderer">GPU渲染器</string>
-    <string name="section_this_app">本应用</string>
-    <string name="label_this_app_cpu">本应用 CPU</string>
-    <string name="label_this_app_memory">本应用内存</string>
-    <string name="label_app_runtime">运行时间</string>
-    <string name="label_foreground_services">前台服务</string>
-    <string name="value_foreground_services">电池监测 · 充电监测</string>
-
-    <!-- 续航分析 -->
-    <string name="title_endurance">续航分析</string>
-    <string name="label_estimated_endurance">预计续航时间</string>
-    <string name="hours_placeholder">-- 小时</string>
-    <string name="status_calculating">正在计算...</string>
-    <string name="section_battery_usage_details">电池使用详情</string>
-    <string name="label_current_level">当前电量</string>
+    <string name="label_opengl_version">OpenGL版本</string>
+    <string name="label_vulkan_version">Vulkan版本</string>
+    <string name="label_estimated_endurance">预计续航</string>
+    <string name="label_current_battery">当前电量</string>
     <string name="label_discharge_rate">放电速率</string>
+    <string name="label_temperature_c">温度</string>
+    <string name="label_used_time">已用时长</string>
+    <string name="label_consumed_battery">已消耗电量</string>
     <string name="label_estimated_full">预计充满</string>
-    <string name="section_top_consumers">应用耗电榜（24小时）</string>
-    <string name="status_no_usage_data">正在收集耗电数据，请打开应用并保持前台使用一段时间后查看</string>
-    <string name="consumption_summary_format">设备容量：%1$d mAh · 预估续航：%2$s</string>
-    <string name="consumption_summary_unknown">设备容量未知 · 持续监测后将提供更精准续航预估</string>
-    <string name="consumption_hours_format">%.1f 小时</string>
-    <string name="consumption_calculating">持续监测中</string>
-
-    <!-- 充电功率 -->
-    <string name="title_power">充电功率</string>
-    <string name="status_not_charging">未充电</string>
-    <string name="label_voltage">电压</string>
-    <string name="label_charging_phase">充电阶段</string>
-    <string name="status_detecting_protocol">检测充电协议中…</string>
-    <string name="charge_protocol_standard">标准充电 · 请使用原装充电器以获得最佳速度</string>
-    <string name="section_today_charging">今日充电</string>
-    <string name="label_charge_count">充电次数</string>
-    <string name="label_avg_power">平均功率</string>
-    <string name="label_total_duration">累计时长</string>
-    <string name="label_total_input">累计充入</string>
-
-    <!-- 趋势追踪 -->
-    <string name="title_trend">趋势追踪</string>
-    <string name="section_key_stats">关键统计</string>
+    <string name="label_screen_on_time">屏幕亮屏</string>
     <string name="label_initial_health">初始健康度</string>
     <string name="label_current_health">当前健康度</string>
     <string name="label_total_decay">总衰减</string>
     <string name="label_monthly_decay">月均衰减</string>
-    <string name="status_no_data">暂无数据</string>
-    <string name="trend_no_data_description">使用应用一段时间后，这里将显示电池数据的趋势变化图表</string>
-    <string name="time_range_1day">1天</string>
-    <string name="time_range_7days">7天</string>
-    <string name="time_range_30days">30天</string>
-    <string name="time_range_90days">90天</string>
-    <string name="chart_health_trend">健康度趋势</string>
-    <string name="chart_level_trend">电量趋势</string>
-    <string name="chart_temperature_trend">温度趋势</string>
-    <string name="chart_power_trend">充电功率趋势</string>
-    <string name="action_export_csv">导出 CSV</string>
-    <string name="export_csv_no_data">暂无可导出的数据</string>
-    <string name="export_csv_success">CSV 已导出：%s</string>
-    <string name="export_csv_failed">CSV 导出失败：%s</string>
-
-    <!-- 设置 -->
-    <string name="section_settings">设置</string>
-    <string name="label_show_background_notification">显示后台监控通知</string>
-    <string name="section_about">关于</string>
-    <string name="label_privacy_policy">隐私政策</string>
-    <string name="label_user_agreement">用户协议</string>
-    <string name="label_version">版本号</string>
-    <string name="privacy_policy_title">隐私政策</string>
-    <string name="privacy_policy_body">本应用为本地化电池健康监测工具，所有数据均存储在您的设备本地，不会上传至任何服务器。\n\n1. 收集的信息\n本应用读取设备的电池状态、运行内存、存储空间、屏幕参数及系统版本等设备信息，仅用于在本地进行健康度计算与展示。\n\n2. 权限使用说明\n• 前台服务权限：用于在后台持续监测电池状态\n• 通知权限：用于显示电池监控通知（Android 13+）\n• 网络状态权限：用于检测网络连接状态（可选）\n\n3. 数据存储\n所有电池历史数据、健康度、循环次数等仅保存在本地数据库，不包含任何个人信息。\n\n4. 第三方服务\n本应用不集成任何第三方分析、广告或追踪 SDK。\n\n5. 联系方式\n如有问题或建议，请通过应用商店评论区反馈。</string>
+    <string name="label_voltage">电压</string>
+    <string name="label_charge_stage">充电阶段</string>
+    <string name="label_charge_count">充电次数</string>
+    <string name="label_avg_power">平均功率</string>
+    <string name="label_total_charge_time">累计时长</string>
+    <string name="label_total_charged">累计充入</string>
+    <string name="header_health_change">健康度变化</string>
+    <string name="subtitle_device_config">识别到的硬件与系统参数</string>
+    <string name="subtitle_performance">实时系统资源占用与性能评分</string>
+    <string name="subtitle_endurance">基于实时放电速率估算</string>
+    <string name="subtitle_trend">近 6 个月电池健康度变化</string>
+    <string name="unit_hours_minutes">小时 12 分</string>
+    <string name="meta_endurance">当前电量 %1$d%%，平均放电 %2$.1f%%/h</string>
+    <string name="health_check_score_excellent">极佳</string>
+    <string name="health_check_score_good">良好</string>
+    <string name="health_check_score_normal">一般</string>
+    <string name="health_check_score_warning">警告</string>
+    <string name="health_check_score_critical">严重</string>
+    <string name="health_check_action_recheck">重新检测</string>
+    <string name="health_check_no_data">暂无数据</string>
+    <string name="health_check_export_failed">导出失败</string>
+    <string name="health_check_export_success">导出成功</string>
+    <string name="health_check_action_fix">修复</string>
+    <string name="health_check_fix_failed">修复失败</string>
+    <string name="error_title">出错了</string>
+    <string name="error_unknown">未知错误</string>
+    <string name="error_hide_details">隐藏详情</string>
+    <string name="error_view_details">查看详情</string>
+    <string name="health_check_label_running">检测中…</string>
+    <string name="error_view_load_failed">加载失败: %1$s - %2$s</string>
+    <string name="user_agreement_body">用户协议内容</string>
+    <string name="privacy_policy_body">隐私政策内容</string>
     <string name="user_agreement_title">用户协议</string>
-    <string name="user_agreement_body">欢迎使用本应用。请仔细阅读以下条款：\n\n1. 功能说明\n本应用提供电池健康度估算、循环次数监测、充电状态分析、续航预测、性能基准测试等功能。计算结果仅供参考，最终以设备制造商数据为准。\n\n2. 使用规范\n• 请勿在飞行模式等极端情况下作为关键判断依据\n• 数据准确度受设备品牌/型号/系统版本影响存在差异\n• 请勿将本应用用于商业评估或质保索赔的唯一依据\n\n3. 免责声明\n本应用开发者不对因使用本应用数据而产生的任何直接或间接损失负责。\n\n4. 协议变更\n本协议可能随版本更新调整，更新后将通过应用商店说明告知。</string>
-
-    <!-- 通用状态与提示 -->
+    <string name="privacy_policy_title">隐私政策</string>
+    <string name="health_check_action_checking">检测中…</string>
+    <string name="error_crash_title">应用崩溃</string>
+    <string name="error_crash_message">应用发生异常，请重启</string>
+    <string name="status_init_failed">初始化失败</string>
+    <string name="status_app_init_failed">应用初始化失败: %1$s</string>
+    <string name="status_permission_needed">需要权限</string>
+    <string name="status_notification_permission_needed">需要通知权限</string>
+    <string name="action_go_settings">去设置</string>
+    <string name="dialog_battery_optimization_title">电池优化</string>
+    <string name="dialog_battery_optimization_message">请关闭电池优化以保证后台监测</string>
+    <string name="action_later">稍后</string>
+    <string name="gpu_adreno">Adreno</string>
+    <string name="gpu_mali_mediatek">Mali (联发科)</string>
+    <string name="gpu_mali_hisilicon">Mali (海思)</string>
+    <string name="gpu_mali_samsung">Mali (三星)</string>
+    <string name="status_not_recognized">未识别</string>
+    <string name="dialog_permission_message">需要权限才能正常运行</string>
+    <string name="dialog_permission_notification_message">需要通知权限</string>
+    <string name="dialog_permission_title">权限申请</string>
+    <string name="dialog_permission_retry">重试</string>
+    <string name="dialog_permission_cancel">取消</string>
+    <string name="dialog_permission_denied_title">权限被拒绝</string>
+    <string name="dialog_permission_denied_message">请前往设置开启权限</string>
+    <string name="health_source_unavailable">未知</string>
     <string name="status_unknown">未知</string>
-    <string name="status_detecting_short">检测中</string>
-    <string name="status_unreadable">无法读取</string>
-    <string name="status_charging">充电中</string>
-    <string name="status_not_charging_short">未充电</string>
-    <string name="status_discharging">放电中</string>
-    <string name="status_fully_charged">已充满</string>
-    <string name="status_calculating_short">计算中...</string>
-    <string name="status_excellent">续航表现优秀</string>
-    <string name="status_good">续航表现良好</string>
-    <string name="status_average">续航表现一般</string>
-    <string name="status_poor">耗电较快，请检查后台应用</string>
-    <string name="status_device_charging">设备正在充电</string>
-    <string name="status_full_charge_time_minutes">%.0f 分钟</string>
-    <string name="status_full_charge_time_hours">%.1f 小时</string>
-    <string name="status_full_charge_done">已充满</string>
-    <string name="status_endurance_days">%.0f 天</string>
-    <string name="status_endurance_hours">%.1f 小时</string>
-    <string name="status_hours_placeholder">-- 小时</string>
+    <string name="battery_source_original_confidence">原装 (可信度 %1$d%%)</string>
+    <string name="battery_source_third_party_confidence">第三方 (可信度 %1$d%%)</string>
+    <string name="battery_source_unverifiable">无法验证</string>
+    <string name="battery_technology_default">Li-ion</string>
     <string name="status_no_network">无网络</string>
     <string name="status_mobile_data">移动数据</string>
-    <string name="status_not_recognized">未识别</string>
-    <string name="status_data_collecting">数据收集中</string>
-    <string name="status_no_data_hint">暂无数据</string>
-    <string name="status_demo_hint">数据积累中，演示数据仅供参考</string>
-    <string name="status_no_data_trend">数据收集中\n\n趋势图表需要至少 10 条记录。保持应用在后台运行约 10 分钟后即可查看。</string>
-    <string name="status_partial_data_trend">已收集 %1$d 条记录\n\n继续监测约 %2$d 分钟后即可生成趋势图表。</string>
-    <string name="status_no_records">暂无充电记录</string>
-    <string name="status_no_data_count">暂无数据</string>
-    <string name="status_demo_data">演示数据</string>
-    <string name="status_init_failed">界面初始化失败</string>
-    <string name="status_app_init_failed">应用初始化失败: %s</string>
-    <string name="status_permission_needed">部分功能需要权限才能正常使用</string>
-    <string name="status_notification_permission_needed">需要通知权限以保证后台服务正常运行</string>
-    <string name="action_go_settings">去设置</string>
-    <string name="action_later">稍后</string>
-    <string name="dialog_battery_optimization_title">电池优化</string>
-    <string name="dialog_battery_optimization_message">为了保障电池监测服务在后台稳定运行，建议将本应用加入电池优化白名单。</string>
-    <string name="dialog_permission_title">权限说明</string>
-    <string name="dialog_permission_message">需要该权限才能保证应用功能正常使用。</string>
-    <string name="dialog_permission_notification_message">需要通知权限以保证后台电池监测服务正常运行。</string>
-    <string name="dialog_permission_denied_title">权限已被拒绝</string>
-    <string name="dialog_permission_denied_message">请前往应用设置手动开启所需权限，否则部分功能将无法使用。</string>
-    <string name="dialog_permission_retry">重新请求</string>
-    <string name="dialog_permission_cancel">取消</string>
-    <string name="error_view_load_failed">界面加载失败\n%1$s: %2$s</string>
-    <string name="error_crash_title">应用发生崩溃</string>
-    <string name="error_crash_message">我们已记录错误信息，请点击下方按钮重启应用。</string>
-
-    <!-- 电池健康度 -->
-    <string name="health_excellent">极佳</string>
+    <string name="charging_status_wireless">无线充电</string>
+    <string name="status_not_charging_short">未充电</string>
+    <string name="charge_type_ultra_fast">超快闪充</string>
+    <string name="charge_type_extreme_fast">极快闪充</string>
+    <string name="charge_type_fast">快充</string>
+    <string name="charge_type_standard">标准充电</string>
+    <string name="charge_type_slow">慢充</string>
+    <string name="health_source_user_calibrated">用户校准 (可信度 %1$d%%)</string>
+    <string name="health_source_fcc_ratio">FCC比例 (可信度 %1$d%%)</string>
+    <string name="health_source_charge_counter">电荷计数 (可信度 %1$d%%)</string>
+    <string name="health_source_usage_days">使用天数估算 (可信度 %1$d%%)</string>
+    <string name="health_source_estimate">估算 (可信度 %1$d%%)</string>
     <string name="health_good">良好</string>
     <string name="health_average">一般</string>
     <string name="health_poor">较差</string>
     <string name="health_very_poor">极差</string>
     <string name="health_unknown">未知</string>
-    <string name="health_status_excellent">电池状态极佳，可继续使用</string>
-    <string name="health_status_good">电池状态良好，性能正常</string>
-    <string name="health_status_average">电池健康度一般，建议关注</string>
-    <string name="health_status_poor">电池损耗明显，建议考虑更换</string>
-    <string name="health_status_very_poor">电池健康度极差，建议尽快更换</string>
-    <string name="health_status_unknown">无法评估</string>
-    <string name="health_status_no_data">缺少容量数据，无法评估</string>
-    <string name="health_status_unavailable">无法获取电池健康数据</string>
-    <string name="health_status_excellent_alt">电池状态极佳</string>
-    <string name="health_status_good_alt">电池状态良好</string>
-    <string name="health_status_average_alt">电池状态一般</string>
-    <string name="health_status_poor_alt">建议更换电池</string>
-    <string name="health_confidence_format"> (可信度 %.0f%%)</string>
-    <string name="health_source_user_calibrated">用户校准（置信度 %d%%）</string>
-    <string name="health_source_fcc_ratio">实测容量比（置信度 %d%%）</string>
-    <string name="health_source_charge_counter">剩余电量推算（置信度 %d%%）</string>
-    <string name="health_source_usage_days">使用时长估算（置信度 %d%%）</string>
-    <string name="health_source_usage_only">仅基于使用时长（置信度 %d%%）</string>
-    <string name="health_source_estimate">估算（置信度 %d%%）</string>
-    <string name="health_source_unavailable">无法获取</string>
-
-    <!-- 电池来源 -->
     <string name="battery_source_original">原装</string>
     <string name="battery_source_third_party">第三方</string>
-    <string name="battery_source_unverifiable">无法验证</string>
-    <string name="battery_source_original_confidence">原装（置信度 %d%%）</string>
-    <string name="battery_source_third_party_confidence">第三方（置信度 %d%%）</string>
-
-    <!-- 充电类型与阶段 -->
-    <string name="charge_type_ultra_fast">超快闪充</string>
-    <string name="charge_type_extreme_fast">极速快充</string>
-    <string name="charge_type_fast">快速充电</string>
-    <string name="charge_type_standard_fast">普通快充</string>
-    <string name="charge_type_standard">标准充电</string>
-    <string name="charge_type_slow">慢速充电</string>
-    <string name="charge_phase_trickle">涓流充电</string>
-    <string name="charge_phase_constant_current">恒流充电</string>
-    <string name="charge_phase_constant_voltage">恒压充电</string>
-    <string name="charge_phase_full">充电完成</string>
-    <string name="charge_phase_charging">充电中</string>
-    <string name="charge_phase_unknown">未知</string>
-    <string name="charge_power_ultra_fast">超快闪充</string>
-    <string name="charge_power_fast">快速充电</string>
-    <string name="charge_power_standard">标准充电</string>
-    <string name="charge_power_slow">慢速充电</string>
-
-    <!-- 性能 -->
-    <string name="performance_score_format">%d 分</string>
-    <string name="performance_low_issue">综合性能评分低于60，建议关闭后台应用</string>
-    <string name="performance_excellent">优秀</string>
-    <string name="performance_good">良好</string>
-    <string name="performance_average">一般</string>
-    <string name="performance_poor">较差</string>
-
-    <!-- 校准对话框 -->
-    <string name="calibrate_hint">输入当前实际电池容量（mAh）</string>
-    <string name="calibrate_title">校准电池容量</string>
-    <string name="calibrate_message">请输入当前电池的实际容量（mAh），用于更准确地计算健康度。</string>
-    <string name="calibrate_save">保存</string>
-    <string name="calibrate_cancel">取消</string>
-    <string name="calibrate_empty_error">容量不能为空</string>
-    <string name="calibrate_invalid_error">请输入合理的容量值</string>
-    <string name="calibrate_saved">校准已保存</string>
-    <string name="calibrate_format_error">输入格式错误</string>
-
-    <!-- 激活来源 -->
-    <string name="activation_source_unknown">未知</string>
-    <string name="activation_source_warranty">电子保卡</string>
-    <string name="activation_source_first_boot">系统首次开机</string>
-    <string name="activation_source_device_policy">设备管理策略</string>
-    <string name="activation_source_google">Google 服务首次安装</string>
-    <string name="activation_source_framework">系统框架安装</string>
-    <string name="activation_source_app_first_install">本应用首次安装</string>
-    <string name="activation_source_app_data">应用数据目录</string>
-
-    <!-- 电池技术 -->
-    <string name="battery_technology_default">锂离子</string>
-
-    <!-- 充电状态详情 -->
-    <string name="charging_status_ac">交流电源</string>
-    <string name="charging_status_wireless">无线充电</string>
-    <string name="charging_status_usb">USB</string>
-    <string name="charging_status_unknown">未知</string>
-
-    <!-- 循环次数 -->
-    <string name="cycle_count_format">%d 次</string>
-    <string name="cycle_count_estimate_format">约 %d 次（估算）</string>
     <string name="cycle_count_unreadable">无法读取</string>
-
-    <!-- 单位与格式 -->
-    <string name="unit_days">%d 天</string>
-    <string name="unit_days_fallback">--</string>
-    <string name="activation_source_confidence_format">%1$s (可信度 %2$.0f%%)</string>
-    <string name="usage_days_format">%d 天</string>
-    <string name="record_count_format">%d 条记录</string>
-    <string name="confidence_format">（置信度 %d%%）</string>
-
-    <!-- 底部导航 -->
-    <string name="nav_health">健康</string>
-    <string name="nav_config">配置</string>
-    <string name="nav_performance">性能</string>
-    <string name="nav_endurance">续航</string>
-    <string name="nav_trend">趋势</string>
-    <string name="nav_power">充电</string>
-    <string name="nav_community">电池江湖</string>
-    <string name="nav_mine">我的</string>
-    <string name="nav_health_check">自检</string>
-
-    <!-- 自检报告 -->
-    <string name="title_health_check">自检报告</string>
-    <string name="health_check_label_ready">设备综合评分</string>
-    <string name="health_check_label_running">检测中…</string>
-    <string name="health_check_action_start">一键检测</string>
-    <string name="health_check_action_recheck">重新检测</string>
-    <string name="health_check_action_checking">检测中…</string>
-    <string name="health_check_action_report">复制报告</string>
-    <string name="health_check_action_fix">去设置</string>
-    <string name="health_check_no_data">暂无检测数据，请先点击「一键检测」。</string>
-    <string name="health_check_export_success">诊断报告已复制到剪贴板。</string>
-    <string name="health_check_export_failed">报告生成失败，请重试。</string>
-    <string name="health_check_fix_failed">无法跳转到相应设置页。</string>
-    <string name="health_check_score_excellent">状态极佳</string>
-    <string name="health_check_score_good">状态良好</string>
-    <string name="health_check_score_normal">状态一般</string>
-    <string name="health_check_score_warning">需要关注</string>
-    <string name="health_check_score_critical">请立即处理</string>
-
-    <!-- GPU 信息 -->
-    <string name="gpu_adreno">Adreno GPU（高通）</string>
-    <string name="gpu_mali_mediatek">Mali GPU（联发科）</string>
-    <string name="gpu_mali_hisilicon">Mali GPU（海思麒麟）</string>
-    <string name="gpu_mali_samsung">Mali/Xclipse GPU（三星）</string>
+    <string name="cycle_count_estimate_format">约 %1$d 次 (估算)</string>
+    <string name="cycle_count_format">%1$d 次</string>
+    <string name="status_fully_charged">已充满</string>
+    <string name="charging_status_ac">交流电源</string>
+    <string name="charging_status_usb">USB</string>
+    <string name="battery_monitor_channel_name">电池监测</string>
+    <string name="battery_monitor_channel_description">实时电池状态监测</string>
+    <string name="health_alert_channel_name">健康预警</string>
+    <string name="health_alert_channel_description">电池健康度预警通知</string>
+    <string name="health_alert_content">电池健康度已降至 %1$d%%，建议关注</string>
+    <string name="health_alert_title">电池健康预警</string>
+    <string name="battery_monitor_notification_content">电池 %1$d%% · %2$s · %3$.1f°C</string>
+    <string name="battery_monitor_notification_title">电池监测中</string>
+    <string name="battery_monitor_notification_fallback">电池监测服务运行中</string>
+    <string name="confidence_format"> (可信度 %1$d%%)</string>
+    <string name="health_status_no_data">暂无数据</string>
+    <string name="health_excellent">极佳</string>
+    <string name="charging_monitor_channel_name">充电监测</string>
+    <string name="charging_monitor_channel_description">实时充电功率与状态监测</string>
+    <string name="charging_monitor_notification_content_charging">充电中 %1$d%% · %2$.1fW · %3$s</string>
+    <string name="charging_monitor_notification_content_idle">未充电 · 电量 %1$d%%</string>
+    <string name="charging_monitor_notification_title">充电监测中</string>
 </resources>

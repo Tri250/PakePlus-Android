@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent"
+    android:background="@color/bg_canvas"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -13,199 +13,212 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="60dp"
-        android:paddingBottom="24dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingTop="@dimen/page_padding_top"
+        android:paddingBottom="@dimen/page_padding_bottom"
+        android:paddingStart="@dimen/page_padding_horizontal"
+        android:paddingEnd="@dimen/page_padding_horizontal">
 
-        <!-- 页面标题 -->
+        <!-- Page title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_trend"
-            android:textAppearance="@style/iOSTitle.Large"
-            android:letterSpacing="-0.03"
-            android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="8dp" />
+            android:textAppearance="@style/WebPageTitle"
+            android:layout_marginBottom="6dp" />
 
-        <!-- 数据统计 -->
+        <!-- Page subtitle -->
         <TextView
-            android:id="@+id/tv_data_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/status_no_data"
-            android:textAppearance="@style/iOSCaption"
-            android:layout_marginBottom="24dp" />
+            android:text="@string/subtitle_trend"
+            android:textAppearance="@style/WebPageSubtitle"
+            android:layout_marginBottom="22dp" />
 
-        <!-- 无数据提示 -->
-        <TextView
-            android:id="@+id/tv_no_data"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/trend_no_data_description"
-            android:textAppearance="@style/iOSBody.Secondary"
-            android:gravity="center"
-            android:layout_marginBottom="8dp"
-            android:visibility="visible" />
-
-        <!-- 演示数据提示 -->
-        <TextView
-            android:id="@+id/tv_demo_hint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textAppearance="@style/iOSCaption"
-            android:textColor="@color/ios_secondary_label"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone" />
-
-        <!-- 时间范围选择器 -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chip_group_time_range"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            app:checkedChip="@id/chip_7days"
-            app:chipStrokeWidth="0.5dp"
-            app:chipStrokeColor="@color/liquid_glass_border"
-            app:chipBackgroundColor="@color/liquid_glass_surface_subtle">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_1day"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/time_range_1day"
-                android:textAppearance="@style/iOSBody.Secondary" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_7days"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/time_range_7days"
-                android:checked="true"
-                android:textAppearance="@style/iOSBody.Secondary" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_30days"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/time_range_30days"
-                android:textAppearance="@style/iOSBody.Secondary" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_90days"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/time_range_90days"
-                android:textAppearance="@style/iOSBody.Secondary" />
-
-        </com.google.android.material.chip.ChipGroup>
-
-        <!-- 操作栏：导出 CSV / 分享 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end"
-            android:layout_marginBottom="12dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_export_csv"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/action_export_csv"
-                android:textAppearance="@style/iOSBody" />
-
-        </LinearLayout>
-
-        <!-- 关键统计 -->
+        <!-- Chart card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_chart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="18dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/section_key_stats"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
+                    android:text="@string/header_health_change"
+                    android:textAppearance="@style/WebCardHeader"
+                    android:layout_marginBottom="12dp" />
 
-                <View style="@style/iOSSeparator" />
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/line_chart"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginBottom="8dp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="22dp">
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="4月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="5月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="6月"
+                        android:textSize="11sp"
+                        android:textColor="@color/label_3"
+                        android:layout_weight="1"
+                        android:gravity="center" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section eyebrow: 关键统计 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_key_stats"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Stats grid card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="center">
+                        android:gravity="center"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
 
                         <TextView
-                            android:id="@+id/tv_stat_initial_health"
+                            android:id="@+id/tv_initial_health"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
                             android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
+                            android:textStyle="bold"
+                            android:textColor="@color/label" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_initial_health"
-                            android:textAppearance="@style/iOSCallout"
+                            android:textSize="12sp"
+                            android:textColor="@color/label_3"
                             android:layout_marginTop="4dp" />
 
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="@color/separator" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="center">
+                        android:gravity="center"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
 
                         <TextView
-                            android:id="@+id/tv_stat_current_health"
+                            android:id="@+id/tv_current_health"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
                             android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
+                            android:textStyle="bold"
+                            android:textColor="@color/label" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_current_health"
-                            android:textAppearance="@style/iOSCallout"
+                            android:textSize="12sp"
+                            android:textColor="@color/label_3"
                             android:layout_marginTop="4dp" />
 
                     </LinearLayout>
@@ -214,199 +227,76 @@
 
                 <View
                     android:layout_width="match_parent"
-                    android:layout_height="0.5dp"
-                    android:background="@color/ios_separator"
-                    android:layout_marginStart="22dp"
-                    android:layout_marginEnd="22dp" />
+                    android:layout_height="1dp"
+                    android:background="@color/separator" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="22dp">
+                    android:orientation="horizontal">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="center">
+                        android:gravity="center"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
 
                         <TextView
-                            android:id="@+id/tv_stat_total_decay"
+                            android:id="@+id/tv_total_decay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
                             android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
+                            android:textStyle="bold"
+                            android:textColor="@color/orange" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_total_decay"
-                            android:textAppearance="@style/iOSCallout"
+                            android:textSize="12sp"
+                            android:textColor="@color/label_3"
                             android:layout_marginTop="4dp" />
 
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="@color/separator" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="center">
+                        android:gravity="center"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
 
                         <TextView
-                            android:id="@+id/tv_stat_monthly_decay"
+                            android:id="@+id/tv_monthly_decay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
                             android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
+                            android:textStyle="bold"
+                            android:textColor="@color/label" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_monthly_decay"
-                            android:textAppearance="@style/iOSCallout"
+                            android:textSize="12sp"
+                            android:textColor="@color/label_3"
                             android:layout_marginTop="4dp" />
 
                     </LinearLayout>
 
                 </LinearLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 健康度趋势卡片 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="22dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_health_trend"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:layout_marginBottom="14dp" />
-
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/chart_health"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 电量趋势卡片 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="22dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_level_trend"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:layout_marginBottom="14dp" />
-
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/chart_level"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 温度趋势卡片 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="22dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_temperature_trend"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:layout_marginBottom="14dp" />
-
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/chart_temperature"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 充电功率趋势卡片 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="22dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_power_trend"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:layout_marginBottom="14dp" />
-
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/chart_power"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp" />
 
             </LinearLayout>
 

@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent"
+    android:background="@color/bg_canvas"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -13,368 +13,440 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="60dp"
-        android:paddingBottom="24dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingTop="@dimen/page_padding_top"
+        android:paddingBottom="@dimen/page_padding_bottom"
+        android:paddingStart="@dimen/page_padding_horizontal"
+        android:paddingEnd="@dimen/page_padding_horizontal">
 
+        <!-- Toolbar with charging pill -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="12dp">
+
+            <View android:layout_width="0dp" android:layout_height="0dp" />
+
+            <LinearLayout
+                android:id="@+id/charging_pill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_live_pill"
+                android:paddingStart="11dp"
+                android:paddingEnd="11dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp">
+
+                <View
+                    android:id="@+id/charging_dot"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/bg_blinking_dot" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_charging_monitoring"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/label_2"
+                    android:fontFamily="sans-serif-medium" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Page title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_power"
-            android:textAppearance="@style/iOSTitle.Large"
-            android:letterSpacing="-0.03"
-            android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="32dp" />
+            android:textAppearance="@style/WebPageTitle"
+            android:layout_marginBottom="22dp" />
 
+        <!-- Power hero card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_power"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="32dp"
-                android:gravity="center">
+                android:gravity="center"
+                android:paddingTop="28dp"
+                android:paddingBottom="30dp"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp"
+                android:background="@drawable/bg_card">
 
-                <TextView
-                    android:id="@+id/tv_power"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0.0 W"
-                    android:textAppearance="@style/iOSLargeNumber"
-                    android:textColor="@color/ios_blue" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tv_watt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebWatt"
+                        android:textColor="@color/primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="W"
+                        android:textAppearance="@style/WebUnit"
+                        android:layout_marginStart="6dp" />
+
+                </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/power_type_pill"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="16dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:background="@drawable/bg_power_type_pill"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
                     android:paddingTop="5dp"
                     android:paddingBottom="5dp">
 
                     <View
-                        android:id="@+id/power_type_dot"
-                        android:layout_width="7dp"
-                        android:layout_height="7dp"
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
                         android:layout_marginEnd="6dp"
-                        android:background="@drawable/bg_dot_solid" />
+                        android:background="@drawable/bg_pulse_dot" />
 
                     <TextView
-                        android:id="@+id/tv_charge_type"
+                        android:id="@+id/tv_power_type"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/status_not_charging"
-                        android:textAppearance="@style/iOSCallout"
-                        android:textSize="13sp"
-                        android:textColor="@color/ios_blue" />
+                        android:text="@string/status_fast_charge"
+                        android:textAppearance="@style/WebGradePill"
+                        android:textColor="@color/primary" />
 
                 </LinearLayout>
 
                 <ProgressBar
                     android:id="@+id/progress_charge"
-                    style="?android:attr/progressBarStyleHorizontal"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:layout_marginTop="18dp"
-                    android:progress="0"
+                    android:layout_height="8dp"
+                    android:layout_marginTop="20dp"
                     android:max="100"
-                    android:progressDrawable="@drawable/progress_charge" />
-
-                <TextView
-                    android:id="@+id/tv_charge_protocol"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/status_detecting_protocol"
-                    android:textAppearance="@style/iOSCaption"
-                    android:layout_marginTop="12dp" />
+                    android:progress="0"
+                    android:progressDrawable="@drawable/bg_progress_charge" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: 充电详情 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_charge_details"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Charge details card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_today_charging"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
-
-                <View style="@style/iOSSeparator" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp"
-                    android:paddingTop="18dp"
-                    android:paddingBottom="18dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:id="@+id/tv_today_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
-                            android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/label_charge_count"
-                            android:textAppearance="@style/iOSCallout"
-                            android:layout_marginTop="4dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:id="@+id/tv_today_avg_power"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
-                            android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/label_avg_power"
-                            android:textAppearance="@style/iOSCallout"
-                            android:layout_marginTop="4dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:id="@+id/tv_today_duration"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
-                            android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/label_total_duration"
-                            android:textAppearance="@style/iOSCallout"
-                            android:layout_marginTop="4dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:id="@+id/tv_today_input"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/iOSMediumNumber"
-                            android:textSize="22sp"
-                            android:textColor="@color/ios_label" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/label_total_input"
-                            android:textAppearance="@style/iOSCallout"
-                            android:layout_marginTop="4dp" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_details"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
-
-                <View style="@style/iOSSeparator" />
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_voltage"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:textAppearance="@style/WebListLabel" />
+
                     <TextView
                         android:id="@+id/tv_voltage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.00 V"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_current"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:textAppearance="@style/WebListLabel" />
+
                     <TextView
                         android:id="@+id/tv_current"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.00 A"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_battery_level"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:id="@+id/tv_power_battery_level"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="--%"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
-                </LinearLayout>
+                        android:text="@string/label_charge_stage"
+                        android:textAppearance="@style/WebListLabel" />
 
-                <View style="@style/iOSSeparator" />
-
-                <LinearLayout
-                    style="@style/iOSListItem"
-                    android:minHeight="48dp">
                     <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/label_charging_phase"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:id="@+id/tv_charging_phase"
+                        android:id="@+id/tv_charge_stage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:textAppearance="@style/WebListValue" />
+
                 </LinearLayout>
 
                 <View style="@style/iOSSeparator" />
 
                 <LinearLayout
                     style="@style/iOSListItem"
-                    android:minHeight="48dp"
-                    android:paddingBottom="22dp">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_battery_temperature"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:textAppearance="@style/WebListLabel" />
+
                     <TextView
-                        android:id="@+id/tv_power_battery_temp"
+                        android:id="@+id/tv_temperature"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="--°C"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_current_battery"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_battery_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_estimated_full"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_estimated_full"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section eyebrow: 今日充电 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_today_charge"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Today charge card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_charge_count"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_charge_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_avg_power"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_avg_power"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_total_charge_time"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_total_charge_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_total_charged"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_total_charged"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
                 </LinearLayout>
 
             </LinearLayout>

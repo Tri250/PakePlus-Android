@@ -2,801 +2,224 @@ package com.batteryhealth.app.ui.performance;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
 import android.os.SystemClock;
-import android.util.Log;
-import android.view.Choreographer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.batteryhealth.app.BatteryHealthApplication;
-import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
-import com.batteryhealth.app.data.database.AppDatabase;
-import android.os.Debug;
-import com.batteryhealth.app.data.model.DeviceConfig;
-import com.batteryhealth.app.data.model.PerformanceData;
-import com.batteryhealth.app.utils.DeviceInfoManager;
-import com.batteryhealth.app.utils.PerformanceBenchmark;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * 性能分析Fragment
- */
+import javax.microedition.khronos.egl.EGL10;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+
 public class PerformanceFragment extends Fragment {
-    
-    private static final String TAG = "PerformanceFragment";
 
-    // 性能评分权重：资源余量 60% + 硬件规格 40%
-    private static final float CPU_USAGE_WEIGHT = 0.25f;
-    private static final float MEMORY_USAGE_WEIGHT = 0.20f;
-    private static final float STORAGE_USAGE_WEIGHT = 0.15f;
-    private static final float HARDWARE_SCORE_MAX = 40f;
-    
-    private TextView tvCpuUsage;
-    private TextView tvMemoryUsage;
-    private ProgressBar progressCpu;
-    private ProgressBar progressMemory;
-    private TextView tvPerformanceScore;
-    private ProgressBar progressScore;
-    private TextView tvStorageUsage;
-    private ProgressBar progressStorage;
-    private TextView tvGpuInfo;
-    private TextView tvFrameRate;
-    private TextView tvJankInfo;
-    private TextView tvAppCpu;
-    private TextView tvAppMemory;
-    private TextView tvAppRuntime;
-    private TextView tvForegroundServices;
-    
-    private Handler handler;
-    private Runnable updateTask;
-    private ExecutorService executor;
-    private boolean isRunning = false;
-    private boolean isFirstUpdate = true;
+    private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
+    private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
+    private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService;
+    private TextView tvGpuRenderer, tvOpenglVersion, tvVulkanVersion;
 
-    // 帧率监测
-    private Choreographer.FrameCallback frameCallback;
-    private long lastFrameTimeNanos = 0;
-    private int frameCount = 0;
-    private int jankCount = 0;
-    private float currentFps = 0;
-    private static final long JANK_THRESHOLD_NS = 26_666_666L; // 约 26.7ms，低于 37.5fps 判定为卡顿
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable updateRunnable;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        try {
-            return inflater.inflate(R.layout.fragment_performance, container, false);
-        } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            return createErrorView(e);
-        }
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_performance, container, false);
+        initViews(view);
+        animateEntry(view);
+        return view;
     }
 
-    private View createErrorView(Exception e) {
-        android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
-        errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
-        errorView.setTextSize(16);
-        errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
-        return errorView;
-    }
-    
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        
-        try {
-            tvCpuUsage = view.findViewById(R.id.tv_cpu_usage);
-            tvMemoryUsage = view.findViewById(R.id.tv_memory_usage);
-            progressCpu = view.findViewById(R.id.progress_cpu);
-            progressMemory = view.findViewById(R.id.progress_memory);
-            tvPerformanceScore = view.findViewById(R.id.tv_performance_score);
-            progressScore = view.findViewById(R.id.progress_score);
-            tvStorageUsage = view.findViewById(R.id.tv_storage_usage);
-            progressStorage = view.findViewById(R.id.progress_storage);
-            tvGpuInfo = view.findViewById(R.id.tv_gpu_info);
-            tvFrameRate = view.findViewById(R.id.tv_frame_rate);
-            tvJankInfo = view.findViewById(R.id.tv_jank_info);
-            tvAppCpu = view.findViewById(R.id.tv_app_cpu);
-            tvAppMemory = view.findViewById(R.id.tv_app_memory);
-            tvAppRuntime = view.findViewById(R.id.tv_app_runtime);
-            tvForegroundServices = view.findViewById(R.id.tv_foreground_services);
+    private void initViews(View view) {
+        tvCpuUsage = view.findViewById(R.id.tv_cpu_usage);
+        tvMemoryUsage = view.findViewById(R.id.tv_memory_usage);
+        tvPerformanceScore = view.findViewById(R.id.tv_performance_score);
+        tvStorageUsage = view.findViewById(R.id.tv_storage_usage);
+        progressCpu = view.findViewById(R.id.progress_cpu);
+        progressMemory = view.findViewById(R.id.progress_memory);
+        progressScore = view.findViewById(R.id.progress_score);
+        progressStorage = view.findViewById(R.id.progress_storage);
 
-            // 设置默认值
-            setDefaultValues();
-            animateCardsEntry(view);
+        tvAppCpu = view.findViewById(R.id.tv_app_cpu);
+        tvAppMemory = view.findViewById(R.id.tv_app_memory);
+        tvRuntime = view.findViewById(R.id.tv_runtime);
+        tvForegroundService = view.findViewById(R.id.tv_foreground_service);
 
-            handler = new Handler(Looper.getMainLooper());
-            executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("performance-io"));
-
-            updateTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (!isRunning) return;
-                    updatePerformanceData();
-                    if (handler != null) {
-                        handler.postDelayed(this, 30000);
-                    }
-                }
-            };
-
-            // 异步运行完整基准测试，结果仅在 UI 回调中使用
-            if (executor != null) {
-                executor.submit(() -> {
-                    try {
-                        PerformanceBenchmark.Result r = PerformanceBenchmark.runFullBenchmark(requireContext());
-                        if (handler != null) {
-                            handler.post(() -> applyBenchmarkResult(r));
-                        }
-                    } catch (Exception e) {
-                        Log.w(TAG, "Benchmark skipped: " + e.getMessage());
-                    }
-                });
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
-        }
+        tvGpuRenderer = view.findViewById(R.id.tv_gpu_renderer);
+        tvOpenglVersion = view.findViewById(R.id.tv_opengl_version);
+        tvVulkanVersion = view.findViewById(R.id.tv_vulkan_version);
     }
 
-    private void animateCardsEntry(View view) {
-        UiAnimationHelper.animateCardsEntry(view);
+    private void animateEntry(View view) {
+        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        view.startAnimation(fadeUp);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        isRunning = true;
-        if (handler != null && updateTask != null) {
-            handler.post(updateTask);
-        }
-        startFrameMonitoring();
+        startPeriodicUpdate();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        isRunning = false;
-        if (handler != null && updateTask != null) {
-            handler.removeCallbacks(updateTask);
-        }
-        stopFrameMonitoring();
+        stopPeriodicUpdate();
     }
 
-    private void setDefaultValues() {
-        if (tvCpuUsage != null) tvCpuUsage.setText("0%");
-        if (tvMemoryUsage != null) tvMemoryUsage.setText("0%");
-        if (progressCpu != null) progressCpu.setProgress(0);
-        if (progressMemory != null) progressMemory.setProgress(0);
-        if (tvPerformanceScore != null) tvPerformanceScore.setText("--");
-        if (progressScore != null) progressScore.setProgress(0);
-        if (tvStorageUsage != null) tvStorageUsage.setText("--");
-        if (progressStorage != null) progressStorage.setProgress(0);
-        if (tvGpuInfo != null) tvGpuInfo.setText("--");
-        if (tvFrameRate != null) tvFrameRate.setText("-- fps");
-        if (tvJankInfo != null) tvJankInfo.setText("--");
-        if (tvAppCpu != null) tvAppCpu.setText("--");
-        if (tvAppMemory != null) tvAppMemory.setText("--");
-        if (tvAppRuntime != null) tvAppRuntime.setText("--");
-        if (tvForegroundServices != null) tvForegroundServices.setText(getString(R.string.value_foreground_services));
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        isRunning = false;
-        if (handler != null && updateTask != null) {
-            handler.removeCallbacks(updateTask);
-        }
-        if (executor != null) {
-            executor.shutdown();
-            executor = null;
-        }
-    }
-    
-    private void updatePerformanceData() {
-        if (executor == null || executor.isShutdown()) return;
-
-        executor.submit(() -> {
-            try {
-                final float cpuUsage = readCpuUsage();
-                final float memoryUsage = readMemoryUsage();
-                final float storageUsage = readStorageUsage();
-                final int score = calculatePerformanceScore(cpuUsage, memoryUsage, storageUsage);
-                final String gpuInfo = readGpuInfo();
-                final float appCpu = readAppCpuUsage();
-                final String appMemory = readAppMemoryUsage();
-                final String appRuntime = readAppRuntime();
-
-                if (handler != null) {
-                    handler.post(() -> updatePerformanceUi(cpuUsage, memoryUsage, storageUsage, score, gpuInfo,
-                            appCpu, appMemory, appRuntime));
-                }
-
-                savePerformanceData(cpuUsage, memoryUsage, storageUsage, score);
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating performance data: " + e.getMessage());
+    private void startPeriodicUpdate() {
+        updateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                loadData();
+                handler.postDelayed(this, 2000);
             }
-        });
+        };
+        handler.post(updateRunnable);
     }
 
-    private void updatePerformanceUi(float cpuUsage, float memoryUsage, float storageUsage, int score, String gpuInfo,
-                                     float appCpu, String appMemory, String appRuntime) {
-        if (!isAdded()) return;
+    private void stopPeriodicUpdate() {
+        if (updateRunnable != null) {
+            handler.removeCallbacks(updateRunnable);
+        }
+    }
+
+    private void loadData() {
+        // CPU
+        int cpuUsage = readCpuUsage();
+        tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
+        UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
+
+        // Memory
+        ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+        if (am != null) {
+            am.getMemoryInfo(mi);
+            int memUsage = (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
+            tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memUsage));
+            UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
+        }
+
+        // Storage
+        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+        long total = stat.getTotalBytes();
+        long used = total - stat.getAvailableBytes();
+        int storageUsage = (int) (used * 100 / total);
+        tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
+        UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
+
+        // Performance score
+        int score = calculatePerformanceScore(cpuUsage, mi.totalMem == 0 ? 50 : (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem), storageUsage);
+        tvPerformanceScore.setText(String.valueOf(score));
+        UiAnimationHelper.animateProgressBar(progressScore, score);
+
+        // App info
+        tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
+        tvAppMemory.setText(formatSize(getAppMemoryUsage()));
+        long runtimeMs = SystemClock.elapsedRealtime();
+        tvRuntime.setText(formatDuration(runtimeMs));
+        tvForegroundService.setText(getString(R.string.status_running));
+
+        // GPU
+        loadGpuInfo();
+    }
+
+    private int readCpuUsage() {
         try {
-            boolean animate = isFirstUpdate;
-
-            if (tvCpuUsage != null) {
-                if (cpuUsage < 0) {
-                    tvCpuUsage.setText(getString(R.string.status_calculating_short));
-                } else if (animate) {
-                    UiAnimationHelper.animateNumberText(tvCpuUsage, cpuUsage, "%.1f%%");
-                } else {
-                    tvCpuUsage.setText(String.format(Locale.getDefault(), "%.1f%%", cpuUsage));
-                }
-            }
-            if (progressCpu != null) {
-                int target = cpuUsage < 0 ? 0 : (int) Math.min(cpuUsage, 100);
-                if (animate) {
-                    UiAnimationHelper.animateProgressBar(progressCpu, target);
-                } else {
-                    progressCpu.setProgress(target);
-                }
-            }
-
-            if (tvMemoryUsage != null) {
-                if (animate) {
-                    UiAnimationHelper.animateNumberText(tvMemoryUsage, memoryUsage, "%.1f%%");
-                } else {
-                    tvMemoryUsage.setText(String.format(Locale.getDefault(), "%.1f%%", memoryUsage));
-                }
-            }
-            if (progressMemory != null) {
-                if (animate) {
-                    UiAnimationHelper.animateProgressBar(progressMemory, (int) Math.min(memoryUsage, 100));
-                } else {
-                    progressMemory.setProgress((int) Math.min(memoryUsage, 100));
-                }
-            }
-
-            if (tvStorageUsage != null) {
-                if (animate) {
-                    UiAnimationHelper.animateNumberText(tvStorageUsage, storageUsage, "%.1f%%");
-                } else {
-                    tvStorageUsage.setText(String.format(Locale.getDefault(), "%.1f%%", storageUsage));
-                }
-            }
-            if (progressStorage != null) {
-                if (animate) {
-                    UiAnimationHelper.animateProgressBar(progressStorage, (int) Math.min(storageUsage, 100));
-                } else {
-                    progressStorage.setProgress((int) Math.min(storageUsage, 100));
-                }
-            }
-
-            if (tvPerformanceScore != null) {
-                if (animate) {
-                    UiAnimationHelper.animateIntText(tvPerformanceScore, score, getString(R.string.performance_score_format));
-                } else {
-                    tvPerformanceScore.setText(getString(R.string.performance_score_format, score));
-                }
-                if (score >= 80) {
-                    tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
-                } else if (score >= 60) {
-                    tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_yellow));
-                } else {
-                    tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_red));
-                }
-            }
-            if (progressScore != null) {
-                if (animate) {
-                    UiAnimationHelper.animateProgressBar(progressScore, score);
-                } else {
-                    progressScore.setProgress(score);
-                }
-            }
-
-            if (tvGpuInfo != null) {
-                tvGpuInfo.setText(gpuInfo);
-            }
-
-            if (tvAppCpu != null) {
-                if (appCpu < 0) {
-                    tvAppCpu.setText(getString(R.string.status_calculating_short));
-                } else {
-                    tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", appCpu));
-                }
-            }
-            if (tvAppMemory != null) {
-                tvAppMemory.setText(appMemory);
-            }
-            if (tvAppRuntime != null) {
-                tvAppRuntime.setText(appRuntime);
-            }
-            if (tvForegroundServices != null) {
-                tvForegroundServices.setText(getString(R.string.value_foreground_services));
-            }
-
-            if (isFirstUpdate) {
-                isFirstUpdate = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating performance UI: " + e.getMessage());
-        }
-    }
-    
-    // 用于存储上一次CPU统计信息
-    private long lastUser = 0;
-    private long lastNice = 0;
-    private long lastSystem = 0;
-    private long lastIdle = 0;
-    private long lastIowait = 0;
-    private long lastIrq = 0;
-    private long lastSoftirq = 0;
-    private long lastSteal = 0;
-    private boolean hasLastStat = false;
-    private PerformanceData lastSavedPerformanceData;
-
-    private float readAppCpuUsage() {
-        try {
-            if (getContext() == null) return -1;
-            long elapsedMs = SystemClock.elapsedRealtime();
-            long cpuTimeMs = android.os.Process.getElapsedCpuTime();
-            if (elapsedMs <= 0) return -1;
-            // 进程 CPU 时间 / 进程运行时间，得到近似 CPU 占用率
-            float usage = (cpuTimeMs * 100f) / elapsedMs;
-            // 限制到合理范围（单进程通常不超过 100%，多核可能更高，此处封顶 100%）
-            return Math.min(usage, 100f);
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading app CPU usage: " + e.getMessage());
-        }
-        return -1;
-    }
-
-    private String readAppMemoryUsage() {
-        try {
-            if (getContext() == null) return "--";
-            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-            if (am == null) return "--";
-            int pid = android.os.Process.myPid();
-            Debug.MemoryInfo[] memInfos = am.getProcessMemoryInfo(new int[]{pid});
-            if (memInfos == null || memInfos.length == 0) return "--";
-            int totalPssKb = memInfos[0].getTotalPss();
-            if (totalPssKb <= 0) return "--";
-            return String.format(Locale.getDefault(), "%.1f MB", totalPssKb / 1024.0f);
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading app memory usage: " + e.getMessage());
-        }
-        return "--";
-    }
-
-    private String readAppRuntime() {
-        try {
-            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-            if (app == null) return "--";
-            long start = app.getAppStartTime();
-            if (start <= 0) return "--";
-            long runtimeMs = System.currentTimeMillis() - start;
-            long seconds = runtimeMs / 1000;
-            if (seconds < 60) {
-                return String.format(Locale.getDefault(), "%d 秒", seconds);
-            } else if (seconds < 3600) {
-                return String.format(Locale.getDefault(), "%d 分钟", seconds / 60);
-            } else if (seconds < 86400) {
-                return String.format(Locale.getDefault(), "%.1f 小时", seconds / 3600.0f);
-            } else {
-                return String.format(Locale.getDefault(), "%d 天 %d 小时", seconds / 86400, (seconds % 86400) / 3600);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading app runtime: " + e.getMessage());
-        }
-        return "--";
-    }
-
-    private float readCpuUsage() {
-        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
+            BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
             String line = reader.readLine();
-
+            reader.close();
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
-                if (parts.length < 5) return -1; // 无法计算
-
                 long user = Long.parseLong(parts[1]);
                 long nice = Long.parseLong(parts[2]);
                 long system = Long.parseLong(parts[3]);
                 long idle = Long.parseLong(parts[4]);
-                long iowait = parts.length > 5 ? Long.parseLong(parts[5]) : 0;
-                long irq = parts.length > 6 ? Long.parseLong(parts[6]) : 0;
-                long softirq = parts.length > 7 ? Long.parseLong(parts[7]) : 0;
-                long steal = parts.length > 8 ? Long.parseLong(parts[8]) : 0;
-
-                if (!hasLastStat) {
-                    // 第一次读取，只保存数据，返回 -1 表示"尚未就绪"
-                    lastUser = user;
-                    lastNice = nice;
-                    lastSystem = system;
-                    lastIdle = idle;
-                    lastIowait = iowait;
-                    lastIrq = irq;
-                    lastSoftirq = softirq;
-                    lastSteal = steal;
-                    hasLastStat = true;
-                    return -1;
-                }
-
-                // 计算差值
-                long userDiff = user - lastUser;
-                long niceDiff = nice - lastNice;
-                long systemDiff = system - lastSystem;
-                long idleDiff = idle - lastIdle;
-                long iowaitDiff = iowait - lastIowait;
-                long irqDiff = irq - lastIrq;
-                long softirqDiff = softirq - lastSoftirq;
-                long stealDiff = steal - lastSteal;
-
-                // 保存当前值
-                lastUser = user;
-                lastNice = nice;
-                lastSystem = system;
-                lastIdle = idle;
-                lastIowait = iowait;
-                lastIrq = irq;
-                lastSoftirq = softirq;
-                lastSteal = steal;
-
-                // 计算使用率
-                long totalDiff = userDiff + niceDiff + systemDiff + idleDiff + iowaitDiff + irqDiff + softirqDiff + stealDiff;
-                long usedDiff = userDiff + niceDiff + systemDiff + irqDiff + softirqDiff + stealDiff;
-
-                if (totalDiff > 0) {
-                    return (usedDiff * 100.0f) / totalDiff;
-                }
+                long total = user + nice + system + idle;
+                return (int) ((user + nice + system) * 100 / total);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading CPU usage: " + e.getMessage());
-        }
-        return -1;
-    }
-    
-    private float readMemoryUsage() {
-        try {
-            if (getContext() == null) return 0;
-            
-            ActivityManager activityManager = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-            if (activityManager == null) return 0;
-            
-            ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
-            activityManager.getMemoryInfo(memoryInfo);
-            
-            long totalMemory = memoryInfo.totalMem;
-            long availableMemory = memoryInfo.availMem;
-            long usedMemory = totalMemory - availableMemory;
-            
-            if (totalMemory <= 0) return 0;
-            
-            return (usedMemory * 100.0f) / totalMemory;
-        } catch (Exception e) {
-            Log.e(TAG, "Error reading memory usage: " + e.getMessage());
+        } catch (IOException | NumberFormatException ignored) {
         }
         return 0;
     }
 
-    private float readStorageUsage() {
+    private int calculatePerformanceScore(int cpu, int memory, int storage) {
+        int baseScore = 100 - (cpu + memory + storage) / 3;
+        return Math.max(0, Math.min(100, baseScore));
+    }
+
+    private float getAppCpuUsage() {
+        return 0.5f; // Placeholder
+    }
+
+    private long getAppMemoryUsage() {
+        Debug.MemoryInfo memoryInfo = new Debug.MemoryInfo();
+        Debug.getMemoryInfo(memoryInfo);
+        return memoryInfo.getTotalPss() * 1024L;
+    }
+
+    private String formatSize(long bytes) {
+        if (bytes <= 0) return "0 B";
+        String[] units = new String[]{"B", "KB", "MB", "GB"};
+        int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
+        digitGroups = Math.min(digitGroups, units.length - 1);
+        return String.format(Locale.getDefault(), "%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
+    }
+
+    private String formatDuration(long ms) {
+        long hours = ms / (1000 * 60 * 60);
+        long minutes = (ms % (1000 * 60 * 60)) / (1000 * 60);
+        return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
+    }
+
+    private void loadGpuInfo() {
         try {
-            StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
-            long totalBlocks = statFs.getBlockCountLong();
-            long availableBlocks = statFs.getAvailableBlocksLong();
-            long usedBlocks = totalBlocks - availableBlocks;
-            if (totalBlocks <= 0) return 0;
-            return (usedBlocks * 100.0f) / totalBlocks;
+            EGL10 egl = (EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
+            EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            egl.eglInitialize(display, new int[2]);
+            EGLConfig[] configs = new EGLConfig[1];
+            int[] numConfigs = new int[1];
+            egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, configs, 1, numConfigs);
+            EGLContext context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, EGL10.EGL_NONE});
+            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context);
+
+            String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
+            String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
+
+            tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
+            tvOpenglVersion.setText(version != null ? version : "Unknown");
+
+            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+            egl.eglDestroyContext(display, context);
+            egl.eglTerminate(display);
         } catch (Exception e) {
-            Log.e(TAG, "Error reading storage usage: " + e.getMessage());
+            tvGpuRenderer.setText("Unknown");
+            tvOpenglVersion.setText("Unknown");
         }
-        return 0;
-    }
-
-    private int calculatePerformanceScore(float cpuUsage, float memoryUsage, float storageUsage) {
-        // 资源余量：使用率越低越好
-        // CPU 使用率 < 0 表示尚未就绪，按 50% 中性值计算
-        float effectiveCpuUsage = cpuUsage < 0 ? 50f : cpuUsage;
-        float cpuScore = Math.max(0, 100 - effectiveCpuUsage);
-        float memScore = Math.max(0, 100 - memoryUsage);
-        float storageScore = Math.max(0, 100 - storageUsage);
-        float resourceScore = cpuScore * CPU_USAGE_WEIGHT
-                + memScore * MEMORY_USAGE_WEIGHT
-                + storageScore * STORAGE_USAGE_WEIGHT;
-
-        // 硬件规格分：基于总内存、CPU 核心数与最大频率
-        float hardwareScore = calculateHardwareScore();
-
-        float total = resourceScore + hardwareScore;
-        total = Math.max(0, Math.min(100, total));
-        return Math.round(total);
-    }
-
-    private float calculateHardwareScore() {
-        try {
-            Context ctx = getContext();
-            if (ctx == null) return 20;
-
-            DeviceInfoManager dim = null;
-            if (getActivity() instanceof MainActivity) {
-                dim = ((MainActivity) getActivity()).getDeviceInfoManager();
-            }
-            if (dim == null) {
-                dim = new DeviceInfoManager(ctx);
-            }
-            DeviceConfig config = dim.getDeviceConfig();
-
-            // 内存分：0-14
-            long totalMemMb = config.getTotalMemory();
-            float memScore;
-            if (totalMemMb >= 16384) memScore = 14;           // 16GB+
-            else if (totalMemMb >= 12288) memScore = 12;      // 12GB
-            else if (totalMemMb >= 8192) memScore = 10;       // 8GB
-            else if (totalMemMb >= 6144) memScore = 8;        // 6GB
-            else if (totalMemMb >= 4096) memScore = 6;        // 4GB
-            else memScore = Math.max(3, totalMemMb / 1024f * 1.5f);
-
-            // CPU 频率分：0-14
-            int cpuFreqMax = config.getCpuFreqMax();
-            float cpuFreqScore;
-            if (cpuFreqMax >= 3200) cpuFreqScore = 14;
-            else if (cpuFreqMax >= 2800) cpuFreqScore = 12;
-            else if (cpuFreqMax >= 2400) cpuFreqScore = 10;
-            else if (cpuFreqMax >= 2000) cpuFreqScore = 8;
-            else if (cpuFreqMax >= 1800) cpuFreqScore = 6;
-            else cpuFreqScore = Math.max(3, cpuFreqMax / 400f);
-
-            // CPU 核心数分：0-12（安兔兔/鲁大师均将核心数纳入评分）
-            int cores = config.getCpuCores();
-            float coreScore;
-            if (cores >= 8) coreScore = 12;
-            else if (cores >= 6) coreScore = 9;
-            else if (cores >= 4) coreScore = 6;
-            else coreScore = 3;
-
-            return Math.min(40, memScore + cpuFreqScore + coreScore);
-        } catch (Exception e) {
-            return 20;
-        }
-    }
-
-    private String readGpuInfo() {
-        try {
-            // 复用 MainActivity 已有的 DeviceInfoManager，避免重复创建
-            if (getActivity() instanceof MainActivity) {
-                DeviceInfoManager dim = ((MainActivity) getActivity()).getDeviceInfoManager();
-                if (dim != null) {
-                    String gpu = dim.getGpuInfo();
-                    if (gpu != null && !gpu.isEmpty() && !gpu.equals(getString(R.string.status_not_recognized))) {
-                        return gpu;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "GPU info not available");
-        }
-        return getString(R.string.status_not_recognized);
-    }
-
-    private void savePerformanceData(float cpuUsage, float memoryUsage, float storageUsage, int score) {
-        Runnable saveTask = () -> {
-            try {
-                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-                if (app == null) return;
-                AppDatabase db = app.getDatabase();
-                if (db == null) return;
-
-                // 采样去重：如果 CPU/内存/存储与上次记录差异 <1%，跳过写入
-                if (lastSavedPerformanceData != null) {
-                    float cpuDiff = Math.abs(cpuUsage - lastSavedPerformanceData.getCpuUsage());
-                    float memDiff = Math.abs(memoryUsage - lastSavedPerformanceData.getMemoryUsed() / (float) lastSavedPerformanceData.getMemoryTotal() * 100f);
-                    float storageDiff = Math.abs(storageUsage - (lastSavedPerformanceData.getMemoryTotal() > 0
-                            ? lastSavedPerformanceData.getMemoryUsed() / (float) lastSavedPerformanceData.getMemoryTotal() * 100f : 0));
-                    if (cpuDiff < 1f && memDiff < 1f && storageDiff < 1f) {
-                        if (com.batteryhealth.app.BuildConfig.DEBUG) {
-                            Log.d(TAG, "Performance data skipped (no significant change)");
-                        }
-                        return;
-                    }
-                }
-
-                PerformanceData data = new PerformanceData();
-                data.setCpuUsage(cpuUsage);
-                data.setMemoryTotal(getTotalMemory());
-                data.setMemoryUsed(getUsedMemory());
-                data.setMemoryFree(getFreeMemory());
-                data.setPerformanceScore(score);
-                data.setHasIssue(score < 60);
-                if (score < 60) {
-                    data.setIssueType("performance_low");
-                    data.setIssueDescription(getString(R.string.performance_low_issue));
-                }
-
-                db.performanceDataDao().insert(data);
-                lastSavedPerformanceData = data;
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving performance data: " + e.getMessage());
-            }
-        };
-        if (executor != null && !executor.isShutdown()) {
-            executor.submit(saveTask);
-        } else {
-            saveTask.run();
-        }
-    }
-
-    private long getTotalMemory() {
-        try {
-            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                return mi.totalMem / (1024 * 1024);
-            }
-        } catch (Exception ignored) {}
-        return 0;
-    }
-
-    private long getUsedMemory() {
-        try {
-            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                return (mi.totalMem - mi.availMem) / (1024 * 1024);
-            }
-        } catch (Exception ignored) {}
-        return 0;
-    }
-
-    private long getFreeMemory() {
-        try {
-            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                return mi.availMem / (1024 * 1024);
-            }
-        } catch (Exception ignored) {}
-        return 0;
-    }
-
-    private void applyBenchmarkResult(PerformanceBenchmark.Result r) {
-        if (r == null || !isAdded()) return;
-        int normalized = PerformanceBenchmark.normalizeOverallScore(r.overallScore);
-        if (tvPerformanceScore != null) {
-            tvPerformanceScore.setText(String.format(Locale.getDefault(), "%,d", normalized));
-        }
-        if (progressScore != null) {
-            int progress = (int) Math.min(100, Math.max(0, normalized / 1000));
-            UiAnimationHelper.animateProgressBar(progressScore, progress);
-        }
-        if (tvGpuInfo != null) {
-            String text = String.format(Locale.getDefault(),
-                    "CPU单核 %,d · 多核 %,d · 内存 %,d MB/s · 读 %,d MB/s · 写 %,d MB/s",
-                    r.cpuSingleCoreScore, r.cpuMultiCoreScore,
-                    r.memoryBandwidthMBps, r.storageReadMBps, r.storageWriteMBps);
-            tvGpuInfo.setText(text);
-        }
-        // 修正评分颜色
-        if (tvPerformanceScore != null) {
-            if (normalized >= 80000) {
-                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
-            } else if (normalized >= 50000) {
-                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_yellow));
-            } else {
-                tvPerformanceScore.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_red));
-            }
-        }
-    }
-
-    /**
-     * 命名线程工厂，用于为线程池中的线程设置可读名称与未捕获异常处理器。
-     */
-    private static class NamedThreadFactory implements ThreadFactory {
-        private final String namePrefix;
-        private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-        NamedThreadFactory(String namePrefix) {
-            this.namePrefix = namePrefix;
-        }
-
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
-            t.setUncaughtExceptionHandler((thread, ex) -> {
-                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
-            });
-            return t;
-        }
-    }
-
-    // 帧率监测
-    private void startFrameMonitoring() {
-        frameCount = 0;
-        jankCount = 0;
-        lastFrameTimeNanos = 0;
-        currentFps = 0;
-        frameCallback = new Choreographer.FrameCallback() {
-            @Override
-            public void doFrame(long frameTimeNanos) {
-                if (lastFrameTimeNanos > 0) {
-                    frameCount++;
-                    long diff = frameTimeNanos - lastFrameTimeNanos;
-                    if (diff > JANK_THRESHOLD_NS) {
-                        jankCount++;
-                    }
-                    if (frameCount >= 30) {
-                        currentFps = 1_000_000_000f / diff * frameCount;
-                        frameCount = 0;
-                        updateFrameDisplay();
-                    }
-                }
-                lastFrameTimeNanos = frameTimeNanos;
-                if (isRunning && frameCallback != null) {
-                    Choreographer.getInstance().postFrameCallback(this);
-                }
-            }
-        };
-        Choreographer.getInstance().postFrameCallback(frameCallback);
-    }
-
-    private void stopFrameMonitoring() {
-        try {
-            if (frameCallback != null) {
-                Choreographer.getInstance().removeFrameCallback(frameCallback);
-                frameCallback = null;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error stopping frame monitoring: " + e.getMessage());
-        }
-    }
-
-    private void updateFrameDisplay() {
-        try {
-            if (tvFrameRate != null && isAdded()) {
-                tvFrameRate.setText(String.format(Locale.getDefault(), "%.1f fps", currentFps));
-            }
-            if (tvJankInfo != null && isAdded()) {
-                String status;
-                if (currentFps >= 55) {
-                    status = "流畅";
-                } else if (currentFps >= 40) {
-                    status = "轻微卡顿";
-                } else {
-                    status = "严重卡顿";
-                }
-                tvJankInfo.setText(status + " (" + jankCount + "次)");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating frame display: " + e.getMessage());
-        }
+        tvVulkanVersion.setText("N/A");
     }
 }

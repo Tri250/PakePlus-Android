@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent"
+    android:background="@color/bg_canvas"
     android:fillViewport="true"
     android:overScrollMode="never"
     android:scrollbars="none">
@@ -13,242 +13,256 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="60dp"
-        android:paddingBottom="24dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingTop="@dimen/page_padding_top"
+        android:paddingBottom="@dimen/page_padding_bottom"
+        android:paddingStart="@dimen/page_padding_horizontal"
+        android:paddingEnd="@dimen/page_padding_horizontal">
 
+        <!-- Page title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_performance"
-            android:textAppearance="@style/iOSTitle.Large"
-            android:letterSpacing="-0.03"
-            android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="32dp" />
+            android:textAppearance="@style/WebPageTitle"
+            android:layout_marginBottom="6dp" />
 
+        <!-- Page subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/subtitle_performance"
+            android:textAppearance="@style/WebPageSubtitle"
+            android:layout_marginBottom="22dp" />
+
+        <!-- Meter blocks card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_meters"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="26dp">
+                android:background="@drawable/bg_card"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:paddingTop="18dp"
+                android:paddingBottom="18dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_cpu_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
-
-                <TextView
-                    android:id="@+id/tv_cpu_usage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0%"
-                    android:textAppearance="@style/iOSMediumNumber"
-                    android:layout_marginTop="18dp" />
-
-                <ProgressBar
-                    android:id="@+id/progress_cpu"
-                    style="?android:attr/progressBarStyleHorizontal"
+                <!-- CPU -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:layout_marginTop="18dp"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressDrawable="@drawable/progress_health" />
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/label_cpu_usage"
+                            android:textAppearance="@style/WebMeterName" />
+
+                        <TextView
+                            android:id="@+id/tv_cpu_usage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textAppearance="@style/WebMeterValue" />
+
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_cpu"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/bg_progress_blue" />
+
+                </LinearLayout>
+
+                <!-- Memory -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/label_memory_usage"
+                            android:textAppearance="@style/WebMeterName" />
+
+                        <TextView
+                            android:id="@+id/tv_memory_usage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textAppearance="@style/WebMeterValue" />
+
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_memory"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/bg_progress_green" />
+
+                </LinearLayout>
+
+                <!-- Performance score -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/label_performance_score"
+                            android:textAppearance="@style/WebMeterName" />
+
+                        <TextView
+                            android:id="@+id/tv_performance_score"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textAppearance="@style/WebMeterValue" />
+
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_score"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/bg_progress_orange" />
+
+                </LinearLayout>
+
+                <!-- Storage -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/label_storage_usage"
+                            android:textAppearance="@style/WebMeterName" />
+
+                        <TextView
+                            android:id="@+id/tv_storage_usage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textAppearance="@style/WebMeterValue" />
+
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_storage"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/bg_progress_purple" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: 本应用 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_this_app"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- This app card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="26dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_memory_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
-
-                <TextView
-                    android:id="@+id/tv_memory_usage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0%"
-                    android:textAppearance="@style/iOSMediumNumber"
-                    android:layout_marginTop="18dp" />
-
-                <ProgressBar
-                    android:id="@+id/progress_memory"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:layout_marginTop="18dp"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressDrawable="@drawable/progress_health" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="26dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_performance_score"
-                    android:textAppearance="@style/iOSSubtitle" />
-
-                <TextView
-                    android:id="@+id/tv_performance_score"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textAppearance="@style/iOSMediumNumber"
-                    android:layout_marginTop="18dp" />
-
-                <ProgressBar
-                    android:id="@+id/progress_score"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:layout_marginTop="18dp"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressDrawable="@drawable/progress_health" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="26dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_storage_usage"
-                    android:textAppearance="@style/iOSSubtitle" />
-
-                <TextView
-                    android:id="@+id/tv_storage_usage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textAppearance="@style/iOSMediumNumber"
-                    android:layout_marginTop="18dp" />
-
-                <ProgressBar
-                    android:id="@+id/progress_storage"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:layout_marginTop="18dp"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressDrawable="@drawable/progress_health" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_this_app"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
-
-                <View style="@style/iOSSeparator" />
+                android:background="@drawable/bg_card">
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_this_app_cpu"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:text="@string/label_app_cpu"
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
                         android:id="@+id/tv_app_cpu"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 
@@ -256,23 +270,23 @@
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_this_app_memory"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:text="@string/label_app_memory"
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
                         android:id="@+id/tv_app_memory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 
@@ -280,23 +294,23 @@
 
                 <LinearLayout
                     style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:minHeight="48dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_app_runtime"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:text="@string/label_runtime"
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
-                        android:id="@+id/tv_app_runtime"
+                        android:id="@+id/tv_runtime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 
@@ -304,24 +318,23 @@
 
                 <LinearLayout
                     style="@style/iOSListItem"
-                    android:minHeight="48dp"
-                    android:paddingBottom="22dp">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_foreground_services"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:text="@string/label_foreground_service"
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
-                        android:id="@+id/tv_foreground_services"
+                        android:id="@+id/tv_foreground_service"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/value_foreground_services"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 
@@ -329,120 +342,99 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: GPU 信息 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_gpu_info"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- GPU info card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_gpu_info"
-                    android:textAppearance="@style/iOSSubtitle"
-                    android:paddingTop="22dp"
-                    android:paddingBottom="10dp"
-                    android:paddingStart="22dp"
-                    android:paddingEnd="22dp" />
-
-                <View style="@style/iOSSeparator" />
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
 
                 <LinearLayout
                     style="@style/iOSListItem"
-                    android:minHeight="48dp"
-                    android:paddingBottom="22dp">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_gpu_renderer"
-                        android:textAppearance="@style/iOSBody"
-                        android:lineSpacingExtra="3dp" />
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
-                        android:id="@+id/tv_gpu_info"
+                        android:id="@+id/tv_gpu_renderer"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSBody.Secondary"
-                        android:lineSpacingExtra="2dp" />
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:cardBackgroundColor="@color/liquid_glass_surface"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="1.5dp"
-            app:strokeWidth="0.5dp"
-            app:strokeColor="@color/liquid_glass_border">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="26dp">
+                <View style="@style/iOSSeparator" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
+                    android:minHeight="48dp">
 
                     <TextView
-                        android:id="@+id/tv_frame_rate"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="-- fps"
-                        android:textAppearance="@style/iOSTitle"
-                        android:textColor="@color/ios_label" />
+                        android:layout_weight="1"
+                        android:text="@string/label_opengl_version"
+                        android:textAppearance="@style/WebListLabel" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="实时帧率"
-                        android:textAppearance="@style/iOSCallout"
-                        android:layout_marginTop="6dp" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-
-                    <TextView
-                        android:id="@+id/tv_jank_info"
+                        android:id="@+id/tv_opengl_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="@style/iOSTitle"
-                        android:textColor="@color/ios_label" />
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
 
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_vulkan_version"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_vulkan_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="卡顿检测"
-                        android:textAppearance="@style/iOSCallout"
-                        android:layout_marginTop="6dp" />
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
 

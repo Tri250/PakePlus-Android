@@ -1,699 +1,217 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.app.ActivityManager;
-import android.app.AlertDialog;
+import android.animation.ObjectAnimator;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.BatteryManager;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.animation.ObjectAnimator;
-import android.animation.AnimatorSet;
-import android.animation.ValueAnimator;
-import android.text.InputType;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.ProgressBar;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.batteryhealth.app.ui.view.HealthRingView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.batteryhealth.app.BatteryHealthApplication;
-import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
-import com.batteryhealth.app.data.database.AppDatabase;
-import com.batteryhealth.app.data.model.BatteryInfo;
-import com.batteryhealth.app.data.model.PowerHistory;
-import com.batteryhealth.app.service.BatteryMonitorService;
-import com.batteryhealth.app.service.ChargingMonitorService;
-import com.batteryhealth.app.utils.BatteryDataManager;
-import com.batteryhealth.app.utils.ReportGenerator;
+import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
-/**
- * 电池健康Fragment
- * 
- * 注意：电池数据由BatteryMonitorService统一处理并通过BatteryDataManager获取
- * 不再在此Fragment中注册广播接收器，避免重复监听
- */
 public class BatteryHealthFragment extends Fragment {
-    
-    private static final String TAG = "BatteryHealthFragment";
-    private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次UI
-    public static final String PREFS_NAME = "battery_health_prefs";
-    public static final String PREF_SHOW_NOTIFICATION = "show_background_notification";
 
+    private HealthRingView healthRing;
     private TextView tvHealthPercentage;
     private TextView tvHealthGrade;
     private TextView tvHealthStatus;
-    private ProgressBar progressHealth;
-    private HealthRingView healthRing;
-    private View liveDot;
-
+    private TextView tvBatteryLevel;
+    private TextView tvChargingStatus;
+    private TextView tvCurrentNow;
     private TextView tvCapacity;
     private TextView tvCycleCount;
     private TextView tvTemperature;
     private TextView tvVoltage;
     private TextView tvBatterySource;
     private TextView tvTechnology;
-    private TextView tvBatteryLevel;
-    private TextView tvChargingStatus;
-    private TextView tvCurrentNow;
-    private View btnCalibrate;
-    private SwitchCompat switchNotification;
-    private View btnChargingHistory;
-    private View btnWeeklyReport;
-    private View btnMonthlyReport;
-    private View btnViewTrend;
 
-    private BatteryDataManager batteryDataManager;
-    private SharedPreferences prefs;
-    private Handler mainHandler;
-    private boolean isRunning = false;
-    private boolean isFirstUpdate = true;
-    private AnimatorSet liveDotAnimator;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable updateRunnable;
 
-    // 定时更新UI的Runnable
-    private Runnable updateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!isRunning) return;
-
-            // 每次刷新UI前先从系统读取最新基本数据（电量、温度、电压等）
-            if (batteryDataManager != null) {
-                batteryDataManager.refreshFromStickyIntent();
-            }
-
-            updateUI();
-            if (mainHandler != null) {
-                mainHandler.postDelayed(this, UPDATE_INTERVAL);
-            }
-        }
-    };
-    
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        try {
-            return inflater.inflate(R.layout.fragment_battery_health, container, false);
-        } catch (Exception e) {
-            Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            // 创建错误提示视图，避免完全空白，同时显示异常信息便于排查
-            return createErrorView(e);
-        }
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
+        initViews(view);
+        animateEntry(view);
+        return view;
     }
 
-    private View createErrorView(Exception e) {
-        android.widget.TextView errorView = new android.widget.TextView(requireContext());
-        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
-        errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
-        errorView.setTextSize(16);
-        errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
-        return errorView;
+    private void initViews(View view) {
+        healthRing = view.findViewById(R.id.health_ring);
+        tvHealthPercentage = view.findViewById(R.id.tv_health_percentage);
+        tvHealthGrade = view.findViewById(R.id.tv_health_grade);
+        tvHealthStatus = view.findViewById(R.id.tv_health_status);
+        tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
+        tvChargingStatus = view.findViewById(R.id.tv_charging_status);
+        tvCurrentNow = view.findViewById(R.id.tv_current_now);
+        tvCapacity = view.findViewById(R.id.tv_capacity);
+        tvCycleCount = view.findViewById(R.id.tv_cycle_count);
+        tvTemperature = view.findViewById(R.id.tv_temperature);
+        tvVoltage = view.findViewById(R.id.tv_voltage);
+        tvBatterySource = view.findViewById(R.id.tv_battery_source);
+        tvTechnology = view.findViewById(R.id.tv_technology);
     }
-    
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
 
-        try {
-            mainHandler = new Handler(Looper.getMainLooper());
-            prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
-            // 获取电池数据管理器
-            if (getActivity() instanceof MainActivity) {
-                batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
-            }
-
-            initViews(view);
-            updateUI();
-            animateCardsEntry(view);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
-        }
+    private void animateEntry(View view) {
+        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        view.startAnimation(fadeUp);
     }
-    
+
     @Override
     public void onResume() {
         super.onResume();
-        isRunning = true;
-
-        // 进入页面时刷新一次完整数据（容量、循环次数、电池来源等）
-        if (batteryDataManager != null) {
-            batteryDataManager.refreshAllDataAsync();
-        }
-
-        // 启动定时更新，刷新UI和基本电池信息
-        if (mainHandler != null) {
-            mainHandler.post(updateRunnable);
-        }
+        registerBatteryReceiver();
+        startPeriodicUpdate();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        isRunning = false;
-        // 停止定时更新
-        if (mainHandler != null) {
-            mainHandler.removeCallbacks(updateRunnable);
-        }
-    }
-    
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        isRunning = false;
-        if (mainHandler != null) {
-            mainHandler.removeCallbacks(updateRunnable);
-        }
-        stopLiveDotAnimation();
+        unregisterBatteryReceiver();
+        stopPeriodicUpdate();
     }
 
-    private void startLiveDotAnimation() {
-        if (liveDot == null) return;
+    private void registerBatteryReceiver() {
+        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        requireContext().registerReceiver(batteryReceiver, filter);
+    }
+
+    private void unregisterBatteryReceiver() {
         try {
-            stopLiveDotAnimation();
-            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(liveDot, "alpha", 1f, 0.3f);
-            fadeOut.setDuration(800);
-            ObjectAnimator fadeIn = ObjectAnimator.ofFloat(liveDot, "alpha", 0.3f, 1f);
-            fadeIn.setDuration(800);
-            liveDotAnimator = new AnimatorSet();
-            liveDotAnimator.playSequentially(fadeOut, fadeIn);
-            liveDotAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(android.animation.Animator animation) {
-                    if (liveDotAnimator != null) {
-                        liveDotAnimator.start();
-                    }
-                }
-            });
-            liveDotAnimator.start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error starting live dot animation: " + e.getMessage());
+            requireContext().unregisterReceiver(batteryReceiver);
+        } catch (IllegalArgumentException ignored) {
         }
     }
 
-    private void stopLiveDotAnimation() {
-        try {
-            if (liveDotAnimator != null) {
-                liveDotAnimator.removeAllListeners();
-                liveDotAnimator.cancel();
-                liveDotAnimator = null;
+    private void startPeriodicUpdate() {
+        updateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                updateBatteryData();
+                handler.postDelayed(this, 2000);
             }
-            if (liveDot != null) {
-                liveDot.setAlpha(1f);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error stopping live dot animation: " + e.getMessage());
-        }
+        };
+        handler.post(updateRunnable);
     }
-    
-    private void initViews(View view) {
-        try {
-            // 健康度相关
-            tvHealthPercentage = view.findViewById(R.id.tv_health_percentage);
-            tvHealthGrade = view.findViewById(R.id.tv_health_grade);
-            tvHealthStatus = view.findViewById(R.id.tv_health_status);
-            progressHealth = view.findViewById(R.id.progress_health);
-            healthRing = view.findViewById(R.id.health_ring);
-            liveDot = view.findViewById(R.id.live_dot);
-            startLiveDotAnimation();
 
-            // 详细信息
-            tvCapacity = view.findViewById(R.id.tv_capacity);
-            tvCycleCount = view.findViewById(R.id.tv_cycle_count);
-            tvTemperature = view.findViewById(R.id.tv_temperature);
-            tvVoltage = view.findViewById(R.id.tv_voltage);
-            tvBatterySource = view.findViewById(R.id.tv_battery_source);
-            tvTechnology = view.findViewById(R.id.tv_technology);
-            tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
-            tvChargingStatus = view.findViewById(R.id.tv_charging_status);
-            tvCurrentNow = view.findViewById(R.id.tv_current_now);
-            btnCalibrate = view.findViewById(R.id.btn_calibrate);
-            switchNotification = view.findViewById(R.id.switch_notification);
-            btnChargingHistory = view.findViewById(R.id.btn_charging_history);
-            btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
-            btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
-            btnViewTrend = view.findViewById(R.id.btn_view_trend);
-
-            if (btnCalibrate != null) {
-                btnCalibrate.setOnClickListener(v -> showCalibrateDialog());
-            }
-
-            if (btnChargingHistory != null) {
-                btnChargingHistory.setOnClickListener(v -> showChargingHistoryDialog());
-            }
-
-            if (btnWeeklyReport != null) {
-                btnWeeklyReport.setOnClickListener(v -> showReportDialog(true));
-            }
-
-            if (btnMonthlyReport != null) {
-                btnMonthlyReport.setOnClickListener(v -> showReportDialog(false));
-            }
-
-            if (btnViewTrend != null) {
-                btnViewTrend.setOnClickListener(v -> navigateToTrend());
-            }
-
-            // 初始化通知开关
-            if (switchNotification != null) {
-                boolean showNotification = prefs.getBoolean(PREF_SHOW_NOTIFICATION, true);
-                switchNotification.setChecked(showNotification);
-                switchNotification.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    prefs.edit().putBoolean(PREF_SHOW_NOTIFICATION, isChecked).apply();
-                    updateServiceNotificationState(isChecked);
-                });
-            }
-
-            // 设置默认值
-            setDefaultValues();
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing views: " + e.getMessage());
-        }
-    }
-    
-    private void updateServiceNotificationState(boolean showNotification) {
-        try {
-            Context context = requireContext();
-            if (showNotification) {
-                Intent batteryIntent = new Intent(context, BatteryMonitorService.class);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    context.startForegroundService(batteryIntent);
-                } else {
-                    context.startService(batteryIntent);
-                }
-
-                Intent chargingIntent = new Intent(context, ChargingMonitorService.class);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    context.startForegroundService(chargingIntent);
-                } else {
-                    context.startService(chargingIntent);
-                }
-            } else {
-                Intent stopBatteryForeground = new Intent(context, BatteryMonitorService.class);
-                stopBatteryForeground.setAction("STOP_FOREGROUND");
-                context.startService(stopBatteryForeground);
-
-                Intent stopChargingForeground = new Intent(context, ChargingMonitorService.class);
-                stopChargingForeground.setAction("STOP_FOREGROUND");
-                context.startService(stopChargingForeground);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating service notification state: " + e.getMessage());
+    private void stopPeriodicUpdate() {
+        if (updateRunnable != null) {
+            handler.removeCallbacks(updateRunnable);
         }
     }
 
-    private void setDefaultValues() {
-        if (tvHealthPercentage != null) tvHealthPercentage.setText("--");
-        if (tvHealthGrade != null) tvHealthGrade.setText("--");
-        if (tvHealthStatus != null) tvHealthStatus.setText(getString(R.string.status_detecting));
-        if (tvCapacity != null) tvCapacity.setText("-- mAh");
-        if (tvCycleCount != null) tvCycleCount.setText(getString(R.string.cycle_count_unreadable));
-        if (tvTemperature != null) tvTemperature.setText("-- °C");
-        if (tvVoltage != null) tvVoltage.setText("-- V");
-        if (tvBatterySource != null) tvBatterySource.setText(getString(R.string.status_detecting_short));
-        if (tvTechnology != null) tvTechnology.setText("--");
-        if (tvBatteryLevel != null) tvBatteryLevel.setText("--%");
-        if (tvChargingStatus != null) tvChargingStatus.setText("--");
-        if (tvCurrentNow != null) tvCurrentNow.setText("-- mA");
-    }
-    
-    private void updateUI() {
-        if (batteryDataManager == null || mainHandler == null) return;
-        
-        mainHandler.post(() -> {
-            try {
-                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                if (info == null) return;
-                
-                // 更新健康度
-                float healthPercentage = info.getHealthPercentage();
-                boolean hasValidHealth = info.hasValidHealthData();
-                if (tvHealthPercentage != null) {
-                    if (hasValidHealth) {
-                        if (isFirstUpdate) {
-                            UiAnimationHelper.animateNumberText(tvHealthPercentage, healthPercentage, "%.1f%%");
-                        } else {
-                            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.1f%%", healthPercentage));
-                        }
-                    } else {
-                        tvHealthPercentage.setText("--");
-                    }
-                }
-
-                if (tvHealthGrade != null) {
-                    String grade = info.getHealthGrade();
-                    if (grade != null && !"--".equals(grade)) {
-                        tvHealthGrade.setText(getString(R.string.health_grade_format, grade));
-                    } else {
-                        tvHealthGrade.setText("--");
-                    }
-                }
-
-                if (healthRing != null) {
-                    int targetProgress = hasValidHealth ? (int) healthPercentage : 0;
-                    if (isFirstUpdate && hasValidHealth) {
-                        UiAnimationHelper.animateRingProgress(healthRing, targetProgress);
-                    } else {
-                        healthRing.setProgress(targetProgress);
-                    }
-                }
-
-                if (tvHealthStatus != null) {
-                    // healthSourceText 内部已包含置信度，不再重复拼接
-                    String source = batteryDataManager.getHealthSourceText();
-                    tvHealthStatus.setText(info.getHealthDescription() + " · " + source);
-                }
-
-                if (progressHealth != null) {
-                    int targetProgress = hasValidHealth ? (int) healthPercentage : 0;
-                    if (isFirstUpdate && hasValidHealth) {
-                        UiAnimationHelper.animateProgressBar(progressHealth, targetProgress);
-                    } else {
-                        progressHealth.setProgress(targetProgress);
-                    }
-                }
-                
-                // 设置健康度颜色
-                if (tvHealthPercentage != null && progressHealth != null && info.hasValidHealthData()) {
-                    int healthColor = getHealthColor(healthPercentage);
-                    tvHealthPercentage.setTextColor(healthColor);
-                    try {
-                        progressHealth.getProgressDrawable().setColorFilter(healthColor, android.graphics.PorterDuff.Mode.SRC_IN);
-                    } catch (Exception e) {
-                        // 某些设备可能不支持setColorFilter
-                    }
-                } else if (tvHealthPercentage != null) {
-                    // 未知状态使用灰色
-                    tvHealthPercentage.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_tertiary_label));
-                }
-                
-                // 更新详细信息
-                if (tvCapacity != null) {
-                    int currentCap = info.getCurrentCapacity();
-                    int designCap = info.getDesignCapacity();
-                    if (currentCap > 0 && designCap > 0) {
-                        tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap));
-                    } else {
-                        tvCapacity.setText(getString(R.string.status_unreadable));
-                    }
-                }
-
-                if (tvCycleCount != null) {
-                    if (info.hasValidCycleCount()) {
-                        tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
-                    } else {
-                        tvCycleCount.setText(getString(R.string.cycle_count_unreadable));
-                    }
-                }
-                
-                if (tvTemperature != null) {
-                    tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
-                }
-                
-                if (tvVoltage != null) {
-                    float voltageMv = info.getVoltage();
-                    if (voltageMv > 0) {
-                        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageMv / 1000.0f));
-                    } else {
-                        tvVoltage.setText("-- V");
-                    }
-                }
-                
-                if (tvBatterySource != null) {
-                    tvBatterySource.setText(batteryDataManager.getBatterySourceText());
-                }
-                
-                if (tvTechnology != null) {
-                    String tech = info.getTechnology();
-                    tvTechnology.setText(tech != null && !tech.isEmpty() ? tech : "Li-ion");
-                }
-
-                // 更新电池电量
-                if (tvBatteryLevel != null) {
-                    tvBatteryLevel.setText(info.getLevel() + "%");
-                }
-
-                // 更新充电状态
-                if (tvChargingStatus != null) {
-                    tvChargingStatus.setText(batteryDataManager.getChargingStatusText());
-                }
-
-                // 更新电流
-                if (tvCurrentNow != null) {
-                    int currentNow = info.getCurrentNow();
-                    if (currentNow != 0) {
-                        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentNow / 1000.0f)));
-                    } else {
-                        tvCurrentNow.setText("-- mA");
-                    }
-                }
-                if (isFirstUpdate) {
-                    isFirstUpdate = false;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating UI: " + e.getMessage());
-            }
-        });
-    }
-
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
-
-    private boolean shouldSkipAnimations() {
-        try {
-            Context ctx = requireContext();
-            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Animation check skipped: " + e.getMessage());
+    private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateFromIntent(intent);
         }
-        return false;
-    }
+    };
 
-    private void animateCardsEntry(View view) {
-        UiAnimationHelper.animateCardsEntry(view);
-    }
-
-    private int getHealthColor(float percentage) {
-        try {
-            // 阈值与 BatteryInfo.getHealthGrade() / getHealthDescription() 保持一致
-            if (percentage >= 95) {
-                return ContextCompat.getColor(requireContext(), R.color.health_a_plus);
-            } else if (percentage >= 85) {
-                return ContextCompat.getColor(requireContext(), R.color.health_a);
-            } else if (percentage >= 75) {
-                return ContextCompat.getColor(requireContext(), R.color.health_c);
-            } else if (percentage >= 60) {
-                return ContextCompat.getColor(requireContext(), R.color.health_d);
-            } else {
-                return ContextCompat.getColor(requireContext(), R.color.health_e);
-            }
-        } catch (Exception e) {
-            return ContextCompat.getColor(requireContext(), R.color.ios_green);
+    private void updateBatteryData() {
+        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        if (intent != null) {
+            updateFromIntent(intent);
         }
     }
 
-    private void showCalibrateDialog() {
-        try {
-            Context context = requireContext();
-            EditText input = new EditText(context);
-            input.setInputType(InputType.TYPE_CLASS_NUMBER);
-            // 显示当前设计容量作为参考
-            int currentDesign = 0;
-            if (batteryDataManager != null) {
-                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                if (info != null) currentDesign = info.getDesignCapacity();
-            }
-            input.setHint(currentDesign > 0
-                    ? "当前设计容量: " + currentDesign + " mAh"
-                    : "输入电池出厂标称容量（mAh）");
+    private void updateFromIntent(Intent intent) {
+        int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+        int scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+        int batteryPct = (int) ((level / (float) scale) * 100);
 
-            new AlertDialog.Builder(context)
-                    .setTitle("校准电池容量")
-                    .setMessage("请输入电池的出厂标称容量（mAh），即官方规格中的设计容量。\n"
-                            + "健康度 = 当前满充容量 ÷ 设计容量 × 100%\n\n"
-                            + "提示：可在手机官网参数页查看电池容量。")
-                    .setView(input)
-                    .setPositiveButton("保存", (dialog, which) -> {
-                        String value = input.getText().toString().trim();
-                        if (value.isEmpty()) {
-                            Toast.makeText(context, "容量不能为空", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        try {
-                            int capacity = Integer.parseInt(value);
-                            if (capacity <= 0 || capacity > 20000) {
-                                Toast.makeText(context, "请输入合理的容量值（1-20000 mAh）", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            SharedPreferences prefs = context.getSharedPreferences(
-                                    BatteryDataManager.PREFS_NAME, Context.MODE_PRIVATE);
-                            prefs.edit().putInt(BatteryDataManager.PREF_CALIBRATED_CAPACITY, capacity).apply();
-                            if (batteryDataManager != null) {
-                                batteryDataManager.refreshAllDataAsync();
-                            }
-                            Toast.makeText(context, "校准已保存，健康度将重新计算", Toast.LENGTH_SHORT).show();
-                            updateUI();
-                        } catch (NumberFormatException e) {
-                            Toast.makeText(context, "输入格式错误", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-        } catch (Exception e) {
-            Log.e(TAG, "Error showing calibrate dialog: " + e.getMessage());
+        int status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
+        boolean isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
+                || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
+        String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
+
+        int current = 0;
+        android.os.BatteryManager bm = (android.os.BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
+        if (bm != null) {
+            current = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
         }
+        float currentMa = current / 1000f;
+
+        int voltage = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, 0);
+        float voltageV = voltage / 1000f;
+
+        int temp = intent.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0);
+        float tempC = temp / 10f;
+
+        String technology = intent.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY);
+        if (technology == null) technology = "Li-ion";
+
+        int capacityMah = batteryPct;
+
+        // Update UI
+        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        tvChargingStatus.setText(chargingStatus);
+        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
+        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", capacityMah * 10));
+        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+        tvTechnology.setText(technology);
+        tvBatterySource.setText(getString(R.string.source_internal));
+
+        // Cycle count estimate
+        int cycleCount = estimateCycleCount(capacityMah * 10, batteryPct);
+        tvCycleCount.setText(String.valueOf(cycleCount));
+
+        // Health grade and ring
+        int health = Math.max(0, Math.min(100, capacityMah));
+        String grade = calculateGrade(health);
+        tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
+        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", health));
+
+        String statusText;
+        if (health >= 90) {
+            statusText = getString(R.string.status_excellent);
+        } else if (health >= 80) {
+            statusText = getString(R.string.status_good);
+        } else if (health >= 60) {
+            statusText = getString(R.string.status_fair);
+        } else {
+            statusText = getString(R.string.status_poor);
+        }
+        tvHealthStatus.setText(statusText);
+
+        UiAnimationHelper.animateRingProgress(healthRing, health);
     }
 
-    private void showChargingHistoryDialog() {
-        try {
-            Context context = requireContext();
-            new Thread(() -> {
-                List<String> historyItems = loadChargingHistory();
-                if (mainHandler != null) {
-                    mainHandler.post(() -> {
-                        if (!isAdded()) return;
-                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                        builder.setTitle("充电历史");
-                        if (historyItems.isEmpty()) {
-                            builder.setMessage("暂无充电记录");
-                        } else {
-                            StringBuilder sb = new StringBuilder();
-                            for (String item : historyItems) {
-                                sb.append(item).append("\n\n");
-                            }
-                            builder.setMessage(sb.toString().trim());
-                        }
-                        builder.setPositiveButton("确定", null);
-                        builder.show();
-                    });
-                }
-            }).start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error showing charging history dialog: " + e.getMessage());
+    private int estimateCycleCount(int capacityMah, int batteryPct) {
+        // Rough estimate based on typical 3000mAh battery and 500 cycles for 20% degradation
+        int typicalCapacity = 3000;
+        if (capacityMah > 0) {
+            typicalCapacity = capacityMah;
         }
+        float degradation = (100f - batteryPct) / 100f;
+        return (int) (degradation * 500 * (typicalCapacity / 3000f));
     }
 
-    private List<String> loadChargingHistory() {
-        List<String> result = new ArrayList<>();
-        try {
-            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-            if (app == null) return result;
-            AppDatabase db = app.getDatabase();
-            if (db == null) return result;
-
-            List<String> sessions = db.powerHistoryDao().getAllSessions();
-            if (sessions == null || sessions.isEmpty()) return result;
-
-            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
-            int count = 0;
-            for (String sessionId : sessions) {
-                if (count >= 10) break; // 只展示最近10次
-                List<PowerHistory> records = db.powerHistoryDao().getBySession(sessionId);
-                if (records == null || records.isEmpty()) continue;
-
-                PowerHistory first = records.get(0);
-                PowerHistory last = records.get(records.size() - 1);
-                float maxPower = 0;
-                float totalPower = 0;
-                for (PowerHistory r : records) {
-                    if (r.getPower() > maxPower) maxPower = r.getPower();
-                    totalPower += r.getPower();
-                }
-                float avgPower = totalPower / records.size();
-                long durationMin = (last.getTimestamp() - first.getTimestamp()) / (1000 * 60);
-
-                String item = String.format(Locale.getDefault(),
-                        "%s\n时长: %d 分钟 · 峰值: %.1f W · 平均: %.1f W · 电量: %d%% → %d%%",
-                        sdf.format(new Date(first.getTimestamp())),
-                        durationMin,
-                        maxPower,
-                        avgPower,
-                        first.getBatteryLevel(),
-                        last.getBatteryLevel());
-                result.add(item);
-                count++;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading charging history: " + e.getMessage());
-        }
-        return result;
-    }
-
-    private void showReportDialog(boolean isWeekly) {
-        try {
-            Context context = requireContext();
-            new Thread(() -> {
-                ReportGenerator generator = new ReportGenerator(context);
-                ReportGenerator.BatteryReport report = isWeekly
-                        ? generator.generateWeeklyReport()
-                        : generator.generateMonthlyReport();
-
-                if (mainHandler != null) {
-                    mainHandler.post(() -> {
-                        if (!isAdded()) return;
-                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                        builder.setTitle(report.title);
-                        if (report.summary == null || report.summary.startsWith("暂无")) {
-                            builder.setMessage(report.summary != null ? report.summary : "暂无足够数据生成报告");
-                        } else {
-                            String msg = report.summary
-                                    + "\n\n" + "记录数: " + report.recordCount
-                                    + "\n" + report.period
-                                    + "\n\n" + "【建议】\n" + report.recommendation;
-                            builder.setMessage(msg);
-                        }
-                        builder.setPositiveButton("确定", null);
-                        builder.show();
-                    });
-                }
-            }).start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error showing report dialog: " + e.getMessage());
-        }
-    }
-
-    private void navigateToTrend() {
-        try {
-            Intent intent = new Intent(requireContext(), com.batteryhealth.app.ui.trend.TrendActivity.class);
-            startActivity(intent);
-        } catch (Exception e) {
-            Log.e(TAG, "Error navigating to trend: " + e.getMessage());
-            Toast.makeText(requireContext(), "趋势页面打开失败", Toast.LENGTH_SHORT).show();
-        }
+    private String calculateGrade(int health) {
+        if (health >= 95) return "A+";
+        if (health >= 90) return "A";
+        if (health >= 85) return "A-";
+        if (health >= 80) return "B+";
+        if (health >= 75) return "B";
+        if (health >= 70) return "B-";
+        if (health >= 60) return "C";
+        return "D";
     }
 }

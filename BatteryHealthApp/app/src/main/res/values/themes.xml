@@ -1,39 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- ============================== -->
-    <!-- 应用主题 - 液态玻璃风格（浅色） -->
+    <!-- 应用主题 - Web Design System（浅色） -->
     <!-- ============================== -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- 主色调 -->
-        <item name="colorPrimary">@color/ios_blue</item>
-        <item name="colorPrimaryDark">@color/ios_blue</item>
-        <item name="colorAccent">@color/ios_green</item>
-        <item name="colorSecondary">@color/ios_blue</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primaryVariant</item>
+        <item name="colorAccent">@color/green</item>
+        <item name="colorSecondary">@color/secondary</item>
 
-        <!-- 背景色 - 使用细腻渐变替代纯色 -->
+        <!-- 背景色 - 使用 Web bg-canvas 渐变 -->
         <item name="android:windowBackground">@drawable/bg_gradient</item>
-        <item name="android:colorBackground">@color/ios_background</item>
+        <item name="android:colorBackground">@color/bg_canvas</item>
 
         <!-- 文字颜色 -->
-        <item name="android:textColorPrimary">@color/ios_label</item>
-        <item name="android:textColorSecondary">@color/ios_secondary_label</item>
-        <item name="android:textColorTertiary">@color/ios_tertiary_label</item>
+        <item name="android:textColorPrimary">@color/label</item>
+        <item name="android:textColorSecondary">@color/label_2</item>
+        <item name="android:textColorTertiary">@color/label_3</item>
 
-        <!-- 状态栏 - 液态玻璃（浅色下用深色图标） -->
+        <!-- 状态栏 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
 
-        <!-- 导航栏 - 液态玻璃 -->
+        <!-- 导航栏 -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
-
-
 
         <!-- 禁用默认 ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <!-- 液态玻璃窗口动画 -->
+        <!-- 窗口动画 -->
         <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
     </style>
 
@@ -43,7 +41,7 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 液态玻璃窗口动画 -->
+    <!-- 窗口动画 -->
     <!-- ============================== -->
     <style name="LiquidGlassWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
@@ -53,7 +51,156 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 液态玻璃基础 - 文本样式（被 layout 实际引用） -->
+    <!-- Web Design System - 文本样式 -->
+    <!-- ============================== -->
+    <style name="WebPageTitle" parent="TextAppearance.MaterialComponents.Headline4">
+        <item name="android:textSize">@dimen/text_page_title</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.025</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebPageSubtitle" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">@dimen/text_page_subtitle</item>
+        <item name="android:textColor">@color/label_2</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="WebCardHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">@dimen/text_card_header</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebCardEyebrow" parent="TextAppearance.MaterialComponents.Overline">
+        <item name="android:textSize">@dimen/text_card_eyebrow</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_3</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebListLabel" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">@dimen/text_list_label</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="WebListValue" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">@dimen/text_list_value</item>
+        <item name="android:textColor">@color/label_2</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="WebRingPercent" parent="TextAppearance.MaterialComponents.Headline2">
+        <item name="android:textSize">@dimen/text_ring_percent</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebRingLabel" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_ring_label</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_3</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebMeterName" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">@dimen/text_meter_name</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebMeterValue" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textSize">@dimen/text_meter_val</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebEnduranceBig" parent="TextAppearance.MaterialComponents.Headline1">
+        <item name="android:textSize">@dimen/text_endurance_big</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebWatt" parent="TextAppearance.MaterialComponents.Headline1">
+        <item name="android:textSize">@dimen/text_watt</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebUnit" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">@dimen/text_unit</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_2</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebGradePill" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_grade_pill</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebBadge" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_badge</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_2</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebTabLabel" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_tab_label</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_2</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WebSectionEyebrow" parent="TextAppearance.MaterialComponents.Overline">
+        <item name="android:textSize">@dimen/text_section_eyebrow</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/label_3</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- ============================== -->
+    <!-- Web Design System - Shape appearances -->
+    <!-- ============================== -->
+    <style name="ShapeCard" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_card</item>
+    </style>
+
+    <style name="ShapeInner" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_inner</item>
+    </style>
+
+    <style name="ShapePill" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_pill</item>
+    </style>
+
+    <!-- ============================== -->
+    <!-- 液态玻璃基础 - 文本样式（被 layout 实际引用，保留兼容） -->
     <!-- ============================== -->
     <style name="LiquidGlassTitle" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">28sp</item>
@@ -127,8 +274,7 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 液态玻璃列表项（View 样式，必须指定 parent） -->
-    <!-- 修复：必须显式声明 layout_width/height，否则运行期 InflateException -->
+    <!-- 液态玻璃列表项与分隔线 -->
     <!-- ============================== -->
     <style name="LiquidGlassListItem">
         <item name="android:layout_width">match_parent</item>
@@ -141,7 +287,6 @@
         <item name="android:minHeight">48dp</item>
     </style>
 
-    <!-- 修复：必须显式声明 layout_width，否则运行期 InflateException -->
     <style name="LiquidGlassSeparator">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">0.5dp</item>
@@ -150,9 +295,8 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 液态玻璃 Tab 文字（被 themes.xml 中 tabTextAppearance 引用） -->
+    <!-- 液态玻璃 Tab 文字 -->
     <!-- ============================== -->
-    <!-- 2026-06-18 修复：BottomNavigationView 需要 textColor 属性，否则在某些系统版本抛 Resources$NotFoundException -->
     <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">normal</item>

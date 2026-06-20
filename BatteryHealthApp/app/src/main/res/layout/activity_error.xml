@@ -11,7 +11,7 @@
         android:layout_width="96dp"
         android:layout_height="96dp"
         android:src="@drawable/ic_error"
-        android:contentDescription="@string/error_icon_desc"
+        android:contentDescription="Error icon"
         android:alpha="0.9" />
 
     <TextView
@@ -19,7 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="@string/error_title"
+        android:text="出错了"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface" />
@@ -39,7 +39,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="@string/error_restart" />
+        android:text="重新启动" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_error_details"
@@ -47,7 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/error_view_details" />
+        android:text="查看详情" />
 
     <ScrollView
         android:id="@+id/scroll_error_details"
