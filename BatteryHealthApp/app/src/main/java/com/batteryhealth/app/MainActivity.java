@@ -266,12 +266,15 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setPageTransformer((page, position) -> {
             float absPosition = Math.abs(position);
             if (absPosition >= 1f) {
-                page.setAlpha(0f);
-            } else {
                 page.setAlpha(1f);
-                page.setTranslationX(-position * page.getWidth() * 0.15f);
-                page.setScaleX(1f - absPosition * 0.05f);
-                page.setScaleY(1f - absPosition * 0.05f);
+                page.setTranslationX(0f);
+                page.setScaleX(1f);
+                page.setScaleY(1f);
+            } else {
+                page.setAlpha(1f - absPosition * 0.3f);
+                page.setTranslationX(-position * page.getWidth() * 0.08f);
+                page.setScaleX(1f - absPosition * 0.03f);
+                page.setScaleY(1f - absPosition * 0.03f);
             }
         });
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {

@@ -199,6 +199,7 @@ public class BatteryMonitorService extends Service {
                         Log.e(TAG, "Error starting foreground: " + e.getMessage(), e);
                     }
                     isRunning = false;
+                    // 启动前台服务失败后不再以 START_STICKY 重试，避免崩溃循环
                     return START_NOT_STICKY;
                 }
 

@@ -164,10 +164,11 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private String getNetworkType() {
-        TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
-        if (tm == null) return "Unknown";
-        int networkType = tm.getNetworkType();
-        switch (networkType) {
+        try {
+            TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm == null) return "Unknown";
+            int networkType = tm.getNetworkType();
+            switch (networkType) {
             case TelephonyManager.NETWORK_TYPE_GPRS:
             case TelephonyManager.NETWORK_TYPE_EDGE:
             case TelephonyManager.NETWORK_TYPE_CDMA:
@@ -190,6 +191,9 @@ public class DeviceConfigFragment extends Fragment {
                 return "5G";
             default:
                 return "Unknown";
+            }
+        } catch (Exception e) {
+            return "Unknown";
         }
     }
 }

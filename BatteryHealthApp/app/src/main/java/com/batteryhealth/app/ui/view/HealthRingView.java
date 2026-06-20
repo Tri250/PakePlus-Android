@@ -52,6 +52,7 @@ public class HealthRingView extends View {
         trackPaint.setColor(0x1A000000);
     }
 
+    @androidx.annotation.Keep
     public void setProgress(float progress) {
         this.progress = Math.max(0f, Math.min(100f, progress));
         invalidate();
