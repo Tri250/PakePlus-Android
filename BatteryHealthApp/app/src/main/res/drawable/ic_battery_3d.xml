@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- 主体电池 + 高光 / 阴影，3D 立体感 -->
+    <path android:pathData="M30,42 h52 a8,8 0 0 1 8,8 v34 a8,8 0 0 1 -8,8 h-52 a8,8 0 0 1 -8,-8 v-34 a8,8 0 0 1 8,-8 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="22" android:startY="42"
+                android:endX="90" android:endY="92">
+                <item android:offset="0" android:color="#7DE891" />
+                <item android:offset="0.5" android:color="#3FCB58" />
+                <item android:offset="1" android:color="#1F8B3A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 顶部正极 -->
+    <path android:pathData="M50,30 h12 a4,4 0 0 1 4,4 v8 h-20 v-8 a4,4 0 0 1 4,-4 z"
+        android:fillColor="#1F8B3A" />
+
+    <!-- 内部高亮 -->
+    <path android:pathData="M28,50 h44 v8 h-44 z"
+        android:fillColor="#A6E8B6"
+        android:fillAlpha="0.7" />
+
+    <!-- 内层电量条 -->
+    <path android:pathData="M36,60 h32 v16 h-32 z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+
+    <!-- 闪电符号 -->
+    <path android:pathData="M58,62 l-4,8 h4 l-3,8 l8,-12 h-4 l3,-4 z"
+        android:fillColor="#1F8B3A" />
+
+    <!-- 3D 玻璃高光 -->
+    <path android:pathData="M30,44 q22,-4 56,0 v6 q-22,-3 -56,0 z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4" />
+
+    <!-- 底部投影 -->
+    <path android:pathData="M22,100 q36,12 76,0 q-36,4 -76,0 z"
+        android:fillColor="#1F8B3A"
+        android:fillAlpha="0.18" />
+</vector>

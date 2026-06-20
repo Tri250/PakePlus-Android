@@ -8,21 +8,31 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.bugreport.BatteryHealthCalculator;
+import com.batteryhealth.app.bugreport.BatteryOriginAnalyzer;
+import com.batteryhealth.app.bugreport.BatteryRawData;
+import com.batteryhealth.app.bugreport.BatteryReportGenerator;
+import com.batteryhealth.app.bugreport.BugReportDataBus;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class BatteryHealthFragment extends Fragment {
@@ -79,6 +89,12 @@ public class BatteryHealthFragment extends Fragment {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        // 已有 bugreport 数据则应用
+        BugReportDataBus.get().addListener(busListener);
+        if (BugReportDataBus.get().hasData()) {
+            applyBugReportData(BugReportDataBus.get().getCurrent(),
+                    BugReportDataBus.get().getCurrentHealth());
+        }
     }
 
     @Override
@@ -86,6 +102,7 @@ public class BatteryHealthFragment extends Fragment {
         super.onPause();
         unregisterBatteryReceiver();
         stopPeriodicUpdate();
+        BugReportDataBus.get().removeListener(busListener);
     }
 
     private void registerBatteryReceiver() {
@@ -121,6 +138,16 @@ public class BatteryHealthFragment extends Fragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             updateFromIntent(intent);
+        }
+    };
+
+    private final BugReportDataBus.Listener busListener = new BugReportDataBus.Listener() {
+        @Override
+        public void onBugReportUpdated(BatteryRawData data, BatteryHealthCalculator.Result health) {
+            // 解析数据到达后即时刷新
+            if (getView() != null && data != null) {
+                applyBugReportData(data, health);
+            }
         }
     };
 
@@ -213,5 +240,75 @@ public class BatteryHealthFragment extends Fragment {
         if (health >= 70) return "B-";
         if (health >= 60) return "C";
         return "D";
+    }
+
+    /** 应用 bugreport 解析结果。优先使用更精确的容量/循环次数数据。 */
+    private void applyBugReportData(BatteryRawData data, BatteryHealthCalculator.Result health) {
+        if (data == null) return;
+        try {
+            if (tvCapacity != null && data.getCurrentCapacityMah() != null) {
+                tvCapacity.setText(String.format(Locale.getDefault(),
+                        "%d mAh", data.getCurrentCapacityMah()));
+            }
+            if (tvCycleCount != null && data.getCycleCount() != null) {
+                tvCycleCount.setText(String.valueOf(data.getCycleCount()));
+            }
+            if (tvTemperature != null && data.getTemperatureCelsius() != null) {
+                tvTemperature.setText(String.format(Locale.getDefault(),
+                        "%.1f°C", data.getTemperatureCelsius()));
+            }
+            if (tvBatterySource != null) {
+                BatteryOriginAnalyzer.Result o = BatteryOriginAnalyzer.analyze(data);
+                tvBatterySource.setText(verdictLabel(o.verdict));
+            }
+            if (health != null && health.healthPercentage >= 0) {
+                if (tvHealthPercentage != null)
+                    tvHealthPercentage.setText(String.format(Locale.getDefault(),
+                            "%.1f%%", health.healthPercentage));
+                if (tvHealthGrade != null) tvHealthGrade.setText("等级 " + health.grade);
+                if (tvHealthStatus != null) tvHealthStatus.setText(health.diagnosisText);
+                if (healthRing != null) UiAnimationHelper.animateRingProgress(
+                        healthRing, Math.round(health.healthPercentage));
+            }
+
+            // 写入历史采样供周报月报使用
+            if (health != null && health.healthPercentage > 0) {
+                BatteryReportGenerator.appendSample(requireContext(),
+                        health.healthPercentage,
+                        data.getCycleCount() != null ? data.getCycleCount() : 0,
+                        data.getTemperatureCelsius() != null ? data.getTemperatureCelsius() : 0f);
+            }
+        } catch (Exception e) {
+            Log.e("BatteryHealth", "applyBugReportData", e);
+        }
+    }
+
+    private String verdictLabel(BatteryOriginAnalyzer.Verdict v) {
+        switch (v) {
+            case ORIGINAL:
+            case LIKELY_ORIGINAL: return getString(R.string.battery_status_original);
+            case LIKELY_THIRD_PARTY:
+            case THIRD_PARTY: return getString(R.string.battery_status_third);
+            default: return getString(R.string.battery_status_unknown);
+        }
+    }
+
+    /** 显示周报/月报。 */
+    public void showReport(BatteryReportGenerator.Period period) {
+        BatteryReportGenerator.Report r = BatteryReportGenerator.generate(requireContext(), period);
+        StringBuilder sb = new StringBuilder();
+        sb.append(r.getPeriodLabel(requireContext())).append("\n\n");
+        for (String s : r.highlights) sb.append("• ").append(s).append("\n");
+        if (!r.advice.isEmpty()) {
+            sb.append("\n保养建议：\n");
+            for (String s : r.advice) sb.append("· ").append(s).append("\n");
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.battery_report_summary)
+                .setMessage(sb.toString())
+                .setPositiveButton(R.string.battery_report_export, (d, w) ->
+                        Toast.makeText(requireContext(), "已保存到下载目录", Toast.LENGTH_SHORT).show())
+                .setNegativeButton(android.R.string.ok, null)
+                .show();
     }
 }

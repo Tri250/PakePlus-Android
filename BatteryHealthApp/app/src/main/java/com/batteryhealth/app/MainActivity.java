@@ -33,8 +33,10 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
+import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;
+import com.batteryhealth.app.ui.me.MeFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.ui.trend.TrendFragment;
@@ -250,6 +252,10 @@ public class MainActivity extends AppCompatActivity {
                         return new TrendFragment();
                     case 5:
                         return new PowerFragment();
+                    case 6:
+                        return new CommunityFragment();
+                    case 7:
+                        return new MeFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -257,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 6;
+                return 8;
             }
         });
 
@@ -294,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航（6项：健康 / 配置 / 性能 / 续航 / 趋势 / 充电）
+     * 设置底部导航（8 项：健康 / 配置 / 性能 / 续航 / 趋势 / 充电 / 江湖 / 我的）
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
@@ -304,6 +310,8 @@ public class MainActivity extends AppCompatActivity {
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_journey), R.drawable.ic_community));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_me), R.drawable.ic_me));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {

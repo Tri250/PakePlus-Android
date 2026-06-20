@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- 立体文件夹主体 -->
+    <path android:pathData="M20,38 h28 l8,10 h36 a8,8 0 0 1 8,8 v40 a8,8 0 0 1 -8,8 h-72 a8,8 0 0 1 -8,-8 v-50 a8,8 0 0 1 8,-8 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="20" android:startY="38"
+                android:endX="100" android:endY="106">
+                <item android:offset="0" android:color="#A6E8B6" />
+                <item android:offset="1" android:color="#3FCB58" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 上箭头 -->
+    <path android:pathData="M60,52 v22 M52,60 l8,-8 l8,8"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 底部高光 -->
+    <path android:pathData="M28,100 q32,8 64,0 q-32,3 -64,0 z"
+        android:fillColor="#1F8B3A"
+        android:fillAlpha="0.18" />
+</vector>

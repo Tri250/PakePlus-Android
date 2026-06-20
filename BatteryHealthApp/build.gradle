@@ -10,8 +10,8 @@ buildscript {
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
     }
     dependencies {
-        // 升级到 AGP 8.8.2 以支持 Android 16 (SDK 36)
-        classpath 'com.android.tools.build:gradle:8.8.2'
+        // AGP 8.7.x 与 Gradle 8.14.4 兼容性最佳
+        classpath 'com.android.tools.build:gradle:8.7.3'
     }
 }
 

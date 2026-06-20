@@ -61,6 +61,21 @@
         </activity>
 
         <activity
+            android:name=".ui.onboard.OnboardActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.onboard.BugreportUploadActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
+        <activity
             android:name=".ui.error.ErrorActivity"
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />

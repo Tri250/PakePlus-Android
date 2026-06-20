@@ -71,47 +71,40 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             debuggable false
             signingConfig signingConfigs.release
-            lintOptions {
-                abortOnError false
-                checkReleaseBuilds false
-            }
         }
 
         debug {
             minifyEnabled false
             debuggable true
-            lintOptions {
-                abortOnError false
-            }
         }
     }
 
-    lintOptions {
-        abortOnError false
-        checkReleaseBuilds false
-    }
-    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    
+
     // 禁用JDK镜像转换
     tasks.withType(JavaCompile) {
         options.fork = false
     }
-    
+
     buildFeatures {
         viewBinding true
         buildConfig true
     }
-    
+
     // 打包选项
     packagingOptions {
         pickFirst '**/libc++_shared.so'
         pickFirst '**/libjsc.so'
         // Android 16 要求所有 .so 文件按 16KB 边界对齐
         jniLibs.useLegacyPackaging = false
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 }
 
