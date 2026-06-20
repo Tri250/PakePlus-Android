@@ -238,7 +238,7 @@ public class HealthCheckEngine {
                 }
                 return buildAppDetailsIntent(pkg);
             case HealthCheckResult.FIX_ACTION_POWER_USAGE_DETAILS:
-                Intent pi = new Intent(Settings.ACTION_POWER_USAGE_SUMMARY);
+                Intent pi = new Intent(Intent.ACTION_POWER_USAGE_SUMMARY);
                 pi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 return pi;
             case HealthCheckResult.FIX_ACTION_CHARGING_LIMIT:

@@ -313,7 +313,6 @@
     <string name="health_check_score_normal">状态一般</string>
     <string name="health_check_score_warning">需要关注</string>
     <string name="health_check_score_critical">请立即处理</string>
-    <string name="nav_mine">我的</string>
 
     <!-- GPU 信息 -->
     <string name="gpu_adreno">Adreno GPU（高通）</string>
