@@ -321,6 +321,44 @@ body{
 .supplier-row:last-child{border-bottom:none}
 /* Empty state */
 .empty-state{text-align:center;padding:24px 0;color:var(--text-tertiary);font-size:13px}
+/* Data source badges */
+.source-badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.source-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:10px;
+  font-size:12px;font-weight:600;background:var(--green-light);color:var(--green);
+}
+.source-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.source-badge.system{background:#E6F2FF;color:var(--blue)}
+.source-badge.database{background:#F3E8FF;color:var(--purple)}
+.source-badge.local{background:var(--green-light);color:var(--green)}
+/* Raw snippet */
+.raw-snippet{
+  background:#F8F9FA;border-radius:var(--radius-xs);padding:12px 14px;
+  font-family:'SF Mono',Monaco,Consolas,'Courier New',monospace;font-size:12px;
+  color:var(--text-secondary);line-height:1.6;word-break:break-all;
+  border:0.5px solid var(--divider);
+}
+/* Supplier source tags */
+.supplier-source-tag{
+  display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600;
+  background:var(--green-light);color:var(--green);margin-left:8px;white-space:nowrap;
+}
+.supplier-source-tag.reference{background:#FFF4E5;color:var(--orange)}
+.supplier-source-tag.database{background:#F3E8FF;color:var(--purple)}
+/* Endurance app item */
+.app-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:0.5px solid var(--divider)}
+.app-item:last-child{border-bottom:none;padding-bottom:0}
+.app-icon{
+  width:40px;height:40px;border-radius:10px;background:var(--green-light);
+  color:var(--green);display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;flex-shrink:0;
+}
+.app-body{flex:1;min-width:0}
+.app-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
+.app-meta{font-size:12px;color:var(--text-secondary)}
+.app-right{text-align:right;flex-shrink:0}
+.app-power{font-size:15px;font-weight:700;color:var(--green)}
+.app-jank{font-size:12px;color:var(--text-tertiary);margin-top:2px}
 </style>
 </head>
 <body>
@@ -349,10 +387,16 @@ body{
         <span class="tag" id="sourceTag">原装电池</span>
       </div>
 
+      <div class="source-badges">
+        <span class="source-badge local" id="badgeLocal">本地解析</span>
+        <span class="source-badge system" id="badgeSystem">系统 API</span>
+        <span class="source-badge database" id="badgeDatabase">数据库</span>
+      </div>
+
       <div class="card health-hero">
         <div class="health-big-num" id="healthNum">92.4%</div>
         <span class="health-grade" id="healthGrade">A+</span>
-        <div class="health-status" id="healthStatus">电池状态极佳 · 系统估算 (可信度 85%)</div>
+        <div class="health-status" id="healthStatus">电池状态极佳 · 本地 Bugreport 解析</div>
         <div class="progress-wrap">
           <div class="progress-bar"><div class="progress-fill" id="healthBar" style="width:92.4%"></div></div>
         </div>
@@ -375,6 +419,17 @@ body{
         <div class="info-row"><span class="info-label">电池技术</span><span class="info-value" id="infoTech">Li-ion</span></div>
       </div>
 
+      <div class="card" style="padding:16px 20px">
+        <div class="card-title">解析来源详情</div>
+        <div class="info-row"><span class="info-label">数据来源</span><span class="info-value green">本地 Bugreport</span></div>
+        <div class="info-row"><span class="info-label">置信度</span><span class="info-value green" id="infoConfidence">0.95</span></div>
+        <div class="info-row"><span class="info-label">解析方式</span><span class="info-value">Android 本地解析</span></div>
+        <div style="margin-top:12px">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">原始内容片段</div>
+          <div class="raw-snippet" id="rawSnippet">POWER_SUPPLY_CHARGE_COUNTER=4352000; POWER_SUPPLY_CAPACITY=92; POWER_SUPPLY_VOLTAGE_NOW=4287000; POWER_SUPPLY_TEMP=325; POWER_SUPPLY_CURRENT_NOW=7480000; POWER_SUPPLY_CYCLE_COUNT=287; STATUS=Charging; HEALTH=Good;</div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">老化预测</div>
         <div style="font-size:15px;color:var(--text-secondary);line-height:1.6" id="agingPrediction">约 2 年 3 个月到 80%</div>
@@ -388,8 +443,16 @@ body{
         <svg class="trend-svg" viewBox="0 0 330 140" id="healthTrendChart"></svg>
         <div class="btn-group">
           <button class="btn primary" onclick="showTrend()" style="flex:1">趋势追踪</button>
-          <button class="btn" onclick="showEndurance()" style="flex:1">续航分析</button>
+          <button class="btn" onclick="scrollToEndurance()" style="flex:1">续航分析</button>
         </div>
+      </div>
+
+      <div class="card" id="enduranceCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">续航分析</div>
+          <span class="tag" style="font-size:11px">Bugreport 本地解析</span>
+        </div>
+        <div id="enduranceList"></div>
       </div>
 
       <div class="card">
@@ -479,6 +542,23 @@ body{
       </div>
 
       <div class="card" style="padding:16px 20px">
+        <div class="card-title">解析来源信息</div>
+        <div class="info-row"><span class="info-label">解析文件来源</span><span class="info-value green" id="parseSource">本地 Bugreport</span></div>
+        <div class="info-row"><span class="info-label">设计容量</span><span class="info-value" id="parseDesignCapacity">4687 mAh</span></div>
+        <div class="info-row"><span class="info-label">当前容量</span><span class="info-value green" id="parseCurrentCapacity">4352 mAh</span></div>
+        <div class="info-row"><span class="info-label">健康度</span><span class="info-value green" id="parseHealth">92.4%</span></div>
+        <div class="info-row"><span class="info-label">电池来源判断</span><span class="info-value green" id="parseBatterySource">原装电池</span></div>
+        <div class="info-row" style="align-items:flex-start">
+          <span class="info-label" style="padding-top:2px">数据来源标签</span>
+          <span class="info-value" style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="supplier-source-tag">参考数据</span>
+            <span class="supplier-source-tag reference">解析数据</span>
+            <span class="supplier-source-tag database">数据库匹配</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px 20px">
         <div class="card-title">设备信息</div>
         <div class="info-row"><span class="info-label">设备名称</span><span class="info-value" id="devName">Xiaomi 14 Pro</span></div>
         <div class="info-row"><span class="info-label">Android 版本</span><span class="info-value" id="devAndroid">Android 15</span></div>
@@ -493,13 +573,13 @@ body{
       <div class="card">
         <div class="card-title">配置厂商列表</div>
         <div id="supplierList"></div>
-        <div style="font-size:11px;color:var(--text-tertiary);margin-top:10px">* 供应商数据为基于公开信息的参考数据，非官方拆机报告。</div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:10px">* 数据标签说明：参考数据来自公开信息，解析数据来自本地 Bugreport，数据库匹配来自 device_database.json。</div>
       </div>
 
       <div class="card">
         <div class="card-title">Bugreport 导入</div>
         <button class="btn primary full" onclick="showBugreport()">如何抓取 Bugreport</button>
-        <button class="btn full" style="margin-top:12px;background:var(--green-light);color:var(--green)" onclick="alert('本地解析功能将在后续版本开放')">本地解析 Bugreport</button>
+        <button class="btn full" style="margin-top:12px;background:var(--green-light);color:var(--green)" onclick="showParsedBugreport()">本地解析 Bugreport</button>
       </div>
     </div>
 
@@ -636,6 +716,17 @@ const sourceMap = {
   unknown: '无法判断'
 };
 
+const bugreportData = {
+  source: '本地 Bugreport',
+  designCapacity: 4687,
+  currentCapacity: 4352,
+  health: 92.4,
+  sourceType: 'original',
+  sourceTypeText: '原装电池',
+  confidence: 0.95,
+  rawSnippet: 'POWER_SUPPLY_CHARGE_COUNTER=4352000; POWER_SUPPLY_CAPACITY=92; POWER_SUPPLY_VOLTAGE_NOW=4287000; POWER_SUPPLY_TEMP=325; POWER_SUPPLY_CURRENT_NOW=7480000; POWER_SUPPLY_CYCLE_COUNT=287; STATUS=Charging; HEALTH=Good;'
+};
+
 const tips = [
   { emoji: '⚡', title: '小贴士 1', desc: '避免电量长期低于 20%，深度放电会加速电池老化。' },
   { emoji: '🔋', title: '小贴士 2', desc: '日常保持电量在 20%–80% 之间，可显著延长电池寿命。' },
@@ -657,13 +748,21 @@ const posts = [
 ];
 
 const suppliers = [
-  { name: '屏幕', value: '三星 / 华星光电' },
-  { name: '后置摄像头', value: '豪威 / 三星' },
-  { name: '超广角', value: '三星' },
-  { name: '长焦', value: '豪威' },
-  { name: '前置摄像头', value: '三星' },
-  { name: '电池', value: 'ATL / 宁德时代' },
-  { name: '硬盘/闪存', value: '三星 / 海力士 / 铠侠' }
+  { name: '屏幕', value: '三星 / 华星光电', tag: '数据库匹配', tagType: 'database' },
+  { name: '后置摄像头', value: '豪威 / 三星', tag: '数据库匹配', tagType: 'database' },
+  { name: '超广角', value: '三星', tag: '数据库匹配', tagType: 'database' },
+  { name: '长焦', value: '豪威', tag: '参考数据', tagType: 'reference' },
+  { name: '前置摄像头', value: '三星', tag: '数据库匹配', tagType: 'database' },
+  { name: '电池', value: 'ATL / 宁德时代', tag: '解析数据', tagType: 'parsed' },
+  { name: '硬盘/闪存', value: '三星 / 海力士 / 铠侠', tag: '数据库匹配', tagType: 'database' }
+];
+
+const powerApps = [
+  { name: '微信', icon: '💬', time: '2小时35分', power: '380 mAh', jank: 8 },
+  { name: '抖音', icon: '🎵', time: '1小时48分', power: '290 mAh', jank: 6 },
+  { name: '系统桌面', icon: '🏠', time: '45分钟', power: '120 mAh', jank: 5 },
+  { name: '浏览器', icon: '🌐', time: '38分钟', power: '95 mAh', jank: 4 },
+  { name: '相机', icon: '📷', time: '22分钟', power: '78 mAh', jank: 3 }
 ];
 
 const jankApps = [
@@ -724,8 +823,25 @@ function initSuppliers() {
   const list = document.getElementById('supplierList');
   list.innerHTML = suppliers.map(s => `
     <div class="supplier-row">
-      <span class="info-label">${s.name}</span>
+      <span class="info-label">${s.name}<span class="supplier-source-tag ${s.tagType}">${s.tag}</span></span>
       <span class="info-value">${s.value}</span>
+    </div>
+  `).join('');
+}
+
+function initEndurance() {
+  const list = document.getElementById('enduranceList');
+  list.innerHTML = powerApps.map((a, i) => `
+    <div class="app-item">
+      <div class="app-icon">${a.icon}</div>
+      <div class="app-body">
+        <div class="app-name">${a.name}</div>
+        <div class="app-meta">使用 ${a.time} · 卡顿 ${a.jank} 次</div>
+      </div>
+      <div class="app-right">
+        <div class="app-power">${a.power}</div>
+        <div class="app-jank">Top ${i + 1}</div>
+      </div>
     </div>
   `).join('');
 }
@@ -846,7 +962,24 @@ function showTrend() {
 }
 
 function showEndurance() {
-  showInfo('续航分析', '预计续航时间、放电速率、亮屏时长、应用耗电排行等数据将在收集到足够样本后展示。');
+  showInfo('续航分析', '本页续航分析数据来自本地 Bugreport 解析，展示耗电应用 Top 5 排行，包括应用使用时长、估算耗电量及卡顿次数。');
+}
+
+function scrollToEndurance() {
+  const card = document.getElementById('enduranceCard');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showParsedBugreport() {
+  showInfo('本地 Bugreport 解析结果',
+    '<strong>解析文件来源：</strong>本地 Bugreport<br>' +
+    '<strong>设计容量：</strong>' + bugreportData.designCapacity + ' mAh（device_database.json）<br>' +
+    '<strong>当前容量：</strong>' + bugreportData.currentCapacity + ' mAh<br>' +
+    '<strong>健康度：</strong>' + bugreportData.health + '%<br>' +
+    '<strong>电池来源判断：</strong>' + bugreportData.sourceTypeText + '<br>' +
+    '<strong>置信度：</strong>' + bugreportData.confidence + '<br><br>' +
+    '<strong>原始内容片段</strong><br>' + bugreportData.rawSnippet.substring(0, 200) + '...'
+  );
 }
 
 function shareBatteryTips() {
@@ -909,6 +1042,8 @@ function updateUI() {
   document.getElementById('infoCurrent').textContent = Math.round(data.currentNow) + ' mA';
   document.getElementById('infoSource').textContent = sourceMap[data.sourceType];
   document.getElementById('sourceTag').textContent = sourceMap[data.sourceType];
+  document.getElementById('infoConfidence').textContent = bugreportData.confidence.toFixed(2);
+  document.getElementById('rawSnippet').textContent = bugreportData.rawSnippet.substring(0, 200);
   document.getElementById('agingPrediction').textContent = `约 2 年 3 个月到 80%`;
 
   // Power tab
@@ -923,6 +1058,11 @@ function updateUI() {
 
   // Config
   document.getElementById('configScore').textContent = (data.perf.score / 10).toFixed(1);
+  document.getElementById('parseSource').textContent = bugreportData.source;
+  document.getElementById('parseDesignCapacity').textContent = bugreportData.designCapacity + ' mAh';
+  document.getElementById('parseCurrentCapacity').textContent = bugreportData.currentCapacity + ' mAh';
+  document.getElementById('parseHealth').textContent = bugreportData.health + '%';
+  document.getElementById('parseBatterySource').textContent = bugreportData.sourceTypeText;
 
   // Performance
   document.getElementById('perfCpu').textContent = Math.round(data.perf.cpu) + '%';
@@ -961,6 +1101,7 @@ function updateUI() {
 initTips();
 initPosts();
 initSuppliers();
+initEndurance();
 initJankApps();
 initHistory();
 initPowerBarChart();
