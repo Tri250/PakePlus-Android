@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,11 +21,26 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.BatteryInfo;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * 续航分析 Fragment：基于真实历史放电数据计算放电速率，估算剩余续航时间。
+ */
 public class EnduranceFragment extends Fragment {
+
+    private static final String PREFS_ENDURANCE = "endurance_prefs";
+    private static final String PREF_LAST_LEVEL = "last_level";
+    private static final String PREF_LAST_TIME = "last_time";
+    private static final String PREF_DISCHARGE_RATE = "discharge_rate";
 
     private TextView tvEnduranceHours;
     private TextView tvEnduranceMeta;
@@ -33,6 +49,7 @@ public class EnduranceFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     private int lastBatteryLevel = -1;
     private long lastUpdateTime = -1;
@@ -44,6 +61,9 @@ public class EnduranceFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_endurance, container, false);
         initViews(view);
         animateEntry(view);
+        // 恢复上次的放电速率，避免首次显示为 0
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+        dischargeRate = prefs.getFloat(PREF_DISCHARGE_RATE, 0f);
         return view;
     }
 
@@ -70,6 +90,8 @@ public class EnduranceFragment extends Fragment {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        // 进入页面时异步加载历史放电速率作为基准
+        loadHistoricalDischargeRate();
     }
 
     @Override
@@ -79,9 +101,32 @@ public class EnduranceFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (ioExecutor != null) {
+            ioExecutor.shutdown();
+            try {
+                if (!ioExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    ioExecutor.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                ioExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireContext().registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void unregisterBatteryReceiver() {
@@ -116,10 +161,66 @@ public class EnduranceFragment extends Fragment {
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
+        try {
+            Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (intent != null) {
+                updateFromIntent(intent);
+            }
+        } catch (Exception ignored) {
         }
+    }
+
+    /**
+     * 异步从历史数据库计算真实的平均放电速率（%/h），作为当前放电速率的基准。
+     * 优先取最近 24h 内非充电状态的记录；不足时取最近 7 天。
+     */
+    private void loadHistoricalDischargeRate() {
+        if (!isAdded()) return;
+        final Context appCtx = requireContext().getApplicationContext();
+        ioExecutor.submit(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) appCtx;
+                AppDatabase db = app.getDatabase();
+                if (db == null) return;
+
+                long now = System.currentTimeMillis();
+                long dayAgo = now - 24L * 60 * 60 * 1000;
+                long weekAgo = now - 7L * 24 * 60 * 60 * 1000;
+
+                List<BatteryInfo> records = db.batteryInfoDao().getSince(dayAgo);
+                if (records == null || records.size() < 3) {
+                    records = db.batteryInfoDao().getSince(weekAgo);
+                }
+                if (records == null || records.size() < 2) return;
+
+                float totalRate = 0f;
+                int count = 0;
+                for (int i = 1; i < records.size(); i++) {
+                    BatteryInfo prev = records.get(i - 1);
+                    BatteryInfo curr = records.get(i);
+                    long dtMs = curr.getTimestamp() - prev.getTimestamp();
+                    int dLevel = prev.getLevel() - curr.getLevel();
+                    // 仅统计放电过程（电量下降且时间间隔在合理范围）
+                    if (dLevel > 0 && dtMs > 60_000 && dtMs < 24L * 60 * 60 * 1000) {
+                        float hours = dtMs / (1000f * 60 * 60);
+                        totalRate += dLevel / hours;
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    final float avgRate = totalRate / count;
+                    handler.post(() -> {
+                        if (isAdded()) {
+                            dischargeRate = avgRate;
+                            // 持久化，下次启动可直接使用
+                            SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+                            prefs.edit().putFloat(PREF_DISCHARGE_RATE, dischargeRate).apply();
+                        }
+                    });
+                }
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     private void updateFromIntent(Intent intent) {
@@ -142,22 +243,42 @@ public class EnduranceFragment extends Fragment {
         int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
         float tempC = temp / 10f;
 
-        // Calculate discharge rate
+        // 计算放电速率：基于实时两次采样的差值
         long now = System.currentTimeMillis();
         if (lastBatteryLevel >= 0 && lastUpdateTime > 0 && !isCharging) {
-            long elapsedHours = (now - lastUpdateTime) / (1000 * 60 * 60);
-            if (elapsedHours > 0) {
+            long elapsedMs = now - lastUpdateTime;
+            if (elapsedMs >= 60_000) { // 至少间隔1分钟才更新速率，避免噪声
                 int delta = lastBatteryLevel - batteryPct;
                 if (delta > 0) {
-                    dischargeRate = delta / (float) elapsedHours;
+                    float hours = elapsedMs / (1000f * 60 * 60);
+                    float instantRate = delta / hours;
+                    // 指数平滑：新速率 = 0.3 * 瞬时 + 0.7 * 历史
+                    dischargeRate = dischargeRate > 0
+                            ? (instantRate * 0.3f + dischargeRate * 0.7f)
+                            : instantRate;
                 }
             }
         }
+        // 充电时不清零，保持上次的放电速率用于估算；如果从未计算过，使用历史数据库值
         if (dischargeRate <= 0) {
-            dischargeRate = 12.2f; // default fallback
+            SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+            dischargeRate = prefs.getFloat(PREF_DISCHARGE_RATE, 0f);
         }
+        // 最终兜底：基于典型手机待机/使用经验给一个保守估计（仅首次无数据时）
+        if (dischargeRate <= 0) {
+            dischargeRate = 8.0f;
+        }
+
         lastBatteryLevel = batteryPct;
         lastUpdateTime = now;
+
+        // 持久化当前状态
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+        prefs.edit()
+                .putInt(PREF_LAST_LEVEL, batteryPct)
+                .putLong(PREF_LAST_TIME, now)
+                .putFloat(PREF_DISCHARGE_RATE, dischargeRate)
+                .apply();
 
         // Endurance estimate
         float remainingHours = batteryPct / dischargeRate;
