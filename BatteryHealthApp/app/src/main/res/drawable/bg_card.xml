@@ -1,20 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- ColorOS 16 卡片背景：纯白 + 大圆角，阴影由 MaterialCardView elevation 提供 -->
+    <!-- ColorOS 16 液态玻璃卡片：柔和半透明 + 顶部高光 + 细边框 -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/surface_solid" />
+            <solid android:color="@color/liquid_glass_surface" />
             <corners android:radius="@dimen/radius_card" />
         </shape>
     </item>
-    <!-- 顶部 1dp 高光，增强层次感 -->
-    <item android:top="0.5dp" android:left="0.5dp" android:right="0.5dp">
+    <!-- 顶部高光渐变，模拟玻璃反光 -->
+    <item android:top="0dp" android:left="0dp" android:right="0dp" android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#1AFFFFFF"
+                android:endColor="#00FFFFFF"
+                android:type="linear" />
+            <corners android:radius="@dimen/radius_card" />
+        </shape>
+    </item>
+    <!-- 细边框增强玻璃质感 -->
+    <item android:top="0.5dp" android:left="0.5dp" android:right="0.5dp" android:bottom="0.5dp">
         <shape android:shape="rectangle">
             <solid android:color="@android:color/transparent" />
             <corners android:radius="@dimen/radius_card" />
             <stroke
-                android:width="0.5dp"
-                android:color="#0DFFFFFF" />
+                android:width="0.8dp"
+                android:color="@color/liquid_glass_border" />
         </shape>
     </item>
 </layer-list>

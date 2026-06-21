@@ -65,12 +65,10 @@ public class BatteryHealthApplication extends Application {
         Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             try {
-                Intent intent = ErrorActivity.createIntent(
-                        this,
-                        getString(R.string.error_crash_title),
-                        getString(R.string.error_crash_message),
-                        throwable
-                );
+                String title = getStringSafely(R.string.error_crash_title, "应用异常");
+                String message = getStringSafely(R.string.error_crash_message, "发生未处理的错误，即将重启应用。");
+                Intent intent = ErrorActivity.createIntent(this, title, message, throwable);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to start ErrorActivity", e);
@@ -82,6 +80,14 @@ public class BatteryHealthApplication extends Application {
                 System.exit(1);
             }
         });
+    }
+
+    private String getStringSafely(int resId, String fallback) {
+        try {
+            return getString(resId);
+        } catch (Exception e) {
+            return fallback;
+        }
     }
     
     /**
@@ -232,7 +238,12 @@ public class BatteryHealthApplication extends Application {
      * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
      */
     public static AppDatabase getDatabase() {
-        return getInstance().getDatabaseInternal();
+        BatteryHealthApplication app = getInstance();
+        if (app == null) {
+            Log.w(TAG, "getDatabase called before Application initialized");
+            return null;
+        }
+        return app.getDatabaseInternal();
     }
 
     /**

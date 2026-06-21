@@ -38,6 +38,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -129,16 +130,24 @@ public class BugreportGuideActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_bugreport_guide);
+        try {
+            setContentView(R.layout.activity_bugreport_guide);
 
-        initViews();
-        loadGuides();
-        detectBrandAndShowGuide();
-        setupListeners();
-        requestPermissionsIfNeeded();
+            initViews();
+            loadGuides();
+            detectBrandAndShowGuide();
+            setupListeners();
+            requestPermissionsIfNeeded();
 
-        // 入场动画
-        UiAnimationHelper.animateCardsEntry(findViewById(R.id.scroll_content));
+            // 入场动画
+            View scrollContent = findViewById(R.id.scroll_content);
+            if (scrollContent != null) {
+                UiAnimationHelper.animateCardsEntry(scrollContent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Critical error in onCreate", e);
+            goToMainActivity();
+        }
     }
 
     private void initViews() {
@@ -152,17 +161,19 @@ public class BugreportGuideActivity extends AppCompatActivity {
         btnGoMain = findViewById(R.id.btn_go_main);
         tvBrandName = findViewById(R.id.tv_brand_name);
 
-        analyzingSection.setVisibility(View.GONE);
-        btnGoMain.setVisibility(View.GONE);
+        if (analyzingSection != null) analyzingSection.setVisibility(View.GONE);
+        if (btnGoMain != null) btnGoMain.setVisibility(View.GONE);
     }
 
     private void loadGuides() {
-        try (InputStream is = getAssets().open("bugreport_guides.json")) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            //noinspection ResultOfMethodCallIgnored
-            is.read(buffer);
-            String json = new String(buffer, StandardCharsets.UTF_8);
+        try (InputStream is = getAssets().open("bugreport_guides.json");
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            String json = baos.toString(StandardCharsets.UTF_8.name());
             guidesJson = new JSONObject(json);
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Failed to load bugreport guides", e);
@@ -177,7 +188,9 @@ public class BugreportGuideActivity extends AppCompatActivity {
         // 品牌映射
         String guideBrand = mapToGuideBrand(detectedBrand);
 
-        tvBrandName.setText(getString(R.string.bugreport_detected_brand, displayBrand));
+        if (tvBrandName != null) {
+            tvBrandName.setText(getString(R.string.bugreport_detected_brand, displayBrand));
+        }
 
         try {
             JSONArray guides = guidesJson.optJSONArray("guides");

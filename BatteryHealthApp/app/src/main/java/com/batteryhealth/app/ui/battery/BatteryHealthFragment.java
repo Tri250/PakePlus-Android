@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
@@ -173,7 +174,10 @@ public class BatteryHealthFragment extends Fragment {
 
     private void persistBatteryInfo(BatteryInfo info) {
         try {
-            BatteryHealthApplication.getDatabase().batteryInfoDao().insert(info.copy());
+            AppDatabase db = BatteryHealthApplication.getDatabase();
+            if (db != null) {
+                db.batteryInfoDao().insert(info.copy());
+            }
         } catch (Exception e) {
             // 数据库写入失败不应影响 UI 展示
         }

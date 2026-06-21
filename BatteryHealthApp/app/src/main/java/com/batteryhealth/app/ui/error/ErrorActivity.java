@@ -32,8 +32,19 @@ public class ErrorActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         if (title != null) intent.putExtra(EXTRA_TITLE, title);
         if (message != null) intent.putExtra(EXTRA_MESSAGE, message);
-        if (throwable != null) intent.putExtra(EXTRA_THROWABLE, throwable);
+        if (throwable != null) intent.putExtra(EXTRA_THROWABLE, throwableToString(throwable));
         return intent;
+    }
+
+    private static String throwableToString(Throwable throwable) {
+        try {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            return sw.toString();
+        } catch (Exception e) {
+            return throwable.getClass().getName() + ": " + throwable.getMessage();
+        }
     }
 
     @Override
@@ -43,7 +54,7 @@ public class ErrorActivity extends AppCompatActivity {
 
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String message = getIntent().getStringExtra(EXTRA_MESSAGE);
-        Throwable throwable = (Throwable) getIntent().getSerializableExtra(EXTRA_THROWABLE);
+        String throwableStr = getIntent().getStringExtra(EXTRA_THROWABLE);
 
         TextView tvTitle = findViewById(R.id.tv_error_title);
         TextView tvMessage = findViewById(R.id.tv_error_message);
@@ -52,31 +63,35 @@ public class ErrorActivity extends AppCompatActivity {
         Button btnRestart = findViewById(R.id.btn_error_restart);
         Button btnDetails = findViewById(R.id.btn_error_details);
 
-        tvTitle.setText(title != null ? title : getString(R.string.error_title));
-        tvMessage.setText(message != null ? message : getString(R.string.error_unknown));
+        if (tvTitle != null) tvTitle.setText(title != null ? title : getString(R.string.error_title));
+        if (tvMessage != null) tvMessage.setText(message != null ? message : getString(R.string.error_unknown));
 
-        String details = buildDetails(throwable);
-        tvDetails.setText(details);
+        String details = buildDetails(throwableStr);
+        if (tvDetails != null) tvDetails.setText(details);
 
-        btnDetails.setOnClickListener(v -> {
-            if (scrollDetails.getVisibility() == ScrollView.GONE) {
-                scrollDetails.setVisibility(ScrollView.VISIBLE);
-                btnDetails.setText(R.string.error_hide_details);
-            } else {
-                scrollDetails.setVisibility(ScrollView.GONE);
-                btnDetails.setText(R.string.error_view_details);
-            }
-        });
+        if (btnDetails != null && scrollDetails != null) {
+            btnDetails.setOnClickListener(v -> {
+                if (scrollDetails.getVisibility() == ScrollView.GONE) {
+                    scrollDetails.setVisibility(ScrollView.VISIBLE);
+                    btnDetails.setText(R.string.error_hide_details);
+                } else {
+                    scrollDetails.setVisibility(ScrollView.GONE);
+                    btnDetails.setText(R.string.error_view_details);
+                }
+            });
+        }
 
-        btnRestart.setOnClickListener(v -> {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
+        if (btnRestart != null) {
+            btnRestart.setOnClickListener(v -> {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
     }
 
-    private String buildDetails(Throwable throwable) {
+    private String buildDetails(String throwableStr) {
         StringBuilder sb = new StringBuilder();
         sb.append("App Version: ").append(BuildConfig.VERSION_NAME).append("\n");
         sb.append("Version Code: ").append(BuildConfig.VERSION_CODE).append("\n");
@@ -85,11 +100,8 @@ public class ErrorActivity extends AppCompatActivity {
         sb.append("Board: ").append(Build.BOARD).append("\n");
         sb.append("\n");
 
-        if (throwable != null) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
-            sb.append(sw.toString());
+        if (throwableStr != null && !throwableStr.isEmpty()) {
+            sb.append(throwableStr);
         } else {
             sb.append("No stack trace available.");
         }

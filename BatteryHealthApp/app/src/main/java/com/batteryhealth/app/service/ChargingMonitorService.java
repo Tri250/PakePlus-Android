@@ -19,6 +19,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
 
 import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.MainActivity;
@@ -225,7 +226,11 @@ public class ChargingMonitorService extends Service {
     private void updateForegroundState() {
         boolean showNotification = isNotificationEnabled();
         if (isCharging && !foregroundStarted && showNotification) {
-            startForeground(NOTIFICATION_ID, buildNotification());
+            int foregroundType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                foregroundType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH;
+            }
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundType);
             foregroundStarted = true;
         } else if (!isCharging && foregroundStarted) {
             stopForeground(true);
@@ -697,9 +702,8 @@ public class ChargingMonitorService extends Service {
     private void savePowerHistory(PowerHistory history) {
         Runnable saveTask = () -> {
             try {
-                com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
-                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                com.batteryhealth.app.data.database.AppDatabase db =
+                        com.batteryhealth.app.BatteryHealthApplication.getDatabase();
                 if (db != null) {
                     db.powerHistoryDao().insert(history);
                     if (BuildConfigHelper.isDebugMode()) {
@@ -762,10 +766,10 @@ public class ChargingMonitorService extends Service {
 
         String content;
         if (isCharging && history != null) {
-            content = String.format(
+            content = String.format(Locale.getDefault(),
                     getString(R.string.charging_monitor_notification_content_charging),
-                    history.getPower(),
                     history.getBatteryLevel(),
+                    history.getPower(),
                     history.getChargeTypeDescription());
         } else {
             content = getString(R.string.charging_monitor_notification_content_idle);

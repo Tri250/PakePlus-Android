@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
 
 import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -37,6 +38,7 @@ import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.Locale;
 
 /**
  * 电池监测服务
@@ -190,7 +192,11 @@ public class BatteryMonitorService extends Service {
             if (!isRunning) {
                 isRunning = true;
                 try {
-                    startForeground(NOTIFICATION_ID, buildNotification());
+                    int foregroundType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        foregroundType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH;
+                    }
+                    ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundType);
                 } catch (Exception e) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                             && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
@@ -396,8 +402,7 @@ public class BatteryMonitorService extends Service {
         if (ioExecutor != null) {
             ioExecutor.submit(() -> {
             try {
-                BatteryHealthApplication app = (BatteryHealthApplication) getApplicationContext();
-                AppDatabase db = app.getDatabase();
+                AppDatabase db = BatteryHealthApplication.getDatabase();
                 if (db == null) {
                     return;
                 }
@@ -475,10 +480,10 @@ public class BatteryMonitorService extends Service {
             );
 
             BatteryInfo info = currentBatteryInfo != null ? currentBatteryInfo : new BatteryInfo();
-            String content = String.format(
+            String content = String.format(Locale.getDefault(),
                     getString(R.string.battery_monitor_notification_content),
                     info.getLevel(),
-                    info.getTemperature(),
+                    String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()),
                     info.getHealthPercentage());
 
             return new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -562,9 +567,8 @@ public class BatteryMonitorService extends Service {
 
         new Thread(() -> {
             try {
-                com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
-                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                com.batteryhealth.app.data.database.AppDatabase db =
+                        com.batteryhealth.app.BatteryHealthApplication.getDatabase();
                 if (db != null) {
                     db.batteryInfoDao().insert(snapshot);
                     if (BuildConfigHelper.isDebugMode()) {
