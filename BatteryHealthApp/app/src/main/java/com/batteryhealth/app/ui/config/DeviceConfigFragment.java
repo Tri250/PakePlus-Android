@@ -1,23 +1,32 @@
 package com.batteryhealth.app.ui.config;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.telephony.TelephonyManager;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.BulletSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
@@ -77,6 +86,12 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
+
+        // Bugreport 日志引导卡片
+        View cardBugreport = view.findViewById(R.id.card_bugreport_guide);
+        if (cardBugreport != null) {
+            cardBugreport.setOnClickListener(v -> showBugreportGuideDialog());
+        }
 
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
         switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
@@ -266,5 +281,109 @@ public class DeviceConfigFragment extends Fragment {
         int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
         digitGroups = Math.min(digitGroups, units.length - 1);
         return String.format(Locale.getDefault(), "%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
+    }
+
+    /**
+     * 显示 Bugreport 日志抓取引导对话框
+     * 引导用户在国内安卓手机上抓取 bugreport 日志，然后跳转到电池健康配置查询
+     */
+    private void showBugreportGuideDialog() {
+        Context ctx = getContext();
+        if (ctx == null) return;
+
+        ScrollView scrollView = new ScrollView(ctx);
+        LinearLayout layout = new LinearLayout(ctx);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 24, 32, 24);
+
+        // 标题
+        TextView tvTitle = new TextView(ctx);
+        tvTitle.setText(getString(R.string.bugreport_guide_title));
+        tvTitle.setTextSize(18);
+        tvTitle.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+        tvTitle.setPadding(0, 0, 0, 8);
+        layout.addView(tvTitle);
+
+        // 副标题
+        TextView tvSubtitle = new TextView(ctx);
+        tvSubtitle.setText(getString(R.string.bugreport_guide_subtitle));
+        tvSubtitle.setTextSize(13);
+        tvSubtitle.setTextColor(ContextCompat.getColor(ctx, R.color.ios_secondary_label));
+        tvSubtitle.setPadding(0, 0, 0, 20);
+        layout.addView(tvSubtitle);
+
+        // 通用步骤
+        String[] steps = {
+            getString(R.string.bugreport_guide_step1_title) + "\n" + getString(R.string.bugreport_guide_step1_desc),
+            getString(R.string.bugreport_guide_step2_title) + "\n" + getString(R.string.bugreport_guide_step2_desc),
+            getString(R.string.bugreport_guide_step3_title) + "\n" + getString(R.string.bugreport_guide_step3_desc),
+            getString(R.string.bugreport_guide_step4_title) + "\n" + getString(R.string.bugreport_guide_step4_desc)
+        };
+        for (String step : steps) {
+            TextView tvStep = new TextView(ctx);
+            tvStep.setText(step);
+            tvStep.setTextSize(14);
+            tvStep.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+            tvStep.setPadding(0, 0, 0, 16);
+            tvStep.setLineSpacing(4, 1);
+            layout.addView(tvStep);
+        }
+
+        // 品牌分隔线
+        View divider = new View(ctx);
+        divider.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        divider.setBackgroundColor(ContextCompat.getColor(ctx, R.color.ios_separator));
+        divider.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        layout.addView(divider);
+
+        // 品牌标题
+        TextView tvBrand = new TextView(ctx);
+        tvBrand.setText(getString(R.string.bugreport_guide_brand_title));
+        tvBrand.setTextSize(15);
+        tvBrand.setPadding(0, 16, 0, 12);
+        tvBrand.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+        tvBrand.setTypeface(null, android.graphics.Typeface.BOLD);
+        layout.addView(tvBrand);
+
+        // 各品牌路径
+        String[] brands = {
+            getString(R.string.bugreport_guide_huawei),
+            getString(R.string.bugreport_guide_xiaomi),
+            getString(R.string.bugreport_guide_oppo),
+            getString(R.string.bugreport_guide_vivo),
+            getString(R.string.bugreport_guide_samsung)
+        };
+        for (String brand : brands) {
+            TextView tvBrandPath = new TextView(ctx);
+            tvBrandPath.setText("• " + brand);
+            tvBrandPath.setTextSize(12);
+            tvBrandPath.setTextColor(ContextCompat.getColor(ctx, R.color.ios_secondary_label));
+            tvBrandPath.setPadding(0, 0, 0, 8);
+            tvBrandPath.setLineSpacing(2, 1);
+            layout.addView(tvBrandPath);
+        }
+
+        scrollView.addView(layout);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(scrollView)
+                .setPositiveButton(getString(R.string.bugreport_guide_action_config), (d, which) -> {
+                    // 跳转到电池健康页面（Tab 0）
+                    if (getActivity() instanceof MainActivity) {
+                        // 切换到健康 Tab
+                        try {
+                            ViewPager2 vp = getActivity().findViewById(R.id.view_pager);
+                            if (vp != null) vp.setCurrentItem(0, true);
+                        } catch (Exception ignored) {}
+                    }
+                })
+                .setNegativeButton(getString(R.string.bugreport_guide_action_close), null)
+                .create();
+
+        try {
+            dialog.show();
+        } catch (Exception ignored) {}
     }
 }

@@ -194,7 +194,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         if (lp != null && lp.height > 0) {
             baseHeightPx = lp.height;
         } else {
-            baseHeightPx = (int) (64 * getResources().getDisplayMetrics().density + 0.5f);
+            baseHeightPx = (int) (72 * getResources().getDisplayMetrics().density + 0.5f);
         }
     }
 

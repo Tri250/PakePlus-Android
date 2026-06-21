@@ -462,7 +462,7 @@ public class DeviceInfoManager {
         }
 
         // Android 16+ 检测存储加密状态
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+        if (Build.VERSION.SDK_INT >= 36) {
             try {
                 StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
                 if (sm != null) {

@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 底部导航栏单项布局 - 移动端优化版：更宽敞的触摸区域，更清晰的视觉层次 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingTop="6dp"
-    android:paddingBottom="10dp"
-    android:background="?attr/selectableItemBackgroundBorderless">
+    android:paddingTop="8dp"
+    android:paddingBottom="4dp"
+    android:minWidth="48dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:importantForAccessibility="yes">
 
     <ImageView
         android:id="@+id/nav_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
         android:scaleType="fitCenter"
         android:importantForAccessibility="no" />
 
@@ -20,12 +25,13 @@
         android:id="@+id/nav_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textSize="11sp"
+        android:layout_marginTop="4dp"
+        android:textSize="10.5sp"
         android:textStyle="normal"
         android:fontFamily="sans-serif-medium"
         android:textColor="@color/bottom_nav_color"
         android:maxLines="1"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:importantForAccessibility="no" />
 
 </LinearLayout>

@@ -257,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置ViewPager
+     * 设置ViewPager（带异常兜底，防止空白页面）
      */
     private void setupViewPager() {
         viewPager.setAdapter(new FragmentStateAdapter(this) {
@@ -265,21 +265,26 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Fragment createFragment(int position) {
                 Log.d(TAG, "Creating fragment at position: " + position);
-                switch (position) {
-                    case 0:
-                        return new BatteryHealthFragment();
-                    case 1:
-                        return new DeviceConfigFragment();
-                    case 2:
-                        return new PerformanceFragment();
-                    case 3:
-                        return new EnduranceFragment();
-                    case 4:
-                        return new TrendFragment();
-                    case 5:
-                        return new PowerFragment();
-                    default:
-                        return new BatteryHealthFragment();
+                try {
+                    switch (position) {
+                        case 0:
+                            return new BatteryHealthFragment();
+                        case 1:
+                            return new DeviceConfigFragment();
+                        case 2:
+                            return new PerformanceFragment();
+                        case 3:
+                            return new EnduranceFragment();
+                        case 4:
+                            return new TrendFragment();
+                        case 5:
+                            return new PowerFragment();
+                        default:
+                            return createFallbackFragment("未知页面");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to create fragment at position " + position + ": " + e.getMessage(), e);
+                    return createFallbackFragment("页面加载失败");
                 }
             }
 
@@ -536,5 +541,16 @@ public class MainActivity extends AppCompatActivity {
      */
     public DeviceInfoManager getDeviceInfoManager() {
         return deviceInfoManager;
+    }
+
+    /**
+     * 创建兜底 Fragment，防止空白页面
+     */
+    private Fragment createFallbackFragment(String message) {
+        Fragment fallback = new Fragment();
+        Bundle args = new Bundle();
+        args.putString("error_message", message);
+        fallback.setArguments(args);
+        return fallback;
     }
 }

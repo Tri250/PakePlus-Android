@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">电池健康</string>
-    <string name="nav_health">健康</string>
-    <string name="nav_power">充电</string>
+    <string name="nav_health">电池健康</string>
+    <string name="nav_power">充电功率</string>
     <string name="nav_community">电池江湖</string>
-    <string name="nav_config">配置</string>
-    <string name="nav_performance">性能</string>
+    <string name="nav_config">设备参数</string>
+    <string name="nav_performance">性能监控</string>
     <string name="nav_health_check">自检</string>
-    <string name="nav_endurance">续航</string>
-    <string name="nav_trend">趋势</string>
-    <string name="title_battery_health">电池健康</string>
+    <string name="nav_endurance">续航估算</string>
+    <string name="nav_trend">趋势分析</string>
+    <string name="title_battery_health">电池健康度</string>
     <string name="title_power">充电功率</string>
     <string name="title_community">电池江湖</string>
-    <string name="title_device_config">设备配置</string>
-    <string name="title_performance">性能分析</string>
+    <string name="title_device_config">设备参数</string>
+    <string name="title_performance">性能监控</string>
     <string name="title_health_check">电池自检</string>
-    <string name="title_endurance">续航分析</string>
-    <string name="title_trend">趋势追踪</string>
+    <string name="title_endurance">续航估算</string>
+    <string name="title_trend">趋势分析</string>
     <string name="status_live_monitoring">实时监测中</string>
     <string name="status_charging_monitoring">充电监测中</string>
     <string name="label_max_capacity">最大容量</string>
@@ -31,8 +31,8 @@
     <string name="status_running">运行中</string>
     <string name="status_calculating">计算中</string>
     <string name="status_fast_charge">快充</string>
-    <string name="status_super_fast_charge">超快闪充</string>
-    <string name="status_normal_charge">普通充电</string>
+    <string name="status_super_fast_charge">极速快充</string>
+    <string name="status_normal_charge">标准充电</string>
     <string name="stage_fast">快速充电</string>
     <string name="stage_trickle">涓流充电</string>
     <string name="source_internal">内置</string>
@@ -103,8 +103,8 @@
     <string name="header_health_change">健康度变化</string>
     <string name="subtitle_device_config">识别到的硬件与系统参数</string>
     <string name="subtitle_performance">实时系统资源占用与性能评分</string>
-    <string name="subtitle_endurance">基于实时放电速率估算</string>
-    <string name="subtitle_trend">近 6 个月电池健康度变化</string>
+    <string name="subtitle_endurance">基于实时放电速率估算续航</string>
+    <string name="subtitle_trend">近6个月电池健康度变化趋势</string>
     <string name="unit_hours_minutes">小时 12 分</string>
     <string name="meta_endurance">当前电量 %1$d%%，平均放电 %2$.1f%%/h</string>
     <string name="health_check_score_excellent">极佳</string>
@@ -161,11 +161,11 @@
     <string name="status_mobile_data">移动数据</string>
     <string name="charging_status_wireless">无线充电</string>
     <string name="status_not_charging_short">未充电</string>
-    <string name="charge_type_ultra_fast">超快闪充</string>
-    <string name="charge_type_extreme_fast">极快闪充</string>
-    <string name="charge_type_fast">快充</string>
+    <string name="charge_type_ultra_fast">极速快充</string>
+    <string name="charge_type_extreme_fast">超级快充</string>
+    <string name="charge_type_fast">快速充电</string>
     <string name="charge_type_standard">标准充电</string>
-    <string name="charge_type_slow">慢充</string>
+    <string name="charge_type_slow">涓流充电</string>
     <string name="health_source_user_calibrated">用户校准 (可信度 %1$d%%)</string>
     <string name="health_source_fcc_ratio">FCC比例 (可信度 %1$d%%)</string>
     <string name="health_source_charge_counter">电荷计数 (可信度 %1$d%%)</string>
@@ -201,4 +201,25 @@
     <string name="charging_monitor_notification_content_charging">充电中 %1$d%% · %2$.1fW · %3$s</string>
     <string name="charging_monitor_notification_content_idle">未充电 · 电量 %1$d%%</string>
     <string name="charging_monitor_notification_title">充电监测中</string>
+
+    <!-- Bugreport 日志抓取引导 -->
+    <string name="bugreport_guide_title">Bugreport 日志抓取引导</string>
+    <string name="bugreport_guide_subtitle">请按照以下步骤抓取 bugreport 日志，然后跳转到电池健康配置查询</string>
+    <string name="bugreport_guide_step1_title">第1步：开启开发者选项</string>
+    <string name="bugreport_guide_step1_desc">进入「设置 → 关于手机」，连续点击「版本号」7次，开启开发者选项</string>
+    <string name="bugreport_guide_step2_title">第2步：生成Bugreport</string>
+    <string name="bugreport_guide_step2_desc">进入「设置 → 开发者选项」，点击「错误报告」或「提交错误报告」，选择「完整报告」</string>
+    <string name="bugreport_guide_step3_title">第3步：等待生成完成</string>
+    <string name="bugreport_guide_step3_desc">系统将收集日志（约1-3分钟），完成后通知栏会出现报告文件，点击分享或保存</string>
+    <string name="bugreport_guide_step4_title">第4步：跳转配置查询</string>
+    <string name="bugreport_guide_step4_desc">Bugreport 生成后，可跳转至「电池健康→设备参数」页面查看解析后的电池健康配置</string>
+    <string name="bugreport_guide_huawei">华为/荣耀：设置→关于手机→版本号→开发者选项→错误报告→完整报告</string>
+    <string name="bugreport_guide_xiaomi">小米/红米：设置→我的设备→全部参数→MIUI版本→开发者选项→错误报告</string>
+    <string name="bugreport_guide_oppo">OPPO：设置→关于手机→版本信息→版本号→开发者选项→提交错误报告</string>
+    <string name="bugreport_guide_vivo">vivo：设置→更多设置→关于手机→软件版本号→开发者选项→错误报告</string>
+    <string name="bugreport_guide_samsung">三星：设置→关于手机→软件信息→版本号→开发者选项→提交错误报告</string>
+    <string name="bugreport_guide_brand_title">各品牌操作路径</string>
+    <string name="bugreport_guide_action_view">查看引导</string>
+    <string name="bugreport_guide_action_close">关闭</string>
+    <string name="bugreport_guide_action_config">去配置查询</string>
 </resources>
