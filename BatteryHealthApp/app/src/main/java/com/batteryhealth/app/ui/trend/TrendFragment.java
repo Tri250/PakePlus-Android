@@ -751,7 +751,7 @@ public class TrendFragment extends Fragment {
     private void showEmptyState() {
         if (!isAdded() || getContext() == null) return;
         if (stateLayoutHelper != null) {
-            stateLayoutHelper.showEmpty("暂无历史数据，使用应用一段时间后即可查看趋势",
+            stateLayoutHelper.showEmpty(getString(R.string.state_empty_trend),
                     R.drawable.ic_trend, null, null);
         }
         if (chartHealth != null) chartHealth.setVisibility(View.GONE);
@@ -761,7 +761,7 @@ public class TrendFragment extends Fragment {
     private void showErrorState() {
         if (!isAdded() || getContext() == null) return;
         if (stateLayoutHelper != null) {
-            stateLayoutHelper.showError("数据加载失败", v -> loadDataAsync());
+            stateLayoutHelper.showError(getString(R.string.state_error_load), v -> loadDataAsync());
         }
     }
 

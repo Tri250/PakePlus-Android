@@ -337,10 +337,10 @@
     <string name="label_app_usage_time">使用时长</string>
     <string name="label_estimated_consumption">预估耗电</string>
     <string name="discharge_rate_format">%.1f%%/h</string>
-    <string name="endurance_forecast_format">%d时%d分</string>
-    <string name="app_consumption_item_format">%d. %s  %s  约%.0f%%</string>
+    <string name="endurance_forecast_format">%1$d时%2$d分</string>
+    <string name="app_consumption_item_format">%1$d. %2$s  %3$s  约%4$.0f%%</string>
     <string name="no_app_data">暂无应用使用数据</string>
-    <string name="baseline_vs_current">基线 %.1f%%/h → 当前 %.1f%%/h</string>
+    <string name="baseline_vs_current">基线 %1$.1f%%/h → 当前 %2$.1f%%/h</string>
 
     <!-- 趋势页增强 -->
     <string name="range_7_days">7天</string>
@@ -352,7 +352,7 @@
     <string name="label_predict_30_days">30天后</string>
     <string name="label_predict_60_days">60天后</string>
     <string name="label_predict_90_days">90天后</string>
-    <string name="regression_info_format">斜率: %.4f%%/天 · R²: %.3f</string>
+    <string name="regression_info_format">斜率: %1$.4f%%/天 · R²: %2$.3f</string>
     <string name="section_anomaly_events">异常事件</string>
     <string name="header_anomaly_events">检测到的异常</string>
     <string name="header_accel_warning">衰减加速警告</string>
@@ -362,5 +362,12 @@
     <string name="anomaly_voltage_change">电压突变 %1$.0fmV</string>
     <string name="anomaly_time_format">%1$s</string>
     <string name="prediction_no_data">数据不足，无法预测</string>
-    <string name="accel_warning_detail_format">近期月均衰减 %.1f%%，较之前 %.1f%% 加速了 %.1f%%</string>
+    <string name="accel_warning_detail_format">近期月均衰减 %1$.1f%%，较之前 %2$.1f%% 加速了 %3$.1f%%</string>
+
+    <!-- 统一状态页文案 -->
+    <string name="state_empty_trend">暂无历史数据，使用应用一段时间后即可查看趋势</string>
+    <string name="state_error_load">数据加载失败</string>
+    <string name="state_empty_posts">还没有帖子，来发第一条吧！</string>
+    <string name="state_error_posts">加载失败，请重试</string>
+    <string name="action_post">发帖</string>
 </resources>

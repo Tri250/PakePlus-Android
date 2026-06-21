@@ -202,15 +202,9 @@ public class CommunityFragment extends Fragment {
     }
 
     private void loadPosts() {
+        if (getContext() == null) return;
         if (repository == null) {
-            if (getContext() != null) {
-                repository = new LocalCommunityRepository(getContext());
-            } else {
-                if (stateLayoutHelper != null) {
-                    stateLayoutHelper.showError("加载失败，请重试", v -> loadPosts());
-                }
-                return;
-            }
+            repository = new LocalCommunityRepository(getContext());
         }
         try {
             allPosts = repository.loadPosts();
@@ -226,32 +220,32 @@ public class CommunityFragment extends Fragment {
             if (stateLayoutHelper != null && !allPosts.isEmpty()) {
                 stateLayoutHelper.showContent();
             } else if (stateLayoutHelper != null && allPosts.isEmpty()) {
-                stateLayoutHelper.showEmpty("还没有帖子，来发第一条吧！", R.drawable.ic_community,
-                        v -> showAddPostDialog(), "发帖");
+                stateLayoutHelper.showEmpty(getString(R.string.state_empty_posts), R.drawable.ic_community,
+                        v -> showAddPostDialog(), getString(R.string.action_post));
             }
         } catch (Exception e) {
             if (stateLayoutHelper != null) {
-                stateLayoutHelper.showError("加载失败，请重试", v -> loadPosts());
+                stateLayoutHelper.showError(getString(R.string.state_error_posts), v -> loadPosts());
             }
         }
     }
 
     private void reloadPosts() {
-        if (repository == null) return;
+        if (repository == null || getContext() == null) return;
         try {
             allPosts = repository.loadPosts();
             applySortAndRefresh();
             if (stateLayoutHelper != null) {
                 if (allPosts.isEmpty()) {
-                    stateLayoutHelper.showEmpty("还没有帖子，来发第一条吧！", R.drawable.ic_community,
-                            v -> showAddPostDialog(), "发帖");
+                    stateLayoutHelper.showEmpty(getString(R.string.state_empty_posts), R.drawable.ic_community,
+                            v -> showAddPostDialog(), getString(R.string.action_post));
                 } else {
                     stateLayoutHelper.showContent();
                 }
             }
         } catch (Exception e) {
             if (stateLayoutHelper != null) {
-                stateLayoutHelper.showError("加载失败，请重试", v -> reloadPosts());
+                stateLayoutHelper.showError(getString(R.string.state_error_posts), v -> reloadPosts());
             }
         }
     }

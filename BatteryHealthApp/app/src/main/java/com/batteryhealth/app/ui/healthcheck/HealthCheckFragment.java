@@ -307,7 +307,7 @@ public class HealthCheckFragment extends Fragment {
 
     private void showDetailDialog(HealthCheckResult r) {
         if (r == null || !isAdded()) return;
-        Context ctx = getContext();
+        final Context ctx = getContext();
         if (ctx == null) return;
 
         StringBuilder sb = new StringBuilder();
@@ -325,8 +325,7 @@ public class HealthCheckFragment extends Fragment {
         if (r.isRepairable()) {
             builder.setNeutralButton(R.string.health_check_action_fix, (dialog, which) -> {
                 if (engine != null && isAdded()) {
-                    Context ctx = getContext();
-                    if (ctx != null) engine.applyFix(ctx, r);
+                    engine.applyFix(ctx, r);
                 }
             });
         }
