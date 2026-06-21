@@ -24,12 +24,40 @@ public class ChargingProtocolChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("charging_protocol")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取充电数据失败：context is null")
+                    .setAdvice("请稍后重试。")
+                    .setItemScore(55)
+                    .build();
+        }
         try {
             Context appCtx = context.getApplicationContext();
+            if (appCtx == null) {
+                return new HealthCheckResult.Builder()
+                        .setId("charging_protocol")
+                        .setTitle(getName())
+                        .setCategory(getCategory())
+                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                        .setStatus("读取失败")
+                        .setValue("--")
+                        .setUnit("")
+                        .setDescription("读取充电数据失败：application context is null")
+                        .setAdvice("请稍后重试。")
+                        .setItemScore(55)
+                        .build();
+            }
             Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             int plugged = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) : -1;
             BatteryDataManager manager = new BatteryDataManager(appCtx);
-            com.batteryhealth.app.data.model.BatteryInfo info = manager.getBatteryInfo();
+            com.batteryhealth.app.data.model.BatteryInfo info = manager != null ? manager.getBatteryInfo() : null;
             float powerW = info != null ? info.getChargingPower() : 0f;
 
             HealthCheckResult.Builder builder = new HealthCheckResult.Builder()

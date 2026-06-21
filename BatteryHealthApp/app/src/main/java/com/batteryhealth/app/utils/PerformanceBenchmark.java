@@ -22,6 +22,8 @@ import java.nio.channels.FileChannel;
 public class PerformanceBenchmark {
 
     private static final String TAG = "PerformanceBenchmark";
+    private static final long CPU_THREAD_JOIN_TIMEOUT_MS = 5000;
+    private static final int MAX_CPU_OPS_PER_THREAD = 10_000_000;
 
     public static final class Result {
         public final long cpuSingleCoreScore;
@@ -120,11 +122,12 @@ public class PerformanceBenchmark {
         for (int r = 0; r < rounds; r++) {
             long start = System.nanoTime();
             Thread[] ts = new Thread[threads];
-            final int opsPerThread = operations / threads;
+            int opsPerThread = Math.min(operations / threads, MAX_CPU_OPS_PER_THREAD);
             for (int t = 0; t < threads; t++) {
+                final int localOps = opsPerThread;
                 ts[t] = new Thread(() -> {
                     double acc = 1.0;
-                    for (int i = 0; i < opsPerThread; i++) {
+                    for (int i = 0; i < localOps; i++) {
                         acc = Math.sin(acc) * Math.cos(acc) + Math.sqrt(Math.abs(acc) + 1);
                     }
                     if (acc == 0) Log.d(TAG, "noop");
@@ -133,7 +136,7 @@ public class PerformanceBenchmark {
                 ts[t].start();
             }
             for (Thread t : ts) {
-                try { t.join(2000); } catch (InterruptedException ignored) {}
+                try { t.join(CPU_THREAD_JOIN_TIMEOUT_MS); } catch (InterruptedException ignored) {}
             }
             long elapsed = System.nanoTime() - start;
             // 100ms 跑完 = 10000 分；线性归一化
@@ -189,6 +192,7 @@ public class PerformanceBenchmark {
             fos.flush();
             fos.getFD().sync();
         } catch (IOException e) {
+            Log.w(TAG, "benchmarkStorageSequentialRead write failed", e);
             return 0;
         }
         long best = 0;
@@ -207,6 +211,7 @@ public class PerformanceBenchmark {
                 long mbps = (long) (total * 1_000_000_000L / elapsed / 1024 / 1024);
                 if (mbps > best) best = mbps;
             } catch (IOException e) {
+                Log.w(TAG, "benchmarkStorageSequentialRead read failed", e);
                 return 0;
             }
         }
@@ -229,6 +234,7 @@ public class PerformanceBenchmark {
         long best = 0;
         for (int r = 0; r < 3; r++) {
             long start = System.nanoTime();
+            boolean writeSuccess = false;
             try (FileOutputStream fos = new FileOutputStream(f)) {
                 for (int i = 0; i < 8 * 1024 * 1024 / buf.length; i++) {
                     fos.write(buf);
@@ -236,7 +242,14 @@ public class PerformanceBenchmark {
                 // Android 16：flush/sync 确保数据真正写入存储
                 fos.flush();
                 fos.getFD().sync();
+                writeSuccess = true;
             } catch (IOException e) {
+                Log.w(TAG, "benchmarkStorageSequentialWrite failed", e);
+                return 0;
+            }
+            if (!writeSuccess || !f.exists() || f.length() != 8L * 1024 * 1024) {
+                Log.w(TAG, "benchmarkStorageSequentialWrite validation failed: exists=" + f.exists()
+                        + " length=" + (f.exists() ? f.length() : -1));
                 return 0;
             }
             long elapsed = System.nanoTime() - start;

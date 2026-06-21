@@ -33,7 +33,12 @@ public class StorageHealthChecker implements IHealthChecker {
                 return buildInfoResult("无法读取存储参数。", "请稍后重试。");
             }
 
-            float usedPct = (1f - (float) availBytes / totalBytes) * 100f;
+            float usedPct;
+            if (totalBytes == 0) {
+                return buildInfoResult("存储总容量为 0，无法计算使用率。", "请稍后重试。");
+            } else {
+                usedPct = (1f - (float) availBytes / totalBytes) * 100f;
+            }
             long availGb = availBytes / (1024 * 1024 * 1024);
             long totalGb = totalBytes / (1024 * 1024 * 1024);
 

@@ -1,15 +1,24 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 
 /**
  * 电池信息实体类
- * 
+ *
  * 存储电池健康度、容量、温度、循环次数等核心指标
+ *
+ * 注意：
+ * - timestamp 字段建立了索引，加速按时间范围查询（DAO 中所有时间相关查询）。
+ * - health_percentage 字段建立了索引，加速按健康度排序/筛选查询。
  */
-@Entity(tableName = "battery_info")
+@Entity(tableName = "battery_info",
+        indices = {
+                @Index(value = {"timestamp"}),
+                @Index(value = {"health_percentage"})
+        })
 public class BatteryInfo {
     
     @PrimaryKey(autoGenerate = true)

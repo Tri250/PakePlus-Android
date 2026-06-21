@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
 
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HealthCheckEngine {
 
+    private static final String TAG = "HealthCheckEngine";
     private static final HealthCheckEngine INSTANCE = new HealthCheckEngine();
 
     /** 内部并发线程数；默认 4 足以并行读取 /proc、BatteryManager 等不阻塞资源。 */
@@ -142,6 +144,7 @@ public class HealthCheckEngine {
                                 HealthCheckResult result = checker.check(appCtx);
                                 return result != null ? result : buildFallbackResult(checker.getName(), checker.getCategory());
                             } catch (Throwable t) {
+                                Log.e(TAG, "Checker '" + checker.getName() + "' threw exception", t);
                                 return buildFallbackResult(checker.getName(), checker.getCategory());
                             }
                         }
@@ -152,7 +155,8 @@ public class HealthCheckEngine {
                     try {
                         HealthCheckResult result = future.get();
                         if (result != null) collector.add(result);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to get result from future", e);
                     } finally {
                         int current = done.incrementAndGet();
                         if (callback != null) {
@@ -204,7 +208,7 @@ public class HealthCheckEngine {
     /**
      * 执行修复（跳转到对应的系统设置页）。
      *
-     * @return true 表示成功发起跳转；false 表示无修复动作可执行。
+     * @return true 表示成功发起跳转；false 表示无修复动作可执行或启动失败。
      */
     public boolean applyFix(Context context, HealthCheckResult result) {
         if (context == null || result == null) return false;
@@ -217,6 +221,7 @@ public class HealthCheckEngine {
             context.startActivity(intent);
             return true;
         } catch (Exception e) {
+            Log.e(TAG, "Failed to apply fix for: " + result.getId(), e);
             return false;
         }
     }
@@ -242,10 +247,15 @@ public class HealthCheckEngine {
                 pi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 return pi;
             case HealthCheckResult.FIX_ACTION_CHARGING_LIMIT:
-                // 系统无统一的充电限制页面；回退到电池设置页。
-                Intent batt = new Intent(Intent.ACTION_POWER_USAGE_SUMMARY);
-                batt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                return batt;
+                // 系统无统一的充电限制页面，尝试跳转到电池 saver 设置页（部分厂商支持）。
+                // 若不可用则回退到应用详情页。
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    Intent battIntent = new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
+                    battIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    // 返回 intent 让 applyFix 调用 startActivity；启动失败的兜底在 default 分支。
+                    return battIntent;
+                }
+                return buildAppDetailsIntent(pkg);
             case HealthCheckResult.FIX_ACTION_BATTERY_SAVER:
                 return new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
             case HealthCheckResult.FIX_ACTION_NETWORK_SETTINGS:

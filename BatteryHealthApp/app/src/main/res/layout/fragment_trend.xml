@@ -74,7 +74,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1月"
+                        android:text="@string/month_1"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"
@@ -83,7 +83,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2月"
+                        android:text="@string/month_2"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"
@@ -92,7 +92,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3月"
+                        android:text="@string/month_3"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"
@@ -101,7 +101,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="4月"
+                        android:text="@string/month_4"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"
@@ -110,7 +110,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="5月"
+                        android:text="@string/month_5"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"
@@ -119,7 +119,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="6月"
+                        android:text="@string/month_6"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
                         android:layout_weight="1"

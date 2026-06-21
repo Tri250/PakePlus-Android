@@ -850,9 +850,14 @@ public class ChargingMonitorService extends Service {
             if (isCharging && history != null) {
                 content = String.format(
                         getString(R.string.charging_monitor_notification_content_charging),
-                        history.getPower(),
                         history.getBatteryLevel(),
+                        history.getPower(),
                         history.getChargeTypeDescription());
+            } else if (history != null) {
+                content = String.format(
+                        getString(R.string.charging_monitor_notification_content_idle),
+                        history.getBatteryLevel(),
+                        String.format(Locale.getDefault(), "%.1f°C", history.getBatteryTemp()));
             } else {
                 content = getString(R.string.charging_monitor_notification_content_idle);
             }

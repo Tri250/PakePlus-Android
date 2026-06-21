@@ -5,6 +5,10 @@ package com.batteryhealth.app;
  */
 public class BuildConfigHelper {
 
+    private BuildConfigHelper() {
+        // utility class, prevent instantiation
+    }
+
     public static boolean isDebugMode() {
         return BuildConfig.DEBUG;
     }

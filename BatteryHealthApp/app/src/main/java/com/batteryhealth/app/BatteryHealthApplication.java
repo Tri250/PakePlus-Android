@@ -20,26 +20,28 @@ import net.sqlcipher.database.SupportFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 电池健康应用全局Application类
- * 
+ *
  * 功能：
  * 1. 初始化全局配置
  * 2. 管理数据库实例
  * 3. 提供全局Context访问
  */
 public class BatteryHealthApplication extends Application {
-    
+
     private static final String TAG = "BatteryHealthApp";
-    private static BatteryHealthApplication instance;
-    private AppDatabase database;
+    private static volatile BatteryHealthApplication instance;
+    private volatile AppDatabase database;
     private Handler mainHandler;
     private long appStartTime;
 
     private final Object dbInitLock = new Object();
     private volatile CountDownLatch dbInitLatch;
-    
+    private final AtomicBoolean isDbInitStarted = new AtomicBoolean(false);
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -71,6 +73,7 @@ public class BatteryHealthApplication extends Application {
                         getString(R.string.error_crash_message),
                         throwable
                 );
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to start ErrorActivity", e);
@@ -83,25 +86,27 @@ public class BatteryHealthApplication extends Application {
             }
         });
     }
-    
+
     /**
      * 异步启动数据库初始化
      */
     private void startDatabaseInitAsync() {
-        synchronized (dbInitLock) {
-            if (dbInitLatch == null) {
-                dbInitLatch = new CountDownLatch(1);
-                new Thread(() -> {
-                    try {
-                        initDatabase();
-                    } finally {
-                        dbInitLatch.countDown();
-                    }
-                }, "DbInitThread").start();
+        if (isDbInitStarted.compareAndSet(false, true)) {
+            synchronized (dbInitLock) {
+                if (dbInitLatch == null) {
+                    dbInitLatch = new CountDownLatch(1);
+                    new Thread(() -> {
+                        try {
+                            initDatabase();
+                        } finally {
+                            dbInitLatch.countDown();
+                        }
+                    }, "DbInitThread").start();
+                }
             }
         }
     }
-    
+
     /**
      * 初始化Room数据库（启用SQLCipher加密）
      */
@@ -125,7 +130,7 @@ public class BatteryHealthApplication extends Application {
                 } finally {
                     readLatch.countDown();
                 }
-            }).start();
+            }, "DbMigrateThread").start();
             readLatch.await(30, TimeUnit.SECONDS);
             snapshot = snapshotHolder[0];
             plainBackupCreated = backupCreatedHolder[0];
@@ -133,7 +138,7 @@ public class BatteryHealthApplication extends Application {
             // 2. 使用 SQLCipher 创建加密数据库
             byte[] passphrase = DatabaseEncryptionHelper.getPassphrase(this);
             SupportFactory factory = new SupportFactory(passphrase);
-            database = Room.databaseBuilder(
+            AppDatabase encryptedDb = Room.databaseBuilder(
                             getApplicationContext(),
                             AppDatabase.class,
                             "battery_health_db"
@@ -141,22 +146,23 @@ public class BatteryHealthApplication extends Application {
                     .openHelperFactory(factory)
                     .fallbackToDestructiveMigration()
                     .build();
+            database = encryptedDb;
 
             // 3. 将历史数据恢复到加密数据库，成功后删除备份
             if (snapshot != null) {
                 final CountDownLatch restoreLatch = new CountDownLatch(1);
-                final boolean[] restoreSuccess = {true};
+                final AtomicBoolean restoreSuccess = new AtomicBoolean(true);
                 new Thread(() -> {
                     try {
-                        restoreSnapshot(database, snapshotHolder[0]);
+                        restoreSnapshot(encryptedDb, snapshotHolder[0]);
                     } catch (Exception e) {
-                        restoreSuccess[0] = false;
+                        restoreSuccess.set(false);
                         Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);
                     } finally {
                         restoreLatch.countDown();
                     }
-                }).start();
-                boolean restored = restoreLatch.await(60, TimeUnit.SECONDS) && restoreSuccess[0];
+                }, "DbRestoreThread").start();
+                boolean restored = restoreLatch.await(60, TimeUnit.SECONDS) && restoreSuccess.get();
                 if (restored) {
                     DatabaseEncryptionHelper.deletePlainDatabaseBackup(this);
                 }
@@ -196,37 +202,43 @@ public class BatteryHealthApplication extends Application {
      */
     private void restoreSnapshot(final AppDatabase db,
                                  final DatabaseEncryptionHelper.DatabaseSnapshot snapshot) {
-        if (snapshot == null) return;
+        if (snapshot == null || db == null) return;
         db.runInTransaction(() -> {
             if (snapshot.batteryInfoList != null) {
                 for (BatteryInfo info : snapshot.batteryInfoList) {
-                    info.setId(0);
-                    db.batteryInfoDao().insert(info);
+                    if (info != null) {
+                        info.setId(0);
+                        db.batteryInfoDao().insert(info);
+                    }
                 }
             }
             if (snapshot.performanceDataList != null) {
                 for (PerformanceData data : snapshot.performanceDataList) {
-                    data.setId(0);
-                    db.performanceDataDao().insert(data);
+                    if (data != null) {
+                        data.setId(0);
+                        db.performanceDataDao().insert(data);
+                    }
                 }
             }
             if (snapshot.powerHistoryList != null) {
                 for (PowerHistory history : snapshot.powerHistoryList) {
-                    history.setId(0);
-                    db.powerHistoryDao().insert(history);
+                    if (history != null) {
+                        history.setId(0);
+                        db.powerHistoryDao().insert(history);
+                    }
                 }
             }
         });
         Log.d(TAG, "Database snapshot restored to encrypted database successfully");
     }
-    
+
     /**
      * 获取全局Application实例
      */
     public static BatteryHealthApplication getInstance() {
         return instance;
     }
-    
+
     /**
      * 获取数据库实例。
      * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
@@ -245,7 +257,7 @@ public class BatteryHealthApplication extends Application {
         }
         return database;
     }
-    
+
     /**
      * 获取主线程Handler
      */
@@ -259,22 +271,46 @@ public class BatteryHealthApplication extends Application {
     public long getAppStartTime() {
         return appStartTime;
     }
-    
+
     /**
      * 在主线程执行Runnable
      */
     public void runOnUiThread(Runnable runnable) {
-        if (mainHandler != null) {
+        if (mainHandler != null && runnable != null) {
             mainHandler.post(runnable);
         }
     }
-    
+
     /**
      * 延迟执行
      */
     public void postDelayed(Runnable runnable, long delayMillis) {
-        if (mainHandler != null) {
+        if (mainHandler != null && runnable != null) {
             mainHandler.postDelayed(runnable, delayMillis);
+        }
+    }
+
+    /**
+     * 移除所有挂起的 Runnable 和 Messages，防止内存泄漏
+     */
+    public void removeCallbacksAndMessages() {
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        Log.w(TAG, "onLowMemory called");
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level >= TRIM_MEMORY_MODERATE) {
+            Log.w(TAG, "onTrimMemory level=" + level + ", clearing handler callbacks");
+            removeCallbacksAndMessages();
         }
     }
 }

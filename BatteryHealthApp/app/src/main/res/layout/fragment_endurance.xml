@@ -81,7 +81,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/unit_hours_minutes"
+                        android:text="@string/unit_hours_minutes_label"
                         android:textAppearance="@style/WebUnit"
                         android:layout_marginStart="6dp" />
 

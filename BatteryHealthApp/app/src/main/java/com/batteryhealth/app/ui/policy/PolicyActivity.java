@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.policy;
 
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -83,8 +84,14 @@ public class PolicyActivity extends AppCompatActivity {
             titleLp2.gravity = android.view.Gravity.TOP;
             root.addView(titleBar, titleLp2);
             setContentView(root);
-        } catch (Exception e) {
-            android.util.Log.e("PolicyActivity", "onCreate failed: " + e.getMessage(), e);
+        } catch (Resources.NotFoundException e) {
+            android.util.Log.e("PolicyActivity", "Resource not found: " + e.getMessage(), e);
+            finish();
+        } catch (IllegalStateException e) {
+            android.util.Log.e("PolicyActivity", "Illegal state in onCreate: " + e.getMessage(), e);
+            finish();
+        } catch (RuntimeException e) {
+            android.util.Log.e("PolicyActivity", "Runtime error in onCreate: " + e.getMessage(), e);
             finish();
         }
     }

@@ -26,8 +26,36 @@ public class EnduranceChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("endurance_prediction")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取电量数据失败：context is null")
+                    .setAdvice("请稍后重试。")
+                    .setItemScore(55)
+                    .build();
+        }
         try {
             Context appCtx = context.getApplicationContext();
+            if (appCtx == null) {
+                return new HealthCheckResult.Builder()
+                        .setId("endurance_prediction")
+                        .setTitle(getName())
+                        .setCategory(getCategory())
+                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                        .setStatus("读取失败")
+                        .setValue("--")
+                        .setUnit("")
+                        .setDescription("读取电量数据失败：application context is null")
+                        .setAdvice("请稍后重试。")
+                        .setItemScore(55)
+                        .build();
+            }
             Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             int level = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
             int scale = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;

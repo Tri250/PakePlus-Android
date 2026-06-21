@@ -131,10 +131,17 @@ public class CustomBottomNavigationView extends FrameLayout {
     private void updateSelection(int position) {
         for (int i = 0; i < itemViews.size(); i++) {
             View view = itemViews.get(i);
+            if (view == null) {
+                continue;
+            }
             boolean selected = i == position;
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
+
+            if (icon == null || label == null) {
+                continue;
+            }
 
             icon.setSelected(selected);
             icon.setColorFilter(selected ? activeColor : inactiveColor);
@@ -146,11 +153,15 @@ public class CustomBottomNavigationView extends FrameLayout {
                         .scaleX(1.12f)
                         .scaleY(1.12f)
                         .setDuration(120)
-                        .withEndAction(() -> icon.animate()
-                                .scaleX(1.0f)
-                                .scaleY(1.0f)
-                                .setDuration(120)
-                                .start())
+                        .withEndAction(() -> {
+                            if (icon != null) {
+                                icon.animate()
+                                        .scaleX(1.0f)
+                                        .scaleY(1.0f)
+                                        .setDuration(120)
+                                        .start();
+                            }
+                        })
                         .start();
                 label.setAlpha(1.0f);
             } else {

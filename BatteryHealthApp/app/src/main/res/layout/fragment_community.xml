@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="电池江湖"
+            android:text="@string/title_community"
             android:textAppearance="@style/iOSTitle.Large"
             android:letterSpacing="-0.03"
             android:lineSpacingExtra="6dp"
@@ -47,14 +47,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电池社区"
+                    android:text="@string/community_card_title"
                     android:textAppearance="@style/iOSSubtitle"
                     android:layout_marginBottom="16dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="分享电池使用心得，交流保养技巧\n加入电池社区，发现更多同好"
+                    android:text="@string/community_card_desc"
                     android:textAppearance="@style/iOSBody.Secondary"
                     android:gravity="center"
                     android:lineSpacingExtra="4dp"
@@ -63,7 +63,7 @@
                 <com.google.android.material.button.MaterialButton
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:text="即将开放"
+                    android:text="@string/community_coming_soon"
                     android:textAppearance="@style/iOSBody"
                     app:cornerRadius="24dp"
                     app:backgroundTint="@color/ios_green"
@@ -92,7 +92,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电池养护小贴士"
+                    android:text="@string/community_tips_title"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -104,11 +104,11 @@
                 <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免过度充电"
+                        android:text="@string/community_tip_1_title"
                         android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="充至80%即可"
+                        android:text="@string/community_tip_1_desc"
                         android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
@@ -117,11 +117,11 @@
                 <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免深度放电"
+                        android:text="@string/community_tip_2_title"
                         android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="低于20%请充电"
+                        android:text="@string/community_tip_2_desc"
                         android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
@@ -130,11 +130,11 @@
                 <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
                     <TextView
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免高温环境"
+                        android:text="@string/community_tip_3_title"
                         android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="保持0-35°C"
+                        android:text="@string/community_tip_3_desc"
                         android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
@@ -143,11 +143,11 @@
                 <LinearLayout style="@style/iOSListItem" android:minHeight="48dp" android:paddingBottom="22dp">
                     <TextView
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="使用原装充电器"
+                        android:text="@string/community_tip_4_title"
                         android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="安全可靠"
+                        android:text="@string/community_tip_4_desc"
                         android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 

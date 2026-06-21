@@ -25,7 +25,7 @@ public class TrendActivity extends AppCompatActivity {
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.trend_container, new TrendFragment())
-                    .commit();
+                    .commitNow();
         }
     }
 

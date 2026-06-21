@@ -27,11 +27,16 @@ public class ErrorActivity extends AppCompatActivity {
     public static final String EXTRA_MESSAGE = "error_message";
     public static final String EXTRA_THROWABLE = "error_throwable";
 
+    private static final int MAX_DETAILS_LENGTH = 50000;
+
     public static Intent createIntent(Context context, String title, String message, Throwable throwable) {
+        if (context == null) {
+            throw new IllegalArgumentException("Context cannot be null");
+        }
         Intent intent = new Intent(context, ErrorActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        if (title != null) intent.putExtra(EXTRA_TITLE, title);
-        if (message != null) intent.putExtra(EXTRA_MESSAGE, message);
+        if (title != null && !title.isEmpty()) intent.putExtra(EXTRA_TITLE, title);
+        if (message != null && !message.isEmpty()) intent.putExtra(EXTRA_MESSAGE, message);
         if (throwable != null) intent.putExtra(EXTRA_THROWABLE, throwable);
         return intent;
     }
@@ -77,7 +82,7 @@ public class ErrorActivity extends AppCompatActivity {
     }
 
     private String buildDetails(Throwable throwable) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(1024);
         sb.append("App Version: ").append(BuildConfig.VERSION_NAME).append("\n");
         sb.append("Version Code: ").append(BuildConfig.VERSION_CODE).append("\n");
         sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT).append(")\n");
@@ -89,7 +94,11 @@ public class ErrorActivity extends AppCompatActivity {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
-            sb.append(sw.toString());
+            String stackTrace = sw.toString();
+            if (stackTrace.length() > MAX_DETAILS_LENGTH) {
+                stackTrace = stackTrace.substring(0, MAX_DETAILS_LENGTH) + "\n[truncated]";
+            }
+            sb.append(stackTrace);
         } else {
             sb.append("No stack trace available.");
         }

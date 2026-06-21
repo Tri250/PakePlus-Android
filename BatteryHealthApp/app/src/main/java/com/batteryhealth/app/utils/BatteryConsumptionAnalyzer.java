@@ -102,6 +102,8 @@ public class BatteryConsumptionAnalyzer {
                 try {
                     java.lang.reflect.Method m = bsm.getClass().getMethod("getBatteryUsageStats", int.class);
                     bus = m.invoke(bsm, 0); // USER_WORKSPACE = 0
+                } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                    Log.w(TAG, "getBatteryUsageStats(int) not available", e);
                 } catch (Throwable ignored) {}
             }
 
@@ -110,6 +112,8 @@ public class BatteryConsumptionAnalyzer {
                 try {
                     java.lang.reflect.Method m = bsm.getClass().getMethod("getBatteryUsageStatsForUsers");
                     bus = m.invoke(bsm);
+                } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                    Log.w(TAG, "getBatteryUsageStatsForUsers() not available", e);
                 } catch (Throwable ignored) {}
             }
 
@@ -173,7 +177,7 @@ public class BatteryConsumptionAnalyzer {
                 long mah = t.consumedUah / 1000;
                 consumers.add(new AppConsumption(t.pkg, display, percent, mah, t.foregroundMs));
             }
-        } catch (Exception e) {
+        } catch (IllegalStateException | SecurityException | NullPointerException e) {
             Log.w(TAG, "analyze failed: " + e.getMessage());
         }
 
@@ -205,6 +209,8 @@ public class BatteryConsumptionAnalyzer {
                     try {
                         // BATTERY_PROPERTY_VOLTAGE = 2 (hidden constant)
                         voltageMicroV = bm.getIntProperty(2);
+                    } catch (IllegalArgumentException e) {
+                        Log.w(TAG, "BATTERY_PROPERTY_VOLTAGE not available, using fallback voltage");
                     } catch (Throwable ignored) {}
 
                     if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && level >= 0) {

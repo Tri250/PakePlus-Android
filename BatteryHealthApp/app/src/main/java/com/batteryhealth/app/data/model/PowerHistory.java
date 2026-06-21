@@ -133,10 +133,14 @@ public class PowerHistory {
     }
     
     /**
-     * 计算功率瓦数
+     * 计算功率瓦数。
+     * 
+     * 注意：voltage 单位为 V，current 单位为 A。
+     * 若外部传入的是 mV/mA，需先除以 1000 再调用本方法。
      */
     public void calculatePower() {
         if (voltage > 0 && current > 0) {
+            // 功率 = 电压(V) × 电流(A)，结果单位为 W
             this.power = voltage * current;
         }
     }

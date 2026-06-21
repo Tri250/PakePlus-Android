@@ -54,7 +54,11 @@ public class HealthRingView extends View {
 
     @androidx.annotation.Keep
     public void setProgress(float progress) {
-        this.progress = Math.max(0f, Math.min(100f, progress));
+        if (Float.isNaN(progress) || Float.isInfinite(progress)) {
+            this.progress = 0f;
+        } else {
+            this.progress = Math.max(0f, Math.min(100f, progress));
+        }
         invalidate();
     }
 

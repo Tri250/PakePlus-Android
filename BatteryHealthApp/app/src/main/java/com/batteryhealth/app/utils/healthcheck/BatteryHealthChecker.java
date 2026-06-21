@@ -31,6 +31,20 @@ public class BatteryHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("battery_health")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取电池健康数据时发生异常：context is null")
+                    .setAdvice("可尝试重启设备或稍后再次检测。")
+                    .setItemScore(50)
+                    .build();
+        }
         try {
             BatteryDataManager manager = new BatteryDataManager(context.getApplicationContext());
             com.batteryhealth.app.data.model.BatteryInfo info = manager.getBatteryInfo();
