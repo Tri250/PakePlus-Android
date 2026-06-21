@@ -34,47 +34,56 @@ public class DatabaseEncryptionHelper {
     private static final int PASSPHRASE_LENGTH = 32;
     private static final String DATABASE_NAME = "battery_health_db";
 
+    private static final Object PASSPHRASE_LOCK = new Object();
+
     /**
      * 获取数据库加密密钥。
      * <p>
      * 优先使用 EncryptedSharedPreferences + Android Keystore 存储；
      * 若 Keystore 不可用（如部分定制系统、root 设备），降级到普通 SharedPreferences，
      * 保证应用不崩溃且同一安装周期内密钥保持一致。
+     * <p>
+     * 使用 synchronized 保证线程安全；使用 commit() 保证写入原子性。
      */
     public static byte[] getPassphrase(Context context) {
         Context appContext = context.getApplicationContext();
 
-        // 用于记录降级标志的独立 SharedPreferences（不存储密钥本身）
-        SharedPreferences fallbackFlagPrefs = appContext.getSharedPreferences(
-                PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
-        boolean forcePlain = fallbackFlagPrefs.getBoolean(KEY_USE_PLAIN_PREFS, false);
+        synchronized (PASSPHRASE_LOCK) {
+            // 用于记录降级标志的独立 SharedPreferences（不存储密钥本身）
+            SharedPreferences fallbackFlagPrefs = appContext.getSharedPreferences(
+                    PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
+            boolean forcePlain = fallbackFlagPrefs.getBoolean(KEY_USE_PLAIN_PREFS, false);
 
-        SharedPreferences prefs = null;
-        if (!forcePlain) {
-            prefs = getEncryptedSharedPreferences(appContext);
-            if (prefs == null) {
-                // 一旦初始化失败，后续整个安装周期都使用明文存储，避免密钥不一致
-                forcePlain = true;
-                fallbackFlagPrefs.edit().putBoolean(KEY_USE_PLAIN_PREFS, true).apply();
-                Log.w(TAG, "EncryptedSharedPreferences unavailable, falling back to plain prefs");
+            SharedPreferences prefs = null;
+            if (!forcePlain) {
+                prefs = getEncryptedSharedPreferences(appContext);
+                if (prefs == null) {
+                    // 一旦初始化失败，后续整个安装周期都使用明文存储，避免密钥不一致
+                    forcePlain = true;
+                    fallbackFlagPrefs.edit().putBoolean(KEY_USE_PLAIN_PREFS, true).commit();
+                    Log.w(TAG, "EncryptedSharedPreferences unavailable, falling back to plain prefs");
+                }
             }
-        }
-        if (prefs == null) {
-            prefs = appContext.getSharedPreferences(PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
-        }
+            if (prefs == null) {
+                prefs = appContext.getSharedPreferences(PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
+            }
 
-        String encoded = prefs.getString(KEY_PASSPHRASE, null);
-        if (encoded == null) {
-            byte[] passphrase = generatePassphrase();
-            encoded = Base64.encodeToString(passphrase, Base64.NO_WRAP);
-            prefs.edit().putString(KEY_PASSPHRASE, encoded).apply();
-            return passphrase;
+            String encoded = prefs.getString(KEY_PASSPHRASE, null);
+            if (encoded == null) {
+                byte[] passphrase = generatePassphrase();
+                encoded = Base64.encodeToString(passphrase, Base64.NO_WRAP);
+                // 使用 commit() 保证同步写入，避免并发读取时密钥丢失
+                prefs.edit().putString(KEY_PASSPHRASE, encoded).commit();
+                return passphrase;
+            }
+            return Base64.decode(encoded, Base64.NO_WRAP);
         }
-        return Base64.decode(encoded, Base64.NO_WRAP);
     }
 
     /**
      * 若存在明文数据库，读取全部数据并返回快照；若不存在或读取失败返回 null。
+     *
+     * 注意：此方法执行数据库 I/O，必须在后台线程调用。
      */
     public static DatabaseSnapshot migratePlainDatabaseIfNeeded(Context context) {
         Context appContext = context.getApplicationContext();
@@ -130,10 +139,10 @@ public class DatabaseEncryptionHelper {
             boolean renamed = dbFile.renameTo(backupFile);
             if (renamed) {
                 // 同时重命名 wal/shm 文件
-                File walFile = new File(dbFile.getAbsolutePath() + "-wal");
-                File shmFile = new File(dbFile.getAbsolutePath() + "-shm");
-                walFile.renameTo(new File(backupFile.getAbsolutePath() + "-wal"));
-                shmFile.renameTo(new File(backupFile.getAbsolutePath() + "-shm"));
+                new File(dbFile.getAbsolutePath() + "-wal")
+                        .renameTo(new File(backupFile.getAbsolutePath() + "-wal"));
+                new File(dbFile.getAbsolutePath() + "-shm")
+                        .renameTo(new File(backupFile.getAbsolutePath() + "-shm"));
             }
             Log.d(TAG, "Plain database renamed to backup: " + renamed);
             return renamed;
@@ -162,8 +171,12 @@ public class DatabaseEncryptionHelper {
             if (restored) {
                 File backupWal = new File(backupFile.getAbsolutePath() + "-wal");
                 File backupShm = new File(backupFile.getAbsolutePath() + "-shm");
-                backupWal.renameTo(new File(dbFile.getAbsolutePath() + "-wal"));
-                backupShm.renameTo(new File(dbFile.getAbsolutePath() + "-shm"));
+                if (backupWal.exists()) {
+                    backupWal.renameTo(new File(dbFile.getAbsolutePath() + "-wal"));
+                }
+                if (backupShm.exists()) {
+                    backupShm.renameTo(new File(dbFile.getAbsolutePath() + "-shm"));
+                }
             }
             Log.d(TAG, "Plain database restored from backup: " + restored);
             return restored;
@@ -196,20 +209,16 @@ public class DatabaseEncryptionHelper {
     private static boolean deleteBackupFiles(File backupFile) {
         if (backupFile == null) return false;
         boolean deleted = backupFile.delete();
-        File walFile = new File(backupFile.getAbsolutePath() + "-wal");
-        File shmFile = new File(backupFile.getAbsolutePath() + "-shm");
-        walFile.delete();
-        shmFile.delete();
+        new File(backupFile.getAbsolutePath() + "-wal").delete();
+        new File(backupFile.getAbsolutePath() + "-shm").delete();
         return deleted;
     }
 
     private static void deleteDatabaseFiles(File dbFile) {
         if (dbFile == null) return;
         dbFile.delete();
-        File walFile = new File(dbFile.getAbsolutePath() + "-wal");
-        File shmFile = new File(dbFile.getAbsolutePath() + "-shm");
-        walFile.delete();
-        shmFile.delete();
+        new File(dbFile.getAbsolutePath() + "-wal").delete();
+        new File(dbFile.getAbsolutePath() + "-shm").delete();
     }
 
     private static SharedPreferences getEncryptedSharedPreferences(Context context) {

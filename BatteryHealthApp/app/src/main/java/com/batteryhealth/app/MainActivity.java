@@ -210,7 +210,11 @@ public class MainActivity extends AppCompatActivity {
         }
         try {
             IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            registerReceiver(batteryUpdateReceiver, filter);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                registerReceiver(batteryUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(batteryUpdateReceiver, filter);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error registering battery update receiver: " + e.getMessage());
         }
@@ -387,7 +391,9 @@ public class MainActivity extends AppCompatActivity {
      * 更新底部导航状态
      */
     private void updateBottomNavigation(int position) {
-        bottomNavigation.setSelectedPosition(position);
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedPosition(position);
+        }
     }
     
     /**
@@ -550,18 +556,11 @@ public class MainActivity extends AppCompatActivity {
      * 加载初始数据
      */
     private void loadInitialData() {
-        // 在后台线程加载数据
         new Thread(() -> {
             try {
-                // 获取电池信息
                 if (batteryDataManager != null) {
                     batteryDataManager.refreshAllDataAsync();
                 }
-                
-                // 在主线程更新UI
-                mainHandler.post(() -> {
-                    // 数据已加载，Fragment会自行获取
-                });
             } catch (Exception e) {
                 Log.e(TAG, "Error loading initial data: " + e.getMessage());
             }

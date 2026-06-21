@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -30,6 +31,8 @@ import com.batteryhealth.app.utils.BatteryDataManager;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class EnduranceFragment extends Fragment {
 
@@ -40,6 +43,7 @@ public class EnduranceFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private ExecutorService dbExecutor;
 
     private BatteryDataManager batteryDataManager;
 
@@ -98,24 +102,57 @@ public class EnduranceFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        if (dbExecutor != null) {
+            dbExecutor.shutdown();
+            dbExecutor = null;
+        }
+        tvEnduranceHours = null;
+        tvEnduranceMeta = null;
+        tvMetricBattery = null;
+        tvMetricDischarge = null;
+        tvMetricTemp = null;
+        tvChargingStatus = null;
+        tvUsedTime = null;
+        tvConsumedBattery = null;
+        tvEstimatedFull = null;
+        tvScreenOnTime = null;
+    }
+
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireContext().registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception e) {
+            // Ignore if context is no longer valid
+        }
     }
 
     private void unregisterBatteryReceiver() {
         try {
             requireContext().unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {
+        } catch (Exception ignored) {
         }
     }
 
     private void startPeriodicUpdate() {
+        stopPeriodicUpdate();
         updateRunnable = new Runnable() {
             @Override
             public void run() {
+                if (!isAdded()) return;
                 updateBatteryData();
-                handler.postDelayed(this, 3000);
+                if (isAdded()) {
+                    handler.postDelayed(this, 3000);
+                }
             }
         };
         handler.post(updateRunnable);
@@ -124,24 +161,30 @@ public class EnduranceFragment extends Fragment {
     private void stopPeriodicUpdate() {
         if (updateRunnable != null) {
             handler.removeCallbacks(updateRunnable);
+            updateRunnable = null;
         }
     }
 
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateFromIntent(intent);
+            if (isAdded()) {
+                updateFromIntent(intent);
+            }
         }
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        if (getContext() == null) return;
+        Intent intent = getContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent != null) {
             updateFromIntent(intent);
         }
     }
 
     private void updateFromIntent(Intent intent) {
+        if (!isAdded() || getContext() == null) return;
+
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         int batteryPct = (scale > 0) ? (int) ((level / (float) scale) * 100) : -1;
@@ -178,7 +221,7 @@ public class EnduranceFragment extends Fragment {
 
         // If we don't have a real discharge rate yet, try to estimate from historical data
         if (!hasRealDischargeRate) {
-            dischargeRate = estimateDischargeRateFromHistory(batteryPct, isCharging);
+            estimateDischargeRateFromHistoryAsync(batteryPct, isCharging);
         }
 
         lastBatteryLevel = batteryPct;
@@ -192,50 +235,89 @@ public class EnduranceFragment extends Fragment {
         int hours = (int) remainingHours;
         int minutes = (int) ((remainingHours - hours) * 60);
 
-        if (isCharging) {
-            tvEnduranceHours.setText("--");
-        } else if (hasRealDischargeRate || dischargeRate > 0) {
-            tvEnduranceHours.setText(String.valueOf(hours));
-        } else {
-            tvEnduranceHours.setText("--");
+        if (tvEnduranceHours != null) {
+            if (isCharging) {
+                tvEnduranceHours.setText("--");
+            } else if (hasRealDischargeRate || dischargeRate > 0) {
+                tvEnduranceHours.setText(String.valueOf(hours));
+            } else {
+                tvEnduranceHours.setText("--");
+            }
         }
 
-        tvEnduranceMeta.setText(String.format(Locale.getDefault(),
-                getString(R.string.meta_endurance), batteryPct, dischargeRate));
+        if (tvEnduranceMeta != null) {
+            tvEnduranceMeta.setText(String.format(Locale.getDefault(),
+                    getString(R.string.meta_endurance), batteryPct, dischargeRate));
+        }
 
         // Quick metrics
-        tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        if (hasRealDischargeRate) {
-            tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
-        } else {
-            tvMetricDischarge.setText(String.format(Locale.getDefault(), "~%.1f%%/h", dischargeRate));
+        if (tvMetricBattery != null) {
+            tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         }
-        tvMetricTemp.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+        if (tvMetricDischarge != null) {
+            if (hasRealDischargeRate) {
+                tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
+            } else {
+                tvMetricDischarge.setText(String.format(Locale.getDefault(), "~%.1f%%/h", dischargeRate));
+            }
+        }
+        if (tvMetricTemp != null) {
+            tvMetricTemp.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+        }
 
         // Details
-        tvChargingStatus.setText(chargingStatus);
-        tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
-        tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
+        if (tvChargingStatus != null) tvChargingStatus.setText(chargingStatus);
+        if (tvUsedTime != null) tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
+        if (tvConsumedBattery != null) {
+            tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
+        }
 
         // Estimated time to full charge
-        if (isCharging) {
-            tvEstimatedFull.setText(estimateChargeTimeRemaining(batteryPct));
-        } else {
-            tvEstimatedFull.setText("--");
+        if (tvEstimatedFull != null) {
+            if (isCharging) {
+                tvEstimatedFull.setText(estimateChargeTimeRemaining(batteryPct));
+            } else {
+                tvEstimatedFull.setText("--");
+            }
         }
 
         // Screen-on time estimate based on real discharge rate
-        tvScreenOnTime.setText(formatDuration(SystemClock.uptimeMillis()));
+        if (tvScreenOnTime != null) {
+            tvScreenOnTime.setText(formatDuration(SystemClock.uptimeMillis()));
+        }
+    }
+
+    /**
+     * Estimate discharge rate from historical database records on a background thread.
+     */
+    private void estimateDischargeRateFromHistoryAsync(int currentLevel, boolean isCharging) {
+        if (isCharging) return;
+        if (dbExecutor == null) {
+            dbExecutor = Executors.newSingleThreadExecutor();
+        }
+        dbExecutor.submit(() -> {
+            float rate = estimateDischargeRateFromHistory(currentLevel, isCharging);
+            if (rate > 0 && !hasRealDischargeRate && isAdded()) {
+                handler.post(() -> {
+                    if (!hasRealDischargeRate && isAdded()) {
+                        dischargeRate = rate;
+                    }
+                });
+            }
+        });
     }
 
     /**
      * Estimate discharge rate from historical database records.
      * Looks at recent discharge sessions to compute an average rate.
+     * Must be called from a background thread.
      */
     private float estimateDischargeRateFromHistory(int currentLevel, boolean isCharging) {
         if (isCharging) return 0f;
         try {
-            BatteryHealthApplication app = (BatteryHealthApplication) requireContext().getApplicationContext();
+            Context ctx = getContext();
+            if (ctx == null) return 0f;
+            BatteryHealthApplication app = (BatteryHealthApplication) ctx.getApplicationContext();
             if (app == null) return 0f;
             AppDatabase db = app.getDatabase();
             if (db == null) return 0f;

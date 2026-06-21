@@ -22,6 +22,20 @@ public class ChargingLimitChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("charging_limit")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取充电限制状态时发生异常：context is null")
+                    .setAdvice("请稍后重试。")
+                    .setItemScore(55)
+                    .build();
+        }
         try {
             Context appCtx = context.getApplicationContext();
             BatteryDataManager manager = new BatteryDataManager(appCtx);

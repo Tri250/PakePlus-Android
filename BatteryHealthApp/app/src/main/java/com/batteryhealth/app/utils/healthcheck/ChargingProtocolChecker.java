@@ -74,14 +74,17 @@ public class ChargingProtocolChecker implements IHealthChecker {
             }
 
             if (plugged <= 0 || powerW <= 0.1f) {
+                boolean isPlugged = plugged > 0;
                 return builder
-                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
-                        .setStatus("未充电")
+                        .setSeverity(isPlugged ? HealthCheckResult.SEVERITY_WARNING : HealthCheckResult.SEVERITY_INFO)
+                        .setStatus(isPlugged ? "功率极低" : "未充电")
                         .setValue("--")
                         .setUnit("W")
-                        .setDescription("当前未接入充电器，无法判断充电协议。")
+                        .setDescription(isPlugged
+                                ? "当前已接入充电器但功率极低，可能是数据线或充电器不兼容。"
+                                : "当前未接入充电器，无法判断充电协议。")
                         .setAdvice("使用原装充电器 + 原装数据线可获得最佳充电速度与安全性。")
-                        .setItemScore(75)
+                        .setItemScore(isPlugged ? 55 : 75)
                         .build();
             }
 

@@ -4,8 +4,6 @@ import android.content.Context;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
 
-import java.util.concurrent.ExecutorService;
-
 /**
  * 自检模块检测项的统一接口。
  *

@@ -74,6 +74,25 @@ public class DeviceConfigFragment extends Fragment {
         view.startAnimation(fadeUp);
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        tvDeviceName = null;
+        tvDeviceModel = null;
+        tvAndroidVersion = null;
+        tvProcessor = null;
+        tvRam = null;
+        tvStorage = null;
+        tvScreen = null;
+        tvActivationDate = null;
+        tvUsageDays = null;
+        tvActivationSource = null;
+        tvAvailableRam = null;
+        tvAvailableStorage = null;
+        tvNetworkType = null;
+        switchHealthAlert = null;
+    }
+
     private DeviceInfoManager getDeviceInfoManager() {
         if (deviceInfoManager != null) return deviceInfoManager;
         if (getActivity() instanceof MainActivity) {

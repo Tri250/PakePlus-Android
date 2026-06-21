@@ -4,7 +4,6 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
 import android.os.Build;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
@@ -25,6 +24,20 @@ public class NetworkHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("network_health")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取网络状态时发生异常：context is null")
+                    .setAdvice("请稍后重试。")
+                    .setItemScore(55)
+                    .build();
+        }
         try {
             Context appCtx = context.getApplicationContext();
             ConnectivityManager cm = (ConnectivityManager) appCtx
@@ -44,6 +57,19 @@ public class NetworkHealthChecker implements IHealthChecker {
                         .setDescription("无法访问系统连接服务。")
                         .setAdvice("请确认系统连接服务正常。")
                         .setItemScore(55)
+                        .build();
+            }
+
+            // getActiveNetwork() 和 getNetworkCapabilities() 需要 API 23+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                return builder
+                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                        .setStatus("不支持")
+                        .setValue("--")
+                        .setUnit("")
+                        .setDescription("当前系统版本不支持网络状态检测 API。")
+                        .setAdvice("请升级系统或手动检查网络连接。")
+                        .setItemScore(60)
                         .build();
             }
 
@@ -77,7 +103,11 @@ public class NetworkHealthChecker implements IHealthChecker {
                     && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
             boolean isWifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
             boolean isCellular = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR);
-            boolean isMetered = !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+            // NET_CAPABILITY_NOT_METERED 需要 API 24+，低版本默认按计费处理
+            boolean isMetered = true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                isMetered = !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+            }
 
             String typeName = isWifi ? "Wi-Fi" : (isCellular ? "移动网络" : "其他网络");
             String quality = hasInternet ? "正常" : "受限";

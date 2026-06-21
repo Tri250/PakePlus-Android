@@ -21,6 +21,9 @@ public class CapacityHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return buildInfoResult("读取容量数据时发生异常：context is null", "请稍后重试。");
+        }
         try {
             BatteryDataManager manager = new BatteryDataManager(context.getApplicationContext());
             com.batteryhealth.app.data.model.BatteryInfo info = manager.getBatteryInfo();

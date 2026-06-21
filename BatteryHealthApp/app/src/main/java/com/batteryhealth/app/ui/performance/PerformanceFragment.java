@@ -50,6 +50,11 @@ public class PerformanceFragment extends Fragment {
 
     private View rootView;
 
+    // Cached GPU info (read once, not every 2 seconds)
+    private String gpuRenderer;
+    private String gpuOpenglVersion;
+    private boolean gpuInfoLoaded = false;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -207,8 +212,13 @@ public class PerformanceFragment extends Fragment {
             tvForegroundService.setText(getString(R.string.status_running));
         }
 
-        // GPU
-        loadGpuInfo();
+        // GPU - only load once, then use cached values
+        if (!gpuInfoLoaded) {
+            loadGpuInfo();
+            gpuInfoLoaded = true;
+        } else {
+            applyCachedGpuInfo();
+        }
     }
 
     /**
@@ -300,34 +310,71 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void loadGpuInfo() {
-        if (tvGpuRenderer == null || tvOpenglVersion == null || tvVulkanVersion == null) return;
+        if (tvGpuRenderer == null || tvOpenglVersion == null) return;
 
         try {
-            EGL10 egl = (EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
+            EGL10 egl = (EGL10) EGLContext.getEGL();
             EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
-            egl.eglInitialize(display, new int[2]);
+            if (display == EGL10.EGL_NO_DISPLAY) {
+                gpuRenderer = "Unknown";
+                gpuOpenglVersion = "Unknown";
+                applyCachedGpuInfo();
+                return;
+            }
+
+            int[] version = new int[2];
+            if (!egl.eglInitialize(display, version)) {
+                gpuRenderer = "Unknown";
+                gpuOpenglVersion = "Unknown";
+                egl.eglTerminate(display);
+                applyCachedGpuInfo();
+                return;
+            }
+
             EGLConfig[] configs = new EGLConfig[1];
             int[] numConfigs = new int[1];
-            egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, configs, 1, numConfigs);
+            if (!egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, configs, 1, numConfigs)
+                    || configs[0] == null) {
+                gpuRenderer = "Unknown";
+                gpuOpenglVersion = "Unknown";
+                egl.eglTerminate(display);
+                applyCachedGpuInfo();
+                return;
+            }
+
             EGLContext context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, EGL10.EGL_NONE});
+            if (context == null || context == EGL10.EGL_NO_CONTEXT) {
+                gpuRenderer = "Unknown";
+                gpuOpenglVersion = "Unknown";
+                egl.eglTerminate(display);
+                applyCachedGpuInfo();
+                return;
+            }
+
             egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context);
 
             String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
-            String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
+            String versionStr = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
 
-            if (tvGpuRenderer != null) {
-                tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
-            }
-            if (tvOpenglVersion != null) {
-                tvOpenglVersion.setText(version != null ? version : "Unknown");
-            }
+            gpuRenderer = renderer != null ? renderer : "Unknown";
+            gpuOpenglVersion = versionStr != null ? versionStr : "Unknown";
 
             egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
             egl.eglDestroyContext(display, context);
             egl.eglTerminate(display);
         } catch (Exception e) {
-            if (tvGpuRenderer != null) tvGpuRenderer.setText("Unknown");
-            if (tvOpenglVersion != null) tvOpenglVersion.setText("Unknown");
+            gpuRenderer = "Unknown";
+            gpuOpenglVersion = "Unknown";
+        }
+        applyCachedGpuInfo();
+    }
+
+    private void applyCachedGpuInfo() {
+        if (tvGpuRenderer != null && gpuRenderer != null) {
+            tvGpuRenderer.setText(gpuRenderer);
+        }
+        if (tvOpenglVersion != null && gpuOpenglVersion != null) {
+            tvOpenglVersion.setText(gpuOpenglVersion);
         }
         if (tvVulkanVersion != null) {
             tvVulkanVersion.setText("N/A");

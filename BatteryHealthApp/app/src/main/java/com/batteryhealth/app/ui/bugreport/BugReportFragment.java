@@ -203,7 +203,8 @@ public class BugReportFragment extends Fragment {
     }
 
     private void saveToSharedPreferences(BugReportParser.BugReportData data) {
-        Context ctx = requireContext();
+        Context ctx = getContext();
+        if (ctx == null) return;
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -254,30 +255,31 @@ public class BugReportFragment extends Fragment {
     }
 
     private void feedToBatteryDataManager(BugReportParser.BugReportData data) {
-        if (getActivity() instanceof MainActivity) {
-            MainActivity activity = (MainActivity) getActivity();
-            BatteryDataManager bdm = activity.getBatteryDataManager();
-            if (bdm == null) return;
+        if (!isAdded()) return;
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity == null) return;
+        BatteryDataManager bdm = activity.getBatteryDataManager();
+        if (bdm == null) return;
 
-            // Save design capacity as calibrated capacity if not already set
-            if (data.designCapacityMah.isPresent()) {
-                SharedPreferences prefs = requireContext()
-                        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                int existing = prefs.getInt(BatteryDataManager.PREF_CALIBRATED_CAPACITY, -1);
-                if (existing <= 0) {
-                    prefs.edit()
-                            .putInt(BatteryDataManager.PREF_CALIBRATED_CAPACITY,
-                                    data.designCapacityMah.getAsInt())
-                            .apply();
-                    Log.d(TAG, "Saved bugreport design capacity as calibrated capacity: "
-                            + data.designCapacityMah.getAsInt());
-                }
+        // Save design capacity as calibrated capacity if not already set
+        if (data.designCapacityMah.isPresent()) {
+            Context ctx = getContext();
+            if (ctx == null) return;
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            int existing = prefs.getInt(BatteryDataManager.PREF_CALIBRATED_CAPACITY, -1);
+            if (existing <= 0) {
+                prefs.edit()
+                        .putInt(BatteryDataManager.PREF_CALIBRATED_CAPACITY,
+                                data.designCapacityMah.getAsInt())
+                        .apply();
+                Log.d(TAG, "Saved bugreport design capacity as calibrated capacity: "
+                        + data.designCapacityMah.getAsInt());
             }
-
-            // Refresh data so other fragments pick up the changes
-            bdm.refreshAllDataAsync();
-            Log.d(TAG, "Fed bugreport data to BatteryDataManager");
         }
+
+        // Refresh data so other fragments pick up the changes
+        bdm.refreshAllDataAsync();
+        Log.d(TAG, "Fed bugreport data to BatteryDataManager");
     }
 
     private void onParseComplete(BugReportParser.BugReportData data) {
@@ -352,6 +354,7 @@ public class BugReportFragment extends Fragment {
     }
 
     private void populateDetailedResults(BugReportParser.BugReportData data) {
+        if (!isAdded() || getContext() == null) return;
         llResults.removeAllViews();
 
         List<ResultRow> rows = new ArrayList<>();

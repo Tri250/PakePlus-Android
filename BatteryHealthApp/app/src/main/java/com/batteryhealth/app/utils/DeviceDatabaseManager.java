@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
@@ -26,9 +27,13 @@ public class DeviceDatabaseManager {
     private static final String TAG = "DeviceDatabase";
     private static final String ASSET_FILE = "device_database.json";
 
-    private static DeviceDatabaseManager instance;
+    private static volatile DeviceDatabaseManager instance;
     private volatile DeviceDatabase database;
     private final CountDownLatch loadLatch = new CountDownLatch(1);
+
+    // Cached device entry to avoid repeated linear scans
+    private volatile DeviceEntry cachedDeviceEntry;
+    private volatile boolean deviceEntrySearched = false;
 
     public static synchronized DeviceDatabaseManager getInstance(Context context) {
         if (instance == null) {
@@ -87,10 +92,15 @@ public class DeviceDatabaseManager {
     /**
      * 根据 Build.MODEL 或 Build.DEVICE 匹配机型。
      * 支持：精确 model 匹配、codename 匹配、market_name 匹配、品牌+型号关键词模糊匹配。
+     * Result is cached after first lookup.
      */
     public DeviceEntry findDevice() {
+        if (deviceEntrySearched) {
+            return cachedDeviceEntry;
+        }
         awaitLoaded();
         if (database == null || database.devices == null) {
+            deviceEntrySearched = true;
             return null;
         }
         String rawModel = Build.MODEL != null ? Build.MODEL : "";
@@ -101,57 +111,79 @@ public class DeviceDatabaseManager {
         String deviceNorm = normalizeModel(rawDevice);
         String brandNorm = normalizeBrand(rawBrand);
 
+        DeviceEntry result = null;
+
         // 1. 精确匹配 model（忽略大小写/空格）
         for (DeviceEntry entry : database.devices) {
             if (entry.model != null && normalizeModel(entry.model).equals(modelNorm)) {
-                return entry;
+                result = entry;
+                break;
             }
         }
 
         // 2. 精确匹配 marketing name（中文 model 常见于国产 ROM）
-        for (DeviceEntry entry : database.devices) {
-            if (entry.marketName != null && normalizeModel(entry.marketName).equals(modelNorm)) {
-                return entry;
+        if (result == null) {
+            for (DeviceEntry entry : database.devices) {
+                if (entry.marketName != null && normalizeModel(entry.marketName).equals(modelNorm)) {
+                    result = entry;
+                    break;
+                }
             }
         }
 
         // 3. 匹配 codename/device
-        for (DeviceEntry entry : database.devices) {
-            if (entry.codename != null && !entry.codename.equalsIgnoreCase("unknown")) {
-                String codeNorm = entry.codename.toLowerCase(Locale.ROOT);
-                if (codeNorm.equals(deviceNorm) || deviceNorm.contains(codeNorm)) {
-                    return entry;
+        if (result == null) {
+            for (DeviceEntry entry : database.devices) {
+                if (entry.codename != null && !entry.codename.equalsIgnoreCase("unknown")) {
+                    String codeNorm = entry.codename.toLowerCase(Locale.ROOT);
+                    if (codeNorm.equals(deviceNorm) || deviceNorm.contains(codeNorm)) {
+                        result = entry;
+                        break;
+                    }
                 }
             }
         }
 
         // 4. 模糊匹配：品牌 + 型号关键词
-        for (DeviceEntry entry : database.devices) {
-            if (entry.brand != null) {
-                String entryBrandNorm = normalizeBrand(entry.brand);
-                if (brandNorm.contains(entryBrandNorm) || entryBrandNorm.contains(brandNorm)) {
-                    if (entry.model != null) {
-                        String keyword = extractModelKeyword(entry.model);
-                        if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
-                            return entry;
+        if (result == null) {
+            for (DeviceEntry entry : database.devices) {
+                if (entry.brand != null) {
+                    String entryBrandNorm = normalizeBrand(entry.brand);
+                    if (brandNorm.contains(entryBrandNorm) || entryBrandNorm.contains(brandNorm)) {
+                        if (entry.model != null) {
+                            String keyword = extractModelKeyword(entry.model);
+                            if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
+                                result = entry;
+                                break;
+                            }
                         }
-                    }
-                    if (entry.marketName != null) {
-                        String keyword = extractModelKeyword(entry.marketName);
-                        if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
-                            return entry;
+                        if (result == null && entry.marketName != null) {
+                            String keyword = extractModelKeyword(entry.marketName);
+                            if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
+                                result = entry;
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
-        return null;
+
+        cachedDeviceEntry = result;
+        deviceEntrySearched = true;
+        return result;
     }
 
     private String normalizeModel(String model) {
         if (model == null || model.trim().isEmpty()) return "";
         return model.toLowerCase(Locale.ROOT).replaceAll("[\\s-_]+", "").trim();
     }
+
+    private static final String[] BRAND_KEYS = {
+            "xiaomi", "redmi", "oppo", "oneplus", "realme",
+            "vivo", "iqoo", "honor", "nubia", "redmagic",
+            "小米", "红米", "一加", "真我", "荣耀", "努比亚", "红魔"
+    };
 
     private String normalizeBrand(String brand) {
         if (brand == null || brand.trim().isEmpty()) return "";
@@ -193,9 +225,7 @@ public class DeviceDatabaseManager {
         if (modelOrMarketName == null) return "";
         String norm = normalizeModel(modelOrMarketName);
         // 去掉品牌前缀，只保留型号关键词
-        for (String brand : new String[]{"xiaomi", "redmi", "oppo", "oneplus", "realme",
-                "vivo", "iqoo", "honor", "nubia", "redmagic", "小米", "红米", "一加", "真我",
-                "荣耀", "努比亚", "红魔"}) {
+        for (String brand : BRAND_KEYS) {
             if (norm.startsWith(brand.toLowerCase(Locale.ROOT))) {
                 norm = norm.substring(brand.length());
                 break;
@@ -254,7 +284,10 @@ public class DeviceDatabaseManager {
 
     public List<DeviceEntry> getAllDevices() {
         awaitLoaded();
-        return database != null && database.devices != null ? database.devices : new ArrayList<>();
+        if (database != null && database.devices != null) {
+            return Collections.unmodifiableList(database.devices);
+        }
+        return Collections.emptyList();
     }
 
     public static class DeviceDatabase {

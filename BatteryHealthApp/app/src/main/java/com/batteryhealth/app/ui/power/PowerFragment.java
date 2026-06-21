@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -97,24 +98,56 @@ public class PowerFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        tvWatt = null;
+        tvPowerType = null;
+        progressCharge = null;
+        tvVoltage = null;
+        tvCurrent = null;
+        tvChargeStage = null;
+        tvTemperature = null;
+        tvBatteryLevel = null;
+        tvEstimatedFull = null;
+        tvChargeCount = null;
+        tvAvgPower = null;
+        tvTotalChargeTime = null;
+        tvTotalCharged = null;
+    }
+
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireContext().registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception e) {
+            // Ignore if context is no longer valid
+        }
     }
 
     private void unregisterBatteryReceiver() {
         try {
             requireContext().unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {
+        } catch (Exception ignored) {
         }
     }
 
     private void startPeriodicUpdate() {
+        stopPeriodicUpdate();
         updateRunnable = new Runnable() {
             @Override
             public void run() {
+                if (!isAdded()) return;
                 updateBatteryData();
-                handler.postDelayed(this, 2000);
+                if (isAdded()) {
+                    handler.postDelayed(this, 2000);
+                }
             }
         };
         handler.post(updateRunnable);
@@ -123,17 +156,22 @@ public class PowerFragment extends Fragment {
     private void stopPeriodicUpdate() {
         if (updateRunnable != null) {
             handler.removeCallbacks(updateRunnable);
+            updateRunnable = null;
         }
     }
 
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateBatteryData();
+            if (isAdded()) {
+                updateBatteryData();
+            }
         }
     };
 
     private void updateBatteryData() {
+        if (!isAdded() || getContext() == null) return;
+
         BatteryDataManager bdm = getBatteryDataManager();
         if (bdm == null) return;
 
@@ -157,32 +195,48 @@ public class PowerFragment extends Fragment {
         float tempC = info.getTemperature();
 
         // Update hero
-        tvWatt.setText(isCharging && watt > 0
-                ? String.format(Locale.getDefault(), "%.1f", watt)
-                : "--");
-        String powerType = isCharging ? bdm.getPowerLevelLabel(watt) : getString(R.string.status_not_charging);
-        tvPowerType.setText(powerType);
+        if (tvWatt != null) {
+            tvWatt.setText(isCharging && watt > 0
+                    ? String.format(Locale.getDefault(), "%.1f", watt)
+                    : "--");
+        }
+        if (tvPowerType != null) {
+            String powerType = isCharging ? bdm.getPowerLevelLabel(watt) : getString(R.string.status_not_charging);
+            tvPowerType.setText(powerType);
+        }
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
         // Update details
-        tvVoltage.setText(voltageMv > 0
-                ? String.format(Locale.getDefault(), "%.2f V", voltageV)
-                : "-- V");
-        tvCurrent.setText(currentMa != 0
-                ? String.format(Locale.getDefault(), "%.0f mA", (float) Math.abs(currentMa))
-                : "-- mA");
-        tvChargeStage.setText(isCharging
-                ? (batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast))
-                : "--");
-        tvTemperature.setText(tempC >= 0
-                ? String.format(Locale.getDefault(), "%.1f°C", tempC)
-                : "--°C");
-        tvBatteryLevel.setText(batteryPct >= 0
-                ? String.format(Locale.getDefault(), "%d%%", batteryPct)
-                : "--%");
-        tvEstimatedFull.setText(isCharging && currentA > 0
-                ? calculateTimeToFull(batteryPct, currentA, voltageV)
-                : "--");
+        if (tvVoltage != null) {
+            tvVoltage.setText(voltageMv > 0
+                    ? String.format(Locale.getDefault(), "%.2f V", voltageV)
+                    : "-- V");
+        }
+        if (tvCurrent != null) {
+            tvCurrent.setText(currentMa != 0
+                    ? String.format(Locale.getDefault(), "%.0f mA", (float) Math.abs(currentMa))
+                    : "-- mA");
+        }
+        if (tvChargeStage != null) {
+            tvChargeStage.setText(isCharging
+                    ? (batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast))
+                    : "--");
+        }
+        if (tvTemperature != null) {
+            tvTemperature.setText(tempC >= 0
+                    ? String.format(Locale.getDefault(), "%.1f°C", tempC)
+                    : "--°C");
+        }
+        if (tvBatteryLevel != null) {
+            tvBatteryLevel.setText(batteryPct >= 0
+                    ? String.format(Locale.getDefault(), "%d%%", batteryPct)
+                    : "--%");
+        }
+        if (tvEstimatedFull != null) {
+            tvEstimatedFull.setText(isCharging && currentA > 0
+                    ? calculateTimeToFull(batteryPct, currentA, voltageV)
+                    : "--");
+        }
     }
 
     /**
@@ -191,7 +245,9 @@ public class PowerFragment extends Fragment {
     private void loadChargingHistory() {
         new Thread(() -> {
             try {
-                BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
+                Context ctx = getContext();
+                if (ctx == null) return;
+                BatteryHealthApplication app = (BatteryHealthApplication) ctx.getApplicationContext();
                 if (app == null) return;
                 PowerHistoryDao dao = app.getDatabase().powerHistoryDao();
                 if (dao == null) return;
@@ -242,26 +298,36 @@ public class PowerFragment extends Fragment {
                 int finalTotalChargeMin = totalChargeMin;
                 int finalTotalChargedPct = totalChargedPct;
                 handler.post(() -> {
-                    tvChargeCount.setText(finalChargeSessionCount > 0
-                            ? String.format(Locale.getDefault(), "%d", finalChargeSessionCount)
-                            : "--");
-                    tvAvgPower.setText(finalAvgPower > 0
-                            ? String.format(Locale.getDefault(), "%.1f W", finalAvgPower)
-                            : "-- W");
-                    tvTotalChargeTime.setText(finalTotalChargeMin > 0
-                            ? String.format(Locale.getDefault(), "%d分", finalTotalChargeMin)
-                            : "--");
-                    tvTotalCharged.setText(finalTotalChargedPct > 0
-                            ? String.format(Locale.getDefault(), "%d%%", finalTotalChargedPct)
-                            : "--");
+                    if (!isAdded()) return;
+                    if (tvChargeCount != null) {
+                        tvChargeCount.setText(finalChargeSessionCount > 0
+                                ? String.format(Locale.getDefault(), "%d", finalChargeSessionCount)
+                                : "--");
+                    }
+                    if (tvAvgPower != null) {
+                        tvAvgPower.setText(finalAvgPower > 0
+                                ? String.format(Locale.getDefault(), "%.1f W", finalAvgPower)
+                                : "-- W");
+                    }
+                    if (tvTotalChargeTime != null) {
+                        tvTotalChargeTime.setText(finalTotalChargeMin > 0
+                                ? String.format(Locale.getDefault(), "%d分", finalTotalChargeMin)
+                                : "--");
+                    }
+                    if (tvTotalCharged != null) {
+                        tvTotalCharged.setText(finalTotalChargedPct > 0
+                                ? String.format(Locale.getDefault(), "%d%%", finalTotalChargedPct)
+                                : "--");
+                    }
                 });
             } catch (Exception e) {
                 // Database not available, show placeholders
                 handler.post(() -> {
-                    tvChargeCount.setText("--");
-                    tvAvgPower.setText("-- W");
-                    tvTotalChargeTime.setText("--");
-                    tvTotalCharged.setText("--");
+                    if (!isAdded()) return;
+                    if (tvChargeCount != null) tvChargeCount.setText("--");
+                    if (tvAvgPower != null) tvAvgPower.setText("-- W");
+                    if (tvTotalChargeTime != null) tvTotalChargeTime.setText("--");
+                    if (tvTotalCharged != null) tvTotalCharged.setText("--");
                 });
             }
         }).start();

@@ -1,11 +1,7 @@
 package com.batteryhealth.app.utils.healthcheck;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.BatteryManager;
 
-import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryDataManager;
 

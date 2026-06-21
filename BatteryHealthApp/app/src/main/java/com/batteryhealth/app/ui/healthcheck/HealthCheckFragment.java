@@ -69,7 +69,10 @@ public class HealthCheckFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         Context ctx = getContext();
-        if (ctx == null) ctx = requireActivity();
+        if (ctx == null) {
+            // Fallback: use a plain View if no context available
+            return new View(requireActivity());
+        }
         TextView tv = new TextView(ctx);
         tv.setText(getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage()));
         tv.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
@@ -95,7 +98,7 @@ public class HealthCheckFragment extends Fragment {
             recyclerResults = view.findViewById(R.id.recycler_results);
 
             adapter = new HealthCheckAdapter();
-            recyclerResults.setLayoutManager(new LinearLayoutManager(getContext()));
+            recyclerResults.setLayoutManager(new LinearLayoutManager(requireContext()));
             recyclerResults.setAdapter(adapter);
             recyclerResults.setNestedScrollingEnabled(true);
 
@@ -115,16 +118,18 @@ public class HealthCheckFragment extends Fragment {
         if (engine == null) return;
         if (engine.isRunning()) return;
 
-        tvActionCheck.setEnabled(false);
-        tvActionCheck.setText(R.string.health_check_action_checking);
+        if (tvActionCheck != null) {
+            tvActionCheck.setEnabled(false);
+            tvActionCheck.setText(R.string.health_check_action_checking);
+        }
         if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
         if (tvScanningStatus != null) {
             tvScanningStatus.setVisibility(View.VISIBLE);
             tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
         }
         // 综合评分先重置
-        tvOverallScore.setText("--");
-        tvOverallLabel.setText(R.string.health_check_label_running);
+        if (tvOverallScore != null) tvOverallScore.setText("--");
+        if (tvOverallLabel != null) tvOverallLabel.setText(R.string.health_check_label_running);
         if (progressOverall != null) {
             progressOverall.setProgress(0);
         }
@@ -180,8 +185,10 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void finishCheckingUI() {
-        tvActionCheck.setEnabled(true);
-        tvActionCheck.setText(R.string.health_check_action_recheck);
+        if (tvActionCheck != null) {
+            tvActionCheck.setEnabled(true);
+            tvActionCheck.setText(R.string.health_check_action_recheck);
+        }
         if (progressScanning != null) progressScanning.setVisibility(View.GONE);
         if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.GONE);
     }

@@ -4,9 +4,9 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.BufferedReader;
 
 /**
  * 充电协议识别工具：
@@ -14,7 +14,7 @@ import java.io.BufferedReader;
  *
  * 支持的协议：
  *  - QC 2.0/3.0/4+/5 (Qualcomm Quick Charge)
- *  - PD 2.0/3.0/3.1 EPR (USB Power Delivery, 含 PPS, 最高 240W)
+ *  - PD 2.0/3.0/3.1 Epr (USB Power Delivery, 含 PPS, 最高 240W)
  *  - UFCS 融合快充 (中国跨品牌快充国家标准)
  *  - SCP / FCP (Huawei)
  *  - VOOC / SuperVOOC / Dart (OPPO / realme)
@@ -67,8 +67,8 @@ public class ChargeProtocolDetector {
         String powerDelivery = sysProperty("persist.sys.pd");
         String ufcsProp = sysProperty("persist.sys.ufcs");
         // 3. 制造商
-        String mfg = Build.MANUFACTURER.toLowerCase();
-        String brand = Build.BRAND.toLowerCase();
+        String mfg = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase() : "";
+        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase() : "";
 
         boolean bypass = "1".equals(bypassSysfs);
         boolean fast = currentPowerW >= 18.0f;
@@ -84,8 +84,8 @@ public class ChargeProtocolDetector {
             else result = "UFCS 融合快充";
             fast = true;
         }
-        // 高通 QC
-        else if ("Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER)
+        // 高通 QC — Build.SOC_MANUFACTURER requires API 31+
+        else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && "Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER))
                 || "qc".equalsIgnoreCase(quickCharge) || "qc3".equalsIgnoreCase(quickCharge)
                 || "qc4".equalsIgnoreCase(quickCharge) || "qcb".equalsIgnoreCase(quickCharge)
                 || (quickChargeType != null && quickChargeType.toLowerCase().contains("qc"))) {
@@ -95,8 +95,8 @@ public class ChargeProtocolDetector {
             else if (currentPowerW >= 10) result = "QC 2.0";
             fast = true;
         }
-        // USB PD
-        else if (powerDelivery != null && powerDelivery.toLowerCase().contains("pd")
+        // USB PD — explicit parentheses for operator precedence clarity
+        else if ((powerDelivery != null && powerDelivery.toLowerCase().contains("pd"))
                 || (pdType != null && pdType.toLowerCase().contains("pd"))) {
             if ((pdType != null && (pdType.toLowerCase().contains("pd3.1") || pdType.toLowerCase().contains("epr")))
                     || currentPowerW >= 140) result = "USB PD 3.1 EPR (240W)";

@@ -61,10 +61,10 @@ public class ChargingMonitorService extends Service {
 
     private Handler handler;
     private ExecutorService executor;
-    private String currentSessionId;
+    private volatile String currentSessionId;
     private volatile boolean isCharging = false;
     private boolean foregroundStarted = false;
-    private long chargingStartTime;
+    private volatile long chargingStartTime;
     private SharedPreferences prefs;
 
     // 充电统计数据

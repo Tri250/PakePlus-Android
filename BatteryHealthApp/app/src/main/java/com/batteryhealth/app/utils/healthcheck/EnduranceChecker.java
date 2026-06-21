@@ -66,7 +66,7 @@ public class EnduranceChecker implements IHealthChecker {
                     .setTitle(getName())
                     .setCategory(getCategory());
 
-            if (level <= 0 || scale <= 0) {
+            if (level < 0 || scale <= 0) {
                 return builder
                         .setSeverity(HealthCheckResult.SEVERITY_INFO)
                         .setStatus("无数据")

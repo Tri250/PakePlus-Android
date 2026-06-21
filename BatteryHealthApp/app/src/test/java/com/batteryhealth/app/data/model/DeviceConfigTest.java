@@ -2,6 +2,8 @@ package com.batteryhealth.app.data.model;
 
 import org.junit.Test;
 
+import java.util.Locale;
+
 import static org.junit.Assert.*;
 
 /**
@@ -27,34 +29,67 @@ public class DeviceConfigTest {
     }
 
     @Test
+    public void testGetFormattedBrand_emptyReturnsUnknown() {
+        DeviceConfig config = new DeviceConfig();
+        config.setBrand("");
+        assertEquals("Unknown", config.getFormattedBrand());
+    }
+
+    @Test
     public void testGetFullModelName() {
         DeviceConfig config = new DeviceConfig();
         config.setBrand("xiaomi");
-        config.setModel("Xiaomi 15");
-        assertEquals("Xiaomi Xiaomi 15", config.getFullModelName());
+        config.setModel("15");
+        assertEquals("Xiaomi 15", config.getFullModelName());
+    }
+
+    @Test
+    public void testGetFullModelName_nullModel() {
+        DeviceConfig config = new DeviceConfig();
+        config.setBrand("samsung");
+        config.setModel(null);
+        assertEquals("Samsung Unknown", config.getFullModelName());
     }
 
     @Test
     public void testGetFormattedMemory() {
-        DeviceConfig config = new DeviceConfig();
-        config.setTotalMemory(8192);
-        assertEquals("8.0 GB", config.getFormattedMemory());
+        Locale original = Locale.getDefault();
+        Locale.setDefault(Locale.US);
+        try {
+            DeviceConfig config = new DeviceConfig();
+            // 8192 MB → marketing 8 GB
+            config.setTotalMemory(8192);
+            assertEquals("8 GB", config.getFormattedMemory());
 
-        config.setTotalMemory(512);
-        assertEquals("512 MB", config.getFormattedMemory());
+            // 512 MB → below 1 GB marketing threshold, falls back to MB display
+            config.setTotalMemory(512);
+            assertEquals("512 MB", config.getFormattedMemory());
 
-        config.setTotalMemory(0);
-        assertEquals("Unknown", config.getFormattedMemory());
+            // 0 → Unknown
+            config.setTotalMemory(0);
+            assertEquals("Unknown", config.getFormattedMemory());
+        } finally {
+            Locale.setDefault(original);
+        }
     }
 
     @Test
     public void testGetFormattedStorage() {
-        DeviceConfig config = new DeviceConfig();
-        config.setTotalStorage(256);
-        assertEquals("256 GB", config.getFormattedStorage());
+        Locale original = Locale.getDefault();
+        Locale.setDefault(Locale.US);
+        try {
+            DeviceConfig config = new DeviceConfig();
+            config.setTotalStorage(256);
+            assertEquals("256 GB", config.getFormattedStorage());
 
-        config.setTotalStorage(0);
-        assertEquals("Unknown", config.getFormattedStorage());
+            config.setTotalStorage(64);
+            assertEquals("64 GB", config.getFormattedStorage());
+
+            config.setTotalStorage(0);
+            assertEquals("Unknown", config.getFormattedStorage());
+        } finally {
+            Locale.setDefault(original);
+        }
     }
 
     @Test
@@ -67,12 +102,18 @@ public class DeviceConfigTest {
 
     @Test
     public void testGetFormattedScreenSize() {
-        DeviceConfig config = new DeviceConfig();
-        config.setScreenSize(6.73f);
-        assertEquals("6.7\"", config.getFormattedScreenSize());
+        Locale original = Locale.getDefault();
+        Locale.setDefault(Locale.US);
+        try {
+            DeviceConfig config = new DeviceConfig();
+            config.setScreenSize(6.73f);
+            assertEquals("6.7\"", config.getFormattedScreenSize());
 
-        config.setScreenSize(0);
-        assertEquals("Unknown", config.getFormattedScreenSize());
+            config.setScreenSize(0);
+            assertEquals("Unknown", config.getFormattedScreenSize());
+        } finally {
+            Locale.setDefault(original);
+        }
     }
 
     @Test
@@ -93,6 +134,9 @@ public class DeviceConfigTest {
 
         config.setBrand("samsung");
         assertFalse(config.isDomesticBrand());
+
+        config.setBrand(null);
+        assertFalse(config.isDomesticBrand());
     }
 
     @Test
@@ -100,5 +144,15 @@ public class DeviceConfigTest {
         DeviceConfig config = new DeviceConfig();
         config.setGpuInfo("Adreno 830");
         assertEquals("Adreno 830", config.getGpuInfo());
+    }
+
+    @Test
+    public void testSupportedAbisEncapsulation() {
+        DeviceConfig config = new DeviceConfig();
+        config.setSupportedAbis(new String[]{"arm64-v8a", "armeabi-v7a"});
+        String[] abis = config.getSupportedAbis();
+        abis[0] = "modified";
+        // Getter returns a copy, so internal state should not be affected
+        assertArrayEquals(new String[]{"arm64-v8a", "armeabi-v7a"}, config.getSupportedAbis());
     }
 }

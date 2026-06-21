@@ -3,6 +3,7 @@ package com.batteryhealth.app.utils;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.provider.Settings;
@@ -16,12 +17,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 电池数据管理器（重写版 v4.5.0 (Android 16 / ColorOS 16)）。
@@ -44,22 +51,32 @@ public class BatteryDataManager {
 
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
-    private ActivationDateHelper.Result activation;
+    private final SharedPreferences prefs;
+    private volatile ActivationDateHelper.Result activation;
 
     private volatile BatteryInfo currentBatteryInfo;
-    private int usageDays = -1;
+    private volatile int usageDays = -1;
 
-    private String chargingStatusText;
-    private String healthSourceText;
-    private String batterySourceText;
+    // Thread-safe text fields: written from background, read from UI
+    private volatile String chargingStatusText;
+    private volatile String healthSourceText;
+    private volatile String batterySourceText;
 
     // 中值滤波缓冲
     private final List<Float> healthBuffer = new ArrayList<>();
     private static final int MEDIAN_WINDOW = 5;
 
+    // Shared executor for async operations instead of raw Thread creation
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "BatteryDataManager-worker");
+        t.setDaemon(true);
+        return t;
+    });
+
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
+        this.prefs = this.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.chargingStatusText = this.context.getString(R.string.status_unknown);
         this.healthSourceText = this.context.getString(R.string.status_unknown);
         this.batterySourceText = this.context.getString(R.string.status_unknown);
@@ -301,7 +318,7 @@ public class BatteryDataManager {
         int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
         // 部分国产设备返回 µV（数值远超 5000）
         if (voltageMv > 10000) voltageMv = voltageMv / 1000;
-        if (voltageMv > 0 && voltageMv >= 2500 && voltageMv <= 6000) return voltageMv;
+        if (voltageMv >= 2500 && voltageMv <= 6000) return voltageMv;
 
         long voltageSysfs = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
         if (voltageSysfs > 1000000) return (int) (voltageSysfs / 1000); // µV
@@ -345,7 +362,6 @@ public class BatteryDataManager {
 
     private int getDesignCapacity(String[] sourceHolder) {
         // 1. 用户校准（最高优先级）
-        android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         int calibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1);
         if (calibrated > 0) {
             if (sourceHolder != null) sourceHolder[0] = "user_calibrated";
@@ -485,14 +501,16 @@ public class BatteryDataManager {
             boolean wasLow = false;
             boolean wasCharging = false;
 
+            // Create SimpleDateFormat once outside the loop for performance
+            SimpleDateFormat dayFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+
             for (BatteryInfo info : records) {
                 int level = info.getLevel();
                 int status = info.getStatus();
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                         || status == BatteryManager.BATTERY_STATUS_FULL;
                 long ts = info.getTimestamp();
-                String day = new java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-                        .format(new java.util.Date(ts));
+                String day = dayFormat.format(new Date(ts));
 
                 if (level < 20) wasLow = true;
                 if (wasLow && isCharging) wasCharging = true;
@@ -665,7 +683,6 @@ public class BatteryDataManager {
                 r.usageLossPercent = Math.max(0f, 100f - ratio) * 0.1f;
             }
 
-            android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             boolean isCalibrated = prefs.getInt(PREF_CALIBRATED_CAPACITY, -1) > 0;
             r.confidence = isCalibrated ? 0.9f : 0.95f;
             r.healthLevel = getHealthLevel(r.healthPercentage);
@@ -963,7 +980,7 @@ public class BatteryDataManager {
         if (intent != null) {
             int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
             if (voltageMv > 10000) voltageMv = voltageMv / 1000;
-            if (voltageMv > 0 && voltageMv >= 2500 && voltageMv <= 6000) return voltageMv;
+            if (voltageMv >= 2500 && voltageMv <= 6000) return voltageMv;
         }
         long raw = readSysfsLong(VOLTAGE_NOW_PATHS, -1);
         if (raw > 1000000) return (int) (raw / 1000);
@@ -995,11 +1012,12 @@ public class BatteryDataManager {
     }
 
     public void refreshFromStickyIntent() {
-        currentBatteryInfo = getBatteryInfo();
-        if (currentBatteryInfo != null) {
-            chargingStatusText = getStatusString(currentBatteryInfo.getStatus());
-            healthSourceText = formatHealthSource(currentBatteryInfo);
-            batterySourceText = formatBatterySource(currentBatteryInfo);
+        BatteryInfo info = getBatteryInfo();
+        currentBatteryInfo = info;
+        if (info != null) {
+            chargingStatusText = getStatusString(info.getStatus());
+            healthSourceText = formatHealthSource(info);
+            batterySourceText = formatBatterySource(info);
         }
     }
 
@@ -1009,7 +1027,7 @@ public class BatteryDataManager {
     }
 
     public void refreshAllDataAsync() {
-        new Thread(this::refreshFromStickyIntent).start();
+        executor.execute(this::refreshFromStickyIntent);
     }
 
     public void setUsageDays(int days) {

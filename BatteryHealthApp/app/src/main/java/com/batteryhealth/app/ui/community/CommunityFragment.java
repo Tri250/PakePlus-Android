@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.community;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -24,7 +25,7 @@ public class CommunityFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         if (!isAdded() || getContext() == null) {
             Log.w(TAG, "Fragment not attached, returning empty view");
-            return new View(requireContext());
+            return new View(inflater.getContext());
         }
         try {
             return inflater.inflate(R.layout.fragment_community, container, false);
@@ -37,7 +38,8 @@ public class CommunityFragment extends Fragment {
     private View createErrorView(Exception e) {
         Context context = getContext();
         if (context == null) {
-            context = requireContext();
+            // Cannot create a proper error view without context; return a minimal view
+            return new View(requireActivity());
         }
         TextView errorView = new TextView(context);
         String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(),

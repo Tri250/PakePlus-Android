@@ -48,7 +48,12 @@ public class ErrorActivity extends AppCompatActivity {
 
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String message = getIntent().getStringExtra(EXTRA_MESSAGE);
-        Throwable throwable = (Throwable) getIntent().getSerializableExtra(EXTRA_THROWABLE);
+        Throwable throwable = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            throwable = (Throwable) getIntent().getSerializableExtra(EXTRA_THROWABLE, Throwable.class);
+        } else {
+            throwable = (Throwable) getIntent().getSerializableExtra(EXTRA_THROWABLE);
+        }
 
         TextView tvTitle = findViewById(R.id.tv_error_title);
         TextView tvMessage = findViewById(R.id.tv_error_message);

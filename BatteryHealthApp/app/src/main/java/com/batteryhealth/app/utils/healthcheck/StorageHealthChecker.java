@@ -24,6 +24,9 @@ public class StorageHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return buildInfoResult("读取存储数据时发生异常：context is null", "请稍后重试。");
+        }
         try {
             StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
             long totalBytes = stat.getTotalBytes();
@@ -33,12 +36,7 @@ public class StorageHealthChecker implements IHealthChecker {
                 return buildInfoResult("无法读取存储参数。", "请稍后重试。");
             }
 
-            float usedPct;
-            if (totalBytes == 0) {
-                return buildInfoResult("存储总容量为 0，无法计算使用率。", "请稍后重试。");
-            } else {
-                usedPct = (1f - (float) availBytes / totalBytes) * 100f;
-            }
+            float usedPct = (1f - (float) availBytes / totalBytes) * 100f;
             long availGb = availBytes / (1024 * 1024 * 1024);
             long totalGb = totalBytes / (1024 * 1024 * 1024);
 

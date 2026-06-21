@@ -40,7 +40,7 @@ public class DeviceInfoManager {
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
 
-    private DeviceConfig cachedConfig;
+    private volatile DeviceConfig cachedConfig;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -76,8 +76,9 @@ public class DeviceInfoManager {
         if (cachedConfig != null) {
             return cachedConfig;
         }
-        cachedConfig = buildDeviceConfig();
-        return cachedConfig;
+        DeviceConfig config = buildDeviceConfig();
+        cachedConfig = config;
+        return config;
     }
 
     /**
@@ -91,6 +92,7 @@ public class DeviceInfoManager {
         executor.submit(() -> {
             try {
                 DeviceConfig config = buildDeviceConfig();
+                cachedConfig = config;
                 mainHandler.post(() -> callback.onConfigLoaded(config));
             } catch (Exception e) {
                 Log.e(TAG, "Error building device config async", e);
@@ -461,8 +463,8 @@ public class DeviceInfoManager {
             }
         }
 
-        // Android 16+ 检测存储加密状态
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+        // Android 16+ 检测存储加密状态 (API 36)
+        if (Build.VERSION.SDK_INT >= 36) {
             try {
                 StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
                 if (sm != null) {
@@ -532,10 +534,19 @@ public class DeviceInfoManager {
                 android.graphics.Rect bounds = windowMetrics.getBounds();
                 config.setScreenWidth(bounds.width());
                 config.setScreenHeight(bounds.height());
-                // 从 WindowMetrics 获取密度
-                float density = windowMetrics.getDensity();
-                config.setScreenDensity(density);
-                config.setScreenDpi((int) (density * 160f));
+
+                // getDensity() was added in API 33; fall back to DisplayMetrics on API 30-32
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    float density = windowMetrics.getDensity();
+                    config.setScreenDensity(density);
+                    config.setScreenDpi((int) (density * 160f));
+                } else {
+                    // API 30-32: fall back to DisplayMetrics for density
+                    DisplayMetrics metrics = new DisplayMetrics();
+                    wm.getDefaultDisplay().getMetrics(metrics);
+                    config.setScreenDensity(metrics.density);
+                    config.setScreenDpi(metrics.densityDpi);
+                }
             } catch (Exception e) {
                 Log.d(TAG, "WindowMetrics API failed, fallback to getRealMetrics: " + e.getMessage());
                 // 回退到旧 API
@@ -780,7 +791,8 @@ public class DeviceInfoManager {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("Hardware")) {
-                    return line.split(":", 2)[1].trim();
+                    String[] parts = line.split(":", 2);
+                    return parts.length > 1 ? parts[1].trim() : null;
                 }
             }
         } catch (IOException ignored) {

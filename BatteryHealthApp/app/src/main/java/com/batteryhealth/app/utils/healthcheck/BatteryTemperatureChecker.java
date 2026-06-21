@@ -29,6 +29,20 @@ public class BatteryTemperatureChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return new HealthCheckResult.Builder()
+                    .setId("battery_temperature")
+                    .setTitle(getName())
+                    .setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                    .setStatus("读取失败")
+                    .setValue("--")
+                    .setUnit("")
+                    .setDescription("读取电池温度时发生异常：context is null")
+                    .setAdvice("请稍后重试。")
+                    .setItemScore(55)
+                    .build();
+        }
         try {
             Intent battery = context.getApplicationContext()
                     .registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));

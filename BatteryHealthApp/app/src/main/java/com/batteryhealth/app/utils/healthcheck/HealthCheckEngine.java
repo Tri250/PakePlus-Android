@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -44,7 +45,7 @@ public class HealthCheckEngine {
     private final List<IHealthChecker> checkers = new CopyOnWriteArrayList<>();
     private final ExecutorService executor;
 
-    private volatile boolean running = false;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     public interface Callback {
         /** 进度回调：0-100。在任意线程上被调用。 */
@@ -97,7 +98,7 @@ public class HealthCheckEngine {
     }
 
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
 
     /**
@@ -107,15 +108,14 @@ public class HealthCheckEngine {
      * @param callback 进度与完成回调；可为 null，但强烈建议提供。
      */
     public void startCheck(final Context context, final Callback callback) {
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             if (callback != null) callback.onError("检测正在运行中，请稍候再试。");
             return;
         }
-        running = true;
 
         final Context appCtx = context != null ? context.getApplicationContext() : null;
         if (appCtx == null) {
-            running = false;
+            running.set(false);
             if (callback != null) callback.onError("上下文不可用。");
             return;
         }
@@ -176,7 +176,7 @@ public class HealthCheckEngine {
                     }
                 });
 
-                running = false;
+                running.set(false);
                 if (callback != null) {
                     try {
                         callback.onCompleted(collector);
@@ -243,21 +243,19 @@ public class HealthCheckEngine {
                 }
                 return buildAppDetailsIntent(pkg);
             case HealthCheckResult.FIX_ACTION_POWER_USAGE_DETAILS:
-                Intent pi = new Intent(Intent.ACTION_POWER_USAGE_SUMMARY);
-                pi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                return pi;
+                return new Intent(Intent.ACTION_POWER_USAGE_SUMMARY);
             case HealthCheckResult.FIX_ACTION_CHARGING_LIMIT:
                 // 系统无统一的充电限制页面，尝试跳转到电池 saver 设置页（部分厂商支持）。
                 // 若不可用则回退到应用详情页。
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    Intent battIntent = new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
-                    battIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    // 返回 intent 让 applyFix 调用 startActivity；启动失败的兜底在 default 分支。
-                    return battIntent;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    return new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
                 }
                 return buildAppDetailsIntent(pkg);
             case HealthCheckResult.FIX_ACTION_BATTERY_SAVER:
-                return new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    return new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
+                }
+                return buildAppDetailsIntent(pkg);
             case HealthCheckResult.FIX_ACTION_NETWORK_SETTINGS:
                 return new Intent(Settings.ACTION_WIRELESS_SETTINGS);
             case HealthCheckResult.FIX_ACTION_APPLICATION_DETAILS:

@@ -11,6 +11,9 @@ import java.lang.annotation.RetentionPolicy;
  * 本类为纯数据模型，不依赖 Android 运行环境，便于在测试与引擎之间传递。
  * 每个 {@code HealthCheckResult} 描述了一个可独立判定的检查项（如电池
  * 健康度、充电协议、通知权限等）的当前状态与建议。
+ *
+ * 注意：{@link #toColorRes()} 方法引用了 R 资源，属于 UI 层关注点，
+ * 理想情况下应移至 UI 工具类；当前保留以兼容已有调用方。
  */
 public class HealthCheckResult {
 
@@ -133,6 +136,12 @@ public class HealthCheckResult {
         public Builder setTimestamp(long timestamp) { this.timestamp = timestamp; return this; }
 
         public HealthCheckResult build() {
+            if (id == null || id.isEmpty()) {
+                throw new IllegalStateException("id must not be null or empty");
+            }
+            if (title == null || title.isEmpty()) {
+                throw new IllegalStateException("title must not be null or empty");
+            }
             return new HealthCheckResult(this);
         }
     }

@@ -71,12 +71,12 @@ public class BatteryMonitorService extends Service {
     public static final String PREF_DEGRADATION_THRESHOLD = "degradation_threshold";
 
     private Handler handler;
-    private BatteryInfo currentBatteryInfo;
+    private volatile BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
     private volatile boolean isRunning = false;
     private long lastSaveTime = 0;
     private SharedPreferences prefs;
-    private BatteryInfo lastSavedBatteryInfo;
+    private volatile BatteryInfo lastSavedBatteryInfo;
     private boolean healthCheckScheduled = false;
     private BatteryDataManager batteryDataManager;
     private ExecutorService ioExecutor;

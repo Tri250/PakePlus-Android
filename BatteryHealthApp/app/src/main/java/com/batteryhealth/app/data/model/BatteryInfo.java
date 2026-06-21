@@ -20,81 +20,87 @@ import androidx.room.ColumnInfo;
                 @Index(value = {"health_percentage"})
         })
 public class BatteryInfo {
-    
+
+    /** 充电状态常量，对应 BatteryManager.BATTERY_STATUS_* */
+    public static final int STATUS_CHARGING = 2;
+    public static final int STATUS_DISCHARGING = 3;
+    public static final int STATUS_NOT_CHARGING = 4;
+    public static final int STATUS_FULL = 5;
+
     @PrimaryKey(autoGenerate = true)
     private long id;
-    
+
     @ColumnInfo(name = "timestamp")
     private long timestamp;
-    
+
     // 电池容量信息
     @ColumnInfo(name = "design_capacity")
     private int designCapacity; // 设计容量 (mAh)
-    
+
     @ColumnInfo(name = "current_capacity")
     private int currentCapacity; // 当前容量 (mAh)
-    
+
     @ColumnInfo(name = "charge_counter")
     private int chargeCounter; // 充电计数器 (uAh)
-    
+
     // 健康度
     @ColumnInfo(name = "health_percentage")
     private float healthPercentage; // 健康度百分比
-    
+
     @ColumnInfo(name = "health_status")
     private String healthStatus; // 健康状态: good, normal, warning, poor
-    
+
     // 循环次数
     @ColumnInfo(name = "cycle_count")
     private int cycleCount; // 充电循环次数
-    
+
     // 温度
     @ColumnInfo(name = "temperature")
     private float temperature; // 电池温度 (°C)
-    
+
     // 电压
     @ColumnInfo(name = "voltage")
     private float voltage; // 电压 (mV)
-    
+
     // 电流
     @ColumnInfo(name = "current_now")
     private int currentNow; // 当前电流 (uA)
-    
+
     // 充电状态
     @ColumnInfo(name = "status")
     private int status; // 充电状态
-    
+
     @ColumnInfo(name = "plugged")
     private int plugged; // 充电方式
-    
+
     @ColumnInfo(name = "level")
     private int level; // 电量百分比
-    
+
     // 电池技术
     @ColumnInfo(name = "technology")
     private String technology; // 电池技术 (Li-ion等)
-    
+
     // 电池溯源
     @ColumnInfo(name = "battery_source")
     private String batterySource; // 电池来源: original, third_party, unknown
-    
+
     @ColumnInfo(name = "battery_serial")
     private String batterySerial; // 电池序列号
-    
+
     // 充电功率
     @ColumnInfo(name = "charging_power")
     private float chargingPower; // 充电功率 (W)
-    
+
     @ColumnInfo(name = "charging_voltage")
     private float chargingVoltage; // 充电电压 (V)
-    
+
     @ColumnInfo(name = "charging_current")
     private float chargingCurrent; // 充电电流 (A)
-    
+
     // 设备信息
     @ColumnInfo(name = "device_model")
     private String deviceModel; // 设备型号
-    
+
     @ColumnInfo(name = "device_brand")
     private String deviceBrand; // 设备品牌
 
@@ -141,180 +147,180 @@ public class BatteryInfo {
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
-    
+
     // Getters and Setters
     public long getId() {
         return id;
     }
-    
+
     public void setId(long id) {
         this.id = id;
     }
-    
+
     public long getTimestamp() {
         return timestamp;
     }
-    
+
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
-    
+
     public int getDesignCapacity() {
         return designCapacity;
     }
-    
+
     public void setDesignCapacity(int designCapacity) {
         this.designCapacity = designCapacity;
     }
-    
+
     public int getCurrentCapacity() {
         return currentCapacity;
     }
-    
+
     public void setCurrentCapacity(int currentCapacity) {
         this.currentCapacity = currentCapacity;
     }
-    
+
     public int getChargeCounter() {
         return chargeCounter;
     }
-    
+
     public void setChargeCounter(int chargeCounter) {
         this.chargeCounter = chargeCounter;
     }
-    
+
     public float getHealthPercentage() {
         return healthPercentage;
     }
-    
+
     public void setHealthPercentage(float healthPercentage) {
-        this.healthPercentage = healthPercentage;
+        this.healthPercentage = Math.max(0, Math.min(100, healthPercentage));
     }
-    
+
     public String getHealthStatus() {
         return healthStatus;
     }
-    
+
     public void setHealthStatus(String healthStatus) {
         this.healthStatus = healthStatus;
     }
-    
+
     public int getCycleCount() {
         return cycleCount;
     }
-    
+
     public void setCycleCount(int cycleCount) {
         this.cycleCount = cycleCount;
     }
-    
+
     public float getTemperature() {
         return temperature;
     }
-    
+
     public void setTemperature(float temperature) {
         this.temperature = temperature;
     }
-    
+
     public float getVoltage() {
         return voltage;
     }
-    
+
     public void setVoltage(float voltage) {
         this.voltage = voltage;
     }
-    
+
     public int getCurrentNow() {
         return currentNow;
     }
-    
+
     public void setCurrentNow(int currentNow) {
         this.currentNow = currentNow;
     }
-    
+
     public int getStatus() {
         return status;
     }
-    
+
     public void setStatus(int status) {
         this.status = status;
     }
-    
+
     public int getPlugged() {
         return plugged;
     }
-    
+
     public void setPlugged(int plugged) {
         this.plugged = plugged;
     }
-    
+
     public int getLevel() {
         return level;
     }
-    
+
     public void setLevel(int level) {
-        this.level = level;
+        this.level = Math.max(0, Math.min(100, level));
     }
-    
+
     public String getTechnology() {
         return technology;
     }
-    
+
     public void setTechnology(String technology) {
         this.technology = technology;
     }
-    
+
     public String getBatterySource() {
         return batterySource;
     }
-    
+
     public void setBatterySource(String batterySource) {
         this.batterySource = batterySource;
     }
-    
+
     public String getBatterySerial() {
         return batterySerial;
     }
-    
+
     public void setBatterySerial(String batterySerial) {
         this.batterySerial = batterySerial;
     }
-    
+
     public float getChargingPower() {
         return chargingPower;
     }
-    
+
     public void setChargingPower(float chargingPower) {
         this.chargingPower = chargingPower;
     }
-    
+
     public float getChargingVoltage() {
         return chargingVoltage;
     }
-    
+
     public void setChargingVoltage(float chargingVoltage) {
         this.chargingVoltage = chargingVoltage;
     }
-    
+
     public float getChargingCurrent() {
         return chargingCurrent;
     }
-    
+
     public void setChargingCurrent(float chargingCurrent) {
         this.chargingCurrent = chargingCurrent;
     }
-    
+
     public String getDeviceModel() {
         return deviceModel;
     }
-    
+
     public void setDeviceModel(String deviceModel) {
         this.deviceModel = deviceModel;
     }
-    
+
     public String getDeviceBrand() {
         return deviceBrand;
     }
-    
+
     public void setDeviceBrand(String deviceBrand) {
         this.deviceBrand = deviceBrand;
     }
@@ -364,7 +370,7 @@ public class BatteryInfo {
     }
 
     public void setHealthConfidence(float healthConfidence) {
-        this.healthConfidence = healthConfidence;
+        this.healthConfidence = Math.max(0f, Math.min(1f, healthConfidence));
     }
 
     public int getSystemHealth() {
@@ -388,7 +394,7 @@ public class BatteryInfo {
     }
 
     public void setBatterySourceConfidence(float batterySourceConfidence) {
-        this.batterySourceConfidence = batterySourceConfidence;
+        this.batterySourceConfidence = Math.max(0f, Math.min(1f, batterySourceConfidence));
     }
 
     public float getFactoryLossPercent() {
@@ -429,9 +435,11 @@ public class BatteryInfo {
     public void calculateChargingPower() {
         if (chargingVoltage > 0 && chargingCurrent > 0) {
             this.chargingPower = chargingVoltage * chargingCurrent;
+        } else {
+            this.chargingPower = 0;
         }
     }
-    
+
     /**
      * 获取健康等级
      *
@@ -453,7 +461,7 @@ public class BatteryInfo {
             return "D";
         }
     }
-    
+
     /**
      * 获取健康描述
      *
@@ -476,14 +484,14 @@ public class BatteryInfo {
             return "建议尽快更换电池";
         }
     }
-    
+
     /**
      * 是否有有效的健康度数据
      */
     public boolean hasValidHealthData() {
         return healthPercentage >= 0;
     }
-    
+
     /**
      * 是否有有效的循环次数数据
      */
@@ -492,10 +500,10 @@ public class BatteryInfo {
     }
 
     /**
-     * 当前是否处于充电状态（status=2 充电中，5 已充满）。
+     * 当前是否处于充电状态（充电中或已充满）。
      */
     public boolean isCharging() {
-        return status == 2 || status == 5;
+        return status == STATUS_CHARGING || status == STATUS_FULL;
     }
 
     /**

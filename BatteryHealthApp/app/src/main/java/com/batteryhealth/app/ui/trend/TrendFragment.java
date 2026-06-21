@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TrendFragment extends Fragment {
 
@@ -42,6 +46,8 @@ public class TrendFragment extends Fragment {
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
 
     private BatteryDataManager batteryDataManager;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ExecutorService dbExecutor;
 
     @Nullable
     @Override
@@ -49,7 +55,7 @@ public class TrendFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_trend, container, false);
         initViews(view);
         animateEntry(view);
-        loadData();
+        loadDataAsync();
         return view;
     }
 
@@ -74,35 +80,72 @@ public class TrendFragment extends Fragment {
         return batteryDataManager;
     }
 
-    private void loadData() {
-        // Get current health percentage from BatteryDataManager (not battery level)
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (dbExecutor != null) {
+            dbExecutor.shutdown();
+            dbExecutor = null;
+        }
+        mainHandler.removeCallbacksAndMessages(null);
+        lineChart = null;
+        tvInitialHealth = null;
+        tvCurrentHealth = null;
+        tvTotalDecay = null;
+        tvMonthlyDecay = null;
+    }
+
+    /**
+     * Load data on a background thread to avoid blocking the UI.
+     */
+    private void loadDataAsync() {
+        if (dbExecutor == null) {
+            dbExecutor = Executors.newSingleThreadExecutor();
+        }
+
         float currentHealth = getCurrentHealthPercentage();
         int currentHealthInt = Math.round(currentHealth);
 
-        // Get initial health from SharedPreferences, or record it on first run
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_TREND, Context.MODE_PRIVATE);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_TREND, Context.MODE_PRIVATE);
         int initialHealth = prefs.getInt(PREF_INITIAL_HEALTH, -1);
         if (initialHealth <= 0) {
             initialHealth = currentHealthInt > 0 ? currentHealthInt : 100;
             prefs.edit().putInt(PREF_INITIAL_HEALTH, initialHealth).apply();
         }
 
-        // If current health is valid and lower than stored initial, update display
-        // But never raise initial health (it should reflect the first recorded value)
         int totalDecay = initialHealth - currentHealthInt;
         if (totalDecay < 0) totalDecay = 0;
+        final int finalInitialHealth = initialHealth;
+        final int finalTotalDecay = totalDecay;
+        final int finalCurrentHealthInt = currentHealthInt;
 
-        // Calculate monthly decay from database history
-        float monthlyDecay = calculateMonthlyDecay();
+        dbExecutor.submit(() -> {
+            float monthlyDecay = calculateMonthlyDecay();
+            List<Entry> realEntries = loadHealthTrendFromDatabase();
 
-        tvInitialHealth.setText(String.format(Locale.getDefault(), "%d%%", initialHealth));
-        tvCurrentHealth.setText(currentHealthInt > 0
-                ? String.format(Locale.getDefault(), "%d%%", currentHealthInt)
-                : "--");
-        tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", (float) totalDecay));
-        tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.1f%%", monthlyDecay));
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
 
-        setupChart(initialHealth, currentHealthInt);
+                if (tvInitialHealth != null) {
+                    tvInitialHealth.setText(String.format(Locale.getDefault(), "%d%%", finalInitialHealth));
+                }
+                if (tvCurrentHealth != null) {
+                    tvCurrentHealth.setText(finalCurrentHealthInt > 0
+                            ? String.format(Locale.getDefault(), "%d%%", finalCurrentHealthInt)
+                            : "--");
+                }
+                if (tvTotalDecay != null) {
+                    tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", (float) finalTotalDecay));
+                }
+                if (tvMonthlyDecay != null) {
+                    tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.1f%%", monthlyDecay));
+                }
+
+                setupChart(finalInitialHealth, finalCurrentHealthInt, realEntries);
+            });
+        });
     }
 
     /**
@@ -125,10 +168,13 @@ public class TrendFragment extends Fragment {
 
     /**
      * Calculate monthly decay rate from historical health percentage records in the database.
+     * Must be called from a background thread.
      */
     private float calculateMonthlyDecay() {
         try {
-            BatteryHealthApplication app = (BatteryHealthApplication) requireContext().getApplicationContext();
+            Context ctx = getContext();
+            if (ctx == null) return 0f;
+            BatteryHealthApplication app = (BatteryHealthApplication) ctx.getApplicationContext();
             if (app == null) return 0f;
             AppDatabase db = app.getDatabase();
             if (db == null) return 0f;
@@ -177,11 +223,10 @@ public class TrendFragment extends Fragment {
      * Build the health trend chart using actual health percentage records from the database.
      * Falls back to a linear interpolation if insufficient data exists.
      */
-    private void setupChart(int initialHealth, int currentHealth) {
-        List<Entry> entries = new ArrayList<>();
+    private void setupChart(int initialHealth, int currentHealth, List<Entry> realEntries) {
+        if (lineChart == null) return;
 
-        // Try to load real health percentage data from database
-        List<Entry> realEntries = loadHealthTrendFromDatabase();
+        List<Entry> entries = new ArrayList<>();
 
         if (realEntries != null && realEntries.size() >= 2) {
             entries = realEntries;
@@ -238,10 +283,13 @@ public class TrendFragment extends Fragment {
      * Samples one data point per month over the last 6 months,
      * using the average health percentage within each month.
      * Returns null if insufficient data is available.
+     * Must be called from a background thread.
      */
     private List<Entry> loadHealthTrendFromDatabase() {
         try {
-            BatteryHealthApplication app = (BatteryHealthApplication) requireContext().getApplicationContext();
+            Context ctx = getContext();
+            if (ctx == null) return null;
+            BatteryHealthApplication app = (BatteryHealthApplication) ctx.getApplicationContext();
             if (app == null) return null;
             AppDatabase db = app.getDatabase();
             if (db == null) return null;
@@ -258,7 +306,6 @@ public class TrendFragment extends Fragment {
             int currentMonth = -1;
             float monthHealthSum = 0f;
             int monthCount = 0;
-            int monthIndex = 0;
 
             // Determine the starting month index (0 = 6 months ago)
             cal.setTimeInMillis(sixMonthsAgo);

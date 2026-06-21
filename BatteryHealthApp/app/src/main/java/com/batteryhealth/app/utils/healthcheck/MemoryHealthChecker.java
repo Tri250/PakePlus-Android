@@ -21,6 +21,9 @@ public class MemoryHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
+        if (context == null) {
+            return buildInfoResult("读取内存数据时发生异常：context is null", "请稍后重试。");
+        }
         try {
             Context appCtx = context.getApplicationContext();
             ActivityManager am = (ActivityManager) appCtx.getSystemService(Context.ACTIVITY_SERVICE);

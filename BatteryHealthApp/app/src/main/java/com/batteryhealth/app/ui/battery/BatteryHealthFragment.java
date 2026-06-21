@@ -3,6 +3,7 @@ package com.batteryhealth.app.ui.battery;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -97,12 +98,35 @@ public class BatteryHealthFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        healthRing = null;
+        tvHealthPercentage = null;
+        tvHealthGrade = null;
+        tvHealthStatus = null;
+        tvBatteryLevel = null;
+        tvChargingStatus = null;
+        tvCurrentNow = null;
+        tvCapacity = null;
+        tvCycleCount = null;
+        tvTemperature = null;
+        tvVoltage = null;
+        tvBatterySource = null;
+        tvTechnology = null;
+    }
+
     private void startPeriodicUpdate() {
+        stopPeriodicUpdate();
         updateRunnable = new Runnable() {
             @Override
             public void run() {
+                if (!isAdded()) return;
                 updateBatteryData();
-                handler.postDelayed(this, 3000);
+                if (isAdded()) {
+                    handler.postDelayed(this, 3000);
+                }
             }
         };
         handler.post(updateRunnable);
@@ -111,10 +135,13 @@ public class BatteryHealthFragment extends Fragment {
     private void stopPeriodicUpdate() {
         if (updateRunnable != null) {
             handler.removeCallbacks(updateRunnable);
+            updateRunnable = null;
         }
     }
 
     private void updateBatteryData() {
+        if (!isAdded() || getContext() == null) return;
+
         BatteryDataManager bdm = getBatteryDataManager();
         if (bdm == null) {
             updateFromBasicIntent();
@@ -128,50 +155,72 @@ public class BatteryHealthFragment extends Fragment {
         }
 
         // 电量
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));
+        if (tvBatteryLevel != null) {
+            tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));
+        }
 
         // 充电状态
-        tvChargingStatus.setText(bdm.getChargingStatusText());
+        if (tvChargingStatus != null) {
+            tvChargingStatus.setText(bdm.getChargingStatusText());
+        }
 
         // 电流
-        int currentMa = bdm.readCurrentMa();
-        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", (float) Math.abs(currentMa)));
+        if (tvCurrentNow != null) {
+            int currentMa = bdm.readCurrentMa();
+            tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", (float) Math.abs(currentMa)));
+        }
 
         // 设计容量 / 当前容量
-        if (info.getDesignCapacity() > 0) {
-            if (info.getCurrentCapacity() > 0) {
-                tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh",
-                        info.getCurrentCapacity(), info.getDesignCapacity()));
+        if (tvCapacity != null) {
+            if (info.getDesignCapacity() > 0) {
+                if (info.getCurrentCapacity() > 0) {
+                    tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh",
+                            info.getCurrentCapacity(), info.getDesignCapacity()));
+                } else {
+                    tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", info.getDesignCapacity()));
+                }
             } else {
-                tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", info.getDesignCapacity()));
+                tvCapacity.setText("--");
             }
-        } else {
-            tvCapacity.setText("--");
         }
 
         // 循环次数
-        tvCycleCount.setText(bdm.formatCycleCount(info));
+        if (tvCycleCount != null) {
+            tvCycleCount.setText(bdm.formatCycleCount(info));
+        }
 
         // 温度
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
+        if (tvTemperature != null) {
+            tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
+        }
 
         // 电压
-        float voltageV = info.getVoltage() / 1000f;
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+        if (tvVoltage != null) {
+            float voltageV = info.getVoltage() / 1000f;
+            tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+        }
 
         // 电池技术
-        String tech = info.getTechnology();
-        tvTechnology.setText(tech != null && !tech.isEmpty() ? tech : "Li-ion");
+        if (tvTechnology != null) {
+            String tech = info.getTechnology();
+            tvTechnology.setText(tech != null && !tech.isEmpty() ? tech : "Li-ion");
+        }
 
         // 电池来源
-        tvBatterySource.setText(bdm.getBatterySourceText());
+        if (tvBatterySource != null) {
+            tvBatterySource.setText(bdm.getBatterySourceText());
+        }
 
         // 健康度
         float healthPct = info.getHealthPercentage();
         if (healthPct >= 0) {
             int healthInt = Math.round(healthPct);
-            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", healthInt));
-            tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
+            if (tvHealthPercentage != null) {
+                tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", healthInt));
+            }
+            if (tvHealthGrade != null) {
+                tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
+            }
 
             String statusText;
             if (healthPct >= 90) {
@@ -183,12 +232,16 @@ public class BatteryHealthFragment extends Fragment {
             } else {
                 statusText = getString(R.string.status_poor);
             }
-            tvHealthStatus.setText(statusText);
-            UiAnimationHelper.animateRingProgress(healthRing, healthInt);
+            if (tvHealthStatus != null) {
+                tvHealthStatus.setText(statusText);
+            }
+            if (healthRing != null) {
+                UiAnimationHelper.animateRingProgress(healthRing, healthInt);
+            }
         } else {
-            tvHealthPercentage.setText("--");
-            tvHealthGrade.setText("--");
-            tvHealthStatus.setText(getString(R.string.health_status_no_data));
+            if (tvHealthPercentage != null) tvHealthPercentage.setText("--");
+            if (tvHealthGrade != null) tvHealthGrade.setText("--");
+            if (tvHealthStatus != null) tvHealthStatus.setText(getString(R.string.health_status_no_data));
         }
     }
 
@@ -197,7 +250,8 @@ public class BatteryHealthFragment extends Fragment {
      * 不含健康度/容量/循环次数等需要 sysfs 或数据库的数据。
      */
     private void updateFromBasicIntent() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        if (getContext() == null) return;
+        Intent intent = getContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent == null) return;
 
         int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
@@ -218,17 +272,17 @@ public class BatteryHealthFragment extends Fragment {
         String technology = intent.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY);
         if (technology == null) technology = "Li-ion";
 
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvChargingStatus.setText(chargingStatus);
-        tvCurrentNow.setText("--");
-        tvCapacity.setText("--");
-        tvCycleCount.setText("--");
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvTechnology.setText(technology);
-        tvBatterySource.setText(getString(R.string.source_internal));
-        tvHealthPercentage.setText("--");
-        tvHealthGrade.setText("--");
-        tvHealthStatus.setText(getString(R.string.status_detecting));
+        if (tvBatteryLevel != null) tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        if (tvChargingStatus != null) tvChargingStatus.setText(chargingStatus);
+        if (tvCurrentNow != null) tvCurrentNow.setText("--");
+        if (tvCapacity != null) tvCapacity.setText("--");
+        if (tvCycleCount != null) tvCycleCount.setText("--");
+        if (tvTemperature != null) tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+        if (tvVoltage != null) tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+        if (tvTechnology != null) tvTechnology.setText(technology);
+        if (tvBatterySource != null) tvBatterySource.setText(getString(R.string.source_internal));
+        if (tvHealthPercentage != null) tvHealthPercentage.setText("--");
+        if (tvHealthGrade != null) tvHealthGrade.setText("--");
+        if (tvHealthStatus != null) tvHealthStatus.setText(getString(R.string.status_detecting));
     }
 }
