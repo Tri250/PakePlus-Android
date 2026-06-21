@@ -22,28 +22,37 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.utils.PerformanceBenchmark;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import javax.microedition.khronos.egl.EGL10;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.egl.EGLContext;
-import javax.microedition.khronos.egl.EGLDisplay;
-
+/**
+ * 性能分析页面
+ *
+ * 功能：
+ * 1. 实时展示 CPU、内存、存储使用率
+ * 2. 运行性能基准测试，给出综合评分
+ * 3. 展示 GPU 信息和热状态
+ * 4. 检测应用卡顿隐患（基于系统负载）
+ */
 public class PerformanceFragment extends Fragment {
 
     private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
     private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
     private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService;
     private TextView tvGpuRenderer, tvOpenglVersion, tvVulkanVersion;
+    private TextView tvThermalStatus, tvBenchmarkScore, tvBenchmarkDetail;
+    private View benchmarkSection;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Nullable
     @Override
@@ -51,6 +60,7 @@ public class PerformanceFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_performance, container, false);
         initViews(view);
         animateEntry(view);
+        runBenchmarkIfNeeded();
         return view;
     }
 
@@ -72,6 +82,17 @@ public class PerformanceFragment extends Fragment {
         tvGpuRenderer = view.findViewById(R.id.tv_gpu_renderer);
         tvOpenglVersion = view.findViewById(R.id.tv_opengl_version);
         tvVulkanVersion = view.findViewById(R.id.tv_vulkan_version);
+
+        tvThermalStatus = view.findViewById(R.id.tv_thermal_status);
+        tvBenchmarkScore = view.findViewById(R.id.tv_benchmark_score);
+        tvBenchmarkDetail = view.findViewById(R.id.tv_benchmark_detail);
+        benchmarkSection = view.findViewById(R.id.benchmark_section);
+
+        // 基准测试按钮
+        View btnRunBenchmark = view.findViewById(R.id.btn_run_benchmark);
+        if (btnRunBenchmark != null) {
+            btnRunBenchmark.setOnClickListener(v -> runBenchmark());
+        }
     }
 
     private void animateEntry(View view) {
@@ -128,11 +149,11 @@ public class PerformanceFragment extends Fragment {
         StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
         long total = stat.getTotalBytes();
         long used = total - stat.getAvailableBytes();
-        int storageUsage = (int) (used * 100 / total);
+        int storageUsage = total > 0 ? (int) (used * 100 / total) : 0;
         tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
         UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
 
-        // Performance score
+        // Performance score (real-time system score)
         int score = calculatePerformanceScore(cpuUsage, mi.totalMem == 0 ? 50 : (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem), storageUsage);
         tvPerformanceScore.setText(String.valueOf(score));
         UiAnimationHelper.animateProgressBar(progressScore, score);
@@ -146,6 +167,48 @@ public class PerformanceFragment extends Fragment {
 
         // GPU
         loadGpuInfo();
+
+        // Thermal status
+        tvThermalStatus.setText(PerformanceBenchmark.getThermalStatus(requireContext()));
+    }
+
+    private void runBenchmarkIfNeeded() {
+        // 可以在这里添加逻辑：如果超过7天未跑分，自动跑一次
+    }
+
+    private void runBenchmark() {
+        if (benchmarkSection != null) {
+            benchmarkSection.setVisibility(View.VISIBLE);
+        }
+        if (tvBenchmarkScore != null) {
+            tvBenchmarkScore.setText("测试中…");
+        }
+
+        executor.execute(() -> {
+            try {
+                PerformanceBenchmark.Result result = PerformanceBenchmark.runFullBenchmark(requireContext());
+                int normalized = PerformanceBenchmark.normalizeOverallScore(result.overallScore);
+
+                handler.post(() -> {
+                    if (tvBenchmarkScore != null) {
+                        tvBenchmarkScore.setText(String.valueOf(normalized));
+                    }
+                    if (tvBenchmarkDetail != null) {
+                        tvBenchmarkDetail.setText(String.format(Locale.getDefault(),
+                                "CPU单核 %d ｜ CPU多核 %d ｜ 内存 %d MB/s ｜ 存储读 %d MB/s ｜ 存储写 %d MB/s ｜ GPU %d fps",
+                                result.cpuSingleCoreScore, result.cpuMultiCoreScore,
+                                result.memoryBandwidthMBps, result.storageReadMBps,
+                                result.storageWriteMBps, result.gpuRenderFps));
+                    }
+                });
+            } catch (Exception e) {
+                handler.post(() -> {
+                    if (tvBenchmarkScore != null) {
+                        tvBenchmarkScore.setText("--");
+                    }
+                });
+            }
+        });
     }
 
     private int readCpuUsage() {
@@ -160,7 +223,7 @@ public class PerformanceFragment extends Fragment {
                 long system = Long.parseLong(parts[3]);
                 long idle = Long.parseLong(parts[4]);
                 long total = user + nice + system + idle;
-                return (int) ((user + nice + system) * 100 / total);
+                return total > 0 ? (int) ((user + nice + system) * 100 / total) : 0;
             }
         } catch (IOException | NumberFormatException ignored) {
         }
@@ -173,7 +236,23 @@ public class PerformanceFragment extends Fragment {
     }
 
     private float getAppCpuUsage() {
-        return 0.5f; // Placeholder
+        // 通过读取 /proc/self/stat 获取应用 CPU 时间估算
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader("/proc/self/stat"));
+            String line = reader.readLine();
+            reader.close();
+            if (line != null) {
+                String[] parts = line.split(" ");
+                if (parts.length > 16) {
+                    long utime = Long.parseLong(parts[13]);
+                    long stime = Long.parseLong(parts[14]);
+                    // 简单估算，实际应该结合系统运行时间计算百分比
+                    return (float) ((utime + stime) * 100.0 / SystemClock.elapsedRealtime());
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return 0.5f;
     }
 
     private long getAppMemoryUsage() {
@@ -198,14 +277,14 @@ public class PerformanceFragment extends Fragment {
 
     private void loadGpuInfo() {
         try {
-            EGL10 egl = (EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
-            EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            javax.microedition.khronos.egl.EGL10 egl = (javax.microedition.khronos.egl.EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
+            javax.microedition.khronos.egl.EGLDisplay display = egl.eglGetDisplay(javax.microedition.khronos.egl.EGL10.EGL_DEFAULT_DISPLAY);
             egl.eglInitialize(display, new int[2]);
-            EGLConfig[] configs = new EGLConfig[1];
+            javax.microedition.khronos.egl.EGLConfig[] configs = new javax.microedition.khronos.egl.EGLConfig[1];
             int[] numConfigs = new int[1];
-            egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, configs, 1, numConfigs);
-            EGLContext context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, EGL10.EGL_NONE});
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context);
+            egl.eglChooseConfig(display, new int[]{javax.microedition.khronos.egl.EGL10.EGL_NONE}, configs, 1, numConfigs);
+            javax.microedition.khronos.egl.EGLContext context = egl.eglCreateContext(display, configs[0], javax.microedition.khronos.egl.EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, javax.microedition.khronos.egl.EGL10.EGL_NONE});
+            egl.eglMakeCurrent(display, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, context);
 
             String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
             String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
@@ -213,7 +292,7 @@ public class PerformanceFragment extends Fragment {
             tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
             tvOpenglVersion.setText(version != null ? version : "Unknown");
 
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+            egl.eglMakeCurrent(display, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_CONTEXT);
             egl.eglDestroyContext(display, context);
             egl.eglTerminate(display);
         } catch (Exception e) {
@@ -221,5 +300,11 @@ public class PerformanceFragment extends Fragment {
             tvOpenglVersion.setText("Unknown");
         }
         tvVulkanVersion.setText("N/A");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }

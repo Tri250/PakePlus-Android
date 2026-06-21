@@ -371,9 +371,67 @@
 
                 </LinearLayout>
 
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_gpu"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_gpu_info"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_confidence"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_confidence"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue"
+                        android:textColor="@color/blue" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- 加载进度 -->
+        <ProgressBar
+            android:id="@+id/progress_loading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="40dp"
+            android:visibility="gone" />
 
         <!-- Section eyebrow: 预警设置 -->
         <TextView

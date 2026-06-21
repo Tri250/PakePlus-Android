@@ -67,6 +67,16 @@ public class BatteryHealthFragment extends Fragment {
         tvVoltage = view.findViewById(R.id.tv_voltage);
         tvBatterySource = view.findViewById(R.id.tv_battery_source);
         tvTechnology = view.findViewById(R.id.tv_technology);
+
+        // 周报/月报入口
+        View btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
+        View btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
+        if (btnWeeklyReport != null) {
+            btnWeeklyReport.setOnClickListener(v -> ReportActivity.start(requireContext(), ReportActivity.TYPE_WEEKLY));
+        }
+        if (btnMonthlyReport != null) {
+            btnMonthlyReport.setOnClickListener(v -> ReportActivity.start(requireContext(), ReportActivity.TYPE_MONTHLY));
+        }
     }
 
     private void animateEntry(View view) {

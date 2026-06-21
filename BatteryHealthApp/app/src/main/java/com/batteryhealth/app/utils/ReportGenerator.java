@@ -8,10 +8,13 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ReportGenerator {
     private static final String TAG = "ReportGenerator";
@@ -131,5 +134,54 @@ public class ReportGenerator {
         }
         
         return report;
+    }
+
+    /**
+     * 按天聚合电池数据，生成每日统计列表（用于报告页 RecyclerView）。
+     */
+    public static List<com.batteryhealth.app.ui.battery.ReportAdapter.DailyStat> generateDailyStats(List<BatteryInfo> records) {
+        List<com.batteryhealth.app.ui.battery.ReportAdapter.DailyStat> result = new ArrayList<>();
+        if (records == null || records.isEmpty()) return result;
+
+        SimpleDateFormat dayFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        Map<String, List<BatteryInfo>> dayMap = new HashMap<>();
+
+        for (BatteryInfo info : records) {
+            String dayKey = dayFormat.format(new Date(info.getTimestamp()));
+            dayMap.computeIfAbsent(dayKey, k -> new ArrayList<>()).add(info);
+        }
+
+        List<String> sortedDays = new ArrayList<>(dayMap.keySet());
+        Collections.sort(sortedDays);
+
+        for (String dayKey : sortedDays) {
+            List<BatteryInfo> dayRecords = dayMap.get(dayKey);
+            if (dayRecords == null || dayRecords.isEmpty()) continue;
+
+            float sumHealth = 0, sumTemp = 0;
+            int healthCount = 0, tempCount = 0;
+            int maxCycle = -1;
+            long firstTimestamp = dayRecords.get(0).getTimestamp();
+
+            for (BatteryInfo info : dayRecords) {
+                if (info.hasValidHealthData()) {
+                    sumHealth += info.getHealthPercentage();
+                    healthCount++;
+                }
+                if (info.getTemperature() > -100) {
+                    sumTemp += info.getTemperature();
+                    tempCount++;
+                }
+                int cc = info.getCycleCount();
+                if (cc > maxCycle) maxCycle = cc;
+            }
+
+            float avgHealth = healthCount > 0 ? sumHealth / healthCount : 0;
+            float avgTemp = tempCount > 0 ? sumTemp / tempCount : 0;
+            result.add(new com.batteryhealth.app.ui.battery.ReportAdapter.DailyStat(
+                    firstTimestamp, avgHealth, avgTemp, maxCycle > 0 ? maxCycle : 0));
+        }
+
+        return result;
     }
 }

@@ -2,11 +2,9 @@ package com.batteryhealth.app.ui.config;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.StatFs;
-import android.telephony.TelephonyManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,12 +18,23 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.ActivationDateHelper;
+import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.UiAnimationHelper;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+/**
+ * 设备配置查询页面
+ *
+ * 功能：
+ * 1. 精准查询手机硬件配置记录
+ * 2. 基于多源数据检测激活日期和使用天数
+ * 3. 展示可信度信息
+ */
 public class DeviceConfigFragment extends Fragment {
 
     private static final String PREFS_CONFIG = "config_prefs";
@@ -33,8 +42,12 @@ public class DeviceConfigFragment extends Fragment {
 
     private TextView tvDeviceName, tvDeviceModel, tvAndroidVersion, tvProcessor, tvRam, tvStorage,
             tvScreen, tvActivationDate, tvUsageDays, tvActivationSource, tvAvailableRam,
-            tvAvailableStorage, tvNetworkType;
+            tvAvailableStorage, tvNetworkType, tvGpuInfo, tvConfidence;
     private Switch switchHealthAlert;
+    private View progressBar;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -42,7 +55,7 @@ public class DeviceConfigFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_device_config, container, false);
         initViews(view);
         animateEntry(view);
-        loadData();
+        loadDataAsync();
         return view;
     }
 
@@ -60,7 +73,10 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableRam = view.findViewById(R.id.tv_available_ram);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
+        tvGpuInfo = view.findViewById(R.id.tv_gpu_info);
+        tvConfidence = view.findViewById(R.id.tv_confidence);
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
+        progressBar = view.findViewById(R.id.progress_loading);
 
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
         switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
@@ -74,126 +90,101 @@ public class DeviceConfigFragment extends Fragment {
         view.startAnimation(fadeUp);
     }
 
-    private void loadData() {
-        tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
-        tvDeviceModel.setText(Build.MODEL);
-        tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
-        tvProcessor.setText(Build.HARDWARE);
+    private void loadDataAsync() {
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
-        long totalRam = getTotalRam();
-        tvRam.setText(formatSize(totalRam));
-
-        long totalStorage = getTotalStorage();
-        tvStorage.setText(formatSize(totalStorage));
-
-        tvScreen.setText(getScreenResolution());
-
-        long activationTime = getActivationTime();
-        tvActivationDate.setText(formatDate(activationTime));
-        tvUsageDays.setText(getUsageDays(activationTime) + " 天");
-        tvActivationSource.setText(getString(R.string.source_internal));
-
-        long availableRam = getAvailableRam();
-        tvAvailableRam.setText(formatSize(availableRam));
-
-        long availableStorage = getAvailableStorage();
-        tvAvailableStorage.setText(formatSize(availableStorage));
-
-        tvNetworkType.setText(getNetworkType());
-    }
-
-    private long getTotalRam() {
-        android.app.ActivityManager am = (android.app.ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
-        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
-        if (am != null) {
-            am.getMemoryInfo(mi);
-            return mi.totalMem;
-        }
-        return 0;
-    }
-
-    private long getAvailableRam() {
-        android.app.ActivityManager am = (android.app.ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
-        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
-        if (am != null) {
-            am.getMemoryInfo(mi);
-            return mi.availMem;
-        }
-        return 0;
-    }
-
-    private long getTotalStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        return stat.getTotalBytes();
-    }
-
-    private long getAvailableStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        return stat.getAvailableBytes();
-    }
-
-    private String getScreenResolution() {
-        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
-        return dm.widthPixels + " x " + dm.heightPixels;
-    }
-
-    private long getActivationTime() {
-        File file = new File(Environment.getRootDirectory(), "build.prop");
-        long time = file.lastModified();
-        if (time == 0) {
-            time = System.currentTimeMillis() - 86400000L * 365;
-        }
-        return time;
-    }
-
-    private String formatDate(long time) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(new Date(time));
-    }
-
-    private long getUsageDays(long activationTime) {
-        return (System.currentTimeMillis() - activationTime) / (1000 * 60 * 60 * 24);
-    }
-
-    private String formatSize(long bytes) {
-        if (bytes <= 0) return "0 B";
-        String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
-        int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
-        digitGroups = Math.min(digitGroups, units.length - 1);
-        return String.format(Locale.getDefault(), "%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
-    }
-
-    private String getNetworkType() {
-        try {
-            TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm == null) return "Unknown";
-            int networkType = tm.getNetworkType();
-            switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "2G";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "3G";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "4G";
-            case TelephonyManager.NETWORK_TYPE_NR:
-                return "5G";
-            default:
-                return "Unknown";
+        DeviceInfoManager manager = new DeviceInfoManager(requireContext());
+        manager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
+            @Override
+            public void onConfigLoaded(DeviceConfig config) {
+                mainHandler.post(() -> {
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                    bindConfig(config);
+                });
             }
-        } catch (Exception e) {
-            return "Unknown";
+
+            @Override
+            public void onConfigLoadFailed(Exception e) {
+                mainHandler.post(() -> {
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                    bindFallback();
+                });
+            }
+        });
+    }
+
+    private void bindConfig(DeviceConfig config) {
+        tvDeviceName.setText(config.getFullModelName());
+        tvDeviceModel.setText(config.getModel());
+        tvAndroidVersion.setText(config.getAndroidCodename() + " (API " + config.getSdkVersion() + ")");
+        tvProcessor.setText(config.getCpuInfo() != null && !config.getCpuInfo().isEmpty()
+                ? config.getCpuInfo() : getString(R.string.status_not_recognized));
+        tvRam.setText(config.getFormattedMemory());
+        tvStorage.setText(config.getFormattedStorage());
+        tvScreen.setText(config.getScreenResolution() + " · " + config.getFormattedScreenSize());
+
+        // 激活日期
+        long activationDate = config.getActivationDate();
+        if (activationDate > 0) {
+            tvActivationDate.setText(config.getActivationDateStr());
+            int days = config.getUsageDays();
+            tvUsageDays.setText(days >= 0 ? getString(R.string.config_usage_days_format, days) : "--");
+
+            String source = config.getActivationSource();
+            tvActivationSource.setText(formatSource(source));
+
+            float confidence = config.getActivationConfidence();
+            tvConfidence.setText(getString(R.string.config_confidence_format, (int) (confidence * 100)));
+        } else {
+            tvActivationDate.setText("--");
+            tvUsageDays.setText("--");
+            tvActivationSource.setText(getString(R.string.status_unknown));
+            tvConfidence.setText("--");
         }
+
+        tvAvailableRam.setText(config.getAvailableMemory() > 0
+                ? String.format(Locale.getDefault(), "%.1f GB", config.getAvailableMemory() / 1024.0)
+                : "--");
+        tvAvailableStorage.setText(config.getAvailableStorage() > 0
+                ? String.format(Locale.getDefault(), "%d GB", config.getAvailableStorage())
+                : "--");
+        tvNetworkType.setText(config.getNetworkType() != null ? config.getNetworkType() : getString(R.string.status_no_network));
+
+        String gpu = config.getGpuInfo();
+        if (tvGpuInfo != null) {
+            tvGpuInfo.setText(gpu != null && !gpu.isEmpty() ? gpu : getString(R.string.status_not_recognized));
+        }
+    }
+
+    private void bindFallback() {
+        tvDeviceName.setText(android.os.Build.BRAND + " " + android.os.Build.MODEL);
+        tvDeviceModel.setText(android.os.Build.MODEL);
+        tvAndroidVersion.setText(android.os.Build.VERSION.RELEASE);
+        tvProcessor.setText(android.os.Build.HARDWARE);
+        tvActivationDate.setText("--");
+        tvUsageDays.setText("--");
+        tvActivationSource.setText(getString(R.string.status_unknown));
+        if (tvConfidence != null) tvConfidence.setText("--");
+    }
+
+    private String formatSource(String source) {
+        if (source == null) return getString(R.string.status_unknown);
+        switch (source) {
+            case "electronic_warranty_card": return "电子保卡";
+            case "first_boot_time": return "首次开机时间";
+            case "first_unlock_time": return "首次解锁时间";
+            case "device_policy_manager": return "设备策略管理";
+            case "gms_first_launch": return "GMS首次启动";
+            case "system_build_time": return "系统构建时间";
+            case "settings_secure": return "系统设置";
+            case "fallback_estimate": return "估算值";
+            default: return source;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }

@@ -45,7 +45,7 @@
         tools:targetApi="36">
         
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.bugreport.BugreportGuideActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize"
@@ -59,6 +59,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode|screenLayout|smallestScreenSize"
+            android:windowSoftInputMode="adjustResize"
+            android:hardwareAccelerated="true"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:enableOnBackInvokedCallback="true" />
 
         <activity
             android:name=".ui.error.ErrorActivity"
