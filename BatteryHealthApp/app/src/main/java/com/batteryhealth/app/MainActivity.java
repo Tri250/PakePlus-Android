@@ -181,16 +181,15 @@ public class MainActivity extends AppCompatActivity {
                 // 状态栏顶边距 + 左右边距；底部不设置，由导航栏自身处理
                 v.setPadding(bars.left, bars.top, bars.right, 0);
 
-                // 底部导航栏动态增高并设置底部 padding，内容保持在手势条上方
+                // 底部导航栏由 CustomBottomNavigationView 自己处理手势条 inset；
+                // 这里只负责在 layout 完成后更新 ViewPager 底部 margin（使用容器总高度）
                 CustomBottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
                 View bottomNavContainer = findViewById(R.id.bottom_nav_container);
                 if (bottomNav != null) {
-                    bottomNav.setPadding(bottomNav.getPaddingLeft(), bottomNav.getPaddingTop(),
-                            bottomNav.getPaddingRight(), bottomInset);
                     bottomNav.applySystemBottomInset(bottomInset);
-
-                    // 等导航栏 layout 完成后，更新 ViewPager 底部 margin（使用容器总高度）
-                    View target = bottomNavContainer != null ? bottomNavContainer : bottomNav;
+                }
+                View target = bottomNavContainer != null ? bottomNavContainer : bottomNav;
+                if (target != null) {
                     target.post(() -> updateViewPagerBottomMargin(target));
                 }
                 return WindowInsetsCompat.CONSUMED;

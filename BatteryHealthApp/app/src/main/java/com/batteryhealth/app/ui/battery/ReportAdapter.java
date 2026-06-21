@@ -48,11 +48,11 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ViewHolder
 
         int healthColor;
         if (stat.avgHealth >= 90) {
-            healthColor = R.color.ios_green;
+            healthColor = R.color.coloros_green;
         } else if (stat.avgHealth >= 80) {
-            healthColor = R.color.ios_yellow;
+            healthColor = R.color.coloros_yellow;
         } else {
-            healthColor = R.color.ios_orange;
+            healthColor = R.color.coloros_orange;
         }
         holder.tvHealth.setTextColor(holder.itemView.getContext().getColor(healthColor));
     }

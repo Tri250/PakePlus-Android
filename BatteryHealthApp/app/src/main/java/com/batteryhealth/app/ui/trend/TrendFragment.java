@@ -114,12 +114,16 @@ public class TrendFragment extends Fragment {
         executor.execute(() -> {
             try {
                 AppDatabase db = com.batteryhealth.app.BatteryHealthApplication.getDatabase();
+                if (db == null) {
+                    mainHandler.post(() -> { if (isAdded()) showEmpty(); });
+                    return;
+                }
                 // 读取最近30天的数据
                 long since = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
                 List<BatteryInfo> records = db.batteryInfoDao().getSince(since);
 
                 if (records == null || records.isEmpty()) {
-                    mainHandler.post(() -> showEmpty());
+                    mainHandler.post(() -> { if (isAdded()) showEmpty(); });
                     return;
                 }
 
@@ -152,7 +156,10 @@ public class TrendFragment extends Fragment {
                 float avgHealth = healthCount > 0 ? sumHealth / healthCount : 0;
                 float avgTemp = tempCount > 0 ? sumTemp / tempCount : 0;
                 int totalDecay = firstHealth > 0 && lastHealth > 0 ? firstHealth - lastHealth : 0;
-                float monthlyDecay = totalDecay / 30f * 30f; // 简化计算
+                long daysSpan = records.size() >= 2
+                        ? Math.max(1, (records.get(records.size() - 1).getTimestamp() - records.get(0).getTimestamp()) / (24L * 60 * 60 * 1000))
+                        : 1;
+                float monthlyDecay = daysSpan > 0 ? (totalDecay / (float) daysSpan) * 30f : 0;
 
                 final int finalFirstHealth = firstHealth;
                 final int finalLastHealth = lastHealth;
@@ -163,12 +170,14 @@ public class TrendFragment extends Fragment {
                 final float finalMaxTemp = maxTemp;
 
                 mainHandler.post(() -> {
-                    bindData(healthEntries, tempEntries, finalFirstHealth, finalLastHealth, finalTotalDecay, finalMonthlyDecay,
-                            finalRecordCount, finalAvgTemp, finalMaxTemp);
+                    if (isAdded()) {
+                        bindData(healthEntries, tempEntries, finalFirstHealth, finalLastHealth, finalTotalDecay, finalMonthlyDecay,
+                                finalRecordCount, finalAvgTemp, finalMaxTemp);
+                    }
                 });
 
             } catch (Exception e) {
-                mainHandler.post(this::showEmpty);
+                mainHandler.post(() -> { if (isAdded()) showEmpty(); });
             }
         });
     }
@@ -176,22 +185,28 @@ public class TrendFragment extends Fragment {
     private void bindData(List<Entry> healthEntries, List<Entry> tempEntries,
                           int firstHealth, int lastHealth, int totalDecay, float monthlyDecay,
                           int dataPoints, float avgTemp, float maxTemp) {
-        emptyView.setVisibility(View.GONE);
+        if (!isAdded() || getContext() == null) return;
+        if (emptyView != null) emptyView.setVisibility(View.GONE);
 
-        tvInitialHealth.setText(firstHealth > 0 ? firstHealth + "%" : "--");
-        tvCurrentHealth.setText(lastHealth > 0 ? lastHealth + "%" : "--");
-        tvTotalDecay.setText(totalDecay >= 0 ? "-" + totalDecay + "%" : "--");
-        tvMonthlyDecay.setText(monthlyDecay > 0 ? String.format(Locale.getDefault(), "-%.1f%%", monthlyDecay) : "--");
-        tvDataPoints.setText(getString(R.string.trend_data_points, dataPoints));
-        tvAvgTemp.setText(String.format(Locale.getDefault(), "%.1f°C", avgTemp));
-        tvMaxTemp.setText(String.format(Locale.getDefault(), "%.1f°C", maxTemp));
+        safeSetText(tvInitialHealth, firstHealth > 0 ? firstHealth + "%" : "--");
+        safeSetText(tvCurrentHealth, lastHealth > 0 ? lastHealth + "%" : "--");
+        safeSetText(tvTotalDecay, totalDecay >= 0 ? "-" + totalDecay + "%" : "--");
+        safeSetText(tvMonthlyDecay, monthlyDecay > 0 ? String.format(Locale.getDefault(), "-%.1f%%", monthlyDecay) : "--");
+        safeSetText(tvDataPoints, getString(R.string.trend_data_points, dataPoints));
+        safeSetText(tvAvgTemp, String.format(Locale.getDefault(), "%.1f°C", avgTemp));
+        safeSetText(tvMaxTemp, String.format(Locale.getDefault(), "%.1f°C", maxTemp));
 
-        showLineData(chartHealth, healthEntries, getColor(R.color.ios_green), 0, 100);
-        showLineData(chartTemp, tempEntries, getColor(R.color.ios_orange), 0, 60);
+        showLineData(chartHealth, healthEntries, getColor(R.color.coloros_green), 0, 100);
+        showLineData(chartTemp, tempEntries, getColor(R.color.coloros_orange), 0, 60);
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private void showLineData(LineChart chart, List<Entry> entries, int color, float min, float max) {
-        if (entries.isEmpty()) {
+        if (chart == null) return;
+        if (entries == null || entries.isEmpty()) {
             chart.setVisibility(View.GONE);
             return;
         }
@@ -215,18 +230,28 @@ public class TrendFragment extends Fragment {
     }
 
     private void showEmpty() {
-        emptyView.setVisibility(View.VISIBLE);
-        chartHealth.setVisibility(View.GONE);
-        chartTemp.setVisibility(View.GONE);
+        if (!isAdded() || getContext() == null) return;
+        if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
+        if (chartHealth != null) chartHealth.setVisibility(View.GONE);
+        if (chartTemp != null) chartTemp.setVisibility(View.GONE);
     }
 
     private int getColor(int resId) {
-        return requireContext().getColor(resId);
+        Context ctx = getContext();
+        return ctx != null ? ctx.getColor(resId) : 0;
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mainHandler.removeCallbacksAndMessages(null);
     }
 
     @Override

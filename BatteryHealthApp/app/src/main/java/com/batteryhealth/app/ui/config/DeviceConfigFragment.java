@@ -78,11 +78,13 @@ public class DeviceConfigFragment extends Fragment {
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
         progressBar = view.findViewById(R.id.progress_loading);
 
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
-        switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
-        switchHealthAlert.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.edit().putBoolean(PREF_HEALTH_ALERT, isChecked).apply();
-        });
+        if (switchHealthAlert != null) {
+            SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
+            switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
+            switchHealthAlert.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                prefs.edit().putBoolean(PREF_HEALTH_ALERT, isChecked).apply();
+            });
+        }
     }
 
     private void animateEntry(View view) {
@@ -114,57 +116,61 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void bindConfig(DeviceConfig config) {
-        tvDeviceName.setText(config.getFullModelName());
-        tvDeviceModel.setText(config.getModel());
-        tvAndroidVersion.setText(config.getAndroidCodename() + " (API " + config.getSdkVersion() + ")");
-        tvProcessor.setText(config.getCpuInfo() != null && !config.getCpuInfo().isEmpty()
+        if (!isAdded() || getContext() == null) return;
+        safeSetText(tvDeviceName, config.getFullModelName());
+        safeSetText(tvDeviceModel, config.getModel());
+        safeSetText(tvAndroidVersion, config.getAndroidCodename() + " (API " + config.getSdkVersion() + ")");
+        safeSetText(tvProcessor, config.getCpuInfo() != null && !config.getCpuInfo().isEmpty()
                 ? config.getCpuInfo() : getString(R.string.status_not_recognized));
-        tvRam.setText(config.getFormattedMemory());
-        tvStorage.setText(config.getFormattedStorage());
-        tvScreen.setText(config.getScreenResolution() + " · " + config.getFormattedScreenSize());
+        safeSetText(tvRam, config.getFormattedMemory());
+        safeSetText(tvStorage, config.getFormattedStorage());
+        safeSetText(tvScreen, config.getScreenResolution() + " · " + config.getFormattedScreenSize());
 
         // 激活日期
         long activationDate = config.getActivationDate();
         if (activationDate > 0) {
-            tvActivationDate.setText(config.getActivationDateStr());
+            safeSetText(tvActivationDate, config.getActivationDateStr());
             int days = config.getUsageDays();
-            tvUsageDays.setText(days >= 0 ? getString(R.string.config_usage_days_format, days) : "--");
+            safeSetText(tvUsageDays, days >= 0 ? getString(R.string.config_usage_days_format, days) : "--");
 
             String source = config.getActivationSource();
-            tvActivationSource.setText(formatSource(source));
+            safeSetText(tvActivationSource, formatSource(source));
 
             float confidence = config.getActivationConfidence();
-            tvConfidence.setText(getString(R.string.config_confidence_format, (int) (confidence * 100)));
+            safeSetText(tvConfidence, getString(R.string.config_confidence_format, (int) (confidence * 100)));
         } else {
-            tvActivationDate.setText("--");
-            tvUsageDays.setText("--");
-            tvActivationSource.setText(getString(R.string.status_unknown));
-            tvConfidence.setText("--");
+            safeSetText(tvActivationDate, "--");
+            safeSetText(tvUsageDays, "--");
+            safeSetText(tvActivationSource, getString(R.string.status_unknown));
+            safeSetText(tvConfidence, "--");
         }
 
-        tvAvailableRam.setText(config.getAvailableMemory() > 0
+        safeSetText(tvAvailableRam, config.getAvailableMemory() > 0
                 ? String.format(Locale.getDefault(), "%.1f GB", config.getAvailableMemory() / 1024.0)
                 : "--");
-        tvAvailableStorage.setText(config.getAvailableStorage() > 0
+        safeSetText(tvAvailableStorage, config.getAvailableStorage() > 0
                 ? String.format(Locale.getDefault(), "%d GB", config.getAvailableStorage())
                 : "--");
-        tvNetworkType.setText(config.getNetworkType() != null ? config.getNetworkType() : getString(R.string.status_no_network));
+        safeSetText(tvNetworkType, config.getNetworkType() != null ? config.getNetworkType() : getString(R.string.status_no_network));
 
         String gpu = config.getGpuInfo();
-        if (tvGpuInfo != null) {
-            tvGpuInfo.setText(gpu != null && !gpu.isEmpty() ? gpu : getString(R.string.status_not_recognized));
-        }
+        safeSetText(tvGpuInfo, gpu != null && !gpu.isEmpty() ? gpu : getString(R.string.status_not_recognized));
     }
 
     private void bindFallback() {
-        tvDeviceName.setText(android.os.Build.BRAND + " " + android.os.Build.MODEL);
-        tvDeviceModel.setText(android.os.Build.MODEL);
-        tvAndroidVersion.setText(android.os.Build.VERSION.RELEASE);
-        tvProcessor.setText(android.os.Build.HARDWARE);
-        tvActivationDate.setText("--");
-        tvUsageDays.setText("--");
-        tvActivationSource.setText(getString(R.string.status_unknown));
-        if (tvConfidence != null) tvConfidence.setText("--");
+        if (!isAdded() || getContext() == null) return;
+        safeSetText(tvDeviceName, android.os.Build.BRAND + " " + android.os.Build.MODEL);
+        safeSetText(tvDeviceModel, android.os.Build.MODEL);
+        safeSetText(tvAndroidVersion, android.os.Build.VERSION.RELEASE);
+        safeSetText(tvProcessor, android.os.Build.HARDWARE);
+        safeSetText(tvActivationDate, "--");
+        safeSetText(tvUsageDays, "--");
+        safeSetText(tvActivationSource, getString(R.string.status_unknown));
+        safeSetText(tvConfidence, "--");
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private String formatSource(String source) {
@@ -180,6 +186,12 @@ public class DeviceConfigFragment extends Fragment {
             case "fallback_estimate": return "估算值";
             default: return source;
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mainHandler.removeCallbacksAndMessages(null);
     }
 
     @Override

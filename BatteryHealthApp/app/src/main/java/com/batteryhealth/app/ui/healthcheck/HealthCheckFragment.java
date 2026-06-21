@@ -112,24 +112,27 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void startCheck() {
-        if (engine == null) return;
+        if (engine == null || !isAdded()) return;
         if (engine.isRunning()) return;
 
-        tvActionCheck.setEnabled(false);
-        tvActionCheck.setText(R.string.health_check_action_checking);
+        if (tvActionCheck != null) {
+            tvActionCheck.setEnabled(false);
+            tvActionCheck.setText(R.string.health_check_action_checking);
+        }
         if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
         if (tvScanningStatus != null) {
             tvScanningStatus.setVisibility(View.VISIBLE);
             tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
         }
         // 综合评分先重置
-        tvOverallScore.setText("--");
-        tvOverallLabel.setText(R.string.health_check_label_running);
+        if (tvOverallScore != null) tvOverallScore.setText("--");
+        if (tvOverallLabel != null) tvOverallLabel.setText(R.string.health_check_label_running);
         if (progressOverall != null) {
             progressOverall.setProgress(0);
         }
 
         Context ctx = getContext();
+        if (ctx == null) return;
         engine.startCheck(ctx, new HealthCheckEngine.Callback() {
             @Override
             public void onProgress(final int percent) {
@@ -156,6 +159,7 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void renderResults(List<HealthCheckResult> results) {
+        if (!isAdded()) return;
         lastResults = results != null ? results : new ArrayList<>();
         if (adapter != null) adapter.setData(lastResults);
 
@@ -180,8 +184,11 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void finishCheckingUI() {
-        tvActionCheck.setEnabled(true);
-        tvActionCheck.setText(R.string.health_check_action_recheck);
+        if (!isAdded()) return;
+        if (tvActionCheck != null) {
+            tvActionCheck.setEnabled(true);
+            tvActionCheck.setText(R.string.health_check_action_recheck);
+        }
         if (progressScanning != null) progressScanning.setVisibility(View.GONE);
         if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.GONE);
     }
@@ -289,7 +296,7 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void showDetailDialog(HealthCheckResult r) {
-        if (r == null) return;
+        if (r == null || !isAdded()) return;
         Context ctx = getContext();
         if (ctx == null) return;
 
@@ -307,11 +314,17 @@ public class HealthCheckFragment extends Fragment {
                 .setPositiveButton(android.R.string.cancel, null);
         if (r.isRepairable()) {
             builder.setNeutralButton(R.string.health_check_action_fix, (dialog, which) -> {
-                if (engine != null) engine.applyFix(getContext(), r);
+                if (engine != null && isAdded()) engine.applyFix(getContext(), r);
             });
         }
         try {
             builder.show();
         } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mainHandler.removeCallbacksAndMessages(null);
     }
 }

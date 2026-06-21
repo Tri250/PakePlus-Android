@@ -152,8 +152,10 @@ public class CommunityFragment extends Fragment {
 
     private List<Post> readPostsFromPrefs() {
         List<Post> list = new ArrayList<>();
+        Context ctx = getContext();
+        if (ctx == null) return list;
         try {
-            SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_COMMUNITY, Context.MODE_PRIVATE);
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_COMMUNITY, Context.MODE_PRIVATE);
             String json = prefs.getString(KEY_POSTS, "[]");
             JSONArray array = new JSONArray(json);
             for (int i = 0; i < array.length(); i++) {
@@ -167,12 +169,14 @@ public class CommunityFragment extends Fragment {
     }
 
     private void savePosts(List<Post> posts) {
+        Context ctx = getContext();
+        if (ctx == null) return;
         try {
             JSONArray array = new JSONArray();
             for (Post post : posts) {
                 array.put(post.toJson());
             }
-            requireContext().getSharedPreferences(PREFS_COMMUNITY, Context.MODE_PRIVATE)
+            ctx.getSharedPreferences(PREFS_COMMUNITY, Context.MODE_PRIVATE)
                     .edit().putString(KEY_POSTS, array.toString()).apply();
         } catch (Exception e) {
             Log.e(TAG, "Failed to save posts", e);
@@ -180,13 +184,15 @@ public class CommunityFragment extends Fragment {
     }
 
     private View createErrorView(Exception e) {
-        TextView errorView = new TextView(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) return new View(requireContext());
+        TextView errorView = new TextView(ctx);
         String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
         errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
+        errorView.setTextColor(ContextCompat.getColor(ctx, R.color.label));
         errorView.setTextSize(16);
         errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
+        errorView.setBackgroundColor(ContextCompat.getColor(ctx, R.color.bg_canvas));
         return errorView;
     }
 

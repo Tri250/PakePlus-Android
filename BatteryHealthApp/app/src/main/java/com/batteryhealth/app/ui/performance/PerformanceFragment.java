@@ -130,19 +130,21 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void loadData() {
+        if (!isAdded() || getContext() == null) return;
         // CPU
         int cpuUsage = readCpuUsage();
-        tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
-        UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
+        safeSetText(tvCpuUsage, String.format(Locale.getDefault(), "%d%%", cpuUsage));
+        if (progressCpu != null) UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
 
         // Memory
         ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+        int memUsage = 0;
         if (am != null) {
             am.getMemoryInfo(mi);
-            int memUsage = (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
-            tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memUsage));
-            UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
+            memUsage = mi.totalMem > 0 ? (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem) : 0;
+            safeSetText(tvMemoryUsage, String.format(Locale.getDefault(), "%d%%", memUsage));
+            if (progressMemory != null) UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
         }
 
         // Storage
@@ -150,26 +152,30 @@ public class PerformanceFragment extends Fragment {
         long total = stat.getTotalBytes();
         long used = total - stat.getAvailableBytes();
         int storageUsage = total > 0 ? (int) (used * 100 / total) : 0;
-        tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
-        UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
+        safeSetText(tvStorageUsage, String.format(Locale.getDefault(), "%d%%", storageUsage));
+        if (progressStorage != null) UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
 
         // Performance score (real-time system score)
-        int score = calculatePerformanceScore(cpuUsage, mi.totalMem == 0 ? 50 : (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem), storageUsage);
-        tvPerformanceScore.setText(String.valueOf(score));
-        UiAnimationHelper.animateProgressBar(progressScore, score);
+        int score = calculatePerformanceScore(cpuUsage, memUsage, storageUsage);
+        safeSetText(tvPerformanceScore, String.valueOf(score));
+        if (progressScore != null) UiAnimationHelper.animateProgressBar(progressScore, score);
 
         // App info
-        tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
-        tvAppMemory.setText(formatSize(getAppMemoryUsage()));
+        safeSetText(tvAppCpu, String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
+        safeSetText(tvAppMemory, formatSize(getAppMemoryUsage()));
         long runtimeMs = SystemClock.elapsedRealtime();
-        tvRuntime.setText(formatDuration(runtimeMs));
-        tvForegroundService.setText(getString(R.string.status_running));
+        safeSetText(tvRuntime, formatDuration(runtimeMs));
+        safeSetText(tvForegroundService, getString(R.string.status_running));
 
         // GPU
         loadGpuInfo();
 
         // Thermal status
-        tvThermalStatus.setText(PerformanceBenchmark.getThermalStatus(requireContext()));
+        safeSetText(tvThermalStatus, PerformanceBenchmark.getThermalStatus(requireContext()));
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private void runBenchmarkIfNeeded() {
@@ -186,10 +192,13 @@ public class PerformanceFragment extends Fragment {
 
         executor.execute(() -> {
             try {
-                PerformanceBenchmark.Result result = PerformanceBenchmark.runFullBenchmark(requireContext());
+                Context ctx = getContext();
+                if (ctx == null) return;
+                PerformanceBenchmark.Result result = PerformanceBenchmark.runFullBenchmark(ctx);
                 int normalized = PerformanceBenchmark.normalizeOverallScore(result.overallScore);
 
                 handler.post(() -> {
+                    if (!isAdded()) return;
                     if (tvBenchmarkScore != null) {
                         tvBenchmarkScore.setText(String.valueOf(normalized));
                     }
@@ -203,7 +212,7 @@ public class PerformanceFragment extends Fragment {
                 });
             } catch (Exception e) {
                 handler.post(() -> {
-                    if (tvBenchmarkScore != null) {
+                    if (isAdded() && tvBenchmarkScore != null) {
                         tvBenchmarkScore.setText("--");
                     }
                 });
@@ -276,6 +285,8 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void loadGpuInfo() {
+        String renderer = "Unknown";
+        String version = "Unknown";
         try {
             javax.microedition.khronos.egl.EGL10 egl = (javax.microedition.khronos.egl.EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
             javax.microedition.khronos.egl.EGLDisplay display = egl.eglGetDisplay(javax.microedition.khronos.egl.EGL10.EGL_DEFAULT_DISPLAY);
@@ -286,20 +297,25 @@ public class PerformanceFragment extends Fragment {
             javax.microedition.khronos.egl.EGLContext context = egl.eglCreateContext(display, configs[0], javax.microedition.khronos.egl.EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, javax.microedition.khronos.egl.EGL10.EGL_NONE});
             egl.eglMakeCurrent(display, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, context);
 
-            String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
-            String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
-
-            tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
-            tvOpenglVersion.setText(version != null ? version : "Unknown");
+            renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
+            version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
 
             egl.eglMakeCurrent(display, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_SURFACE, javax.microedition.khronos.egl.EGL10.EGL_NO_CONTEXT);
             egl.eglDestroyContext(display, context);
             egl.eglTerminate(display);
         } catch (Exception e) {
-            tvGpuRenderer.setText("Unknown");
-            tvOpenglVersion.setText("Unknown");
+            // ignore
         }
-        tvVulkanVersion.setText("N/A");
+        safeSetText(tvGpuRenderer, renderer != null ? renderer : "Unknown");
+        safeSetText(tvOpenglVersion, version != null ? version : "Unknown");
+        safeSetText(tvVulkanVersion, "N/A");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        handler.removeCallbacksAndMessages(null);
     }
 
     @Override

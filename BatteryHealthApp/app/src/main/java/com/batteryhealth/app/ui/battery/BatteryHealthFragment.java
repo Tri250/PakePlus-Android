@@ -122,13 +122,17 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void registerBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        ctx.registerReceiver(batteryReceiver, filter);
     }
 
     private void unregisterBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
+            ctx.unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {
         }
     }
@@ -163,9 +167,13 @@ public class BatteryHealthFragment extends Fragment {
                 BatteryInfo info = batteryDataManager.getBatteryInfo();
                 // 持久化到数据库，供趋势追踪和报告使用
                 persistBatteryInfo(info);
-                mainHandler.post(() -> bindBatteryInfo(info));
+                mainHandler.post(() -> {
+                    if (isAdded()) bindBatteryInfo(info);
+                });
             } catch (Exception e) {
-                mainHandler.post(() -> showDetecting());
+                mainHandler.post(() -> {
+                    if (isAdded()) showDetecting();
+                });
             }
         });
     }
@@ -184,6 +192,7 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void bindBatteryInfo(BatteryInfo info) {
+        if (!isAdded() || getContext() == null) return;
         if (info == null) {
             showDetecting();
             return;
@@ -192,35 +201,41 @@ public class BatteryHealthFragment extends Fragment {
         int health = info.hasValidHealthData() ? Math.round(info.getHealthPercentage()) : -1;
         int level = info.getLevel();
 
-        tvBatteryLevel.setText(level >= 0 ? String.format(Locale.getDefault(), "%d%%", level) : "--");
-        tvChargingStatus.setText(getChargingStatusText(info));
-        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(info.getCurrentNow() / 1000f)));
+        safeSetText(tvBatteryLevel, level >= 0 ? String.format(Locale.getDefault(), "%d%%", level) : "--");
+        safeSetText(tvChargingStatus, getChargingStatusText(info));
+        safeSetText(tvCurrentNow, String.format(Locale.getDefault(), "%.0f mA", Math.abs(info.getCurrentNow() / 1000f)));
 
         int currentCapacity = info.getCurrentCapacity();
-        tvCapacity.setText(currentCapacity > 0
+        safeSetText(tvCapacity, currentCapacity > 0
                 ? String.format(Locale.getDefault(), "%d / %d mAh", currentCapacity, Math.max(currentCapacity, info.getDesignCapacity()))
                 : String.format(Locale.getDefault(), "%d mAh", info.getDesignCapacity()));
 
-        tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", info.getVoltage() / 1000f));
-        tvTechnology.setText(info.getTechnology());
-        tvBatterySource.setText(formatBatterySource(info));
+        safeSetText(tvCycleCount, batteryDataManager.formatCycleCount(info));
+        safeSetText(tvTemperature, String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
+        safeSetText(tvVoltage, String.format(Locale.getDefault(), "%.2f V", info.getVoltage() / 1000f));
+        safeSetText(tvTechnology, info.getTechnology());
+        safeSetText(tvBatterySource, formatBatterySource(info));
 
         if (tvHealthSource != null) {
             tvHealthSource.setText(batteryDataManager.getHealthSourceText());
         }
 
         if (health >= 0) {
-            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", health));
-            tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
-            tvHealthStatus.setText(getHealthStatusText(health));
-            UiAnimationHelper.animateRingProgress(healthRing, health);
+            safeSetText(tvHealthPercentage, String.format(Locale.getDefault(), "%d%%", health));
+            safeSetText(tvHealthGrade, String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
+            safeSetText(tvHealthStatus, getHealthStatusText(health));
+            if (healthRing != null) {
+                UiAnimationHelper.animateRingProgress(healthRing, health);
+            }
         } else {
-            tvHealthPercentage.setText("--");
-            tvHealthGrade.setText("等级 --");
-            tvHealthStatus.setText(getString(R.string.health_status_no_data));
+            safeSetText(tvHealthPercentage, "--");
+            safeSetText(tvHealthGrade, "等级 --");
+            safeSetText(tvHealthStatus, getString(R.string.health_status_no_data));
         }
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private String getChargingStatusText(BatteryInfo info) {
@@ -255,9 +270,17 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void showDetecting() {
-        tvHealthPercentage.setText("--");
-        tvHealthGrade.setText("等级 --");
-        tvHealthStatus.setText(getString(R.string.status_detecting));
+        if (!isAdded() || getContext() == null) return;
+        safeSetText(tvHealthPercentage, "--");
+        safeSetText(tvHealthGrade, "等级 --");
+        safeSetText(tvHealthStatus, getString(R.string.status_detecting));
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        handler.removeCallbacksAndMessages(null);
     }
 
     @Override

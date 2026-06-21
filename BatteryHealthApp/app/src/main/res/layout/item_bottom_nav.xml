@@ -1,31 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:paddingTop="6dp"
-    android:paddingBottom="10dp"
-    android:background="?attr/selectableItemBackgroundBorderless">
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:minWidth="52dp"
+    android:maxWidth="96dp"
+    android:paddingTop="4dp">
 
     <ImageView
         android:id="@+id/nav_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:scaleType="fitCenter"
-        android:importantForAccessibility="no" />
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toTopOf="@id/nav_label"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
 
     <TextView
         android:id="@+id/nav_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textSize="11sp"
-        android:textStyle="normal"
+        android:layout_marginTop="1dp"
+        android:ellipsize="end"
         android:fontFamily="sans-serif-medium"
-        android:textColor="@color/bottom_nav_color"
+        android:gravity="center"
         android:maxLines="1"
-        android:ellipsize="end" />
+        android:textColor="@color/bottom_nav_color"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/nav_icon" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

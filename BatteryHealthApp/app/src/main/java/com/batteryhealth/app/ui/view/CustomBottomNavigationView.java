@@ -12,6 +12,8 @@ import android.widget.TextView;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.batteryhealth.app.R;
 
@@ -25,7 +27,7 @@ import java.util.List;
  * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 6 个 Tab。
  * 2. BottomNavigationView 在低版本 ROM / 特定 Material 组件版本下解析自定义
  *    TextAppearance 时会出现 Binary XML 崩溃。
- * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
+ * 3. 自定义实现彻底绕过上述限制与兼容性问题，并对 6 Tab 平均分布、系统手势条 inset 做专门优化。
  */
 public class CustomBottomNavigationView extends HorizontalScrollView {
 
@@ -41,9 +43,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private int activeColor;
     private int inactiveColor;
     private LinearLayout container;
-    private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
-
-    private int baseHeightPx = -1;
+    private boolean forceAverageWidth = true;
     private int bottomInset = 0;
 
     public CustomBottomNavigationView(@NonNull Context context) {
@@ -65,13 +65,20 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
         container = new LinearLayout(getContext());
         container.setOrientation(LinearLayout.HORIZONTAL);
-        // 默认撑满宽度，配合子项 layout_weight 实现平均分布
+        container.setGravity(android.view.Gravity.CENTER_VERTICAL);
         container.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         addView(container);
 
         activeColor = getResources().getColor(R.color.coloros_blue, getContext().getTheme());
         inactiveColor = getResources().getColor(R.color.label_3, getContext().getTheme());
+
+        // 自动监听系统手势条/导航栏高度，给每个 item 底部增加 padding
+        ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
+            int inset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            applySystemBottomInset(inset);
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     /**
@@ -89,14 +96,12 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 6 Tab，默认平均分配
         boolean average = forceAverageWidth && items.size() > 0;
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
 
-            // 强制平均分布：每个 item 宽度 = 容器宽度 / 数量
             if (average) {
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
@@ -105,9 +110,8 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
-
-            icon.setImageResource(item.iconRes);
-            label.setText(item.label);
+            if (icon != null) icon.setImageResource(item.iconRes);
+            if (label != null) label.setText(item.label);
 
             view.setOnClickListener(v -> {
                 if (listener != null && position != selectedPosition) {
@@ -141,12 +145,14 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
 
-            icon.setSelected(selected);
-            icon.setColorFilter(selected ? activeColor : inactiveColor);
-            label.setTextColor(selected ? activeColor : inactiveColor);
+            if (icon != null) {
+                icon.setSelected(selected);
+                icon.setColorFilter(selected ? activeColor : inactiveColor);
+            }
+            if (label != null) label.setTextColor(selected ? activeColor : inactiveColor);
 
-            // 选中态缩放动画：图标从 1.0 -> 1.12 -> 1.0，文字透明度变化
-            if (selected) {
+            // 选中态缩放动画：图标从 1.0 -> 1.12 -> 1.0
+            if (selected && icon != null) {
                 icon.animate()
                         .scaleX(1.12f)
                         .scaleY(1.12f)
@@ -157,11 +163,13 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                                 .setDuration(120)
                                 .start())
                         .start();
-                label.setAlpha(1.0f);
+                if (label != null) label.setAlpha(1.0f);
             } else {
-                icon.setScaleX(1.0f);
-                icon.setScaleY(1.0f);
-                label.setAlpha(0.85f);
+                if (icon != null) {
+                    icon.setScaleX(1.0f);
+                    icon.setScaleY(1.0f);
+                }
+                if (label != null) label.setAlpha(0.85f);
             }
         }
     }
@@ -171,30 +179,16 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     }
 
     /**
-     * 应用系统底部导航栏/手势条高度：总高度 = 内容高度（XML 64dp）+ 系统 inset
+     * 应用系统底部导航栏/手势条高度：把 inset 均匀加到每个 item 的底部 padding，
+     * 保证图标+文字始终在手势条上方居中，而不会整体被压缩或拉伸变形。
      */
     public void applySystemBottomInset(int inset) {
-        ensureBaseHeight();
-        if (this.bottomInset == inset) {
-            return;
-        }
+        if (this.bottomInset == inset) return;
         this.bottomInset = inset;
-        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
-        if (lp != null) {
-            lp.height = baseHeightPx + inset;
-            setLayoutParams(lp);
-        }
-    }
-
-    private void ensureBaseHeight() {
-        if (baseHeightPx > 0) {
-            return;
-        }
-        android.view.ViewGroup.LayoutParams lp = getLayoutParams();
-        if (lp != null && lp.height > 0) {
-            baseHeightPx = lp.height;
-        } else {
-            baseHeightPx = (int) (64 * getResources().getDisplayMetrics().density + 0.5f);
+        int basePaddingBottom = (int) (6 * getResources().getDisplayMetrics().density + 0.5f);
+        for (View item : itemViews) {
+            item.setPadding(item.getPaddingLeft(), item.getPaddingTop(),
+                    item.getPaddingRight(), basePaddingBottom + inset);
         }
     }
 

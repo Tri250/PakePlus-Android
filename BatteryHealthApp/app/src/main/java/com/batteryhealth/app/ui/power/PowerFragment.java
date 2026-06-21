@@ -144,13 +144,17 @@ public class PowerFragment extends Fragment {
     }
 
     private void registerBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        ctx.registerReceiver(batteryReceiver, filter);
     }
 
     private void unregisterBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
+            ctx.unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {
         }
     }
@@ -180,13 +184,16 @@ public class PowerFragment extends Fragment {
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Intent intent = ctx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent != null) {
             updateFromIntent(intent);
         }
     }
 
     private void updateFromIntent(Intent intent) {
+        if (!isAdded() || getContext() == null) return;
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         int batteryPct = scale > 0 ? (int) ((level / (float) scale) * 100) : 0;
@@ -199,9 +206,12 @@ public class PowerFragment extends Fragment {
         float voltageV = voltage / 1000f;
 
         int current = 0;
-        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        Context ctx = getContext();
+        if (ctx != null) {
+            BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
+            if (bm != null) {
+                current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+            }
         }
         float currentA = Math.abs(current) / 1000000f;
         float currentMa = Math.abs(current) / 1000f;
@@ -212,30 +222,30 @@ public class PowerFragment extends Fragment {
         float watt = voltageV * currentA;
 
         // Update hero
-        tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
+        safeSetText(tvWatt, String.format(Locale.getDefault(), "%.1f", watt));
         String powerType = watt > 20 ? getString(R.string.status_super_fast_charge)
                 : watt > 10 ? getString(R.string.status_fast_charge)
                 : isCharging ? getString(R.string.status_normal_charge) : getString(R.string.status_not_charging);
-        tvPowerType.setText(powerType);
-        UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
+        safeSetText(tvPowerType, powerType);
+        if (progressCharge != null) UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
         // Update details
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
+        safeSetText(tvVoltage, String.format(Locale.getDefault(), "%.2f V", voltageV));
+        safeSetText(tvCurrent, String.format(Locale.getDefault(), "%.0f mA", currentMa));
 
         String stage;
         if (batteryPct >= 95) stage = getString(R.string.stage_trickle);
         else if (batteryPct >= 80) stage = getString(R.string.stage_constant_voltage);
         else stage = getString(R.string.stage_fast);
-        tvChargeStage.setText(stage);
+        safeSetText(tvChargeStage, stage);
 
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
+        safeSetText(tvTemperature, String.format(Locale.getDefault(), "%.1f°C", tempC));
+        safeSetText(tvBatteryLevel, String.format(Locale.getDefault(), "%d%%", batteryPct));
+        safeSetText(tvEstimatedFull, isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
 
         // 充电协议识别
-        ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
-        tvProtocol.setText(protocolResult != null ? protocolResult.primary : getString(R.string.status_unknown));
+        ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(ctx, watt);
+        safeSetText(tvProtocol, protocolResult != null ? protocolResult.primary : getString(R.string.status_unknown));
 
         // 功率曲线数据
         long now = System.currentTimeMillis();
@@ -259,17 +269,21 @@ public class PowerFragment extends Fragment {
             lastWatt = watt;
             lastSampleTime = now;
 
-            tvChargeCount.setText(String.valueOf(powerPoints.size()));
-            tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", sessionEnergy / Math.max(1, (now - sessionStartTime) / (1000f * 60f * 60f))));
+            safeSetText(tvChargeCount, String.valueOf(powerPoints.size()));
+            safeSetText(tvAvgPower, String.format(Locale.getDefault(), "%.1f W", sessionEnergy / Math.max(1, (now - sessionStartTime) / (1000f * 60f * 60f))));
             long elapsedMin = (now - sessionStartTime) / (1000 * 60);
-            tvTotalChargeTime.setText(String.format(Locale.getDefault(), "%d分", elapsedMin));
-            tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", Math.max(0, batteryPct - startLevel)));
+            safeSetText(tvTotalChargeTime, String.format(Locale.getDefault(), "%d分", elapsedMin));
+            safeSetText(tvTotalCharged, String.format(Locale.getDefault(), "%d%%", Math.max(0, batteryPct - startLevel)));
         } else {
             // 未充电时保持历史曲线
             sessionStartTime = -1;
             lastSampleTime = -1;
             lastWatt = 0;
         }
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private void updateChart() {
@@ -286,12 +300,13 @@ public class PowerFragment extends Fragment {
         chartPower.setVisibility(View.VISIBLE);
 
         LineDataSet dataSet = new LineDataSet(entries, "功率");
-        dataSet.setColor(getColor(R.color.ios_green));
+        int lineColor = getColor(R.color.coloros_green);
+        dataSet.setColor(lineColor);
         dataSet.setLineWidth(2.5f);
         dataSet.setDrawCircles(false);
         dataSet.setDrawValues(false);
         dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setFillColor(getColor(R.color.ios_green));
+        dataSet.setFillColor(lineColor);
         dataSet.setFillAlpha(30);
         dataSet.setDrawFilled(true);
 
@@ -311,7 +326,9 @@ public class PowerFragment extends Fragment {
     }
 
     private float getBatteryCapacity() {
-        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
+        Context ctx = getContext();
+        if (ctx == null) return 4000f;
+        BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
         if (bm != null) {
             int energy = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
             if (energy > 0) return energy / 1000f;
@@ -323,6 +340,7 @@ public class PowerFragment extends Fragment {
         executor.execute(() -> {
             try {
                 AppDatabase db = com.batteryhealth.app.BatteryHealthApplication.getDatabase();
+                if (db == null) return;
                 long since = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
                 List<PowerHistory> history = db.powerHistoryDao().getSince(since);
                 if (history != null && !history.isEmpty()) {
@@ -331,8 +349,10 @@ public class PowerFragment extends Fragment {
                         points.add(new PowerPoint(h.getTimestamp(), h.getPower()));
                     }
                     handler.post(() -> {
-                        powerPoints.addAll(points);
-                        updateChart();
+                        if (isAdded()) {
+                            powerPoints.addAll(points);
+                            updateChart();
+                        }
                     });
                 }
             } catch (Exception ignored) {
@@ -361,7 +381,15 @@ public class PowerFragment extends Fragment {
     }
 
     private int getColor(int resId) {
-        return requireContext().getColor(resId);
+        Context ctx = getContext();
+        return ctx != null ? ctx.getColor(resId) : 0;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        handler.removeCallbacksAndMessages(null);
     }
 
     @Override

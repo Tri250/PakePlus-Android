@@ -76,7 +76,9 @@ public class EnduranceFragment extends Fragment {
 
     private boolean detectWatch() {
         // 通过 Configuration 和 UI 模式判断是否是手表
-        return (requireContext().getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_TYPE_MASK)
+        Context ctx = getContext();
+        if (ctx == null) return false;
+        return (ctx.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_TYPE_MASK)
                 == android.content.res.Configuration.UI_MODE_TYPE_WATCH;
     }
 
@@ -122,14 +124,18 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void loadSavedState() {
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
         lastBatteryLevel = prefs.getInt(KEY_LAST_LEVEL, -1);
         lastUpdateTime = prefs.getLong(KEY_LAST_TIME, -1);
         dischargeRate = prefs.getFloat(KEY_DISCHARGE_RATE, 0f);
     }
 
     private void saveState() {
-        requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE)
+        Context ctx = getContext();
+        if (ctx == null) return;
+        ctx.getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE)
                 .edit()
                 .putInt(KEY_LAST_LEVEL, lastBatteryLevel)
                 .putLong(KEY_LAST_TIME, lastUpdateTime)
@@ -138,13 +144,17 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void registerBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        ctx.registerReceiver(batteryReceiver, filter);
     }
 
     private void unregisterBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
+            ctx.unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {
         }
     }
@@ -174,13 +184,16 @@ public class EnduranceFragment extends Fragment {
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Intent intent = ctx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent != null) {
             updateFromIntent(intent);
         }
     }
 
     private void updateFromIntent(Intent intent) {
+        if (!isAdded() || getContext() == null) return;
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         int batteryPct = scale > 0 ? (int) ((level / (float) scale) * 100) : 0;
@@ -191,9 +204,12 @@ public class EnduranceFragment extends Fragment {
         String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
 
         int current = 0;
-        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        Context ctx = getContext();
+        if (ctx != null) {
+            BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
+            if (bm != null) {
+                current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+            }
         }
         float currentMa = current / 1000f;
 
@@ -224,21 +240,21 @@ public class EnduranceFragment extends Fragment {
         float remainingHours = isCharging ? 0 : batteryPct / dischargeRate;
         int hours = (int) remainingHours;
         int minutes = (int) ((remainingHours - hours) * 60);
-        tvEnduranceHours.setText(String.format(Locale.getDefault(), "%d小时%d分", hours, minutes));
-        tvEnduranceMeta.setText(String.format(Locale.getDefault(),
+        safeSetText(tvEnduranceHours, String.format(Locale.getDefault(), "%d小时%d分", hours, minutes));
+        safeSetText(tvEnduranceMeta, String.format(Locale.getDefault(),
                 getString(R.string.meta_endurance), batteryPct, dischargeRate));
 
         // Quick metrics
-        tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
-        tvMetricTemp.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+        safeSetText(tvMetricBattery, String.format(Locale.getDefault(), "%d%%", batteryPct));
+        safeSetText(tvMetricDischarge, String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
+        safeSetText(tvMetricTemp, String.format(Locale.getDefault(), "%.1f°C", tempC));
 
         // Details
-        tvChargingStatus.setText(chargingStatus);
-        tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
-        tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
-        tvEstimatedFull.setText(isCharging ? estimateFullChargeTime(batteryPct, currentMa) : "--");
-        tvScreenOnTime.setText(formatDuration(SystemClock.uptimeMillis()));
+        safeSetText(tvChargingStatus, chargingStatus);
+        safeSetText(tvUsedTime, formatDuration(SystemClock.elapsedRealtime()));
+        safeSetText(tvConsumedBattery, String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
+        safeSetText(tvEstimatedFull, isCharging ? estimateFullChargeTime(batteryPct, currentMa) : "--");
+        safeSetText(tvScreenOnTime, formatDuration(SystemClock.uptimeMillis()));
 
         // 手表专属续航分析
         if (isWatch && watchSection != null) {
@@ -249,6 +265,10 @@ public class EnduranceFragment extends Fragment {
         if (tvAppConsumptionTitle != null) {
             tvAppConsumptionTitle.setVisibility(isWatch ? View.GONE : View.VISIBLE);
         }
+    }
+
+    private void safeSetText(TextView tv, String text) {
+        if (tv != null) tv.setText(text);
     }
 
     private String estimateFullChargeTime(int batteryPct, float currentMa) {
@@ -262,9 +282,11 @@ public class EnduranceFragment extends Fragment {
     }
 
     private float getBatteryCapacity() {
-        PowerManager pm = (PowerManager) requireContext().getSystemService(Context.POWER_SERVICE);
+        Context ctx = getContext();
+        if (ctx == null) return 4000;
+        PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
+            BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
             if (bm != null) {
                 int energy = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
                 if (energy > 0) return energy / 1000f;
@@ -275,18 +297,22 @@ public class EnduranceFragment extends Fragment {
 
     private void updateWatchEndurance(int batteryPct, boolean isCharging) {
         if (tvWatchEndurance == null || tvWatchMode == null) return;
+        Context ctx = getContext();
+        if (ctx == null) return;
 
         // 手表模式判断：始终开启显示、运动模式、省电模式
         String mode = "日常模式";
         float watchDischargeRate = dischargeRate;
 
-        if (Settings.System.getInt(requireContext().getContentResolver(), "low_power", 0) == 1) {
-            mode = "省电模式";
-            watchDischargeRate *= 0.6f;
-        } else if (isWatchAlwaysOn()) {
-            mode = "AOD常显模式";
-            watchDischargeRate *= 1.3f;
-        }
+        try {
+            if (Settings.System.getInt(ctx.getContentResolver(), "low_power", 0) == 1) {
+                mode = "省电模式";
+                watchDischargeRate *= 0.6f;
+            } else if (isWatchAlwaysOn()) {
+                mode = "AOD常显模式";
+                watchDischargeRate *= 1.3f;
+            }
+        } catch (Exception ignored) {}
 
         float hours = isCharging ? 0 : batteryPct / watchDischargeRate;
         int h = (int) hours;
@@ -297,8 +323,10 @@ public class EnduranceFragment extends Fragment {
     }
 
     private boolean isWatchAlwaysOn() {
+        Context ctx = getContext();
+        if (ctx == null) return false;
         try {
-            return Settings.System.getInt(requireContext().getContentResolver(), "screen_always_on") == 1;
+            return Settings.System.getInt(ctx.getContentResolver(), "screen_always_on") == 1;
         } catch (Settings.SettingNotFoundException e) {
             return false;
         }
@@ -308,6 +336,13 @@ public class EnduranceFragment extends Fragment {
         long hours = ms / (1000 * 60 * 60);
         long minutes = (ms % (1000 * 60 * 60)) / (1000 * 60);
         return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        handler.removeCallbacksAndMessages(null);
     }
 
     @Override
