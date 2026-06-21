@@ -171,6 +171,7 @@
     <string name="health_source_charge_counter">电荷计数 (可信度 %1$d%%)</string>
     <string name="health_source_usage_days">使用天数估算 (可信度 %1$d%%)</string>
     <string name="health_source_estimate">估算 (可信度 %1$d%%)</string>
+    <string name="health_source_bugreport">Bugreport 分析</string>
     <string name="health_good">良好</string>
     <string name="health_average">一般</string>
     <string name="health_poor">较差</string>

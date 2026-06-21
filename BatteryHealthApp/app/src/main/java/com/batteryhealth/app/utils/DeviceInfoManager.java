@@ -671,13 +671,13 @@ public class DeviceInfoManager {
         }
         
         // Dimensity 8 系列（高端）
-        if (upper.contains("MT6895") || upper.contains("8300")) {
+        if (upper.contains("MT6896") || upper.contains("8300")) {
             if (upper.contains("-ULTRA") || upper.contains("ULTRA")) {
                 return "联发科天玑 8300-Ultra";
             }
             return "联发科天玑 8300";
         }
-        if (upper.contains("MT6878") || upper.contains("8200")) {
+        if (upper.contains("MT6895") || upper.contains("8200")) {
             if (upper.contains("-ULTRA") || upper.contains("ULTRA")) {
                 return "联发科天玑 8200-Ultra";
             }

@@ -265,6 +265,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setOffscreenPageLimit(4);
         // 设置页面切换动画
         viewPager.setPageTransformer((page, position) -> {
+            if (page == null) return;
             float absPosition = Math.abs(position);
             if (absPosition >= 1f) {
                 page.setAlpha(1f);

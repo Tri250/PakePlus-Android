@@ -285,24 +285,40 @@ public class BatteryDataManager {
         }
         info.setTechnology(technology.isEmpty() ? context.getString(R.string.battery_technology_default) : technology);
 
-        // 7. 设计容量
+        // 7. 设计容量（优先使用 bugreport 数据）
         String[] designSourceHolder = new String[1];
         int designCapacity = getDesignCapacity(designSourceHolder);
+        if (hasBugreportData && bugreportDesignCapacity > 0) {
+            designCapacity = bugreportDesignCapacity;
+            designSourceHolder[0] = "bugreport";
+        }
         info.setDesignCapacity(designCapacity);
         info.setDesignCapacitySource(designCapacity > 0 ? designSourceHolder[0] : "unknown");
 
-        // 8. 当前满充容量（FCC）
+        // 8. 当前满充容量（FCC，优先使用 bugreport 数据）
         int fullCapacity = getFullCapacity(batteryManager);
+        if (hasBugreportData && bugreportFullCapacity > 0) {
+            fullCapacity = bugreportFullCapacity;
+        }
         info.setCurrentCapacity(fullCapacity);
         info.setFullCapacity(fullCapacity);
-        info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
+        info.setCurrentCapacitySource(fullCapacity > 0 ? (hasBugreportData ? "bugreport" : "battery_manager_or_sysfs") : "unknown");
 
         // 9. 充电计数
         int chargeCounterMah = getChargeCounterMah(batteryManager);
         info.setChargeCounter(chargeCounterMah * 1000);
 
-        // 10. 健康度（三段损耗 + 中值滤波）
-        BatteryHealthResult health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
+        // 10. 健康度（三段损耗 + 中值滤波，优先使用 bugreport 数据）
+        BatteryHealthResult health;
+        if (hasBugreportData && bugreportHealth > 0) {
+            // 使用 bugreport 提供的健康度，但保留其他计算字段
+            health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
+            health.healthPercentage = bugreportHealth;
+            health.confidence = Math.max(health.confidence, 0.85f); // bugreport 数据置信度较高
+            health.sourceTag = "bugreport";
+        } else {
+            health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
+        }
         // 中值滤波
         float filteredHealth = applyMedianFilter(health.healthPercentage);
         info.setHealthPercentage(filteredHealth);
@@ -313,11 +329,16 @@ public class BatteryDataManager {
         info.setCycleLossPercent(health.cycleLossPercent);
         info.setUsageLossPercent(health.usageLossPercent);
 
-        // 11. 循环次数
+        // 11. 循环次数（优先使用 bugreport 数据）
         int cycleCount = readCycleCount(batteryManager);
+        if (hasBugreportData && bugreportCycleCount >= 0) {
+            cycleCount = bugreportCycleCount;
+            info.setCycleCountSource("bugreport");
+        } else {
+            info.setCycleCountSource(cycleCount >= 0 ? "sysfs_or_battery_manager" : "unavailable");
+        }
         info.setCycleCount(cycleCount);
         info.setCycleCountEstimated(cycleCount < 0);
-        info.setCycleCountSource(cycleCount >= 0 ? "sysfs_or_battery_manager" : "unavailable");
 
         // 12. 电池来源（多维验证）
         BatterySourceResult source = determineBatterySource(intent, fullCapacity, designCapacity);
@@ -326,14 +347,29 @@ public class BatteryDataManager {
         info.setBatterySourceReason(source.reason);
         info.setBatteryInfoMatch(source.confidence >= 0.5f && !source.source.equals(context.getString(R.string.battery_source_third_party)));
 
-        // 13. 制造商
-        info.setManufacturer(readSysfsString(MANUFACTURER_INFO_PATHS, ""));
+        // 13. 制造商（优先使用 bugreport 数据）
+        String manufacturer = readSysfsString(MANUFACTURER_INFO_PATHS, "");
+        if (hasBugreportData && !bugreportTechnology.isEmpty() && manufacturer.isEmpty()) {
+            // 如果 bugreport 中有技术信息但制造商为空，尝试从技术推断
+            manufacturer = bugreportTechnology;
+        }
+        info.setManufacturer(manufacturer);
 
         // 14. 序列号
         info.setBatterySerial(readBatterySerial(intent));
 
-        // 14. 系统健康
+        // 15. 系统健康
         info.setSystemHealth(intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN));
+
+        // 16. 电压和温度（优先使用 bugreport 数据）
+        if (hasBugreportData) {
+            if (bugreportVoltage > 0) {
+                info.setVoltage((int) (bugreportVoltage * 1000)); // V -> mV
+            }
+            if (bugreportTemp > 0) {
+                info.setTemperature(bugreportTemp);
+            }
+        }
 
         return info;
     }
@@ -842,6 +878,7 @@ public class BatteryDataManager {
     }
 
     private String mapHealthDataSource(float confidence, String sourceTag) {
+        if ("bugreport".equals(sourceTag)) return "bugreport";
         if ("android16_native_health".equals(sourceTag)) return "android16_native_health";
         if ("fcc_ratio".equals(sourceTag)) {
             return confidence >= 0.95f ? "fcc_ratio" : "user_calibrated";
@@ -1131,10 +1168,63 @@ public class BatteryDataManager {
         return batterySourceText;
     }
 
+    // region Bugreport 数据集成
+
+    private int bugreportHealth = -1;
+    private int bugreportCycleCount = -1;
+    private int bugreportDesignCapacity = -1;
+    private int bugreportFullCapacity = -1;
+    private float bugreportVoltage = -1f;
+    private float bugreportTemp = -1f;
+    private String bugreportTechnology = "";
+    private boolean hasBugreportData = false;
+
+    /**
+     * 设置从 bugreport 解析得到的数据。
+     * 这些数据会优先于系统实时读取的数据，用于提供更准确的电池健康信息。
+     */
+    public void setBugreportData(int health, int cycleCount, int designCapacity,
+                                  int fullCapacity, float voltage, float temp,
+                                  String technology) {
+        this.bugreportHealth = health;
+        this.bugreportCycleCount = cycleCount;
+        this.bugreportDesignCapacity = designCapacity;
+        this.bugreportFullCapacity = fullCapacity;
+        this.bugreportVoltage = voltage;
+        this.bugreportTemp = temp;
+        this.bugreportTechnology = technology != null ? technology : "";
+        this.hasBugreportData = true;
+        Log.d(TAG, "Bugreport data set: health=" + health + ", cycles=" + cycleCount);
+    }
+
+    /**
+     * 清除 bugreport 数据，恢复使用系统实时数据。
+     */
+    public void clearBugreportData() {
+        this.hasBugreportData = false;
+        this.bugreportHealth = -1;
+        this.bugreportCycleCount = -1;
+        this.bugreportDesignCapacity = -1;
+        this.bugreportFullCapacity = -1;
+        this.bugreportVoltage = -1f;
+        this.bugreportTemp = -1f;
+        this.bugreportTechnology = "";
+    }
+
+    /**
+     * 检查是否有 bugreport 数据可用。
+     */
+    public boolean hasBugreportData() {
+        return hasBugreportData;
+    }
+
+    // endregion
+
     private String formatHealthSource(BatteryInfo info) {
         if (info == null) return context.getString(R.string.status_unknown);
         float conf = info.getHealthConfidence();
         String source = info.getHealthDataSource();
+        if ("bugreport".equals(source)) return context.getString(R.string.health_source_bugreport);
         if ("user_calibrated".equals(source)) return context.getString(R.string.health_source_user_calibrated, (int) (conf * 100));
         if ("fcc_ratio".equals(source)) return context.getString(R.string.health_source_fcc_ratio, (int) (conf * 100));
         if ("charge_counter_ratio".equals(source)) return context.getString(R.string.health_source_charge_counter, (int) (conf * 100));

@@ -328,6 +328,16 @@ public class StateLayoutHelper {
         currentState = State.CONTENT;
 
         hideOverlay();
+        
+        // 确保内容容器可见
+        if (contentContainer != null && contentContainer.getVisibility() != View.VISIBLE) {
+            contentContainer.setVisibility(View.VISIBLE);
+            contentContainer.setAlpha(0f);
+            contentContainer.animate()
+                    .alpha(1f)
+                    .setDuration(CROSS_FADE_DURATION)
+                    .start();
+        }
     }
 
     /**
