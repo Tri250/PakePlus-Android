@@ -2,6 +2,10 @@
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/anim_duration_fade_up"
     android:interpolator="@android:interpolator/fast_out_slow_in">
+    <!-- ============================== -->
+    <!-- ColorOS 16 元素上浮淡入动画 -->
+    <!-- 用于列表项、卡片等依次出现 -->
+    <!-- ============================== -->
     <translate
         android:fromYDelta="16dp"
         android:toYDelta="0dp" />

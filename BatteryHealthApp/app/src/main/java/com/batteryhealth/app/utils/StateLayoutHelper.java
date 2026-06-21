@@ -65,48 +65,55 @@ public class StateLayoutHelper {
                 ViewGroup.LayoutParams.MATCH_PARENT));
         overlayContainer.setVisibility(View.GONE);
 
-        // 安全初始化：处理 parent 为 null 或其他异常情况
+        // 问题修复：安全初始化，处理 parent 为 null、已 detached、或其他异常情况。
+        // 在 Fragment 被 ViewPager2 复用时，contentContainer 可能已被附加到新的视图层级，
+        // 需要避免重复 remove/add 导致 IllegalStateException。
+        boolean attached = false;
         try {
             if (contentContainer.getParent() instanceof ViewGroup) {
                 ViewGroup parent = (ViewGroup) contentContainer.getParent();
-                int index = parent.indexOfChild(contentContainer);
-                if (index >= 0) {
-                    parent.removeView(contentContainer);
+                // 问题修复：检查 parent 是否已附加到窗口，避免在 detached 状态下操作视图
+                if (parent.getWindowToken() != null) {
+                    int index = parent.indexOfChild(contentContainer);
+                    if (index >= 0) {
+                        parent.removeView(contentContainer);
 
-                    FrameLayout wrapper = new FrameLayout(contentContainer.getContext());
-                    wrapper.setLayoutParams(new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT));
+                        FrameLayout wrapper = new FrameLayout(contentContainer.getContext());
+                        wrapper.setLayoutParams(new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT));
 
-                    contentContainer.setLayoutParams(new FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.MATCH_PARENT,
-                            FrameLayout.LayoutParams.MATCH_PARENT));
+                        contentContainer.setLayoutParams(new FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT));
 
-                    wrapper.addView(contentContainer);
-                    wrapper.addView(overlayContainer);
+                        wrapper.addView(contentContainer);
+                        wrapper.addView(overlayContainer);
 
-                    parent.addView(wrapper, index);
-                } else {
-                    // index 异常时直接添加 overlay 到 contentContainer
-                    contentContainer.addView(overlayContainer);
+                        parent.addView(wrapper, index);
+                        attached = true;
+                    }
                 }
-            } else {
-                // parent 为 null 或非 ViewGroup 时，直接添加 overlay 到 contentContainer
-                contentContainer.addView(overlayContainer);
             }
         } catch (Exception e) {
-            // 任何异常情况下，尝试直接添加 overlay
+            android.util.Log.w("StateLayoutHelper", "Wrapper attach failed, fallback to direct add", e);
+            attached = false;
+        }
+
+        // 如果 wrapper 方式失败，直接添加 overlay 到 contentContainer
+        if (!attached) {
             try {
-                if (contentContainer.getChildCount() == 0 || 
-                    contentContainer.indexOfChild(overlayContainer) < 0) {
+                if (contentContainer.indexOfChild(overlayContainer) < 0) {
                     contentContainer.addView(overlayContainer);
                 }
-            } catch (Exception ignored) {
-                // 最终兜底：忽略 overlay，仅记录日志
+                attached = true;
+            } catch (Exception e) {
                 android.util.Log.e("StateLayoutHelper", "Failed to add overlay container", e);
             }
         }
 
+        // 问题修复：无论 overlay 是否成功附加，都初始化 overlay 视图，
+        // 这样后续状态切换方法不会因为空指针而崩溃。
         initOverlayViews();
     }
 
@@ -247,15 +254,17 @@ public class StateLayoutHelper {
      */
     public void showLoading(String message) {
         if (currentState == State.LOADING) return;
+        // 问题修复：增加视图有效性检查，防止在 Fragment 已销毁后调用导致空指针
+        if (loadingView == null || overlayContainer == null) return;
         currentState = State.LOADING;
 
         emptyView.setVisibility(View.GONE);
         errorView.setVisibility(View.GONE);
 
-        if (message != null) {
+        if (message != null && loadingMessageView != null) {
             loadingMessageView.setText(message);
             loadingMessageView.setVisibility(View.VISIBLE);
-        } else {
+        } else if (loadingMessageView != null) {
             loadingMessageView.setVisibility(View.GONE);
         }
 
@@ -273,25 +282,27 @@ public class StateLayoutHelper {
     public void showEmpty(String message, @DrawableRes int icon,
                           View.OnClickListener actionListener, String actionText) {
         if (currentState == State.EMPTY) return;
+        // 问题修复：增加视图有效性检查
+        if (emptyView == null || overlayContainer == null) return;
         currentState = State.EMPTY;
 
         loadingView.setVisibility(View.GONE);
         errorView.setVisibility(View.GONE);
 
-        if (icon != 0) {
+        if (icon != 0 && emptyIconView != null && contentContainer != null) {
             Context ctx = contentContainer.getContext();
             emptyIconView.setImageDrawable(ContextCompat.getDrawable(ctx, icon));
             emptyIconView.setColorFilter(ContextCompat.getColor(ctx, R.color.label_3),
                     PorterDuff.Mode.SRC_IN);
         }
 
-        emptyMessageView.setText(message);
+        if (emptyMessageView != null) emptyMessageView.setText(message);
 
-        if (actionListener != null && actionText != null) {
+        if (actionListener != null && actionText != null && emptyActionButton != null) {
             emptyActionButton.setText(actionText);
             emptyActionButton.setOnClickListener(actionListener);
             emptyActionButton.setVisibility(View.VISIBLE);
-        } else {
+        } else if (emptyActionButton != null) {
             emptyActionButton.setVisibility(View.GONE);
         }
 
@@ -306,14 +317,16 @@ public class StateLayoutHelper {
      */
     public void showError(String message, View.OnClickListener retryListener) {
         if (currentState == State.ERROR) return;
+        // 问题修复：增加视图有效性检查
+        if (errorView == null || overlayContainer == null) return;
         currentState = State.ERROR;
 
         loadingView.setVisibility(View.GONE);
         emptyView.setVisibility(View.GONE);
 
-        errorMessageView.setText(message);
+        if (errorMessageView != null) errorMessageView.setText(message);
 
-        if (retryListener != null) {
+        if (retryListener != null && retryButtonView != null) {
             retryButtonView.setOnClickListener(retryListener);
         }
 
@@ -322,14 +335,15 @@ public class StateLayoutHelper {
 
     /**
      * 显示原始内容，隐藏所有 overlay。
+     * 问题修复：增加 overlayContainer 空指针检查，避免在已 cleanup 后调用崩溃。
      */
     public void showContent() {
         if (currentState == State.CONTENT) return;
         currentState = State.CONTENT;
 
         hideOverlay();
-        
-        // 确保内容容器可见
+
+        // 确保内容容器可见，使用淡入动画平滑过渡
         if (contentContainer != null && contentContainer.getVisibility() != View.VISIBLE) {
             contentContainer.setVisibility(View.VISIBLE);
             contentContainer.setAlpha(0f);
@@ -337,6 +351,23 @@ public class StateLayoutHelper {
                     .alpha(1f)
                     .setDuration(CROSS_FADE_DURATION)
                     .start();
+        }
+    }
+
+    /**
+     * 清理资源：移除 overlay 容器，恢复原始视图层级。
+     * 问题修复：供 Fragment onDestroyView 调用，防止 Fragment 复用时旧的 overlay
+     * 仍然附着在已销毁的视图层级上。
+     */
+    public void cleanup() {
+        try {
+            hideOverlay();
+            if (overlayContainer != null && overlayContainer.getParent() instanceof ViewGroup) {
+                ViewGroup parent = (ViewGroup) overlayContainer.getParent();
+                parent.removeView(overlayContainer);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("StateLayoutHelper", "Error during cleanup", e);
         }
     }
 

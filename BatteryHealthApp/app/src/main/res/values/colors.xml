@@ -3,6 +3,7 @@
     <!-- ============================== -->
     <!-- ColorOS 16 Design Tokens - Light -->
     <!-- ============================== -->
+
     <!-- 背景层：ColorOS 16 采用柔和暖灰，层级清晰 -->
     <color name="bg_canvas">#F7F8FA</color>
     <color name="bg_canvas_2">#F0F2F5</color>
@@ -13,7 +14,7 @@
     <color name="surface_solid">#FFFFFF</color>
     <color name="surface_2">#F5F7FA</color>
 
-    <!-- 文字层 -->
+    <!-- 文字层：ColorOS 16 三级文字色，确保可读性 -->
     <color name="label">#1A1A1C</color>
     <color name="label_2">#666666</color>
     <color name="label_3">#999999</color>
@@ -34,7 +35,34 @@
     <color name="coloros_cyan">#00C7D4</color>
     <color name="coloros_yellow">#FFBD2E</color>
 
+    <!-- ============================== -->
+    <!-- 液态玻璃 (Liquid Glass) 专用色板 -->
+    <!-- ============================== -->
+    <!-- 玻璃表面：低透明度白色，营造通透感 -->
+    <color name="glass_surface">#CCFFFFFF</color>
+    <color name="glass_surface_subtle">#99FFFFFF</color>
+    <color name="glass_surface_dark">#1AFFFFFF</color>
+
+    <!-- 玻璃边框：极细半透明边框，增强玻璃边缘质感 -->
+    <color name="glass_border">#33FFFFFF</color>
+    <color name="glass_border_strong">#4DFFFFFF</color>
+    <color name="glass_border_dark">#1A000000</color>
+
+    <!-- 玻璃高光：顶部反光效果 -->
+    <color name="glass_highlight">#40FFFFFF</color>
+    <color name="glass_highlight_subtle">#1AFFFFFF</color>
+
+    <!-- 玻璃阴影：底部微阴影，增加层级感 -->
+    <color name="glass_shadow">#0D000000</color>
+    <color name="glass_shadow_strong">#1A000000</color>
+
+    <!-- 玻璃发光：强调色微光效果 -->
+    <color name="glass_glow_blue">#1A1B8CFF</color>
+    <color name="glass_glow_green">#1A00D68F</color>
+
+    <!-- ============================== -->
     <!-- 历史兼容别名（逐步迁移中，仍被部分代码引用） -->
+    <!-- ============================== -->
     <color name="blue">@color/coloros_blue</color>
     <color name="green">@color/coloros_green</color>
     <color name="teal">@color/coloros_cyan</color>

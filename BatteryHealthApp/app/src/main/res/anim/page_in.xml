@@ -2,6 +2,10 @@
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/anim_duration_page_in"
     android:interpolator="@android:interpolator/fast_out_slow_in">
+    <!-- ============================== -->
+    <!-- ColorOS 16 页面内容进入动画 -->
+    <!-- 轻微上浮 + 淡入，柔和呈现 -->
+    <!-- ============================== -->
     <translate
         android:fromYDelta="18dp"
         android:toYDelta="0dp" />

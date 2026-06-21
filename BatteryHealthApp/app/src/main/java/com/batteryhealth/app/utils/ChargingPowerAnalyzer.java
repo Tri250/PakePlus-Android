@@ -69,13 +69,13 @@ public class ChargingPowerAnalyzer {
 
     // ==================== 预估充满时间常量 ====================
 
-    /** CC 阶段平均效率（相对设计容量的充电速率） */
-    private static final float CC_CHARGE_RATE = 0.7f;
+    /** CC 阶段速率系数：恒流阶段接近满功率充电 */
+    private static final float CC_CHARGE_RATE = 1.0f;
 
-    /** CV 阶段平均效率（相对设计容量的充电速率） */
-    private static final float CV_CHARGE_RATE = 0.2f;
+    /** CV 阶段速率系数：恒压阶段功率下降至约 30% */
+    private static final float CV_CHARGE_RATE = 0.3f;
 
-    /** 涓流阶段平均效率（相对设计容量的充电速率） */
+    /** 涓流阶段速率系数：涓流阶段功率极低 */
     private static final float TRICKLE_CHARGE_RATE = 0.05f;
 
     /** 历史效率记录最大条数 */
@@ -583,7 +583,8 @@ public class ChargingPowerAnalyzer {
             return getHistoricalAverageEfficiency();
         }
 
-        if (batteryPowerW <= 0 || batteryPowerW > inputPowerW) {
+        // 允许 5% 的测量误差容差，避免轻微波动导致 fallback
+        if (batteryPowerW <= 0 || batteryPowerW > inputPowerW * 1.05f) {
             // 电池端功率异常（可能采样不准），使用历史平均
             return getHistoricalAverageEfficiency();
         }

@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
+    <!-- ============================== -->
+    <!-- ColorOS 16 健康等级胶囊 -->
+    <!-- 绿蓝渐变微光，强调活力感 -->
+    <!-- ============================== -->
     <corners android:radius="@dimen/radius_pill" />
     <gradient
-        android:startColor="#1A00D68F"
-        android:endColor="#1A1B8CFF"
+        android:startColor="@color/glass_glow_green"
+        android:endColor="@color/glass_glow_blue"
         android:angle="0" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/glass_border_strong" />
 </shape>

@@ -124,6 +124,7 @@
     <string name="error_view_details">查看详情</string>
     <string name="health_check_label_running">检测中…</string>
     <string name="error_view_load_failed">加载失败: %1$s - %2$s</string>
+    <string name="status_load_failed">数据加载失败，点击重试</string>
     <string name="user_agreement_body">用户协议内容</string>
     <string name="privacy_policy_body">隐私政策内容</string>
     <string name="user_agreement_title">用户协议</string>

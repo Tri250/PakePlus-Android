@@ -1,31 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- ColorOS 16 液态玻璃卡片：柔和半透明 + 顶部高光 + 细边框 -->
+    <!-- ============================== -->
+    <!-- ColorOS 16 液态玻璃卡片 -->
+    <!-- 多层叠加：底色 + 顶部高光 + 底部微阴影 + 细边框 -->
+    <!-- ============================== -->
+
+    <!-- 第1层：卡片底色，柔和半透明营造通透感 -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/liquid_glass_surface" />
+            <solid android:color="@color/glass_surface" />
             <corners android:radius="@dimen/radius_card" />
         </shape>
     </item>
-    <!-- 顶部高光渐变，模拟玻璃反光 -->
+
+    <!-- 第2层：顶部高光渐变，模拟玻璃反光效果 -->
     <item android:top="0dp" android:left="0dp" android:right="0dp" android:bottom="0dp">
         <shape android:shape="rectangle">
             <gradient
                 android:angle="270"
-                android:startColor="#1AFFFFFF"
-                android:endColor="#00FFFFFF"
+                android:startColor="@color/glass_highlight"
+                android:centerColor="@color/glass_highlight_subtle"
+                android:endColor="@android:color/transparent"
                 android:type="linear" />
             <corners android:radius="@dimen/radius_card" />
         </shape>
     </item>
-    <!-- 细边框增强玻璃质感 -->
-    <item android:top="0.5dp" android:left="0.5dp" android:right="0.5dp" android:bottom="0.5dp">
+
+    <!-- 第3层：底部微阴影，增强悬浮层级感 -->
+    <item android:top="0dp" android:left="0dp" android:right="0dp" android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="@android:color/transparent"
+                android:centerColor="@android:color/transparent"
+                android:endColor="@color/glass_shadow"
+                android:type="linear" />
+            <corners android:radius="@dimen/radius_card" />
+        </shape>
+    </item>
+
+    <!-- 第4层：极细边框，增强玻璃边缘质感 -->
+    <item
+        android:top="0.5dp"
+        android:left="0.5dp"
+        android:right="0.5dp"
+        android:bottom="0.5dp">
         <shape android:shape="rectangle">
             <solid android:color="@android:color/transparent" />
             <corners android:radius="@dimen/radius_card" />
             <stroke
                 android:width="0.8dp"
-                android:color="@color/liquid_glass_border" />
+                android:color="@color/glass_border" />
         </shape>
     </item>
 </layer-list>

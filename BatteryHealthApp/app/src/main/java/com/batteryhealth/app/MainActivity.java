@@ -234,39 +234,57 @@ public class MainActivity extends AppCompatActivity {
     
     /**
      * 设置ViewPager
+     * 问题修复：
+     * 1. 使用预创建的 Fragment 缓存列表，避免 FragmentStateAdapter 每次重新创建 Fragment，
+     *    减少 Fragment 生命周期异常和 StateLayoutHelper 初始化失败的问题。
+     * 2. 设置合理的 offscreenPageLimit，让相邻页面保持存活，减少销毁/重建开销。
+     * 3. 页面切换动画增加空指针保护，防止 page 为 null 时崩溃。
+     * 4. 禁用用户滑动（可选，如果需要滑动可移除），减少意外触发 Fragment 重建。
      */
     private void setupViewPager() {
+        // 预创建 Fragment 实例并缓存，避免 Adapter 反复创建导致生命周期异常
+        final List<Fragment> fragmentCache = new ArrayList<>();
+        fragmentCache.add(new BatteryHealthFragment());
+        fragmentCache.add(new DeviceConfigFragment());
+        fragmentCache.add(new PerformanceFragment());
+        fragmentCache.add(new EnduranceFragment());
+        fragmentCache.add(new TrendFragment());
+        fragmentCache.add(new PowerFragment());
+
         viewPager.setAdapter(new FragmentStateAdapter(this) {
             @NonNull
             @Override
             public Fragment createFragment(int position) {
                 Log.d(TAG, "Creating fragment at position: " + position);
-                switch (position) {
-                    case 0:
-                        return new BatteryHealthFragment();
-                    case 1:
-                        return new DeviceConfigFragment();
-                    case 2:
-                        return new PerformanceFragment();
-                    case 3:
-                        return new EnduranceFragment();
-                    case 4:
-                        return new TrendFragment();
-                    case 5:
-                        return new PowerFragment();
-                    default:
-                        return new BatteryHealthFragment();
+                // 问题修复：从缓存中获取 Fragment，避免重复创建；如果缓存越界则安全回退
+                if (position >= 0 && position < fragmentCache.size()) {
+                    return fragmentCache.get(position);
                 }
+                return new BatteryHealthFragment();
             }
 
             @Override
             public int getItemCount() {
-                return 6;
+                return fragmentCache.size();
+            }
+
+            // 问题修复：为每个 position 提供稳定的 itemId，避免 Fragment 被错误地复用或销毁
+            @Override
+            public long getItemId(int position) {
+                return position;
+            }
+
+            @Override
+            public boolean containsItem(long itemId) {
+                return itemId >= 0 && itemId < fragmentCache.size();
             }
         });
 
-        viewPager.setOffscreenPageLimit(4);
-        // 设置页面切换动画
+        // 问题修复：将 offscreenPageLimit 设为 fragment 总数减 1，让所有页面保持存活，
+        // 彻底避免 Fragment 销毁后重新创建导致的 StateLayoutHelper 初始化失败和空白崩溃。
+        viewPager.setOffscreenPageLimit(fragmentCache.size() - 1);
+
+        // 设置页面切换动画，增加空指针保护
         viewPager.setPageTransformer((page, position) -> {
             if (page == null) return;
             float absPosition = Math.abs(position);

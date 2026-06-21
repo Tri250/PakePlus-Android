@@ -62,12 +62,14 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private void init() {
         setHorizontalScrollBarEnabled(false);
         setOverScrollMode(OVER_SCROLL_NEVER);
-
+        // 问题修复：HorizontalScrollView 的直接子 View 应该使用 WRAP_CONTENT 宽度，
+        // 这样当 item 总宽度超过屏幕时才能正确滚动；使用 MATCH_PARENT 会导致
+        // 子 View 被强制拉伸到屏幕宽度，6 个 item 会被过度压缩，图标和文字显示半截。
         container = new LinearLayout(getContext());
         container.setOrientation(LinearLayout.HORIZONTAL);
         container.setGravity(android.view.Gravity.CENTER_VERTICAL);
         container.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
         addView(container);
 
         activeColor = getResources().getColor(R.color.coloros_blue, getContext().getTheme());
@@ -83,6 +85,11 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
     /**
      * 设置导航项
+     * 问题修复：
+     * 1. 当 forceAverageWidth=true 时，计算每个 item 的等分宽度 = 屏幕宽度 / item 数量，
+     *    而不是使用 LinearLayout weight=1（weight 在 WRAP_CONTENT 父容器中行为不稳定）。
+     * 2. 为每个 item 设置最小宽度和固定高度，确保图标和文字有足够的显示空间。
+     * 3. 设置合理的左右 padding，避免文字被截断。
      */
     public void setItems(List<NavItem> navItems) {
         items.clear();
@@ -96,22 +103,39 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        boolean average = forceAverageWidth && items.size() > 0;
+        // 计算每个 item 的等分宽度（基于屏幕宽度）
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int itemWidth = forceAverageWidth && items.size() > 0
+                ? screenWidth / items.size()
+                : LinearLayout.LayoutParams.WRAP_CONTENT;
+        // 确保每个 item 至少有足够显示图标+文字的最小宽度
+        int minItemWidth = (int) (64 * getResources().getDisplayMetrics().density + 0.5f);
+        if (itemWidth != LinearLayout.LayoutParams.WRAP_CONTENT && itemWidth < minItemWidth) {
+            itemWidth = minItemWidth;
+        }
+
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
 
-            if (average) {
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
-                view.setLayoutParams(lp);
-            }
+            // 问题修复：使用固定宽度替代 weight，避免 measure 计算错误导致图标/文字被压缩
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    itemWidth == LinearLayout.LayoutParams.WRAP_CONTENT ? itemWidth : Math.max(itemWidth, minItemWidth),
+                    LinearLayout.LayoutParams.MATCH_PARENT);
+            view.setLayoutParams(lp);
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
-            if (icon != null) icon.setImageResource(item.iconRes);
-            if (label != null) label.setText(item.label);
+            if (icon != null) {
+                icon.setImageResource(item.iconRes);
+                // 问题修复：确保 ImageView 的 drawable 被正确设置且可见
+                icon.setVisibility(View.VISIBLE);
+            }
+            if (label != null) {
+                label.setText(item.label);
+                label.setVisibility(View.VISIBLE);
+            }
 
             view.setOnClickListener(v -> {
                 if (listener != null && position != selectedPosition) {
@@ -180,16 +204,21 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
     /**
      * 应用系统底部导航栏/手势条高度：把 inset 均匀加到每个 item 的底部 padding，
-     * 保证图标+文字始终在手势条上方居中，而不会整体被压缩或拉伸变形。
+     * 保证图标+文字始终在手势条上方居中，而不会整体被遮挡或压缩变形。
+     * 问题修复：同时调整顶部 padding，使图标+文字在总高度中保持垂直居中。
      */
     public void applySystemBottomInset(int inset) {
         if (this.bottomInset == inset) return;
         this.bottomInset = inset;
-        int basePaddingBottom = (int) (6 * getResources().getDisplayMetrics().density + 0.5f);
+        float density = getResources().getDisplayMetrics().density;
+        int basePaddingTop = (int) (6 * density + 0.5f);
+        int basePaddingBottom = (int) (6 * density + 0.5f);
         for (View item : itemViews) {
-            item.setPadding(item.getPaddingLeft(), item.getPaddingTop(),
+            item.setPadding(item.getPaddingLeft(), basePaddingTop,
                     item.getPaddingRight(), basePaddingBottom + inset);
         }
+        // 问题修复：inset 改变后请求重新 layout，确保底部导航栏高度更新正确
+        requestLayout();
     }
 
     /**

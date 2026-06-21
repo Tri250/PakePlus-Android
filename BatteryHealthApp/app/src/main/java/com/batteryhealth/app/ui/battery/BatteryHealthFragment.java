@@ -54,6 +54,8 @@ public class BatteryHealthFragment extends Fragment {
 
     private BatteryDataManager batteryDataManager;
     private StateLayoutHelper stateLayoutHelper;
+    // 标记 StateLayoutHelper 是否已初始化，避免重复初始化或清理后误用
+    private boolean stateLayoutInitialized = false;
 
     @Nullable
     @Override
@@ -73,21 +75,69 @@ public class BatteryHealthFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         // 在 onViewCreated 后初始化 StateLayoutHelper，确保视图层级已完整构建
-        if (view instanceof ViewGroup) {
-            ViewGroup scrollChild = (ViewGroup) view;
-            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
-                try {
-                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
-                    stateLayoutHelper.showLoading(null);
-                } catch (Exception e) {
-                    // StateLayoutHelper 初始化失败时忽略，不影响主流程
-                    android.util.Log.e("BatteryHealthFragment", "StateLayoutHelper init failed", e);
-                }
-            }
-        }
+        initStateLayoutHelper(view);
         // 注意：bugreport 数据已在 MainActivity 启动时通过 BatteryDataManager 单例加载，
         // 无需在此重复加载。但需要更新 UI 显示 bugreport 数据来源。
         updateBugreportSourceUI();
+    }
+
+    /**
+     * 安全初始化 StateLayoutHelper。
+     * 问题修复：Fragment 被 ViewPager2 复用时，onViewCreated 可能多次执行，
+     * 需要确保 StateLayoutHelper 只初始化一次，且目标 ViewGroup 有效。
+     */
+    private void initStateLayoutHelper(View view) {
+        if (stateLayoutInitialized || stateLayoutHelper != null) {
+            return;
+        }
+        if (!(view instanceof ViewGroup)) {
+            return;
+        }
+        ViewGroup root = (ViewGroup) view;
+        // 查找第一个有效的内容容器（通常是 ScrollView 或 NestedScrollView 的子元素）
+        ViewGroup contentContainer = findContentContainer(root);
+        if (contentContainer == null) {
+            // 如果找不到嵌套的内容容器，直接使用根视图作为内容容器
+            contentContainer = root;
+        }
+        try {
+            stateLayoutHelper = new StateLayoutHelper(contentContainer);
+            stateLayoutHelper.showLoading(null);
+            stateLayoutInitialized = true;
+        } catch (Exception e) {
+            // StateLayoutHelper 初始化失败时记录日志，不影响主流程
+            android.util.Log.e("BatteryHealthFragment", "StateLayoutHelper init failed", e);
+            stateLayoutHelper = null;
+            stateLayoutInitialized = false;
+        }
+    }
+
+    /**
+     * 递归查找适合作为 StateLayoutHelper 内容容器的 ViewGroup。
+     * 优先查找 ScrollView / NestedScrollView 的直接子 ViewGroup。
+     */
+    private ViewGroup findContentContainer(ViewGroup parent) {
+        if (parent == null) return null;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) child;
+                // 如果是 ScrollView 或 NestedScrollView，返回它的第一个子元素
+                if (group instanceof android.widget.ScrollView
+                        || group instanceof androidx.core.widget.NestedScrollView) {
+                    if (group.getChildCount() > 0 && group.getChildAt(0) instanceof ViewGroup) {
+                        return (ViewGroup) group.getChildAt(0);
+                    }
+                    return group;
+                }
+                // 递归查找
+                ViewGroup result = findContentContainer(group);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -217,21 +267,75 @@ public class BatteryHealthFragment extends Fragment {
         }
     };
 
+    /**
+     * 更新电池数据到 UI。
+     * 问题修复：
+     * 1. 增加 batteryDataManager 空指针检查，避免初始化失败时崩溃。
+     * 2. 增加更完善的异常分层处理：数据获取异常、UI 绑定异常分别捕获。
+     * 3. 数据加载失败时显示错误状态（通过 StateLayoutHelper），而不是一直 loading。
+     * 4. 所有主线程回调都检查 isAdded() 和 getContext()，避免 Fragment 已销毁时操作 UI。
+     */
     private void updateBatteryData() {
+        if (batteryDataManager == null) {
+            // BatteryDataManager 未初始化，显示错误状态
+            mainHandler.post(() -> {
+                if (isAdded() && getContext() != null) {
+                    showErrorState();
+                }
+            });
+            return;
+        }
         executor.execute(() -> {
+            BatteryInfo info = null;
+            Exception loadException = null;
             try {
-                BatteryInfo info = batteryDataManager.getBatteryInfo();
+                info = batteryDataManager.getBatteryInfo();
                 // 持久化到数据库，供趋势追踪和报告使用
                 persistBatteryInfo(info);
-                mainHandler.post(() -> {
-                    if (isAdded()) bindBatteryInfo(info);
-                });
             } catch (Exception e) {
-                mainHandler.post(() -> {
-                    if (isAdded()) showDetecting();
-                });
+                loadException = e;
+                android.util.Log.e("BatteryHealthFragment", "Failed to get battery info", e);
             }
+            final BatteryInfo finalInfo = info;
+            final Exception finalException = loadException;
+            mainHandler.post(() -> {
+                if (!isAdded() || getContext() == null) {
+                    return;
+                }
+                try {
+                    if (finalException != null || finalInfo == null) {
+                        // 数据加载失败：显示错误状态，而不是无限 loading
+                        showErrorState();
+                    } else {
+                        bindBatteryInfo(finalInfo);
+                    }
+                } catch (Exception e) {
+                    // UI 绑定异常兜底
+                    android.util.Log.e("BatteryHealthFragment", "Failed to bind battery info", e);
+                    showErrorState();
+                }
+            });
         });
+    }
+
+    /**
+     * 显示错误状态：使用 StateLayoutHelper 显示错误页面，并提供重试按钮。
+     * 如果 StateLayoutHelper 不可用，则回退到显示 "--" 的检测中状态。
+     */
+    private void showErrorState() {
+        if (!isAdded() || getContext() == null) return;
+        if (stateLayoutHelper != null) {
+            stateLayoutHelper.showError(getString(R.string.status_load_failed), v -> {
+                // 重试：先显示 loading，再重新加载数据
+                if (stateLayoutHelper != null) {
+                    stateLayoutHelper.showLoading(null);
+                }
+                updateBatteryData();
+            });
+        } else {
+            // StateLayoutHelper 不可用时回退到旧行为
+            showDetecting();
+        }
     }
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -342,9 +446,21 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        // 问题修复：清理 StateLayoutHelper，防止 Fragment 被 ViewPager2 复用时
+        // 旧的 overlay 视图仍然附着在已销毁的视图层级上，导致新实例初始化失败或显示异常。
         stopPeriodicUpdate();
         handler.removeCallbacksAndMessages(null);
         mainHandler.removeCallbacksAndMessages(null);
+        if (stateLayoutHelper != null) {
+            try {
+                // 问题修复：调用 cleanup() 彻底移除 overlay 容器，恢复原始视图层级
+                stateLayoutHelper.cleanup();
+            } catch (Exception e) {
+                android.util.Log.e("BatteryHealthFragment", "Error cleaning up StateLayoutHelper", e);
+            }
+            stateLayoutHelper = null;
+        }
+        stateLayoutInitialized = false;
     }
 
     @Override

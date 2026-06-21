@@ -31,13 +31,25 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <!-- 窗口动画 -->
+        <!-- 窗口动画 - ColorOS 16 自然过渡 -->
         <item name="android:windowAnimationStyle">@style/ColorOSWindowAnimation</item>
+
+        <!-- 全局字体平滑 -->
+        <item name="android:textViewStyle">@style/ColorOSTextViewStyle</item>
     </style>
 
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- ============================== -->
+    <!-- 全局 TextView 默认样式 -->
+    <!-- ============================== -->
+    <style name="ColorOSTextViewStyle" parent="android:Widget.TextView">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/label</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
     </style>
 
     <!-- ============================== -->
@@ -59,12 +71,14 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.15</item>
     </style>
 
     <style name="WebPageSubtitle" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:textSize">@dimen/text_page_subtitle</item>
         <item name="android:textColor">@color/label_2</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.3</item>
     </style>
 
     <style name="WebCardHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
@@ -73,6 +87,7 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.01</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
     </style>
 
     <style name="WebCardEyebrow" parent="TextAppearance.MaterialComponents.Overline">
@@ -88,12 +103,14 @@
         <item name="android:textSize">@dimen/text_list_label</item>
         <item name="android:textColor">@color/label</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
     </style>
 
     <style name="WebListValue" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">@dimen/text_list_value</item>
         <item name="android:textColor">@color/label_2</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
     </style>
 
     <style name="WebRingPercent" parent="TextAppearance.MaterialComponents.Headline2">
@@ -102,6 +119,7 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.0</item>
     </style>
 
     <style name="WebRingLabel" parent="TextAppearance.MaterialComponents.Caption">
@@ -118,6 +136,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
     </style>
 
     <style name="WebMeterValue" parent="TextAppearance.MaterialComponents.Headline5">
@@ -126,6 +145,7 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.1</item>
     </style>
 
     <style name="WebEnduranceBig" parent="TextAppearance.MaterialComponents.Headline1">
@@ -134,6 +154,7 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.0</item>
     </style>
 
     <style name="WebWatt" parent="TextAppearance.MaterialComponents.Headline1">
@@ -142,6 +163,7 @@
         <item name="android:textColor">@color/label</item>
         <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.0</item>
     </style>
 
     <style name="WebUnit" parent="TextAppearance.MaterialComponents.Subtitle1">
@@ -197,6 +219,11 @@
     <style name="ShapePill" parent="ShapeAppearance.MaterialComponents.SmallComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_pill</item>
+    </style>
+
+    <style name="ShapeSmall" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_small</item>
     </style>
 
     <!-- ============================== -->
@@ -280,25 +307,25 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@android:color/transparent</item>
-        <item name="android:paddingStart">22dp</item>
-        <item name="android:paddingEnd">22dp</item>
-        <item name="android:paddingTop">15dp</item>
-        <item name="android:paddingBottom">15dp</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">@dimen/list_item_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/list_item_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/list_item_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/list_item_padding_vertical</item>
+        <item name="android:minHeight">@dimen/list_item_min_height</item>
     </style>
 
     <style name="LiquidGlassSeparator">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">0.5dp</item>
+        <item name="android:layout_height">@dimen/separator_height</item>
         <item name="android:background">@color/ios_separator</item>
-        <item name="android:layout_marginStart">22dp</item>
+        <item name="android:layout_marginStart">@dimen/separator_margin_start</item>
     </style>
 
     <!-- ============================== -->
     <!-- 液态玻璃 Tab 文字 -->
     <!-- ============================== -->
     <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/text_tab_label</item>
         <item name="android:textStyle">normal</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">false</item>
@@ -315,7 +342,7 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 旧名称兼容层（被 layout 实际引用） -->
+    <!-- 旧名称兼容层（被 layout 实际引用，保留兼容） -->
     <!-- ============================== -->
     <style name="iOSTitle" parent="LiquidGlassTitle" />
     <style name="iOSTitle.Large" parent="LiquidGlassTitle.Large" />

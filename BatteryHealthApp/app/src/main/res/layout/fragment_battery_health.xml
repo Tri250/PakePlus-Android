@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="@dimen/cluster_gap">
 
             <View android:layout_width="0dp" android:layout_height="0dp" />
 
@@ -52,7 +52,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/status_live_monitoring"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_caption"
                     android:textStyle="bold"
                     android:textColor="@color/label_2"
                     android:fontFamily="sans-serif-medium" />
@@ -162,7 +162,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/status_detecting"
-                    android:textSize="15.5sp"
+                    android:textSize="@dimen/text_body"
                     android:textColor="@color/label_2"
                     android:layout_marginTop="12dp" />
 
@@ -177,8 +177,8 @@
             android:text="@string/section_current_status"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginStart="4dp" />
+            android:layout_marginBottom="@dimen/section_margin_bottom"
+            android:layout_marginStart="@dimen/section_margin_start" />
 
         <!-- Current status card -->
         <com.google.android.material.card.MaterialCardView
@@ -200,7 +200,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -226,7 +226,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -250,7 +250,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -279,8 +279,8 @@
             android:text="@string/section_details"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginStart="4dp" />
+            android:layout_marginBottom="@dimen/section_margin_bottom"
+            android:layout_marginStart="@dimen/section_margin_start" />
 
         <!-- Details card -->
         <com.google.android.material.card.MaterialCardView
@@ -303,7 +303,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -327,7 +327,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -351,7 +351,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -375,7 +375,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -399,7 +399,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -423,7 +423,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -447,7 +447,7 @@
                     style="@style/iOSListItem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp">
+                    android:minHeight="@dimen/list_item_min_height">
 
                     <TextView
                         android:layout_width="0dp"
@@ -476,8 +476,8 @@
             android:text="@string/section_more_features"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginStart="4dp" />
+            android:layout_marginBottom="@dimen/section_margin_bottom"
+            android:layout_marginStart="@dimen/section_margin_start" />
 
         <!-- More features card -->
         <com.google.android.material.card.MaterialCardView
@@ -518,7 +518,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/desc_battery_source_check"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_caption"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="4dp" />
 
@@ -552,7 +552,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/desc_health_check"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_caption"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="4dp" />
 
@@ -569,8 +569,8 @@
             android:text="@string/section_reports"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginStart="4dp" />
+            android:layout_marginBottom="@dimen/section_margin_bottom"
+            android:layout_marginStart="@dimen/section_margin_start" />
 
         <!-- Reports card -->
         <com.google.android.material.card.MaterialCardView
@@ -611,7 +611,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/desc_weekly_report"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_caption"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="4dp" />
 
@@ -646,7 +646,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/desc_monthly_report"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_caption"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="4dp" />
 

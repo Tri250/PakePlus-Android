@@ -3,72 +3,136 @@
     <!-- ============================== -->
     <!-- Radius / Shape - ColorOS 16 大圆角风格 -->
     <!-- ============================== -->
+    <!-- 卡片圆角：ColorOS 16 采用超大圆角，视觉更柔和 -->
     <dimen name="radius_card">28dp</dimen>
+    <!-- 内部卡片圆角：略小于卡片，形成层级差异 -->
     <dimen name="radius_inner">18dp</dimen>
+    <!-- 胶囊/药丸圆角：完全圆角 -->
     <dimen name="radius_pill">999dp</dimen>
+    <!-- 进度条圆角 -->
     <dimen name="radius_progress">10dp</dimen>
+    <!-- 指示点圆角 -->
     <dimen name="radius_dot">8dp</dimen>
+    <!-- 按钮圆角 -->
     <dimen name="radius_button">16dp</dimen>
+    <!-- 小型组件圆角 -->
+    <dimen name="radius_small">12dp</dimen>
 
     <!-- ============================== -->
-    <!-- Spacing -->
+    <!-- Spacing - ColorOS 16 8dp 网格系统 -->
     <!-- ============================== -->
+    <!-- 页面水平边距 -->
     <dimen name="page_padding_horizontal">20dp</dimen>
-    <dimen name="page_padding_top">12dp</dimen>
+    <!-- 页面顶部边距 -->
+    <dimen name="page_padding_top">16dp</dimen>
+    <!-- 页面底部边距（为底部导航留空） -->
     <dimen name="page_padding_bottom">128dp</dimen>
+    <!-- 卡片水平内边距 -->
     <dimen name="card_padding_horizontal">20dp</dimen>
+    <!-- 卡片垂直内边距 -->
     <dimen name="card_padding_vertical">18dp</dimen>
-    <dimen name="card_margin_bottom">18dp</dimen>
+    <!-- 卡片底部间距 -->
+    <dimen name="card_margin_bottom">16dp</dimen>
+    <!-- 列表项水平内边距 -->
     <dimen name="list_item_padding_horizontal">20dp</dimen>
+    <!-- 列表项垂直内边距 -->
     <dimen name="list_item_padding_vertical">15dp</dimen>
+    <!-- 列表项最小高度 -->
     <dimen name="list_item_min_height">52dp</dimen>
+    <!-- 分隔线高度 -->
     <dimen name="separator_height">0.5dp</dimen>
+    <!-- 分隔线左边距 -->
     <dimen name="separator_margin_start">20dp</dimen>
+    <!-- 组件簇间距 -->
     <dimen name="cluster_gap">12dp</dimen>
+    <!-- 统计网格间距 -->
     <dimen name="stats_grid_gap">1dp</dimen>
+    <!-- Section 标题与卡片间距 -->
+    <dimen name="section_margin_bottom">10dp</dimen>
+    <!-- Section 标题左边距（与卡片对齐视觉） -->
+    <dimen name="section_margin_start">4dp</dimen>
 
     <!-- ============================== -->
     <!-- Elevation - ColorOS 16 柔和阴影 -->
     <!-- ============================== -->
+    <!-- 卡片阴影：柔和悬浮感 -->
     <dimen name="elevation_card">6dp</dimen>
+    <!-- 按钮阴影：轻微凸起 -->
     <dimen name="elevation_button">3dp</dimen>
+    <!-- 底部导航阴影 -->
+    <dimen name="elevation_nav">8dp</dimen>
 
     <!-- ============================== -->
     <!-- Typography - ColorOS 16 字阶，中文阅读友好 -->
     <!-- ============================== -->
+    <!-- 页面大标题 -->
     <dimen name="text_page_title">32sp</dimen>
+    <!-- 页面副标题 -->
     <dimen name="text_page_subtitle">14sp</dimen>
+    <!-- 卡片标题 -->
     <dimen name="text_card_header">18sp</dimen>
+    <!-- 卡片眉标（全大写小字） -->
     <dimen name="text_card_eyebrow">11sp</dimen>
+    <!-- 列表标签 -->
     <dimen name="text_list_label">16sp</dimen>
+    <!-- 列表数值 -->
     <dimen name="text_list_value">16sp</dimen>
+    <!-- 环形百分比大数字 -->
     <dimen name="text_ring_percent">56sp</dimen>
+    <!-- 环形标签 -->
     <dimen name="text_ring_label">13sp</dimen>
+    <!-- 仪表名称 -->
     <dimen name="text_meter_name">14sp</dimen>
+    <!-- 仪表数值 -->
     <dimen name="text_meter_val">24sp</dimen>
+    <!-- 续航大数字 -->
     <dimen name="text_endurance_big">72sp</dimen>
+    <!-- 功率大数字 -->
     <dimen name="text_watt">80sp</dimen>
+    <!-- 单位文字 -->
     <dimen name="text_unit">18sp</dimen>
+    <!-- 等级胶囊文字 -->
     <dimen name="text_grade_pill">12sp</dimen>
+    <!-- 徽章文字 -->
     <dimen name="text_badge">12sp</dimen>
+    <!-- Tab 标签 -->
     <dimen name="text_tab_label">11sp</dimen>
+    <!-- Section 眉标 -->
     <dimen name="text_section_eyebrow">12sp</dimen>
+    <!-- 说明文字 -->
     <dimen name="text_caption">12sp</dimen>
+    <!-- 正文 -->
     <dimen name="text_body">16sp</dimen>
+    <!-- 副标题 -->
     <dimen name="text_subtitle">20sp</dimen>
+    <!-- 大数字 -->
     <dimen name="text_large_number">56sp</dimen>
+    <!-- 中数字 -->
     <dimen name="text_medium_number">32sp</dimen>
+    <!-- 小数字 -->
     <dimen name="text_small_number">24sp</dimen>
 
     <!-- ============================== -->
-    <!-- Animation durations -->
+    <!-- Animation durations - ColorOS 16 自然动画 -->
     <!-- ============================== -->
+    <!-- 页面进入动画 -->
     <integer name="anim_duration_page_in">400</integer>
+    <!-- 淡入上浮动画 -->
     <integer name="anim_duration_fade_up">550</integer>
+    <!-- 进度条动画 -->
     <integer name="anim_duration_bar">900</integer>
+    <!-- 环形动画 -->
     <integer name="anim_duration_ring">1100</integer>
+    <!-- Live 指示点闪烁 -->
     <integer name="anim_duration_live_blink">1400</integer>
+    <!-- 脉冲动画 -->
     <integer name="anim_duration_pulse">1600</integer>
+    <!-- Tab 切换动画 -->
     <integer name="anim_duration_tab">220</integer>
+    <!-- 开关切换动画 -->
     <integer name="anim_duration_switch">220</integer>
+    <!-- 页面转场进入 -->
+    <integer name="anim_duration_slide_in">420</integer>
+    <!-- 页面转场退出 -->
+    <integer name="anim_duration_slide_out">360</integer>
 </resources>

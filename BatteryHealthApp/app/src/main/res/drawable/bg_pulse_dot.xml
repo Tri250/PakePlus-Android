@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
+    <!-- ============================== -->
+    <!-- ColorOS 16 脉冲指示点 -->
+    <!-- 蓝色脉冲，用于充电等状态 -->
+    <!-- ============================== -->
     <solid android:color="@color/coloros_blue" />
-    <size android:width="6dp" android:height="6dp" />
+    <size
+        android:width="6dp"
+        android:height="6dp" />
 </shape>

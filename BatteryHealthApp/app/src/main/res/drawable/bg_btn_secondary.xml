@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
+    <!-- ============================== -->
+    <!-- ColorOS 16 次级按钮背景 -->
+    <!-- 浅蓝底色 + 大圆角，柔和辅助 -->
+    <!-- ============================== -->
     <corners android:radius="@dimen/radius_button" />
     <solid android:color="@color/coloros_blue_light" />
 </shape>

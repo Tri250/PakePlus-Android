@@ -3,21 +3,25 @@
     <!-- ============================== -->
     <!-- ColorOS 16 Design Tokens - Dark -->
     <!-- ============================== -->
+
+    <!-- 背景层：深色模式采用极深灰黑，降低眼部疲劳 -->
     <color name="bg_canvas">#0D0D0F</color>
     <color name="bg_canvas_2">#08080A</color>
     <color name="bg_frame">#000000</color>
 
+    <!-- 表面层：略浅于背景，形成层级 -->
     <color name="surface">#1F1F23</color>
     <color name="surface_solid">#1F1F23</color>
     <color name="surface_2">#18181C</color>
 
+    <!-- 文字层：深色模式使用高对比度白色系 -->
     <color name="label">#FFFFFF</color>
     <color name="label_2">#B3B3B3</color>
     <color name="label_3">#666666</color>
     <color name="separator">#2A2A2E</color>
     <color name="separator_strong">#333337</color>
 
-    <!-- 强调色板与浅色模式一致，保持品牌识别 -->
+    <!-- 强调色板：深色模式适当提亮，保持品牌识别 -->
     <color name="coloros_blue">#4DA3FF</color>
     <color name="coloros_blue_light">#1A4DA3FF</color>
     <color name="coloros_green">#00E59B</color>
@@ -31,7 +35,34 @@
     <color name="coloros_cyan">#2DD4E0</color>
     <color name="coloros_yellow">#FFD54F</color>
 
+    <!-- ============================== -->
+    <!-- 液态玻璃 (Liquid Glass) 专用色板 - Dark -->
+    <!-- ============================== -->
+    <!-- 玻璃表面：低透明度深色，营造通透感 -->
+    <color name="glass_surface">#CC1F1F23</color>
+    <color name="glass_surface_subtle">#9918181C</color>
+    <color name="glass_surface_dark">#1AFFFFFF</color>
+
+    <!-- 玻璃边框：极细半透明边框，增强玻璃边缘质感 -->
+    <color name="glass_border">#33FFFFFF</color>
+    <color name="glass_border_strong">#4DFFFFFF</color>
+    <color name="glass_border_dark">#1A000000</color>
+
+    <!-- 玻璃高光：顶部微弱反光 -->
+    <color name="glass_highlight">#20FFFFFF</color>
+    <color name="glass_highlight_subtle">#0DFFFFFF</color>
+
+    <!-- 玻璃阴影：底部微阴影，增加层级感 -->
+    <color name="glass_shadow">#0D000000</color>
+    <color name="glass_shadow_strong">#1A000000</color>
+
+    <!-- 玻璃发光：强调色微光效果（深色模式更亮） -->
+    <color name="glass_glow_blue">#404DA3FF</color>
+    <color name="glass_glow_green">#4000E59B</color>
+
+    <!-- ============================== -->
     <!-- 历史兼容别名 -->
+    <!-- ============================== -->
     <color name="blue">@color/coloros_blue</color>
     <color name="green">@color/coloros_green</color>
     <color name="teal">@color/coloros_cyan</color>

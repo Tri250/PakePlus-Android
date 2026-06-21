@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ============================== -->
+    <!-- ColorOS 16 页面退出动画（向左退出） -->
+    <!-- 平移 + 淡出 + 微缩放，层次分明 -->
+    <!-- ============================== -->
     <translate
         android:fromXDelta="0%"
         android:toXDelta="-28%"
-        android:duration="360"
+        android:duration="@integer/anim_duration_slide_out"
         android:interpolator="@android:interpolator/fast_out_slow_in" />
     <alpha
         android:fromAlpha="1.0"
@@ -17,6 +21,6 @@
         android:toYScale="0.97"
         android:pivotX="50%"
         android:pivotY="50%"
-        android:duration="360"
+        android:duration="@integer/anim_duration_slide_out"
         android:interpolator="@android:interpolator/fast_out_slow_in" />
 </set>

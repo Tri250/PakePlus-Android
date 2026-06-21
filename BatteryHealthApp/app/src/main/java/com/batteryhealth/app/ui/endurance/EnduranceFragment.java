@@ -495,10 +495,17 @@ public class EnduranceFragment extends Fragment {
                 current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
             }
         }
-        float currentMa = current / 1000f;
+        // BATTERY_PROPERTY_CURRENT_NOW 单位因设备而异：µA 或 mA
+        int absCurrent = Math.abs(current);
+        float currentMa;
+        if (absCurrent > 100000) {
+            currentMa = absCurrent / 1000f; // µA → mA
+        } else {
+            currentMa = absCurrent;         // 已经是 mA
+        }
 
-        int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
+        int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Integer.MIN_VALUE);
+        float tempC = (temp != Integer.MIN_VALUE) ? temp / 10f : -1f;
 
         long now = System.currentTimeMillis();
         boolean screenOn = isScreenOn();
@@ -549,7 +556,11 @@ public class EnduranceFragment extends Fragment {
         // ── 快速指标 ──
         safeSetText(tvMetricBattery, String.format(Locale.getDefault(), "%d%%", batteryPct));
         safeSetText(tvMetricDischarge, String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
-        safeSetText(tvMetricTemp, String.format(Locale.getDefault(), "%.1f°C", tempC));
+        if (tempC > -50 && tempC < 100) {
+            safeSetText(tvMetricTemp, String.format(Locale.getDefault(), "%.1f°C", tempC));
+        } else {
+            safeSetText(tvMetricTemp, "--");
+        }
 
         // ── 放电速率分析卡片 ──
         updateDischargeAnalysis(realtimeRate, windowRate, historicalBaseline);
@@ -842,20 +853,43 @@ public class EnduranceFragment extends Fragment {
     private String estimateFullChargeTime(int batteryPct, float currentMa) {
         if (currentMa <= 0) return getString(R.string.status_calculating);
         int remaining = 100 - batteryPct;
-        float capacityMah = getBatteryCapacity();
-        float hours = (remaining * capacityMah / 100f) / currentMa;
+        // 使用设计容量估算充满时间，而非当前剩余容量
+        float designCapacityMah = getDesignCapacity();
+        float hours = (remaining * designCapacityMah / 100f) / currentMa;
         int h = (int) hours;
         int m = (int) ((hours - h) * 60);
         return String.format(Locale.getDefault(), "%d小时%d分", h, m);
     }
 
-    private float getBatteryCapacity() {
+    /**
+     * 获取电池设计容量（mAh）。
+     * 优先从 BatteryDataManager 获取，失败时回退到系统 API 或默认值。
+     */
+    private float getDesignCapacity() {
         Context ctx = getContext();
         if (ctx == null) return 4000;
+        // 优先使用 BatteryDataManager 的设计容量（含用户校准、机型数据库、sysfs）
+        try {
+            com.batteryhealth.app.utils.BatteryDataManager bdm =
+                    com.batteryhealth.app.utils.BatteryDataManager.getInstance(ctx);
+            if (bdm != null) {
+                com.batteryhealth.app.data.model.BatteryInfo info = bdm.getLatestBatteryInfo(false);
+                if (info != null && info.getDesignCapacity() > 0) {
+                    return info.getDesignCapacity();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        // 回退：尝试从 BatteryManager 获取（Android 16+）
         BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            int energy = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-            if (energy > 0) return energy / 1000f;
+        if (bm != null && android.os.Build.VERSION.SDK_INT >= 36) {
+            try {
+                int designMicroAh = bm.getIntProperty(
+                        bm.getClass().getField("BATTERY_PROPERTY_CHARGE_FULL_DESIGN").getInt(null));
+                if (designMicroAh > 100000 && designMicroAh <= 50000000) return designMicroAh / 1000f;
+                if (designMicroAh > 50 && designMicroAh <= 50000) return designMicroAh;
+            } catch (Exception ignored) {
+            }
         }
         return 4000;
     }

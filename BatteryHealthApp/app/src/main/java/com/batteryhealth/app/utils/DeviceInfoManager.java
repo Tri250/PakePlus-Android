@@ -193,11 +193,18 @@ public class DeviceInfoManager {
 
     /**
      * 获取处理器详细信息（多路 fallback 直至给出可见名称）。
+     * 问题修复：所有路径返回的处理器名称都经过 formatHardwareName 格式化，
+     * 确保显示规范的中文处理器名称（如 "高通骁龙 8 Gen 4" 而非 "qcom"）。
      */
     public String getProcessorInfo() {
         // 1. 本地机型数据库（最准确，含营销名与型号）
         String dbProcessor = deviceDb.getProcessorName();
         if (dbProcessor != null && !dbProcessor.isEmpty()) {
+            // 即使数据库返回的名称也可能包含原始标识，统一格式化
+            String formatted = formatHardwareName(dbProcessor);
+            if (formatted != null && !formatted.isEmpty() && !formatted.equals(dbProcessor)) {
+                return formatted;
+            }
             return dbProcessor;
         }
 
@@ -205,12 +212,22 @@ public class DeviceInfoManager {
         String soc = SystemPropertiesCompat.getSoC();
         if (soc != null && !soc.isEmpty()) {
             String normalized = normalizeProcessorName(soc);
-            if (normalized != null) return normalized;
+            if (normalized != null) {
+                String formatted = formatHardwareName(normalized);
+                if (formatted != null && !formatted.isEmpty()) {
+                    return formatted;
+                }
+                return normalized;
+            }
         }
 
         // 3. /proc/cpuinfo Hardware / model name / Processor 行
         String cpuInfo = readCpuInfoFromProc();
         if (cpuInfo != null && !cpuInfo.isEmpty()) {
+            String formatted = formatHardwareName(cpuInfo);
+            if (formatted != null && !formatted.isEmpty() && !formatted.equals(cpuInfo)) {
+                return formatted;
+            }
             return cpuInfo;
         }
 
@@ -218,7 +235,13 @@ public class DeviceInfoManager {
         DeviceConfig config = getDeviceConfig();
         if (config != null) {
             String cfgCpu = config.getCpuInfo();
-            if (cfgCpu != null && !cfgCpu.isEmpty()) return cfgCpu;
+            if (cfgCpu != null && !cfgCpu.isEmpty()) {
+                String formatted = formatHardwareName(cfgCpu);
+                if (formatted != null && !formatted.isEmpty() && !formatted.equals(cfgCpu)) {
+                    return formatted;
+                }
+                return cfgCpu;
+            }
         }
 
         return context.getString(R.string.status_not_recognized);

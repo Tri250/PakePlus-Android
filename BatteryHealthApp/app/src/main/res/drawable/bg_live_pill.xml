@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
+    <!-- ============================== -->
+    <!-- ColorOS 16 Live 指示胶囊 -->
+    <!-- 液态玻璃风格：半透明底色 + 细边框 -->
+    <!-- ============================== -->
     <corners android:radius="@dimen/radius_pill" />
-    <solid android:color="@color/surface_2" />
+    <solid android:color="@color/glass_surface_subtle" />
     <stroke
         android:width="0.5dp"
-        android:color="@color/separator" />
+        android:color="@color/glass_border" />
 </shape>

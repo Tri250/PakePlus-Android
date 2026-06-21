@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
+    <!-- ============================== -->
+    <!-- ColorOS 16 分隔线 -->
+    <!-- 极细半透明，不喧宾夺主 -->
+    <!-- ============================== -->
     <solid android:color="@color/separator" />
-    <size android:height="0.5dp" />
+    <size android:height="@dimen/separator_height" />
 </shape>

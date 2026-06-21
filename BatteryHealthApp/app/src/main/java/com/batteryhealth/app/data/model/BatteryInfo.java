@@ -138,6 +138,9 @@ public class BatteryInfo {
     @ColumnInfo(name = "full_capacity")
     private int fullCapacity; // 实际满充容量 (mAh)，与 currentCapacity 同义冗余字段
 
+    @ColumnInfo(name = "bypass_charging")
+    private boolean bypassCharging; // 旁路充电状态（ColorOS 16 特性）
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -447,6 +450,14 @@ public class BatteryInfo {
         this.fullCapacity = fullCapacity;
     }
 
+    public boolean isBypassCharging() {
+        return bypassCharging;
+    }
+
+    public void setBypassCharging(boolean bypassCharging) {
+        this.bypassCharging = bypassCharging;
+    }
+
     /**
      * 计算充电功率
      */
@@ -565,6 +576,7 @@ public class BatteryInfo {
         snapshot.manufacturer = this.manufacturer;
         snapshot.batteryInfoMatch = this.batteryInfoMatch;
         snapshot.fullCapacity = this.fullCapacity;
+        snapshot.bypassCharging = this.bypassCharging;
         return snapshot;
     }
 }

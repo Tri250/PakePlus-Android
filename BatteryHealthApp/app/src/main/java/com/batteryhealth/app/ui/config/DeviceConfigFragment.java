@@ -129,8 +129,13 @@ public class DeviceConfigFragment extends Fragment {
         safeSetText(tvDeviceName, config.getFullModelName());
         safeSetText(tvDeviceModel, config.getModel());
         safeSetText(tvAndroidVersion, config.getAndroidCodename() + " (API " + config.getSdkVersion() + ")");
-        safeSetText(tvProcessor, config.getCpuInfo() != null && !config.getCpuInfo().isEmpty()
-                ? config.getCpuInfo() : getString(R.string.status_not_recognized));
+        // 问题修复：bindDeviceInfo() 中从 deviceDb 获取的 processorName 可能是原始值，
+        // 需要统一使用 formatProcessorName() 格式化，确保显示规范的中文处理器名称。
+        String rawProcessor = config.getCpuInfo();
+        String formattedProcessor = (rawProcessor != null && !rawProcessor.isEmpty())
+                ? formatProcessorName(rawProcessor)
+                : getString(R.string.status_not_recognized);
+        safeSetText(tvProcessor, formattedProcessor);
         safeSetText(tvRam, config.getFormattedMemory());
         safeSetText(tvStorage, config.getFormattedStorage());
         safeSetText(tvScreen, config.getScreenResolution() + " · " + config.getFormattedScreenSize());

@@ -5,4 +5,9 @@
     android:duration="800"
     android:repeatMode="reverse"
     android:repeatCount="infinite"
-    android:interpolator="@android:interpolator/fast_out_slow_in" />
+    android:interpolator="@android:interpolator/fast_out_slow_in">
+    <!-- ============================== -->
+    <!-- ColorOS 16 脉冲呼吸动画 -->
+    <!-- 柔和透明度变化，不刺眼 -->
+    <!-- ============================== -->
+</alpha>

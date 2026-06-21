@@ -7,7 +7,10 @@
     android:layout_height="match_parent"
     android:background="@android:color/transparent">
 
-    <!-- 主内容区域：底部 margin 由代码动态设置为导航栏高度 -->
+    <!-- ============================== -->
+    <!-- 主内容区域 -->
+    <!-- 底部 margin 由代码动态设置为导航栏高度 -->
+    <!-- ============================== -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/view_pager"
         android:layout_width="0dp"
@@ -17,7 +20,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/bottom_nav_container" />
 
-    <!-- ColorOS 16 风格底部导航栏容器：悬浮卡片 + 大圆角 + 柔和阴影 -->
+    <!-- ============================== -->
+    <!-- ColorOS 16 风格底部导航栏容器 -->
+    <!-- 悬浮卡片 + 大圆角 + 柔和阴影 + 液态玻璃质感 -->
+    <!-- ============================== -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottom_nav_container"
         android:layout_width="0dp"

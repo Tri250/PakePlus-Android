@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
+    <!-- ============================== -->
+    <!-- ColorOS 16 Live 闪烁指示点 -->
+    <!-- 活力绿色，与系统强调色一致 -->
+    <!-- ============================== -->
     <solid android:color="@color/coloros_green" />
-    <size android:width="7dp" android:height="7dp" />
+    <size
+        android:width="7dp"
+        android:height="7dp" />
 </shape>
