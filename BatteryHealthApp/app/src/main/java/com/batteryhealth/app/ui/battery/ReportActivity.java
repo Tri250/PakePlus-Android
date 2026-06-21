@@ -137,6 +137,10 @@ public class ReportActivity extends AppCompatActivity {
         executor.execute(() -> {
             try {
                 AppDatabase db = com.batteryhealth.app.BatteryHealthApplication.getDatabase();
+                if (db == null) {
+                    mainHandler.post(this::showEmpty);
+                    return;
+                }
                 List<BatteryInfo> data;
                 long now = System.currentTimeMillis();
                 long startTime;
@@ -265,6 +269,7 @@ public class ReportActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mainHandler.removeCallbacksAndMessages(null);
         executor.shutdown();
     }
 }

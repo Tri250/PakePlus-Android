@@ -23,6 +23,7 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.PerformanceBenchmark;
+import com.batteryhealth.app.utils.StateLayoutHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -54,11 +55,21 @@ public class PerformanceFragment extends Fragment {
     private Runnable updateRunnable;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    private StateLayoutHelper stateLayoutHelper;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_performance, container, false);
         initViews(view);
+        // 初始化 StateLayoutHelper
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                stateLayoutHelper.showLoading(null);
+            }
+        }
         animateEntry(view);
         runBenchmarkIfNeeded();
         return view;
@@ -96,7 +107,9 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
     }
 
@@ -131,13 +144,21 @@ public class PerformanceFragment extends Fragment {
 
     private void loadData() {
         if (!isAdded() || getContext() == null) return;
+
+        // 首次数据到达，显示内容
+        if (stateLayoutHelper != null && stateLayoutHelper.getCurrentState() != StateLayoutHelper.State.CONTENT) {
+            stateLayoutHelper.showContent();
+        }
+
         // CPU
         int cpuUsage = readCpuUsage();
         safeSetText(tvCpuUsage, String.format(Locale.getDefault(), "%d%%", cpuUsage));
         if (progressCpu != null) UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
 
         // Memory
-        ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         int memUsage = 0;
         if (am != null) {
@@ -171,7 +192,10 @@ public class PerformanceFragment extends Fragment {
         loadGpuInfo();
 
         // Thermal status
-        safeSetText(tvThermalStatus, PerformanceBenchmark.getThermalStatus(requireContext()));
+        Context ctx2 = getContext();
+        if (ctx2 != null) {
+            safeSetText(tvThermalStatus, PerformanceBenchmark.getThermalStatus(ctx2));
+        }
     }
 
     private void safeSetText(TextView tv, String text) {
@@ -308,7 +332,68 @@ public class PerformanceFragment extends Fragment {
         }
         safeSetText(tvGpuRenderer, renderer != null ? renderer : "Unknown");
         safeSetText(tvOpenglVersion, version != null ? version : "Unknown");
-        safeSetText(tvVulkanVersion, "N/A");
+
+        // Vulkan 版本检测：尝试加载 libvulkan.so
+        String vulkanVersion = detectVulkanVersion();
+        safeSetText(tvVulkanVersion, vulkanVersion);
+    }
+
+    private String detectVulkanVersion() {
+        try {
+            System.loadLibrary("vulkan");
+            // 加载成功说明设备支持 Vulkan，尝试获取版本信息
+            // 通过读取 /system/lib*/libvulkan.so 或检查 API 可用性
+            // Android 7.0+ 支持 Vulkan，通过 android.os.Build.VERSION 判断版本等级
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                // 尝试通过反射获取 VkPhysicalDeviceProperties 版本
+                try {
+                    Class<?> vkInstanceClass = Class.forName("org.lwjgl.vulkan.VkInstance");
+                    // LWJUK 不在 Android 上，回退到系统属性
+                } catch (ClassNotFoundException ignored) {
+                }
+
+                // 通过系统属性获取 Vulkan 版本
+                String vulkanApiVersion = getSystemProperty("ro.vulkan.api");
+                String vulkanDriverVersion = getSystemProperty("ro.vulkan.version");
+
+                if (vulkanApiVersion != null && !vulkanApiVersion.isEmpty()) {
+                    return "Vulkan " + vulkanApiVersion;
+                }
+                if (vulkanDriverVersion != null && !vulkanDriverVersion.isEmpty()) {
+                    return "Vulkan " + vulkanDriverVersion;
+                }
+
+                // 尝试解析 /sys 类路径或 gfxinfo
+                try {
+                    java.io.BufferedReader reader = new java.io.BufferedReader(
+                            new java.io.FileReader("/sys/class/kgsl/kgsl-3d0/gpu_model"));
+                    String gpuModel = reader.readLine();
+                    reader.close();
+                    if (gpuModel != null && !gpuModel.isEmpty()) {
+                        return "Vulkan 1.x (" + gpuModel.trim() + ")";
+                    }
+                } catch (Exception ignored) {
+                }
+
+                return "Vulkan 支持 (Android 7.0+)";
+            } else {
+                return "不支持 (Android < 7.0)";
+            }
+        } catch (UnsatisfiedLinkError e) {
+            return "不支持 (libvulkan.so 未找到)";
+        } catch (Exception e) {
+            return "检测失败";
+        }
+    }
+
+    private String getSystemProperty(String key) {
+        try {
+            Class<?> systemPropertiesClass = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method getMethod = systemPropertiesClass.getMethod("get", String.class);
+            return (String) getMethod.invoke(null, key);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override

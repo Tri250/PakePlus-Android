@@ -24,6 +24,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.StateLayoutHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
@@ -52,6 +53,7 @@ public class BatteryHealthFragment extends Fragment {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private BatteryDataManager batteryDataManager;
+    private StateLayoutHelper stateLayoutHelper;
 
     @Nullable
     @Override
@@ -59,6 +61,14 @@ public class BatteryHealthFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
         batteryDataManager = BatteryDataManager.getInstance(requireContext());
         initViews(view);
+        // 初始化 StateLayoutHelper，使用内容容器（ScrollView 内的 LinearLayout）
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                stateLayoutHelper.showLoading(null);
+            }
+        }
         animateEntry(view);
         return view;
     }
@@ -83,25 +93,39 @@ public class BatteryHealthFragment extends Fragment {
         View btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
         View btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
         if (btnWeeklyReport != null) {
-            btnWeeklyReport.setOnClickListener(v -> ReportActivity.start(requireContext(), ReportActivity.TYPE_WEEKLY));
+            btnWeeklyReport.setOnClickListener(v -> {
+                Context ctx = getContext();
+                if (ctx != null) ReportActivity.start(ctx, ReportActivity.TYPE_WEEKLY);
+            });
         }
         if (btnMonthlyReport != null) {
-            btnMonthlyReport.setOnClickListener(v -> ReportActivity.start(requireContext(), ReportActivity.TYPE_MONTHLY));
+            btnMonthlyReport.setOnClickListener(v -> {
+                Context ctx = getContext();
+                if (ctx != null) ReportActivity.start(ctx, ReportActivity.TYPE_MONTHLY);
+            });
         }
 
         // 电池溯源 / 健康检查入口
         View btnBatterySource = view.findViewById(R.id.btn_battery_source);
         View btnHealthCheck = view.findViewById(R.id.btn_health_check);
         if (btnBatterySource != null) {
-            btnBatterySource.setOnClickListener(v -> com.batteryhealth.app.ui.source.BatterySourceActivity.start(requireContext()));
+            btnBatterySource.setOnClickListener(v -> {
+                Context ctx = getContext();
+                if (ctx != null) com.batteryhealth.app.ui.source.BatterySourceActivity.start(ctx);
+            });
         }
         if (btnHealthCheck != null) {
-            btnHealthCheck.setOnClickListener(v -> com.batteryhealth.app.ui.healthcheck.HealthCheckActivity.start(requireContext()));
+            btnHealthCheck.setOnClickListener(v -> {
+                Context ctx = getContext();
+                if (ctx != null) com.batteryhealth.app.ui.healthcheck.HealthCheckActivity.start(ctx);
+            });
         }
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
         UiAnimationHelper.animateCardsEntry(view);
     }
@@ -198,6 +222,11 @@ public class BatteryHealthFragment extends Fragment {
             return;
         }
 
+        // 数据加载完成，显示内容
+        if (stateLayoutHelper != null && stateLayoutHelper.getCurrentState() != StateLayoutHelper.State.CONTENT) {
+            stateLayoutHelper.showContent();
+        }
+
         int health = info.hasValidHealthData() ? Math.round(info.getHealthPercentage()) : -1;
         int level = info.getLevel();
 
@@ -219,7 +248,6 @@ public class BatteryHealthFragment extends Fragment {
         if (tvHealthSource != null) {
             tvHealthSource.setText(batteryDataManager.getHealthSourceText());
         }
-
         if (health >= 0) {
             safeSetText(tvHealthPercentage, String.format(Locale.getDefault(), "%d%%", health));
             safeSetText(tvHealthGrade, String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
@@ -239,6 +267,7 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private String getChargingStatusText(BatteryInfo info) {
+        if (!isAdded()) return "";
         int status = info.getStatus();
         if (status == android.os.BatteryManager.BATTERY_STATUS_CHARGING) {
             return getString(R.string.status_charging);
@@ -253,6 +282,7 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private String getHealthStatusText(int health) {
+        if (!isAdded()) return "";
         if (health >= 90) return getString(R.string.status_excellent);
         if (health >= 80) return getString(R.string.status_good);
         if (health >= 60) return getString(R.string.status_fair);
@@ -260,6 +290,7 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private String formatBatterySource(BatteryInfo info) {
+        if (!isAdded()) return "";
         String source = info.getBatterySource();
         if ("original".equals(source)) {
             return getString(R.string.battery_source_original_confidence, (int) (info.getBatterySourceConfidence() * 100));
@@ -281,6 +312,7 @@ public class BatteryHealthFragment extends Fragment {
         super.onDestroyView();
         stopPeriodicUpdate();
         handler.removeCallbacksAndMessages(null);
+        mainHandler.removeCallbacksAndMessages(null);
     }
 
     @Override

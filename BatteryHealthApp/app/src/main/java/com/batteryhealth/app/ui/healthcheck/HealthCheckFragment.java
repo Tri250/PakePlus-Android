@@ -69,7 +69,8 @@ public class HealthCheckFragment extends Fragment {
 
     private View createErrorView(Exception e) {
         Context ctx = getContext();
-        if (ctx == null) ctx = requireActivity();
+        if (ctx == null && isAdded()) ctx = getActivity();
+        if (ctx == null) return new View(requireActivity());
         TextView tv = new TextView(ctx);
         tv.setText(getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage()));
         tv.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
@@ -151,7 +152,10 @@ public class HealthCheckFragment extends Fragment {
             @Override
             public void onError(final String message) {
                 mainHandler.post(() -> {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    Context ctx = getContext();
+                    if (ctx != null) {
+                        Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show();
+                    }
                     finishCheckingUI();
                 });
             }
@@ -195,12 +199,14 @@ public class HealthCheckFragment extends Fragment {
 
     private void exportReport() {
         if (lastResults.isEmpty()) {
-            Toast.makeText(getContext(), R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
+            Context ctx = getContext();
+            if (ctx != null) Toast.makeText(ctx, R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
             return;
         }
         String csv = engine.exportCsv(lastResults);
         if (csv == null || csv.isEmpty()) {
-            Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            Context ctx = getContext();
+            if (ctx != null) Toast.makeText(ctx, R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -213,7 +219,8 @@ public class HealthCheckFragment extends Fragment {
             }
             Toast.makeText(ctx, getString(R.string.health_check_export_success), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            Context ctx2 = getContext();
+            if (ctx2 != null) Toast.makeText(ctx2, R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -266,8 +273,11 @@ public class HealthCheckFragment extends Fragment {
             h.itemView.setOnClickListener(v -> showDetailDialog(r));
             h.tvAction.setOnClickListener(v -> {
                 if (engine != null) {
-                    boolean ok = engine.applyFix(getContext(), r);
-                    if (!ok) Toast.makeText(getContext(), R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                    Context ctx = getContext();
+                    if (ctx != null) {
+                        boolean ok = engine.applyFix(ctx, r);
+                        if (!ok) Toast.makeText(ctx, R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         }
@@ -314,7 +324,10 @@ public class HealthCheckFragment extends Fragment {
                 .setPositiveButton(android.R.string.cancel, null);
         if (r.isRepairable()) {
             builder.setNeutralButton(R.string.health_check_action_fix, (dialog, which) -> {
-                if (engine != null && isAdded()) engine.applyFix(getContext(), r);
+                if (engine != null && isAdded()) {
+                    Context ctx = getContext();
+                    if (ctx != null) engine.applyFix(ctx, r);
+                }
             });
         }
         try {

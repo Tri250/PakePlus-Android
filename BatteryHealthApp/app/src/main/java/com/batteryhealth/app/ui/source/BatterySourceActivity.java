@@ -74,7 +74,7 @@ public class BatterySourceActivity extends AppCompatActivity {
     }
 
     private void startAnalysis() {
-        progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
         executor.execute(() -> {
             try {
@@ -83,14 +83,14 @@ public class BatterySourceActivity extends AppCompatActivity {
                 BatteryDataManager.BatterySource source = manager.verifyBatterySource(this, info);
 
                 mainHandler.post(() -> {
-                    progressBar.setVisibility(View.GONE);
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
                     bindResult(info, source);
                 });
             } catch (Exception e) {
                 mainHandler.post(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    tvFinalResult.setText(R.string.status_not_recognized);
-                    tvSummary.setText(R.string.source_error_message);
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                    if (tvFinalResult != null) tvFinalResult.setText(R.string.status_not_recognized);
+                    if (tvSummary != null) tvSummary.setText(R.string.source_error_message);
                 });
             }
         });

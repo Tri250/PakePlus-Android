@@ -24,6 +24,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
+import com.batteryhealth.app.utils.StateLayoutHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -59,6 +60,8 @@ public class PowerFragment extends Fragment {
     private LineChart chartPower;
     private final List<PowerPoint> powerPoints = new ArrayList<>();
 
+    private StateLayoutHelper stateLayoutHelper;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -74,6 +77,14 @@ public class PowerFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_power, container, false);
         initViews(view);
+        // 初始化 StateLayoutHelper
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                stateLayoutHelper.showLoading(null);
+            }
+        }
         setupChart();
         animateEntry(view);
         loadHistory();
@@ -124,7 +135,9 @@ public class PowerFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
     }
 
@@ -194,6 +207,12 @@ public class PowerFragment extends Fragment {
 
     private void updateFromIntent(Intent intent) {
         if (!isAdded() || getContext() == null) return;
+
+        // 首次数据到达，显示内容
+        if (stateLayoutHelper != null && stateLayoutHelper.getCurrentState() != StateLayoutHelper.State.CONTENT) {
+            stateLayoutHelper.showContent();
+        }
+
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         int batteryPct = scale > 0 ? (int) ((level / (float) scale) * 100) : 0;
@@ -365,6 +384,7 @@ public class PowerFragment extends Fragment {
             executor.execute(() -> {
                 try {
                     AppDatabase db = com.batteryhealth.app.BatteryHealthApplication.getDatabase();
+                    if (db == null) return;
                     PowerHistory first = new PowerHistory();
                     first.setTimestamp(sessionStartTime);
                     first.setPower(lastWatt);

@@ -31,11 +31,15 @@ public class BugreportAnalyzer {
         result.temperature = parsed.temperatureC;
         result.technology = parsed.technology != null ? parsed.technology : "Li-ion";
         result.chargingPolicy = parsed.chargingPolicy != null ? parsed.chargingPolicy : "unknown";
+        result.batteryManufacturer = parsed.batteryManufacturer;
+        result.batterySerial = parsed.batterySerial;
+        result.chargeProtocol = parsed.chargeProtocol;
+        result.detectedBrand = parsed.detectedBrand;
 
         // 健康度：优先使用 bugreport 中已计算百分比，否则用 FCC / 设计容量
         if (parsed.batteryHealthPercent > 0 && parsed.batteryHealthPercent <= 100) {
             result.batteryHealth = parsed.batteryHealthPercent;
-            result.healthConfidence = 0.9f;
+            result.healthConfidence = parsed.healthConfidence > 0 ? parsed.healthConfidence : 0.9f;
         } else if (parsed.fullCapacityMah > 0 && parsed.designCapacityMah > 0) {
             result.batteryHealth = (int) (parsed.fullCapacityMah * 100.0 / parsed.designCapacityMah);
             result.healthConfidence = 0.75f;
@@ -96,5 +100,9 @@ public class BugreportAnalyzer {
         public String chargingPolicy = "unknown"; // 充电策略
         public float healthConfidence;        // 健康度置信度 0-1
         public boolean hasThermalRisk;        // 是否存在过热风险
+        public String batteryManufacturer;    // 电池制造商
+        public String batterySerial;          // 电池序列号
+        public String chargeProtocol;         // 充电协议
+        public String detectedBrand;          // 检测到的品牌
     }
 }

@@ -445,9 +445,7 @@ public class BatteryMonitorService extends Service {
 
             String content = getString(
                     R.string.health_alert_content,
-                    drop,
-                    historicalHealth,
-                    currentHealth
+                    (int) currentHealth
             );
 
             Notification notification = new NotificationCompat.Builder(this, HEALTH_ALERT_CHANNEL_ID)

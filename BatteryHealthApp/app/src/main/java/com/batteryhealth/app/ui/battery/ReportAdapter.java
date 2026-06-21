@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.batteryhealth.app.R;
@@ -54,7 +55,7 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ViewHolder
         } else {
             healthColor = R.color.coloros_orange;
         }
-        holder.tvHealth.setTextColor(holder.itemView.getContext().getColor(healthColor));
+        holder.tvHealth.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), healthColor));
     }
 
     @Override

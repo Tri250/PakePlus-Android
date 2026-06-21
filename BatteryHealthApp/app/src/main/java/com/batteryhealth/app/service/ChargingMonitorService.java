@@ -772,7 +772,9 @@ public class ChargingMonitorService extends Service {
                     history.getPower(),
                     history.getChargeTypeDescription());
         } else {
-            content = getString(R.string.charging_monitor_notification_content_idle);
+            content = String.format(Locale.getDefault(),
+                    getString(R.string.charging_monitor_notification_content_idle),
+                    cachedLevel);
         }
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)

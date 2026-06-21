@@ -72,9 +72,10 @@ public class PerformanceBenchmark {
         long randomReadIops = benchmarkStorageRandomRead();
         long randomWriteIops = benchmarkStorageRandomWrite();
 
-        // GPU 渲染基准：基于 GLES 2.0 离屏渲染（仅能在 GPU helper 注入时执行；此处退化到软件填充估算）
-        long gpuFps = benchmarkGpuViaCpuProxy();
-        long gpuScore = mapGpuScore(gpuFps);
+        // GPU 渲染基准：基于 GLES 2.0 离屏渲染
+        GpuBenchmark.Result gpuResult = GpuBenchmark.run();
+        long gpuFps = gpuResult.fps;
+        long gpuScore = gpuResult.score;
 
         // 综合分数：CPU 35% + 内存 20% + 存储 20% + GPU 25%（2026年校准，GPU权重提升）
         long overall = (long) (cpuMulti * 0.35
@@ -301,38 +302,6 @@ public class PerformanceBenchmark {
         }
         long elapsedNs = System.nanoTime() - start;
         return (long) (operations * 1_000_000_000L / elapsedNs);
-    }
-
-    /**
-     * GPU 性能代理：通过 CPU 矩阵运算的浮点能力估算 GPU 性能。
-     * 真正的 GPU 跑分需通过 EGL 离屏渲染实现，本工具用代理指标。
-     */
-    private static long benchmarkGpuViaCpuProxy() {
-        // 模拟"每秒可执行浮点运算次数"，用作 GPU 算力代理
-        int size = 128;
-        float[] a = new float[size * size];
-        float[] b = new float[size * size];
-        float[] c = new float[size * size];
-        for (int i = 0; i < a.length; i++) {
-            a[i] = (float) Math.sin(i);
-            b[i] = (float) Math.cos(i);
-        }
-        long start = System.nanoTime();
-        for (int r = 0; r < 5; r++) {
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    float s = 0;
-                    for (int k = 0; k < size; k++) s += a[i * size + k] * b[k * size + j];
-                    c[i * size + j] = s;
-                }
-            }
-        }
-        long elapsed = System.nanoTime() - start;
-        // 100ms = 60fps 代理值
-        long fps = (long) (5.0 * 1_000_000_000.0 / elapsed * 60.0 / 16.6);
-        if (fps < 1) fps = 1;
-        if (fps > 999) fps = 999;
-        return fps;
     }
 
     private static long mapGpuScore(long fps) {

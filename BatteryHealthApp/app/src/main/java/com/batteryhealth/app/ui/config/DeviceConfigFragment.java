@@ -79,7 +79,9 @@ public class DeviceConfigFragment extends Fragment {
         progressBar = view.findViewById(R.id.progress_loading);
 
         if (switchHealthAlert != null) {
-            SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
+            Context ctx = getContext();
+            if (ctx == null) return;
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
             switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
             switchHealthAlert.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean(PREF_HEALTH_ALERT, isChecked).apply();
@@ -88,14 +90,21 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
     }
 
     private void loadDataAsync() {
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
-        DeviceInfoManager manager = new DeviceInfoManager(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) {
+            if (progressBar != null) progressBar.setVisibility(View.GONE);
+            return;
+        }
+        DeviceInfoManager manager = new DeviceInfoManager(ctx);
         manager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
             @Override
             public void onConfigLoaded(DeviceConfig config) {
