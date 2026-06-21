@@ -92,6 +92,20 @@ public class BatteryDataManager {
     }
 
     /**
+     * 重置单例实例。
+     * 在 BugreportGuideActivity 跳转到 MainActivity 前调用，
+     * 确保 MainActivity 创建的单例能加载到最新的 bugreport 数据。
+     */
+    public static void resetInstance() {
+        synchronized (BatteryDataManager.class) {
+            if (instance != null) {
+                instance.clearBugreportData();
+            }
+            instance = null;
+        }
+    }
+
+    /**
      * 获取最新电池信息（实时刷新）。
      *
      * @param refresh 是否强制重新读取，true 时忽略缓存
@@ -1216,6 +1230,36 @@ public class BatteryDataManager {
      */
     public boolean hasBugreportData() {
         return hasBugreportData;
+    }
+
+    /**
+     * 从 SharedPreferences 加载 bugreport 分析结果。
+     * 这确保 MainActivity 启动时就能加载用户在 BugreportGuideActivity 中分析的数据。
+     */
+    public void loadBugreportDataFromPrefs(Context ctx) {
+        if (ctx == null) return;
+        try {
+            android.content.SharedPreferences prefs = ctx.getSharedPreferences(
+                    "bugreport_prefs", android.content.Context.MODE_PRIVATE);
+            boolean analyzed = prefs.getBoolean("bugreport_analyzed", false);
+            if (!analyzed) {
+                Log.d(TAG, "No bugreport data found in prefs");
+                return;
+            }
+
+            int health = prefs.getInt("bugreport_battery_health", -1);
+            int cycleCount = prefs.getInt("bugreport_cycle_count", -1);
+            int designCapacity = prefs.getInt("bugreport_design_capacity", -1);
+            int fullCapacity = prefs.getInt("bugreport_full_capacity", -1);
+            float voltage = prefs.getFloat("bugreport_battery_voltage", -1f);
+            float temp = prefs.getFloat("bugreport_battery_temp", -1f);
+            String technology = prefs.getString("bugreport_battery_technology", "");
+
+            setBugreportData(health, cycleCount, designCapacity, fullCapacity, voltage, temp, technology);
+            Log.d(TAG, "Loaded bugreport data from prefs: health=" + health + ", cycles=" + cycleCount);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load bugreport data from prefs: " + e.getMessage(), e);
+        }
     }
 
     // endregion

@@ -106,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                batteryDataManager = new BatteryDataManager(this);
+                // 使用单例模式，确保 bugreport 数据能在 Activity 之间共享
+                batteryDataManager = BatteryDataManager.getInstance(this);
+                // 主动从 SharedPreferences 加载 bugreport 分析结果
+                batteryDataManager.loadBugreportDataFromPrefs(this);
                 // 将设备使用天数与激活信息同步给电池管理器，用于健康度物理估算
                 if (deviceInfoManager != null) {
                     batteryDataManager.setUsageDays(deviceInfoManager.getUsageDays());

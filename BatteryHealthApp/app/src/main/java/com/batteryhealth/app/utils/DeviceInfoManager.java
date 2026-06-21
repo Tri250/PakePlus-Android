@@ -393,6 +393,15 @@ public class DeviceInfoManager {
 
     /**
      * 格式化 Build.HARDWARE 为更可读的处理器名称（2026年国内品牌规范）。
+     * 公开方法供其他模块调用（如 DeviceConfigFragment.bindFallback）。
+     */
+    public String formatHardwareNameForDisplay(String hw) {
+        if (hw == null || hw.isEmpty()) return "";
+        return formatHardwareName(hw);
+    }
+
+    /**
+     * 格式化 Build.HARDWARE 为更可读的处理器名称（2026年国内品牌规范）。
      * 
      * 国内品牌处理器命名规范：
      * - 小米/Redmi: 骁龙 8 Gen 4 / 天玑 9400+

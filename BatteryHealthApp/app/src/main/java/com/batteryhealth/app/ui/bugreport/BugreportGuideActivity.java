@@ -448,6 +448,9 @@ public class BugreportGuideActivity extends AppCompatActivity {
 
     private void goToMainActivity() {
         markGuideShown(this);
+        // 在跳转到 MainActivity 前，主动清除 BatteryDataManager 单例
+        // 确保 MainActivity 重新创建单例时能加载最新的 bugreport 数据
+        com.batteryhealth.app.utils.BatteryDataManager.resetInstance();
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

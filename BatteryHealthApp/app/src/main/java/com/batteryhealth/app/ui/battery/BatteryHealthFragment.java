@@ -85,48 +85,23 @@ public class BatteryHealthFragment extends Fragment {
                 }
             }
         }
-        // 检查是否有 bugreport 分析结果需要加载
-        loadBugreportAnalysisResult();
+        // 注意：bugreport 数据已在 MainActivity 启动时通过 BatteryDataManager 单例加载，
+        // 无需在此重复加载。但需要更新 UI 显示 bugreport 数据来源。
+        updateBugreportSourceUI();
     }
 
     /**
-     * 加载 bugreport 分析结果到电池健康页面。
-     * 如果用户通过 bugreport 导入流程分析过数据，则将分析结果应用到当前页面。
+     * 更新 bugreport 数据来源 UI。
+     * 如果 BatteryDataManager 已有 bugreport 数据，显示"来自 bugreport 分析"。
      */
-    private void loadBugreportAnalysisResult() {
-        Context ctx = getContext();
-        if (ctx == null) return;
+    private void updateBugreportSourceUI() {
+        if (tvHealthSource == null) return;
         try {
-            android.content.SharedPreferences prefs = ctx.getSharedPreferences(
-                    "bugreport_prefs", android.content.Context.MODE_PRIVATE);
-            boolean analyzed = prefs.getBoolean("bugreport_analyzed", false);
-            if (!analyzed) return;
-
-            int bugreportHealth = prefs.getInt("bugreport_battery_health", -1);
-            int bugreportCycleCount = prefs.getInt("bugreport_cycle_count", -1);
-            int bugreportDesignCapacity = prefs.getInt("bugreport_design_capacity", -1);
-            int bugreportFullCapacity = prefs.getInt("bugreport_full_capacity", -1);
-            float bugreportVoltage = prefs.getFloat("bugreport_battery_voltage", -1f);
-            float bugreportTemp = prefs.getFloat("bugreport_battery_temp", -1f);
-            String bugreportTechnology = prefs.getString("bugreport_battery_technology", "");
-
-            // 将 bugreport 数据应用到 BatteryDataManager
-            if (batteryDataManager != null) {
-                batteryDataManager.setBugreportData(
-                        bugreportHealth, bugreportCycleCount,
-                        bugreportDesignCapacity, bugreportFullCapacity,
-                        bugreportVoltage, bugreportTemp, bugreportTechnology);
-            }
-
-            // 更新 UI 显示 bugreport 数据来源
-            if (tvHealthSource != null) {
+            if (batteryDataManager != null && batteryDataManager.hasBugreportData()) {
                 tvHealthSource.setText(R.string.health_source_bugreport);
             }
-
-            android.util.Log.d("BatteryHealthFragment", "Loaded bugreport analysis result: health=" + bugreportHealth
-                    + ", cycles=" + bugreportCycleCount);
         } catch (Exception e) {
-            android.util.Log.e("BatteryHealthFragment", "Failed to load bugreport result", e);
+            android.util.Log.e("BatteryHealthFragment", "Failed to update bugreport source UI", e);
         }
     }
 
