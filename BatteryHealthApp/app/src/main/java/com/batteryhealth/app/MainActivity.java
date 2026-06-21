@@ -183,13 +183,15 @@ public class MainActivity extends AppCompatActivity {
 
                 // 底部导航栏动态增高并设置底部 padding，内容保持在手势条上方
                 CustomBottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+                View bottomNavContainer = findViewById(R.id.bottom_nav_container);
                 if (bottomNav != null) {
                     bottomNav.setPadding(bottomNav.getPaddingLeft(), bottomNav.getPaddingTop(),
                             bottomNav.getPaddingRight(), bottomInset);
                     bottomNav.applySystemBottomInset(bottomInset);
 
-                    // 等导航栏 layout 完成后，更新 ViewPager 底部 margin
-                    bottomNav.post(() -> updateViewPagerBottomMargin(bottomNav));
+                    // 等导航栏 layout 完成后，更新 ViewPager 底部 margin（使用容器总高度）
+                    View target = bottomNavContainer != null ? bottomNavContainer : bottomNav;
+                    target.post(() -> updateViewPagerBottomMargin(target));
                 }
                 return WindowInsetsCompat.CONSUMED;
             });
@@ -198,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateViewPagerBottomMargin(CustomBottomNavigationView bottomNav) {
+    private void updateViewPagerBottomMargin(View bottomNav) {
         if (viewPager == null || bottomNav == null) return;
         int totalNavHeight = bottomNav.getMeasuredHeight();
         if (totalNavHeight <= 0) return;

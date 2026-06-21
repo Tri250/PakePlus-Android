@@ -72,6 +72,16 @@
             android:enableOnBackInvokedCallback="true" />
 
         <activity
+            android:name=".ui.source.BatterySourceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
+        <activity
+            android:name=".ui.battery.ReportActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
+        <activity
             android:name=".ui.error.ErrorActivity"
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
@@ -83,6 +93,11 @@
 
         <activity
             android:name=".ui.trend.TrendActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
+        <activity
+            android:name=".ui.healthcheck.HealthCheckActivity"
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
 

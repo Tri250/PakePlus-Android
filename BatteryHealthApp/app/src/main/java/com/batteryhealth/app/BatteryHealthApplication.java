@@ -228,10 +228,17 @@ public class BatteryHealthApplication extends Application {
     }
     
     /**
-     * 获取数据库实例。
+     * 获取数据库实例（静态入口）。
      * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
      */
-    public AppDatabase getDatabase() {
+    public static AppDatabase getDatabase() {
+        return getInstance().getDatabaseInternal();
+    }
+
+    /**
+     * 获取数据库实例的内部实现。
+     */
+    private AppDatabase getDatabaseInternal() {
         startDatabaseInitAsync();
         CountDownLatch latch = dbInitLatch;
         if (latch != null) {

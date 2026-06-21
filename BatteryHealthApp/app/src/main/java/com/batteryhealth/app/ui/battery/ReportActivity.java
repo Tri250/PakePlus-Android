@@ -195,20 +195,26 @@ public class ReportActivity extends AppCompatActivity {
                 // 状态总结
                 String summary = generateSummary(avgHealth, minHealth, cycleChange);
 
+                final float finalAvgHealth = avgHealth;
+                final float finalMinHealth = minHealth;
+                final float finalMaxHealth = maxHealth;
+                final float finalAvgTemp = avgTemp;
+                final int finalCycleChange = cycleChange;
+
                 mainHandler.post(() -> {
                     tvPeriod.setText(periodStr);
-                    tvAvgHealth.setText(String.format(Locale.getDefault(), "%.1f%%", avgHealth));
-                    tvMinHealth.setText(String.format(Locale.getDefault(), "%.1f%%", minHealth));
-                    tvMaxHealth.setText(String.format(Locale.getDefault(), "%.1f%%", maxHealth));
-                    tvAvgTemp.setText(String.format(Locale.getDefault(), "%.1f°C", avgTemp));
-                    tvCycleChange.setText(cycleChange > 0 ? "+" + cycleChange : String.valueOf(cycleChange));
+                    tvAvgHealth.setText(String.format(Locale.getDefault(), "%.1f%%", finalAvgHealth));
+                    tvMinHealth.setText(String.format(Locale.getDefault(), "%.1f%%", finalMinHealth));
+                    tvMaxHealth.setText(String.format(Locale.getDefault(), "%.1f%%", finalMaxHealth));
+                    tvAvgTemp.setText(String.format(Locale.getDefault(), "%.1f°C", finalAvgTemp));
+                    tvCycleChange.setText(finalCycleChange > 0 ? "+" + finalCycleChange : String.valueOf(finalCycleChange));
                     tvStatusSummary.setText(summary);
 
                     showChart(entries);
                     adapter.setData(dailyStats);
                     emptyView.setVisibility(View.GONE);
 
-                    UiAnimationHelper.staggeredCardEntry(findViewById(R.id.content_container), 40, 300);
+                    UiAnimationHelper.animateCardsEntry(findViewById(R.id.content_container));
                 });
 
             } catch (Exception e) {

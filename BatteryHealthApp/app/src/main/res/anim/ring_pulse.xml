@@ -3,7 +3,7 @@
     android:duration="900"
     android:repeatMode="reverse"
     android:repeatCount="infinite"
-    android:interpolator="@android:anim/linear_interpolator">
+    android:interpolator="@android:interpolator/fast_out_slow_in">
     <scale
         android:fromXScale="1.0"
         android:toXScale="1.3"

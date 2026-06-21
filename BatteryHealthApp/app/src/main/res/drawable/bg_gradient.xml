@@ -6,6 +6,6 @@
         android:angle="135"
         android:startColor="@color/ios_background_gradient_start"
         android:endColor="@color/ios_background_gradient_end"
-        android:centerX="0.4"
-        android:centerY="0.6" />
+        android:centerX="0.3"
+        android:centerY="0.7" />
 </shape>

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- ============================== -->
-    <!-- 应用主题 - Web Design System（浅色） -->
+    <!-- 应用主题 - ColorOS 16 设计系统（浅色） -->
     <!-- ============================== -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- 主色调 -->
-        <item name="colorPrimary">@color/primary</item>
+        <!-- ColorOS 16 主色调 -->
+        <item name="colorPrimary">@color/coloros_blue</item>
         <item name="colorPrimaryDark">@color/primaryVariant</item>
-        <item name="colorAccent">@color/green</item>
-        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorAccent">@color/coloros_green</item>
+        <item name="colorSecondary">@color/coloros_green</item>
 
-        <!-- 背景色 - 使用 Web bg-canvas 渐变 -->
+        <!-- 背景色 - ColorOS 16 柔和灰白 -->
         <item name="android:windowBackground">@drawable/bg_gradient</item>
         <item name="android:colorBackground">@color/bg_canvas</item>
 
@@ -19,7 +19,7 @@
         <item name="android:textColorSecondary">@color/label_2</item>
         <item name="android:textColorTertiary">@color/label_3</item>
 
-        <!-- 状态栏 -->
+        <!-- 状态栏 - 沉浸式透明 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
 
@@ -32,7 +32,7 @@
         <item name="windowNoTitle">true</item>
 
         <!-- 窗口动画 -->
-        <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
+        <item name="android:windowAnimationStyle">@style/ColorOSWindowAnimation</item>
     </style>
 
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
@@ -41,9 +41,9 @@
     </style>
 
     <!-- ============================== -->
-    <!-- 窗口动画 -->
+    <!-- 窗口动画 - ColorOS 16 自然过渡 -->
     <!-- ============================== -->
-    <style name="LiquidGlassWindowAnimation" parent="@android:style/Animation.Activity">
+    <style name="ColorOSWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
         <item name="android:activityOpenExitAnimation">@anim/ios_slide_out_left</item>
         <item name="android:activityCloseEnterAnimation">@anim/ios_slide_in_left</item>
@@ -51,13 +51,13 @@
     </style>
 
     <!-- ============================== -->
-    <!-- Web Design System - 文本样式 -->
+    <!-- ColorOS 16 Design System - 文本样式 -->
     <!-- ============================== -->
     <style name="WebPageTitle" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">@dimen/text_page_title</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.025</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -80,7 +80,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:letterSpacing">0.06</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -109,7 +109,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -132,7 +132,7 @@
         <item name="android:textSize">@dimen/text_endurance_big</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -140,7 +140,7 @@
         <item name="android:textSize">@dimen/text_watt</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -177,12 +177,12 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <!-- ============================== -->
-    <!-- Web Design System - Shape appearances -->
+    <!-- ColorOS 16 Design System - Shape appearances -->
     <!-- ============================== -->
     <style name="ShapeCard" parent="ShapeAppearance.MaterialComponents.MediumComponent">
         <item name="cornerFamily">rounded</item>
@@ -206,14 +206,14 @@
         <item name="android:textSize">28sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="LiquidGlassTitle.Large" parent="LiquidGlassTitle">
-        <item name="android:textSize">34sp</item>
-        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:lineSpacingExtra">6dp</item>
     </style>
 
@@ -221,7 +221,7 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.022</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
@@ -229,7 +229,7 @@
     <style name="LiquidGlassBody" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.011</item>
+        <item name="android:letterSpacing">-0.01</item>
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
@@ -253,7 +253,7 @@
         <item name="android:textSize">56sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -261,7 +261,7 @@
         <item name="android:textSize">32sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -269,7 +269,7 @@
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -311,7 +311,7 @@
     <!-- ============================== -->
     <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
         <item name="android:thumbTint">@color/white</item>
-        <item name="android:trackTint">@color/ios_blue</item>
+        <item name="android:trackTint">@color/coloros_blue</item>
     </style>
 
     <!-- ============================== -->

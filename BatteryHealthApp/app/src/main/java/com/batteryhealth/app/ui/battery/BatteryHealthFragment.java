@@ -1,6 +1,5 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.animation.ObjectAnimator;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,11 +18,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
+import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BatteryHealthFragment extends Fragment {
 
@@ -40,14 +44,19 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvBatterySource;
     private TextView tvTechnology;
+    private TextView tvHealthSource;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    private BatteryDataManager batteryDataManager;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
+        batteryDataManager = BatteryDataManager.getInstance(requireContext());
         initViews(view);
         animateEntry(view);
         return view;
@@ -67,6 +76,7 @@ public class BatteryHealthFragment extends Fragment {
         tvVoltage = view.findViewById(R.id.tv_voltage);
         tvBatterySource = view.findViewById(R.id.tv_battery_source);
         tvTechnology = view.findViewById(R.id.tv_technology);
+        tvHealthSource = view.findViewById(R.id.tv_health_source);
 
         // 周报/月报入口
         View btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
@@ -77,11 +87,22 @@ public class BatteryHealthFragment extends Fragment {
         if (btnMonthlyReport != null) {
             btnMonthlyReport.setOnClickListener(v -> ReportActivity.start(requireContext(), ReportActivity.TYPE_MONTHLY));
         }
+
+        // 电池溯源 / 健康检查入口
+        View btnBatterySource = view.findViewById(R.id.btn_battery_source);
+        View btnHealthCheck = view.findViewById(R.id.btn_health_check);
+        if (btnBatterySource != null) {
+            btnBatterySource.setOnClickListener(v -> com.batteryhealth.app.ui.source.BatterySourceActivity.start(requireContext()));
+        }
+        if (btnHealthCheck != null) {
+            btnHealthCheck.setOnClickListener(v -> com.batteryhealth.app.ui.healthcheck.HealthCheckActivity.start(requireContext()));
+        }
     }
 
     private void animateEntry(View view) {
         Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
         view.startAnimation(fadeUp);
+        UiAnimationHelper.animateCardsEntry(view);
     }
 
     @Override
@@ -89,6 +110,7 @@ public class BatteryHealthFragment extends Fragment {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        updateBatteryData();
     }
 
     @Override
@@ -130,98 +152,113 @@ public class BatteryHealthFragment extends Fragment {
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateFromIntent(intent);
+            updateBatteryData();
         }
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
+        executor.execute(() -> {
+            try {
+                BatteryInfo info = batteryDataManager.getBatteryInfo();
+                // 持久化到数据库，供趋势追踪和报告使用
+                persistBatteryInfo(info);
+                mainHandler.post(() -> bindBatteryInfo(info));
+            } catch (Exception e) {
+                mainHandler.post(() -> showDetecting());
+            }
+        });
+    }
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private void persistBatteryInfo(BatteryInfo info) {
+        try {
+            BatteryHealthApplication.getDatabase().batteryInfoDao().insert(info.copy());
+        } catch (Exception e) {
+            // 数据库写入失败不应影响 UI 展示
         }
     }
 
-    private void updateFromIntent(Intent intent) {
-        int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
-
-        int status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
-        boolean isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
-                || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
-        String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
-
-        int current = 0;
-        android.os.BatteryManager bm = (android.os.BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+    private void bindBatteryInfo(BatteryInfo info) {
+        if (info == null) {
+            showDetecting();
+            return;
         }
-        float currentMa = current / 1000f;
 
-        int voltage = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, 0);
-        float voltageV = voltage / 1000f;
+        int health = info.hasValidHealthData() ? Math.round(info.getHealthPercentage()) : -1;
+        int level = info.getLevel();
 
-        int temp = intent.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
+        tvBatteryLevel.setText(level >= 0 ? String.format(Locale.getDefault(), "%d%%", level) : "--");
+        tvChargingStatus.setText(getChargingStatusText(info));
+        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(info.getCurrentNow() / 1000f)));
 
-        String technology = intent.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY);
-        if (technology == null) technology = "Li-ion";
+        int currentCapacity = info.getCurrentCapacity();
+        tvCapacity.setText(currentCapacity > 0
+                ? String.format(Locale.getDefault(), "%d / %d mAh", currentCapacity, Math.max(currentCapacity, info.getDesignCapacity()))
+                : String.format(Locale.getDefault(), "%d mAh", info.getDesignCapacity()));
 
-        int capacityMah = batteryPct;
+        tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
+        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
+        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", info.getVoltage() / 1000f));
+        tvTechnology.setText(info.getTechnology());
+        tvBatterySource.setText(formatBatterySource(info));
 
-        // Update UI
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvChargingStatus.setText(chargingStatus);
-        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
-        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", capacityMah * 10));
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvTechnology.setText(technology);
-        tvBatterySource.setText(getString(R.string.source_internal));
+        if (tvHealthSource != null) {
+            tvHealthSource.setText(batteryDataManager.getHealthSourceText());
+        }
 
-        // Cycle count estimate
-        int cycleCount = estimateCycleCount(capacityMah * 10, batteryPct);
-        tvCycleCount.setText(String.valueOf(cycleCount));
-
-        // Health grade and ring
-        int health = Math.max(0, Math.min(100, capacityMah));
-        String grade = calculateGrade(health);
-        tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
-        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", health));
-
-        String statusText;
-        if (health >= 90) {
-            statusText = getString(R.string.status_excellent);
-        } else if (health >= 80) {
-            statusText = getString(R.string.status_good);
-        } else if (health >= 60) {
-            statusText = getString(R.string.status_fair);
+        if (health >= 0) {
+            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", health));
+            tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", info.getHealthGrade()));
+            tvHealthStatus.setText(getHealthStatusText(health));
+            UiAnimationHelper.animateRingProgress(healthRing, health);
         } else {
-            statusText = getString(R.string.status_poor);
+            tvHealthPercentage.setText("--");
+            tvHealthGrade.setText("等级 --");
+            tvHealthStatus.setText(getString(R.string.health_status_no_data));
         }
-        tvHealthStatus.setText(statusText);
-
-        UiAnimationHelper.animateRingProgress(healthRing, health);
     }
 
-    private int estimateCycleCount(int capacityMah, int batteryPct) {
-        // Rough estimate based on typical 3000mAh battery and 500 cycles for 20% degradation
-        int typicalCapacity = 3000;
-        if (capacityMah > 0) {
-            typicalCapacity = capacityMah;
+    private String getChargingStatusText(BatteryInfo info) {
+        int status = info.getStatus();
+        if (status == android.os.BatteryManager.BATTERY_STATUS_CHARGING) {
+            return getString(R.string.status_charging);
+        } else if (status == android.os.BatteryManager.BATTERY_STATUS_FULL) {
+            return getString(R.string.status_fully_charged);
+        } else if (status == android.os.BatteryManager.BATTERY_STATUS_DISCHARGING) {
+            return getString(R.string.status_discharging);
+        } else if (status == android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING) {
+            return getString(R.string.status_not_charging_short);
         }
-        float degradation = (100f - batteryPct) / 100f;
-        return (int) (degradation * 500 * (typicalCapacity / 3000f));
+        return getString(R.string.status_unknown);
     }
 
-    private String calculateGrade(int health) {
-        if (health >= 95) return "A+";
-        if (health >= 90) return "A";
-        if (health >= 85) return "A-";
-        if (health >= 80) return "B+";
-        if (health >= 75) return "B";
-        if (health >= 70) return "B-";
-        if (health >= 60) return "C";
-        return "D";
+    private String getHealthStatusText(int health) {
+        if (health >= 90) return getString(R.string.status_excellent);
+        if (health >= 80) return getString(R.string.status_good);
+        if (health >= 60) return getString(R.string.status_fair);
+        return getString(R.string.status_poor);
+    }
+
+    private String formatBatterySource(BatteryInfo info) {
+        String source = info.getBatterySource();
+        if ("original".equals(source)) {
+            return getString(R.string.battery_source_original_confidence, (int) (info.getBatterySourceConfidence() * 100));
+        } else if ("third_party".equals(source)) {
+            return getString(R.string.battery_source_third_party_confidence, (int) (info.getBatterySourceConfidence() * 100));
+        }
+        return getString(R.string.battery_source_unverifiable);
+    }
+
+    private void showDetecting() {
+        tvHealthPercentage.setText("--");
+        tvHealthGrade.setText("等级 --");
+        tvHealthStatus.setText(getString(R.string.status_detecting));
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }

@@ -442,6 +442,117 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: 性能评分 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_key_stats"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Benchmark card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/benchmark_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_temperature_c"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_thermal_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_performance_score"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_benchmark_score"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <TextView
+                    android:id="@+id/tv_benchmark_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:text="--"
+                    android:textSize="12sp"
+                    android:textColor="@color/label_2"
+                    android:lineSpacingMultiplier="1.2" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/separator" />
+
+                <TextView
+                    android:id="@+id/btn_run_benchmark"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:text="@string/action_run_benchmark"
+                    android:textSize="15sp"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

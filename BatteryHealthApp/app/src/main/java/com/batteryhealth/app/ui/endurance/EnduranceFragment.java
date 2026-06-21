@@ -4,11 +4,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,30 +26,58 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+/**
+ * 续航分析页面
+ *
+ * 功能：
+ * 1. 实时估算剩余续航时间
+ * 2. 展示放电速率、温度等关键指标
+ * 3. 多维度拆解续航表现
+ * 4. 支持手表专属续航数据分析
+ */
 public class EnduranceFragment extends Fragment {
 
-    private TextView tvEnduranceHours;
-    private TextView tvEnduranceMeta;
+    private static final String PREFS_ENDURANCE = "endurance_prefs";
+    private static final String KEY_LAST_LEVEL = "last_level";
+    private static final String KEY_LAST_TIME = "last_time";
+    private static final String KEY_DISCHARGE_RATE = "discharge_rate";
+
+    private TextView tvEnduranceHours, tvEnduranceMeta;
     private TextView tvMetricBattery, tvMetricDischarge, tvMetricTemp;
     private TextView tvChargingStatus, tvUsedTime, tvConsumedBattery, tvEstimatedFull, tvScreenOnTime;
+    private TextView tvWatchEndurance, tvWatchMode, tvAppConsumptionTitle;
+    private View watchSection;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private int lastBatteryLevel = -1;
     private long lastUpdateTime = -1;
     private float dischargeRate = 0f;
+    private boolean isWatch = false;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_endurance, container, false);
+        isWatch = detectWatch();
         initViews(view);
         animateEntry(view);
+        loadSavedState();
         return view;
+    }
+
+    private boolean detectWatch() {
+        // 通过 Configuration 和 UI 模式判断是否是手表
+        return (requireContext().getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_TYPE_MASK)
+                == android.content.res.Configuration.UI_MODE_TYPE_WATCH;
     }
 
     private void initViews(View view) {
@@ -58,6 +91,14 @@ public class EnduranceFragment extends Fragment {
         tvConsumedBattery = view.findViewById(R.id.tv_consumed_battery);
         tvEstimatedFull = view.findViewById(R.id.tv_estimated_full);
         tvScreenOnTime = view.findViewById(R.id.tv_screen_on_time);
+        tvWatchEndurance = view.findViewById(R.id.tv_watch_endurance);
+        tvWatchMode = view.findViewById(R.id.tv_watch_mode);
+        watchSection = view.findViewById(R.id.watch_section);
+        tvAppConsumptionTitle = view.findViewById(R.id.tv_app_consumption_title);
+
+        if (isWatch && watchSection != null) {
+            watchSection.setVisibility(View.VISIBLE);
+        }
     }
 
     private void animateEntry(View view) {
@@ -77,6 +118,23 @@ public class EnduranceFragment extends Fragment {
         super.onPause();
         unregisterBatteryReceiver();
         stopPeriodicUpdate();
+        saveState();
+    }
+
+    private void loadSavedState() {
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE);
+        lastBatteryLevel = prefs.getInt(KEY_LAST_LEVEL, -1);
+        lastUpdateTime = prefs.getLong(KEY_LAST_TIME, -1);
+        dischargeRate = prefs.getFloat(KEY_DISCHARGE_RATE, 0f);
+    }
+
+    private void saveState() {
+        requireContext().getSharedPreferences(PREFS_ENDURANCE, Context.MODE_PRIVATE)
+                .edit()
+                .putInt(KEY_LAST_LEVEL, lastBatteryLevel)
+                .putLong(KEY_LAST_TIME, lastUpdateTime)
+                .putFloat(KEY_DISCHARGE_RATE, dischargeRate)
+                .apply();
     }
 
     private void registerBatteryReceiver() {
@@ -125,7 +183,7 @@ public class EnduranceFragment extends Fragment {
     private void updateFromIntent(Intent intent) {
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
+        int batteryPct = scale > 0 ? (int) ((level / (float) scale) * 100) : 0;
 
         int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
         boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
@@ -145,25 +203,28 @@ public class EnduranceFragment extends Fragment {
         // Calculate discharge rate
         long now = System.currentTimeMillis();
         if (lastBatteryLevel >= 0 && lastUpdateTime > 0 && !isCharging) {
-            long elapsedHours = (now - lastUpdateTime) / (1000 * 60 * 60);
-            if (elapsedHours > 0) {
+            long elapsedMs = now - lastUpdateTime;
+            float elapsedHours = elapsedMs / (1000f * 60f * 60f);
+            if (elapsedHours > 0.05f) { // 至少3分钟
                 int delta = lastBatteryLevel - batteryPct;
                 if (delta > 0) {
-                    dischargeRate = delta / (float) elapsedHours;
+                    float newRate = delta / elapsedHours;
+                    // 平滑处理
+                    dischargeRate = dischargeRate > 0 ? (dischargeRate * 0.7f + newRate * 0.3f) : newRate;
                 }
             }
         }
-        if (dischargeRate <= 0) {
-            dischargeRate = 12.2f; // default fallback
+        if (dischargeRate <= 0 && !isCharging) {
+            dischargeRate = isWatch ? 5.5f : 12.2f; // 手表默认放电速率更低
         }
         lastBatteryLevel = batteryPct;
         lastUpdateTime = now;
 
         // Endurance estimate
-        float remainingHours = batteryPct / dischargeRate;
+        float remainingHours = isCharging ? 0 : batteryPct / dischargeRate;
         int hours = (int) remainingHours;
         int minutes = (int) ((remainingHours - hours) * 60);
-        tvEnduranceHours.setText(String.valueOf(hours));
+        tvEnduranceHours.setText(String.format(Locale.getDefault(), "%d小时%d分", hours, minutes));
         tvEnduranceMeta.setText(String.format(Locale.getDefault(),
                 getString(R.string.meta_endurance), batteryPct, dischargeRate));
 
@@ -176,13 +237,82 @@ public class EnduranceFragment extends Fragment {
         tvChargingStatus.setText(chargingStatus);
         tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
         tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
-        tvEstimatedFull.setText(isCharging ? getString(R.string.status_calculating) : "--");
+        tvEstimatedFull.setText(isCharging ? estimateFullChargeTime(batteryPct, currentMa) : "--");
         tvScreenOnTime.setText(formatDuration(SystemClock.uptimeMillis()));
+
+        // 手表专属续航分析
+        if (isWatch && watchSection != null) {
+            updateWatchEndurance(batteryPct, isCharging);
+        }
+
+        // 应用耗电排行
+        if (tvAppConsumptionTitle != null) {
+            tvAppConsumptionTitle.setVisibility(isWatch ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private String estimateFullChargeTime(int batteryPct, float currentMa) {
+        if (currentMa <= 0) return getString(R.string.status_calculating);
+        int remaining = 100 - batteryPct;
+        float capacityMah = getBatteryCapacity();
+        float hours = (remaining * capacityMah / 100f) / currentMa;
+        int h = (int) hours;
+        int m = (int) ((hours - h) * 60);
+        return String.format(Locale.getDefault(), "%d小时%d分", h, m);
+    }
+
+    private float getBatteryCapacity() {
+        PowerManager pm = (PowerManager) requireContext().getSystemService(Context.POWER_SERVICE);
+        if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
+            if (bm != null) {
+                int energy = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                if (energy > 0) return energy / 1000f;
+            }
+        }
+        return 4000; // 默认4000mAh
+    }
+
+    private void updateWatchEndurance(int batteryPct, boolean isCharging) {
+        if (tvWatchEndurance == null || tvWatchMode == null) return;
+
+        // 手表模式判断：始终开启显示、运动模式、省电模式
+        String mode = "日常模式";
+        float watchDischargeRate = dischargeRate;
+
+        if (Settings.System.getInt(requireContext().getContentResolver(), "low_power", 0) == 1) {
+            mode = "省电模式";
+            watchDischargeRate *= 0.6f;
+        } else if (isWatchAlwaysOn()) {
+            mode = "AOD常显模式";
+            watchDischargeRate *= 1.3f;
+        }
+
+        float hours = isCharging ? 0 : batteryPct / watchDischargeRate;
+        int h = (int) hours;
+        int m = (int) ((hours - h) * 60);
+
+        tvWatchEndurance.setText(String.format(Locale.getDefault(), "%d小时%d分", h, m));
+        tvWatchMode.setText(mode);
+    }
+
+    private boolean isWatchAlwaysOn() {
+        try {
+            return Settings.System.getInt(requireContext().getContentResolver(), "screen_always_on") == 1;
+        } catch (Settings.SettingNotFoundException e) {
+            return false;
+        }
     }
 
     private String formatDuration(long ms) {
         long hours = ms / (1000 * 60 * 60);
         long minutes = (ms % (1000 * 60 * 60)) / (1000 * 60);
         return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }

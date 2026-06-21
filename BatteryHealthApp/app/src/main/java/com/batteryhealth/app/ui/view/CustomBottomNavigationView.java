@@ -70,8 +70,8 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         addView(container);
 
-        activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
-        inactiveColor = getResources().getColor(R.color.ios_tertiary_label, getContext().getTheme());
+        activeColor = getResources().getColor(R.color.coloros_blue, getContext().getTheme());
+        inactiveColor = getResources().getColor(R.color.label_3, getContext().getTheme());
     }
 
     /**

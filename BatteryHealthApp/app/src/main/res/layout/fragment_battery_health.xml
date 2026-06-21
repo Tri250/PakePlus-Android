@@ -429,6 +429,30 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:text="@string/label_health_data_source"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_health_source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/label_battery_technology"
                         android:textAppearance="@style/WebListLabel" />
 
@@ -438,6 +462,99 @@
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section eyebrow: 更多功能 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_more_features"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- More features card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:id="@+id/btn_battery_source"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="18dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_battery_source_check"
+                        android:textAppearance="@style/WebListLabel"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/desc_battery_source_check"
+                        android:textSize="12sp"
+                        android:textColor="@color/label_3"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/separator" />
+
+                <LinearLayout
+                    android:id="@+id/btn_health_check"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="18dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/title_health_check"
+                        android:textAppearance="@style/WebListLabel"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/desc_health_check"
+                        android:textSize="12sp"
+                        android:textColor="@color/label_3"
+                        android:layout_marginTop="4dp" />
 
                 </LinearLayout>
 

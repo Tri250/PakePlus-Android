@@ -42,6 +42,8 @@ public class BatteryDataManager {
     public static final String PREFS_NAME = "battery_health_prefs";
     public static final String PREF_CALIBRATED_CAPACITY = "calibrated_capacity_mah";
 
+    private static volatile BatteryDataManager instance;
+
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
     private ActivationDateHelper.Result activation;
@@ -57,12 +59,48 @@ public class BatteryDataManager {
     private final List<Float> healthBuffer = new ArrayList<>();
     private static final int MEDIAN_WINDOW = 5;
 
+    /**
+     * 电池来源判定结果（供 UI 层直接使用）。
+     */
+    public enum BatterySource {
+        ORIGINAL,   // 原装
+        REPLACED,   // 官方更换
+        AFTERMARKET,// 第三方
+        UNKNOWN     // 无法判断
+    }
+
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
         this.chargingStatusText = this.context.getString(R.string.status_unknown);
         this.healthSourceText = this.context.getString(R.string.status_unknown);
         this.batterySourceText = this.context.getString(R.string.status_unknown);
+    }
+
+    /**
+     * 获取单例实例。
+     */
+    public static BatteryDataManager getInstance(Context context) {
+        if (instance == null) {
+            synchronized (BatteryDataManager.class) {
+                if (instance == null) {
+                    instance = new BatteryDataManager(context.getApplicationContext());
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * 获取最新电池信息（实时刷新）。
+     *
+     * @param refresh 是否强制重新读取，true 时忽略缓存
+     */
+    public BatteryInfo getLatestBatteryInfo(boolean refresh) {
+        if (refresh || currentBatteryInfo == null) {
+            refreshFromStickyIntent();
+        }
+        return currentBatteryInfo;
     }
 
     private static final int BATTERY_PROP_CYCLE_COUNT = 7;
@@ -256,6 +294,7 @@ public class BatteryDataManager {
         // 8. 当前满充容量（FCC）
         int fullCapacity = getFullCapacity(batteryManager);
         info.setCurrentCapacity(fullCapacity);
+        info.setFullCapacity(fullCapacity);
         info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
 
         // 9. 充电计数
@@ -285,8 +324,12 @@ public class BatteryDataManager {
         info.setBatterySource(mapSourceToCode(source.source));
         info.setBatterySourceConfidence(source.confidence);
         info.setBatterySourceReason(source.reason);
+        info.setBatteryInfoMatch(source.confidence >= 0.5f && !source.source.equals(context.getString(R.string.battery_source_third_party)));
 
-        // 13. 序列号
+        // 13. 制造商
+        info.setManufacturer(readSysfsString(MANUFACTURER_INFO_PATHS, ""));
+
+        // 14. 序列号
         info.setBatterySerial(readBatterySerial(intent));
 
         // 14. 系统健康
@@ -512,6 +555,23 @@ public class BatteryDataManager {
     // endregion
 
     // region 电池来源（多维验证）
+
+    /**
+     * 公开接口：对指定电池信息进行来源判定。
+     */
+    public BatterySource verifyBatterySource(Context ctx, BatteryInfo info) {
+        if (info == null) return BatterySource.UNKNOWN;
+        Intent intent = ctx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        int fullCapacity = info.getFullCapacity() > 0 ? info.getFullCapacity() : info.getCurrentCapacity();
+        BatterySourceResult result = determineBatterySource(intent, fullCapacity, info.getDesignCapacity());
+
+        if (result.source == null) return BatterySource.UNKNOWN;
+        String original = ctx.getString(R.string.battery_source_original);
+        String thirdParty = ctx.getString(R.string.battery_source_third_party);
+        if (result.source.equals(original)) return BatterySource.ORIGINAL;
+        if (result.source.equals(thirdParty)) return BatterySource.AFTERMARKET;
+        return BatterySource.UNKNOWN;
+    }
 
     private BatterySourceResult determineBatterySource(Intent intent, int fullCapacity, int designCapacity) {
         BatterySourceResult result = new BatterySourceResult();

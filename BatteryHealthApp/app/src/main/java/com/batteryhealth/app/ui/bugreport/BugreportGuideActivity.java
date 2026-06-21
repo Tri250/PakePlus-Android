@@ -138,7 +138,7 @@ public class BugreportGuideActivity extends AppCompatActivity {
         requestPermissionsIfNeeded();
 
         // 入场动画
-        UiAnimationHelper.staggeredCardEntry(findViewById(R.id.scroll_content), 60, 400);
+        UiAnimationHelper.animateCardsEntry(findViewById(R.id.scroll_content));
     }
 
     private void initViews() {
@@ -313,9 +313,7 @@ public class BugreportGuideActivity extends AppCompatActivity {
 
     private void requestPermissionsIfNeeded() {
         List<String> permissions = new ArrayList<>();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_DOCUMENTS);
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

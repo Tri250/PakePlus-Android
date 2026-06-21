@@ -154,9 +154,17 @@ public class TrendFragment extends Fragment {
                 int totalDecay = firstHealth > 0 && lastHealth > 0 ? firstHealth - lastHealth : 0;
                 float monthlyDecay = totalDecay / 30f * 30f; // 简化计算
 
+                final int finalFirstHealth = firstHealth;
+                final int finalLastHealth = lastHealth;
+                final int finalTotalDecay = totalDecay;
+                final float finalMonthlyDecay = monthlyDecay;
+                final int finalRecordCount = records.size();
+                final float finalAvgTemp = avgTemp;
+                final float finalMaxTemp = maxTemp;
+
                 mainHandler.post(() -> {
-                    bindData(healthEntries, tempEntries, firstHealth, lastHealth, totalDecay, monthlyDecay,
-                            records.size(), avgTemp, maxTemp);
+                    bindData(healthEntries, tempEntries, finalFirstHealth, finalLastHealth, finalTotalDecay, finalMonthlyDecay,
+                            finalRecordCount, finalAvgTemp, finalMaxTemp);
                 });
 
             } catch (Exception e) {

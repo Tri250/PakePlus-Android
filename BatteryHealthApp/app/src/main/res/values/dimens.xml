@@ -1,57 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ============================== -->
-    <!-- Radius / Shape -->
+    <!-- Radius / Shape - ColorOS 16 大圆角风格 -->
     <!-- ============================== -->
-    <dimen name="radius_card">22dp</dimen>
-    <dimen name="radius_inner">14dp</dimen>
+    <dimen name="radius_card">28dp</dimen>
+    <dimen name="radius_inner">18dp</dimen>
     <dimen name="radius_pill">999dp</dimen>
-    <dimen name="radius_progress">6dp</dimen>
+    <dimen name="radius_progress">10dp</dimen>
     <dimen name="radius_dot">8dp</dimen>
-    <dimen name="radius_button">12dp</dimen>
+    <dimen name="radius_button">16dp</dimen>
 
     <!-- ============================== -->
     <!-- Spacing -->
     <!-- ============================== -->
-    <dimen name="page_padding_horizontal">18dp</dimen>
-    <dimen name="page_padding_top">6dp</dimen>
-    <dimen name="page_padding_bottom">120dp</dimen>
-    <dimen name="card_padding_horizontal">18dp</dimen>
-    <dimen name="card_padding_vertical">16dp</dimen>
-    <dimen name="card_margin_bottom">16dp</dimen>
-    <dimen name="list_item_padding_horizontal">18dp</dimen>
-    <dimen name="list_item_padding_vertical">13dp</dimen>
-    <dimen name="list_item_min_height">48dp</dimen>
-    <dimen name="separator_height">1dp</dimen>
-    <dimen name="separator_margin_start">18dp</dimen>
-    <dimen name="cluster_gap">10dp</dimen>
+    <dimen name="page_padding_horizontal">20dp</dimen>
+    <dimen name="page_padding_top">12dp</dimen>
+    <dimen name="page_padding_bottom">128dp</dimen>
+    <dimen name="card_padding_horizontal">20dp</dimen>
+    <dimen name="card_padding_vertical">18dp</dimen>
+    <dimen name="card_margin_bottom">18dp</dimen>
+    <dimen name="list_item_padding_horizontal">20dp</dimen>
+    <dimen name="list_item_padding_vertical">15dp</dimen>
+    <dimen name="list_item_min_height">52dp</dimen>
+    <dimen name="separator_height">0.5dp</dimen>
+    <dimen name="separator_margin_start">20dp</dimen>
+    <dimen name="cluster_gap">12dp</dimen>
     <dimen name="stats_grid_gap">1dp</dimen>
 
     <!-- ============================== -->
-    <!-- Elevation -->
+    <!-- Elevation - ColorOS 16 柔和阴影 -->
     <!-- ============================== -->
-    <dimen name="elevation_card">4dp</dimen>
-    <dimen name="elevation_button">2dp</dimen>
+    <dimen name="elevation_card">6dp</dimen>
+    <dimen name="elevation_button">3dp</dimen>
 
     <!-- ============================== -->
-    <!-- Typography -->
+    <!-- Typography - ColorOS 16 字阶，中文阅读友好 -->
     <!-- ============================== -->
-    <dimen name="text_page_title">34sp</dimen>
+    <dimen name="text_page_title">32sp</dimen>
     <dimen name="text_page_subtitle">14sp</dimen>
-    <dimen name="text_card_header">17sp</dimen>
-    <dimen name="text_card_eyebrow">12sp</dimen>
-    <dimen name="text_list_label">15.5sp</dimen>
-    <dimen name="text_list_value">15.5sp</dimen>
+    <dimen name="text_card_header">18sp</dimen>
+    <dimen name="text_card_eyebrow">11sp</dimen>
+    <dimen name="text_list_label">16sp</dimen>
+    <dimen name="text_list_value">16sp</dimen>
     <dimen name="text_ring_percent">56sp</dimen>
     <dimen name="text_ring_label">13sp</dimen>
-    <dimen name="text_meter_name">14.5sp</dimen>
-    <dimen name="text_meter_val">22sp</dimen>
-    <dimen name="text_endurance_big">76sp</dimen>
-    <dimen name="text_watt">84sp</dimen>
-    <dimen name="text_unit">20sp</dimen>
+    <dimen name="text_meter_name">14sp</dimen>
+    <dimen name="text_meter_val">24sp</dimen>
+    <dimen name="text_endurance_big">72sp</dimen>
+    <dimen name="text_watt">80sp</dimen>
+    <dimen name="text_unit">18sp</dimen>
     <dimen name="text_grade_pill">12sp</dimen>
-    <dimen name="text_badge">12.5sp</dimen>
-    <dimen name="text_tab_label">10.5sp</dimen>
+    <dimen name="text_badge">12sp</dimen>
+    <dimen name="text_tab_label">11sp</dimen>
     <dimen name="text_section_eyebrow">12sp</dimen>
     <dimen name="text_caption">12sp</dimen>
     <dimen name="text_body">16sp</dimen>
@@ -63,12 +63,12 @@
     <!-- ============================== -->
     <!-- Animation durations -->
     <!-- ============================== -->
-    <integer name="anim_duration_page_in">420</integer>
-    <integer name="anim_duration_fade_up">600</integer>
-    <integer name="anim_duration_bar">1000</integer>
-    <integer name="anim_duration_ring">1200</integer>
-    <integer name="anim_duration_live_blink">1600</integer>
-    <integer name="anim_duration_pulse">1800</integer>
-    <integer name="anim_duration_tab">250</integer>
-    <integer name="anim_duration_switch">250</integer>
+    <integer name="anim_duration_page_in">400</integer>
+    <integer name="anim_duration_fade_up">550</integer>
+    <integer name="anim_duration_bar">900</integer>
+    <integer name="anim_duration_ring">1100</integer>
+    <integer name="anim_duration_live_blink">1400</integer>
+    <integer name="anim_duration_pulse">1600</integer>
+    <integer name="anim_duration_tab">220</integer>
+    <integer name="anim_duration_switch">220</integer>
 </resources>

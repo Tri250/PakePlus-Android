@@ -129,6 +129,15 @@ public class BatteryInfo {
     @ColumnInfo(name = "battery_source_reason")
     private String batterySourceReason; // 电池来源判定原因
 
+    @ColumnInfo(name = "manufacturer")
+    private String manufacturer; // 电池制造商
+
+    @ColumnInfo(name = "battery_info_match")
+    private boolean batteryInfoMatch; // psy/factory 信息是否匹配
+
+    @ColumnInfo(name = "full_capacity")
+    private int fullCapacity; // 实际满充容量 (mAh)，与 currentCapacity 同义冗余字段
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -414,6 +423,30 @@ public class BatteryInfo {
         this.batterySourceReason = batterySourceReason;
     }
 
+    public String getManufacturer() {
+        return manufacturer;
+    }
+
+    public void setManufacturer(String manufacturer) {
+        this.manufacturer = manufacturer;
+    }
+
+    public boolean isBatteryInfoMatch() {
+        return batteryInfoMatch;
+    }
+
+    public void setBatteryInfoMatch(boolean batteryInfoMatch) {
+        this.batteryInfoMatch = batteryInfoMatch;
+    }
+
+    public int getFullCapacity() {
+        return fullCapacity > 0 ? fullCapacity : currentCapacity;
+    }
+
+    public void setFullCapacity(int fullCapacity) {
+        this.fullCapacity = fullCapacity;
+    }
+
     /**
      * 计算充电功率
      */
@@ -529,6 +562,9 @@ public class BatteryInfo {
         snapshot.cycleLossPercent = this.cycleLossPercent;
         snapshot.usageLossPercent = this.usageLossPercent;
         snapshot.batterySourceReason = this.batterySourceReason;
+        snapshot.manufacturer = this.manufacturer;
+        snapshot.batteryInfoMatch = this.batteryInfoMatch;
+        snapshot.fullCapacity = this.fullCapacity;
         return snapshot;
     }
 }

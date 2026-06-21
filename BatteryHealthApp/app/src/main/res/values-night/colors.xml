@@ -1,94 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ============================== -->
-    <!-- Web Design Tokens - Colors (Dark) -->
+    <!-- ColorOS 16 Design Tokens - Dark -->
     <!-- ============================== -->
-    <color name="bg_canvas">#1B1D22</color>
-    <color name="bg_canvas_2">#111216</color>
-    <color name="bg_frame">#0A0B0F</color>
-    <color name="surface">#2C2E33</color>
-    <color name="surface_solid">#2C2E33</color>
-    <color name="surface_2">#25272C</color>
+    <color name="bg_canvas">#0D0D0F</color>
+    <color name="bg_canvas_2">#08080A</color>
+    <color name="bg_frame">#000000</color>
+
+    <color name="surface">#1F1F23</color>
+    <color name="surface_solid">#1F1F23</color>
+    <color name="surface_2">#18181C</color>
+
     <color name="label">#FFFFFF</color>
-    <color name="label_2">#A1A5AD</color>
-    <color name="label_3">#6B6F78</color>
-    <color name="separator">#12FFFFFF</color>
-    <color name="separator_strong">#1FFFFFFF</color>
+    <color name="label_2">#B3B3B3</color>
+    <color name="label_3">#666666</color>
+    <color name="separator">#2A2A2E</color>
+    <color name="separator_strong">#333337</color>
 
-    <!-- Accent palette (same in dark) -->
-    <color name="blue">#0A84FF</color>
-    <color name="green">#30D158</color>
-    <color name="teal">#40C8E0</color>
-    <color name="orange">#FF9F0A</color>
-    <color name="red">#FF453A</color>
-    <color name="purple">#BF5AF2</color>
-    <color name="yellow">#FFD60A</color>
-    <color name="indigo">#5E5CE6</color>
-    <color name="mint">#66D4CF</color>
+    <!-- 强调色板与浅色模式一致，保持品牌识别 -->
+    <color name="coloros_blue">#4DA3FF</color>
+    <color name="coloros_blue_light">#1A4DA3FF</color>
+    <color name="coloros_green">#00E59B</color>
+    <color name="coloros_green_light">#1A00E59B</color>
+    <color name="coloros_orange">#FFA938</color>
+    <color name="coloros_orange_light">#1AFFA938</color>
+    <color name="coloros_red">#FF6B6D</color>
+    <color name="coloros_red_light">#1AFF6B6D</color>
+    <color name="coloros_purple">#A78BFA</color>
+    <color name="coloros_purple_light">#1AA78BFA</color>
+    <color name="coloros_cyan">#2DD4E0</color>
+    <color name="coloros_yellow">#FFD54F</color>
 
-    <!-- Health gradients -->
-    <color name="health_1">#30D158</color>
-    <color name="health_2">#40C8E0</color>
+    <!-- 历史兼容别名 -->
+    <color name="blue">@color/coloros_blue</color>
+    <color name="green">@color/coloros_green</color>
+    <color name="teal">@color/coloros_cyan</color>
+    <color name="orange">@color/coloros_orange</color>
+    <color name="red">@color/coloros_red</color>
+    <color name="purple">@color/coloros_purple</color>
+    <color name="yellow">@color/coloros_yellow</color>
+    <color name="indigo">#7C7AEF</color>
+    <color name="mint">@color/coloros_green</color>
 
-    <!-- ============================== -->
+    <color name="health_1">@color/coloros_green</color>
+    <color name="health_2">@color/coloros_blue</color>
+
     <!-- Legacy iOS / Liquid Glass aliases -->
-    <!-- ============================== -->
     <color name="ios_background">#000000</color>
     <color name="ios_background_gradient_start">#0D0D0F</color>
-    <color name="ios_background_gradient_end">#0A0A0C</color>
-    <color name="ios_tertiary_background">#2C2C2E</color>
+    <color name="ios_background_gradient_end">#08080A</color>
+    <color name="ios_tertiary_background">#1C1C1E</color>
 
-    <color name="liquid_glass_surface">#CC1C1C1E</color>
-    <color name="liquid_glass_surface_subtle">#B31C1C1E</color>
-    <color name="liquid_glass_border">#1AFFFFFF</color>
-    <color name="liquid_glass_border_strong">#33FFFFFF</color>
-    <color name="liquid_glass_glow">#400A84FF</color>
+    <color name="liquid_glass_surface">#1F1F23</color>
+    <color name="liquid_glass_surface_subtle">#18181C</color>
+    <color name="liquid_glass_border">#2A2A2E</color>
+    <color name="liquid_glass_border_strong">#333337</color>
+    <color name="liquid_glass_glow">#404DA3FF</color>
 
     <color name="ios_label">#FFFFFF</color>
-    <color name="ios_secondary_label">#EBEBF599</color>
-    <color name="ios_tertiary_label">#EBEBF566</color>
-
-    <color name="ios_separator">#38383A</color>
+    <color name="ios_secondary_label">#B3B3B3</color>
+    <color name="ios_tertiary_label">#666666</color>
+    <color name="ios_separator">#2A2A2E</color>
 
     <!-- Legacy accent aliases -->
-    <color name="ios_red">#FF453A</color>
-    <color name="ios_orange">#FF9F0A</color>
-    <color name="ios_yellow">#FFD60A</color>
-    <color name="ios_green">#32D74B</color>
-    <color name="ios_mint">#66D4CF</color>
-    <color name="ios_cyan">#64D2FF</color>
-    <color name="ios_blue">#0A84FF</color>
-    <color name="ios_purple">#BF5AF2</color>
+    <color name="ios_red">@color/coloros_red</color>
+    <color name="ios_orange">@color/coloros_orange</color>
+    <color name="ios_yellow">@color/coloros_yellow</color>
+    <color name="ios_green">@color/coloros_green</color>
+    <color name="ios_mint">@color/coloros_green</color>
+    <color name="ios_cyan">@color/coloros_cyan</color>
+    <color name="ios_blue">@color/coloros_blue</color>
+    <color name="ios_purple">@color/coloros_purple</color>
 
     <!-- Material baseline aliases -->
-    <color name="primary">@color/blue</color>
-    <color name="primaryVariant">@color/indigo</color>
-    <color name="secondary">@color/teal</color>
+    <color name="primary">@color/coloros_blue</color>
+    <color name="primaryVariant">#3D8BE6</color>
+    <color name="secondary">@color/coloros_green</color>
     <color name="background">@color/bg_canvas</color>
-    <color name="error">@color/red</color>
+    <color name="error">@color/coloros_red</color>
 
-    <!-- Generic -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
 
     <!-- Health grades -->
-    <color name="health_a_plus">#32D74B</color>
-    <color name="health_a">#32D74B</color>
-    <color name="health_c">#FFD60A</color>
-    <color name="health_d">#FF9F0A</color>
-    <color name="health_e">#FF453A</color>
+    <color name="health_a_plus">@color/coloros_green</color>
+    <color name="health_a">@color/coloros_green</color>
+    <color name="health_c">@color/coloros_yellow</color>
+    <color name="health_d">@color/coloros_orange</color>
+    <color name="health_e">@color/coloros_red</color>
 
     <!-- Badge / Pill backgrounds (dark) -->
-    <color name="badge_original_bg">#2430D158</color>
-    <color name="badge_third_bg">#29FF9F0A</color>
-    <color name="badge_unknown_bg">#2E969AA5</color>
-    <color name="badge_charge_bg">#240A84FF</color>
+    <color name="badge_original_bg">@color/coloros_green_light</color>
+    <color name="badge_third_bg">@color/coloros_orange_light</color>
+    <color name="badge_unknown_bg">#1AFFFFFF</color>
+    <color name="badge_charge_bg">@color/coloros_blue_light</color>
 
     <!-- Charge status pills -->
-    <color name="charge_status_discharging_bg">#2E969AA5</color>
-    <color name="charge_status_charging_bg">#240A84FF</color>
-    <color name="charge_status_full_bg">#2430D158</color>
-
-    <!-- Bottom nav tint -->
-    <!-- defined in res/color/bottom_nav_color.xml as selector -->
+    <color name="charge_status_discharging_bg">#1AFFFFFF</color>
+    <color name="charge_status_charging_bg">@color/coloros_blue_light</color>
+    <color name="charge_status_full_bg">@color/coloros_green_light</color>
 </resources>

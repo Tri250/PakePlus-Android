@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * 统一的 UI 动效辅助类：2026 精致液态玻璃风格。
+ * 统一的 UI 动效辅助类：ColorOS 16 风格。
  * 提供卡片入场、数字增长、进度条平滑过渡等动画，并内置低内存/用户关闭动画的降级处理。
  */
 public class UiAnimationHelper {
@@ -30,16 +30,18 @@ public class UiAnimationHelper {
     private static final String PREFS_GLOBAL = "app_global_prefs";
     private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
 
-    private static final long CARD_STAGGER_DELAY = 55L;
-    private static final long CARD_DURATION = 420L;
-    private static final long NUMBER_DURATION = 900L;
-    private static final long PROGRESS_DURATION = 700L;
+    private static final long CARD_STAGGER_DELAY = 60L;
+    private static final long CARD_DURATION = 450L;
+    private static final long NUMBER_DURATION = 850L;
+    private static final long PROGRESS_DURATION = 750L;
 
-    // 标准缓动曲线：iOS 风格的 ease-out-cubic / spring
-    private static final android.view.animation.Interpolator EASE_OUT_CUBIC =
-            new PathInterpolator(0.33f, 1f, 0.68f, 1f);
+    // ColorOS 16 标准缓动：FastOutSlowIn + 弹性收尾
+    private static final android.view.animation.Interpolator FAST_OUT_SLOW_IN =
+            new PathInterpolator(0.4f, 0f, 0.2f, 1f);
+    private static final android.view.animation.Interpolator COLOROS_EASE_OUT =
+            new PathInterpolator(0.25f, 0.8f, 0.25f, 1f);
     private static final android.view.animation.Interpolator SPRING =
-            new android.view.animation.OvershootInterpolator(0.65f);
+            new android.view.animation.OvershootInterpolator(0.55f);
 
     private UiAnimationHelper() {}
 
@@ -95,9 +97,9 @@ public class UiAnimationHelper {
         for (int i = 0; i < count; i++) {
             View child = cards.get(i);
             child.setAlpha(0f);
-            child.setTranslationY(48f);
-            child.setScaleX(0.96f);
-            child.setScaleY(0.96f);
+            child.setTranslationY(40f);
+            child.setScaleX(0.97f);
+            child.setScaleY(0.97f);
 
             child.animate()
                     .alpha(1f)
@@ -106,7 +108,7 @@ public class UiAnimationHelper {
                     .scaleY(1f)
                     .setDuration(CARD_DURATION)
                     .setStartDelay(i * CARD_STAGGER_DELAY)
-                    .setInterpolator(EASE_OUT_CUBIC)
+                    .setInterpolator(FAST_OUT_SLOW_IN)
                     .setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
@@ -144,7 +146,6 @@ public class UiAnimationHelper {
             return;
         }
 
-        // 尝试从当前文本解析起始值
         float start = 0f;
         try {
             CharSequence current = textView.getText();
@@ -164,7 +165,7 @@ public class UiAnimationHelper {
 
         ValueAnimator animator = ValueAnimator.ofFloat(start, target);
         animator.setDuration(NUMBER_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
+        animator.setInterpolator(FAST_OUT_SLOW_IN);
         animator.addUpdateListener(a -> {
             float value = (float) a.getAnimatedValue();
             textView.setText(String.format(Locale.getDefault(), format, value));
@@ -199,7 +200,7 @@ public class UiAnimationHelper {
 
         ValueAnimator animator = ValueAnimator.ofInt(start, target);
         animator.setDuration(NUMBER_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
+        animator.setInterpolator(FAST_OUT_SLOW_IN);
         animator.addUpdateListener(a -> {
             int value = (int) a.getAnimatedValue();
             textView.setText(String.format(Locale.getDefault(), format, value));
@@ -226,7 +227,7 @@ public class UiAnimationHelper {
 
         ObjectAnimator animator = ObjectAnimator.ofInt(progressBar, "progress", start, targetProgress);
         animator.setDuration(PROGRESS_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
+        animator.setInterpolator(FAST_OUT_SLOW_IN);
         animator.start();
     }
 
@@ -241,11 +242,9 @@ public class UiAnimationHelper {
             return;
         }
 
-        // 读取当前进度
-        // HealthRingView 不暴露 getProgress，通过 ObjectAnimator 反射 setProgress
         ObjectAnimator animator = ObjectAnimator.ofFloat(ring, "progress", 0f, targetProgress);
         animator.setDuration(PROGRESS_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
+        animator.setInterpolator(FAST_OUT_SLOW_IN);
         animator.start();
     }
 
@@ -258,15 +257,37 @@ public class UiAnimationHelper {
         if (context != null && shouldSkipAnimations(context)) return;
 
         view.animate()
-                .scaleX(1.04f)
-                .scaleY(1.04f)
-                .setDuration(220L)
+                .scaleX(1.03f)
+                .scaleY(1.03f)
+                .setDuration(200L)
                 .setInterpolator(SPRING)
                 .withEndAction(() -> view.animate()
                         .scaleX(1f)
                         .scaleY(1f)
-                        .setDuration(280L)
-                        .setInterpolator(EASE_OUT_CUBIC)
+                        .setDuration(250L)
+                        .setInterpolator(COLOROS_EASE_OUT)
+                        .start())
+                .start();
+    }
+
+    /**
+     * ColorOS 16 风格的按下反馈：轻微缩放后回弹。
+     */
+    public static void pressFeedback(View view) {
+        if (view == null) return;
+        Context context = view.getContext();
+        if (context != null && shouldSkipAnimations(context)) return;
+
+        view.animate()
+                .scaleX(0.96f)
+                .scaleY(0.96f)
+                .setDuration(80L)
+                .setInterpolator(FAST_OUT_SLOW_IN)
+                .withEndAction(() -> view.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(180L)
+                        .setInterpolator(SPRING)
                         .start())
                 .start();
     }

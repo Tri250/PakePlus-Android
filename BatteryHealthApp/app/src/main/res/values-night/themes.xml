@@ -1,38 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- ============================== -->
-    <!-- 应用主题 - Web Design System（深色） -->
+    <!-- 应用主题 - ColorOS 16 设计系统（深色） -->
     <!-- ============================== -->
     <style name="Theme.BatteryHealthApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- 主色调 -->
-        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimary">@color/coloros_blue</item>
         <item name="colorPrimaryDark">@color/primaryVariant</item>
-        <item name="colorAccent">@color/green</item>
-        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorAccent">@color/coloros_green</item>
+        <item name="colorSecondary">@color/coloros_green</item>
 
-        <!-- 背景色 -->
         <item name="android:windowBackground">@drawable/bg_gradient</item>
         <item name="android:colorBackground">@color/bg_canvas</item>
 
-        <!-- 文字颜色 -->
         <item name="android:textColorPrimary">@color/label</item>
         <item name="android:textColorSecondary">@color/label_2</item>
         <item name="android:textColorTertiary">@color/label_3</item>
 
-        <!-- 状态栏 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
 
-        <!-- 导航栏 -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
 
-        <!-- 禁用默认 ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <!-- 窗口动画 -->
-        <item name="android:windowAnimationStyle">@style/LiquidGlassWindowAnimation</item>
+        <item name="android:windowAnimationStyle">@style/ColorOSWindowAnimation</item>
     </style>
 
     <style name="Theme.BatteryHealthApp.NoActionBar" parent="Theme.BatteryHealthApp">
@@ -40,24 +33,19 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 窗口动画 -->
-    <!-- ============================== -->
-    <style name="LiquidGlassWindowAnimation" parent="@android:style/Animation.Activity">
+    <style name="ColorOSWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/ios_slide_in_right</item>
         <item name="android:activityOpenExitAnimation">@anim/ios_slide_out_left</item>
         <item name="android:activityCloseEnterAnimation">@anim/ios_slide_in_left</item>
         <item name="android:activityCloseExitAnimation">@anim/ios_slide_out_right</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- Web Design System - 文本样式 -->
-    <!-- ============================== -->
+    <!-- 文本样式继承白天模式的设置，颜色由 colors-night 自动覆盖 -->
     <style name="WebPageTitle" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">@dimen/text_page_title</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.025</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -80,7 +68,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:letterSpacing">0.06</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -109,7 +97,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -132,7 +120,7 @@
         <item name="android:textSize">@dimen/text_endurance_big</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -140,7 +128,7 @@
         <item name="android:textSize">@dimen/text_watt</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -177,13 +165,10 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/label_3</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- Web Design System - Shape appearances -->
-    <!-- ============================== -->
     <style name="ShapeCard" parent="ShapeAppearance.MaterialComponents.MediumComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_card</item>
@@ -199,21 +184,18 @@
         <item name="cornerSize">@dimen/radius_pill</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 液态玻璃基础 - 文本样式（保留兼容） -->
-    <!-- ============================== -->
     <style name="LiquidGlassTitle" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">28sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="LiquidGlassTitle.Large" parent="LiquidGlassTitle">
-        <item name="android:textSize">34sp</item>
-        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:lineSpacingExtra">6dp</item>
     </style>
 
@@ -221,7 +203,7 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.022</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
@@ -229,7 +211,7 @@
     <style name="LiquidGlassBody" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.011</item>
+        <item name="android:letterSpacing">-0.01</item>
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
@@ -253,7 +235,7 @@
         <item name="android:textSize">56sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.05</item>
+        <item name="android:letterSpacing">-0.04</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -261,7 +243,7 @@
         <item name="android:textSize">32sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -269,13 +251,10 @@
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ios_label</item>
-        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:letterSpacing">-0.02</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 液态玻璃列表项与分隔线 -->
-    <!-- ============================== -->
     <style name="LiquidGlassListItem">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -294,9 +273,6 @@
         <item name="android:layout_marginStart">22dp</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 液态玻璃 Tab 文字 -->
-    <!-- ============================== -->
     <style name="LiquidGlassTabText" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">normal</item>
@@ -306,17 +282,11 @@
         <item name="android:textColor">@color/bottom_nav_color</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 液态玻璃开关 -->
-    <!-- ============================== -->
     <style name="LiquidGlassSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
         <item name="android:thumbTint">@color/white</item>
-        <item name="android:trackTint">@color/ios_blue</item>
+        <item name="android:trackTint">@color/coloros_blue</item>
     </style>
 
-    <!-- ============================== -->
-    <!-- 旧名称兼容层（被 layout 实际引用） -->
-    <!-- ============================== -->
     <style name="iOSTitle" parent="LiquidGlassTitle" />
     <style name="iOSTitle.Large" parent="LiquidGlassTitle.Large" />
     <style name="iOSCallout" parent="LiquidGlassBody" />

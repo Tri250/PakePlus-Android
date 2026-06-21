@@ -11,6 +11,8 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import com.batteryhealth.app.R;
+
 /**
  * 健康度环形进度视图
  *
@@ -24,8 +26,9 @@ public class HealthRingView extends View {
 
     private float progress = 0f; // 0 - 100
     private float strokeWidth = 0f;
-    private int startColor = 0xFF32D74B;
-    private int endColor = 0xFF66D4CF;
+    private int startColor;
+    private int endColor;
+    private int trackColor;
 
     public HealthRingView(Context context) {
         this(context, null);
@@ -41,6 +44,10 @@ public class HealthRingView extends View {
         float density = context.getResources().getDisplayMetrics().density;
         strokeWidth = 12 * density;
 
+        startColor = context.getResources().getColor(R.color.health_1, context.getTheme());
+        endColor = context.getResources().getColor(R.color.health_2, context.getTheme());
+        trackColor = context.getResources().getColor(R.color.separator, context.getTheme());
+
         ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         ringPaint.setStyle(Paint.Style.STROKE);
         ringPaint.setStrokeWidth(strokeWidth);
@@ -49,7 +56,7 @@ public class HealthRingView extends View {
         trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         trackPaint.setStyle(Paint.Style.STROKE);
         trackPaint.setStrokeWidth(strokeWidth);
-        trackPaint.setColor(0x1A000000);
+        trackPaint.setColor(trackColor);
     }
 
     @androidx.annotation.Keep
