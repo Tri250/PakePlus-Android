@@ -10,11 +10,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -27,10 +29,10 @@ import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.service.BatteryMonitorService;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,7 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * 充电监测服务
@@ -85,6 +86,11 @@ public class ChargingMonitorService extends Service {
 
     private OnChargingDataListener dataListener;
 
+    private PowerManager.WakeLock wakeLock;
+    private volatile boolean isReceiverRegistered = false;
+    private final Object dbLock = new Object();
+    private final Object statsLock = new Object();
+
     // 电池广播接收器
     private BroadcastReceiver chargingReceiver = new BroadcastReceiver() {
         @Override
@@ -105,7 +111,7 @@ public class ChargingMonitorService extends Service {
             if (isCharging && executor != null) {
                 executor.submit(() -> {
                     PowerHistory history = readChargingPower();
-                    if (history != null) {
+                    if (history != null && handler != null) {
                         handler.post(() -> {
                             if (!isCharging) return;
                             if (isNotificationEnabled()) {
@@ -178,6 +184,14 @@ public class ChargingMonitorService extends Service {
         createNotificationChannel();
         registerChargingReceiver();
 
+        // 获取 WakeLock
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (powerManager != null) {
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    "BatteryHealth::ChargingMonitor");
+            wakeLock.setReferenceCounted(false);
+        }
+
         // 启动定时更新
         handler.post(updateTask);
 
@@ -225,14 +239,32 @@ public class ChargingMonitorService extends Service {
     private void updateForegroundState() {
         boolean showNotification = isNotificationEnabled();
         if (isCharging && !foregroundStarted && showNotification) {
-            startForeground(NOTIFICATION_ID, buildNotification());
-            foregroundStarted = true;
+            try {
+                // 确保通知渠道在构建通知前已创建
+                createNotificationChannel();
+                startForegroundWithServiceType(NOTIFICATION_ID, buildNotification());
+                foregroundStarted = true;
+
+                // 获取 WakeLock
+                if (wakeLock != null && !wakeLock.isHeld()) {
+                    wakeLock.acquire();
+                }
+            } catch (Exception e) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                        && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
+                    Log.e(TAG, "ForegroundServiceStartNotAllowedException on Android 12+: cannot start foreground from background", e);
+                } else {
+                    Log.e(TAG, "Error starting foreground in updateForegroundState: " + e.getMessage(), e);
+                }
+            }
         } else if (!isCharging && foregroundStarted) {
             stopForeground(true);
             foregroundStarted = false;
+            releaseWakeLock();
         } else if (isCharging && foregroundStarted && !showNotification) {
             stopForeground(true);
             foregroundStarted = false;
+            releaseWakeLock();
         }
     }
 
@@ -245,17 +277,39 @@ public class ChargingMonitorService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        try {
-            unregisterReceiver(chargingReceiver);
-        } catch (Exception e) {
-            Log.e(TAG, "Error unregistering receiver: " + e.getMessage());
+
+        // 注销广播接收器
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(chargingReceiver);
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering charging receiver: " + e.getMessage());
+            }
+            isReceiverRegistered = false;
         }
+
+        // 释放 WakeLock
+        releaseWakeLock();
+
         if (handler != null) {
             handler.removeCallbacks(updateTask);
         }
         if (executor != null) {
             executor.shutdown();
             executor = null;
+        }
+    }
+
+    /**
+     * 安全释放 WakeLock
+     */
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            try {
+                wakeLock.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing wakeLock: " + e.getMessage());
+            }
         }
     }
 
@@ -274,6 +328,7 @@ public class ChargingMonitorService extends Service {
             } else {
                 registerReceiver(chargingReceiver, filter);
             }
+            isReceiverRegistered = true;
         } catch (Exception e) {
             Log.e(TAG, "Error registering charging receiver: " + e.getMessage());
         }
@@ -283,15 +338,19 @@ public class ChargingMonitorService extends Service {
      * 检查充电状态
      */
     private void checkChargingStatus() {
-        Intent batteryStatus = getBatteryIntent();
-        if (batteryStatus != null) {
-            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                        status == BatteryManager.BATTERY_STATUS_FULL;
+        try {
+            Intent batteryStatus = getBatteryIntent();
+            if (batteryStatus != null) {
+                int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                boolean currentlyCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                            status == BatteryManager.BATTERY_STATUS_FULL;
 
-            if (isCharging) {
-                startChargingSession();
+                if (currentlyCharging) {
+                    startChargingSession();
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking charging status: " + e.getMessage());
         }
     }
 
@@ -323,11 +382,13 @@ public class ChargingMonitorService extends Service {
         chargingStartTime = System.currentTimeMillis();
 
         // 重置统计数据
-        maxPower = 0;
-        avgPower = 0;
-        powerSampleCount = 0;
-        totalPower = 0;
-        powerSamples.clear();
+        synchronized (statsLock) {
+            maxPower = 0;
+            avgPower = 0;
+            powerSampleCount = 0;
+            totalPower = 0;
+            powerSamples.clear();
+        }
 
         Log.d(TAG, "Charging session started: " + currentSessionId);
 
@@ -356,8 +417,11 @@ public class ChargingMonitorService extends Service {
         summary.startTime = chargingStartTime;
         summary.endTime = System.currentTimeMillis();
         summary.duration = summary.endTime - summary.startTime;
-        summary.maxPower = maxPower;
-        summary.avgPower = powerSampleCount > 0 ? totalPower / powerSampleCount : 0;
+
+        synchronized (statsLock) {
+            summary.maxPower = maxPower;
+            summary.avgPower = powerSampleCount > 0 ? totalPower / powerSampleCount : 0;
+        }
 
         Log.d(TAG, "Charging session ended: " + currentSessionId);
 
@@ -369,12 +433,16 @@ public class ChargingMonitorService extends Service {
         sendChargingCompleteNotification(summary);
 
         // 发送广播供 UI 层接收
-        Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
-        broadcast.putExtra("session_id", summary.sessionId);
-        broadcast.putExtra("duration", summary.duration);
-        broadcast.putExtra("max_power", summary.maxPower);
-        broadcast.putExtra("avg_power", summary.avgPower);
-        sendBroadcast(broadcast);
+        try {
+            Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
+            broadcast.putExtra("session_id", summary.sessionId);
+            broadcast.putExtra("duration", summary.duration);
+            broadcast.putExtra("max_power", summary.maxPower);
+            broadcast.putExtra("avg_power", summary.avgPower);
+            sendBroadcast(broadcast);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending charging completed broadcast: " + e.getMessage());
+        }
 
         currentSessionId = null;
         // 充电结束时退出前台服务，避免未充电时显示常驻通知
@@ -470,13 +538,15 @@ public class ChargingMonitorService extends Service {
             cachedTemp = history.getBatteryTemp();
             cachedChargeType = history.getChargeType();
 
-            // 更新统计数据
+            // 更新统计数据（线程安全）
             float power = history.getPower();
-            if (power > maxPower) {
-                maxPower = power;
+            synchronized (statsLock) {
+                if (power > maxPower) {
+                    maxPower = power;
+                }
+                totalPower += power;
+                powerSampleCount++;
             }
-            totalPower += power;
-            powerSampleCount++;
 
             // 保存到数据库
             savePowerHistory(history);
@@ -616,10 +686,12 @@ public class ChargingMonitorService extends Service {
      * 记录充电采样点，维护固定长度滑动窗口。
      */
     private void addPowerSample(float voltage, float current, float power, int level) {
-        long now = System.currentTimeMillis();
-        powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
-        while (powerSamples.size() > MAX_SAMPLES) {
-            powerSamples.removeFirst();
+        synchronized (statsLock) {
+            long now = System.currentTimeMillis();
+            powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
+            while (powerSamples.size() > MAX_SAMPLES) {
+                powerSamples.removeFirst();
+            }
         }
     }
 
@@ -641,25 +713,27 @@ public class ChargingMonitorService extends Service {
         }
 
         // 当样本足够时，计算电流变化趋势和电压变化趋势
-        if (powerSamples.size() >= 10) {
-            PowerSample first = powerSamples.getFirst();
-            PowerSample last = powerSamples.getLast();
-            long timeDiff = last.timestamp - first.timestamp; // ms
-            if (timeDiff > 10_000) { // 至少 10 秒数据
-                float currentDiff = last.current - first.current; // A
-                float voltageDiff = last.voltage - first.voltage; // V
-                float hours = timeDiff / (1000.0f * 60 * 60);
-                float didt = currentDiff / hours; // A/h
-                float dvdt = voltageDiff / hours; // V/h
+        synchronized (statsLock) {
+            if (powerSamples.size() >= 10) {
+                PowerSample first = powerSamples.getFirst();
+                PowerSample last = powerSamples.getLast();
+                long timeDiff = last.timestamp - first.timestamp; // ms
+                if (timeDiff > 10_000) { // 至少 10 秒数据
+                    float currentDiff = last.current - first.current; // A
+                    float voltageDiff = last.voltage - first.voltage; // V
+                    float hours = timeDiff / (1000.0f * 60 * 60);
+                    float didt = currentDiff / hours; // A/h
+                    float dvdt = voltageDiff / hours; // V/h
 
-                // 恒压阶段特征：电流快速下降，电压基本稳定
-                if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
-                    return "constant_voltage";
-                }
+                    // 恒压阶段特征：电流快速下降，电压基本稳定
+                    if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
+                        return "constant_voltage";
+                    }
 
-                // 恒流阶段特征：电流稳定或缓慢下降，电压上升
-                if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
-                    return "constant_current";
+                    // 恒流阶段特征：电流稳定或缓慢下降，电压上升
+                    if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
+                        return "constant_current";
+                    }
                 }
             }
         }
@@ -693,21 +767,25 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 保存功率历史记录（调用方已在后台线程时可直接执行，否则提交到 executor）
+     * 使用同步锁保证数据库写入线程安全。
      */
     private void savePowerHistory(PowerHistory history) {
         Runnable saveTask = () -> {
-            try {
-                com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
-                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
-                if (db != null) {
-                    db.powerHistoryDao().insert(history);
-                    if (BuildConfigHelper.isDebugMode()) {
-                        Log.d(TAG, "Power history saved: " + history.getPower() + "W");
+            synchronized (dbLock) {
+                try {
+                    com.batteryhealth.app.BatteryHealthApplication app =
+                        (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                    if (app == null) return;
+                    com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                    if (db != null) {
+                        db.powerHistoryDao().insert(history);
+                        if (BuildConfigHelper.isDebugMode()) {
+                            Log.d(TAG, "Power history saved: " + history.getPower() + "W");
+                        }
                     }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error saving power history: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving power history: " + e.getMessage());
             }
         };
         if (executor != null) {
@@ -738,15 +816,19 @@ public class ChargingMonitorService extends Service {
      */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                        CHANNEL_ID,
-                        getString(R.string.charging_monitor_channel_name),
-                        NotificationManager.IMPORTANCE_LOW
-                );
-                channel.setDescription(getString(R.string.charging_monitor_channel_description));
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+            try {
+                NotificationChannel channel = new NotificationChannel(
+                            CHANNEL_ID,
+                            getString(R.string.charging_monitor_channel_name),
+                            NotificationManager.IMPORTANCE_LOW
+                    );
+                    channel.setDescription(getString(R.string.charging_monitor_channel_description));
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    manager.createNotificationChannel(channel);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel: " + e.getMessage());
             }
         }
     }
@@ -755,39 +837,56 @@ public class ChargingMonitorService extends Service {
      * 构建通知
      */
     private Notification buildNotification(PowerHistory history) {
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_IMMUTABLE
-        );
+        try {
+            // 确保通知渠道在构建通知前已创建（防御性调用，创建已存在的渠道是空操作）
+            createNotificationChannel();
 
-        String content;
-        if (isCharging && history != null) {
-            content = String.format(
-                    getString(R.string.charging_monitor_notification_content_charging),
-                    history.getPower(),
-                    history.getBatteryLevel(),
-                    history.getChargeTypeDescription());
-        } else {
-            content = getString(R.string.charging_monitor_notification_content_idle);
+            Intent intent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String content;
+            if (isCharging && history != null) {
+                content = String.format(
+                        getString(R.string.charging_monitor_notification_content_charging),
+                        history.getPower(),
+                        history.getBatteryLevel(),
+                        history.getChargeTypeDescription());
+            } else {
+                content = getString(R.string.charging_monitor_notification_content_idle);
+            }
+
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle(getString(R.string.charging_monitor_notification_title))
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(isCharging)
+                    .setOnlyAlertOnce(true)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error building notification: " + e.getMessage());
+            createNotificationChannel();
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle(getString(R.string.charging_monitor_channel_name))
+                    .setContentText(getString(R.string.charging_monitor_notification_content_idle))
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .build();
         }
-
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(getString(R.string.charging_monitor_notification_title))
-                .setContentText(content)
-                .setSmallIcon(R.drawable.ic_charging)
-                .setContentIntent(pendingIntent)
-                .setOngoing(isCharging)
-                .setOnlyAlertOnce(true)
-                .build();
     }
 
     /**
      * 更新通知
      */
     private void updateNotification(PowerHistory history) {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.notify(NOTIFICATION_ID, buildNotification(history));
+        try {
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.notify(NOTIFICATION_ID, buildNotification(history));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating notification: " + e.getMessage());
         }
     }
 
@@ -824,6 +923,22 @@ public class ChargingMonitorService extends Service {
      */
     public boolean isCharging() {
         return isCharging;
+    }
+
+    /**
+     * 带 foregroundServiceType 的 startForeground 调用，兼容 Android 14+。
+     */
+    private void startForegroundWithServiceType(int notificationId, Notification notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(notificationId, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                            | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(notificationId, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(notificationId, notification);
+        }
     }
 
     /**

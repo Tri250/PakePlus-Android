@@ -4,7 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.HorizontalScrollView;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,8 +26,12 @@ import java.util.List;
  * 2. BottomNavigationView 在低版本 ROM / 特定 Material 组件版本下解析自定义
  *    TextAppearance 时会出现 Binary XML 崩溃。
  * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
+ *
+ * 注意：必须继承 FrameLayout 而非 HorizontalScrollView，
+ * 因为 HorizontalScrollView 不约束子 View 宽度，导致 layout_weight 失效，
+ * 6 个 Tab 无法等宽分布。
  */
-public class CustomBottomNavigationView extends HorizontalScrollView {
+public class CustomBottomNavigationView extends FrameLayout {
 
     public interface OnItemSelectedListener {
         void onItemSelected(int position);
@@ -41,7 +45,6 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private int activeColor;
     private int inactiveColor;
     private LinearLayout container;
-    private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
 
     private int baseHeightPx = -1;
     private int bottomInset = 0;
@@ -60,14 +63,10 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     }
 
     private void init() {
-        setHorizontalScrollBarEnabled(false);
-        setOverScrollMode(OVER_SCROLL_NEVER);
-
         container = new LinearLayout(getContext());
         container.setOrientation(LinearLayout.HORIZONTAL);
-        // 默认撑满宽度，配合子项 layout_weight 实现平均分布
-        container.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        container.setLayoutParams(new LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         addView(container);
 
         activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
@@ -89,19 +88,15 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 6 Tab，默认平均分配
-        boolean average = forceAverageWidth && items.size() > 0;
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
 
             // 强制平均分布：每个 item 宽度 = 容器宽度 / 数量
-            if (average) {
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
-                view.setLayoutParams(lp);
-            }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+            view.setLayoutParams(lp);
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);

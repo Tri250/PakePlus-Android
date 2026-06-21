@@ -15,7 +15,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.database.BatteryInfoDao;
+import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.BatteryDataManager;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -23,6 +29,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -33,6 +40,8 @@ public class TrendFragment extends Fragment {
 
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
+
+    private BatteryDataManager batteryDataManager;
 
     @Nullable
     @Override
@@ -57,44 +66,133 @@ public class TrendFragment extends Fragment {
         view.startAnimation(fadeUp);
     }
 
+    private BatteryDataManager getBatteryDataManager() {
+        if (batteryDataManager != null) return batteryDataManager;
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        return batteryDataManager;
+    }
+
     private void loadData() {
+        // Get current health percentage from BatteryDataManager (not battery level)
+        float currentHealth = getCurrentHealthPercentage();
+        int currentHealthInt = Math.round(currentHealth);
+
+        // Get initial health from SharedPreferences, or record it on first run
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_TREND, Context.MODE_PRIVATE);
-        int currentHealth = getCurrentHealth();
-        int initialHealth = prefs.getInt(PREF_INITIAL_HEALTH, currentHealth);
-        if (initialHealth == 0) {
-            initialHealth = currentHealth;
+        int initialHealth = prefs.getInt(PREF_INITIAL_HEALTH, -1);
+        if (initialHealth <= 0) {
+            initialHealth = currentHealthInt > 0 ? currentHealthInt : 100;
             prefs.edit().putInt(PREF_INITIAL_HEALTH, initialHealth).apply();
         }
 
-        int totalDecay = initialHealth - currentHealth;
-        float monthlyDecay = totalDecay / 6f;
+        // If current health is valid and lower than stored initial, update display
+        // But never raise initial health (it should reflect the first recorded value)
+        int totalDecay = initialHealth - currentHealthInt;
+        if (totalDecay < 0) totalDecay = 0;
+
+        // Calculate monthly decay from database history
+        float monthlyDecay = calculateMonthlyDecay();
 
         tvInitialHealth.setText(String.format(Locale.getDefault(), "%d%%", initialHealth));
-        tvCurrentHealth.setText(String.format(Locale.getDefault(), "%d%%", currentHealth));
+        tvCurrentHealth.setText(currentHealthInt > 0
+                ? String.format(Locale.getDefault(), "%d%%", currentHealthInt)
+                : "--");
         tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", (float) totalDecay));
         tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.1f%%", monthlyDecay));
 
-        setupChart(initialHealth, currentHealth);
+        setupChart(initialHealth, currentHealthInt);
     }
 
-    private int getCurrentHealth() {
-        android.content.Intent intent = requireContext().registerReceiver(null,
-                new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
-            int scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
-            return (int) ((level / (float) scale) * 100);
+    /**
+     * Get current battery HEALTH percentage from BatteryDataManager.
+     * This returns the battery health percentage (健康度), NOT the battery level (电量).
+     */
+    private float getCurrentHealthPercentage() {
+        BatteryDataManager bdm = getBatteryDataManager();
+        if (bdm != null) {
+            try {
+                BatteryInfo info = bdm.getCurrentBatteryInfo();
+                if (info != null && info.hasValidHealthData()) {
+                    return info.getHealthPercentage();
+                }
+            } catch (Exception ignored) {
+            }
         }
-        return 100;
+        return -1f;
     }
 
+    /**
+     * Calculate monthly decay rate from historical health percentage records in the database.
+     */
+    private float calculateMonthlyDecay() {
+        try {
+            BatteryHealthApplication app = (BatteryHealthApplication) requireContext().getApplicationContext();
+            if (app == null) return 0f;
+            AppDatabase db = app.getDatabase();
+            if (db == null) return 0f;
+            BatteryInfoDao dao = db.batteryInfoDao();
+
+            // Get records from the last 6 months
+            long sixMonthsAgo = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
+            List<BatteryInfo> records = dao.getSince(sixMonthsAgo);
+            if (records == null || records.size() < 2) return 0f;
+
+            // Find the earliest and latest health percentages
+            float earliestHealth = -1f;
+            float latestHealth = -1f;
+            long earliestTime = Long.MAX_VALUE;
+            long latestTime = Long.MIN_VALUE;
+
+            for (BatteryInfo info : records) {
+                float health = info.getHealthPercentage();
+                if (health < 0) continue; // skip invalid records
+                long ts = info.getTimestamp();
+                if (ts < earliestTime) {
+                    earliestTime = ts;
+                    earliestHealth = health;
+                }
+                if (ts > latestTime) {
+                    latestTime = ts;
+                    latestHealth = health;
+                }
+            }
+
+            if (earliestHealth < 0 || latestHealth < 0) return 0f;
+
+            float decay = earliestHealth - latestHealth;
+            if (decay <= 0) return 0f;
+
+            float monthsElapsed = (latestTime - earliestTime) / (1000f * 60 * 60 * 24 * 30);
+            if (monthsElapsed < 0.1f) return 0f;
+
+            return decay / monthsElapsed;
+        } catch (Exception ignored) {
+        }
+        return 0f;
+    }
+
+    /**
+     * Build the health trend chart using actual health percentage records from the database.
+     * Falls back to a linear interpolation if insufficient data exists.
+     */
     private void setupChart(int initialHealth, int currentHealth) {
         List<Entry> entries = new ArrayList<>();
-        int months = 6;
-        float step = (initialHealth - currentHealth) / (float) (months - 1);
-        for (int i = 0; i < months; i++) {
-            float value = initialHealth - step * i;
-            entries.add(new Entry(i, value));
+
+        // Try to load real health percentage data from database
+        List<Entry> realEntries = loadHealthTrendFromDatabase();
+
+        if (realEntries != null && realEntries.size() >= 2) {
+            entries = realEntries;
+        } else {
+            // Fallback: linear interpolation from initial to current over 6 months
+            int months = 6;
+            float step = (initialHealth - currentHealth) / (float) (months - 1);
+            for (int i = 0; i < months; i++) {
+                float value = initialHealth - step * i;
+                entries.add(new Entry(i, value));
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "");
@@ -133,5 +231,78 @@ public class TrendFragment extends Fragment {
         lineChart.getAxisRight().setEnabled(false);
 
         lineChart.invalidate();
+    }
+
+    /**
+     * Load health percentage trend data from the database.
+     * Samples one data point per month over the last 6 months,
+     * using the average health percentage within each month.
+     * Returns null if insufficient data is available.
+     */
+    private List<Entry> loadHealthTrendFromDatabase() {
+        try {
+            BatteryHealthApplication app = (BatteryHealthApplication) requireContext().getApplicationContext();
+            if (app == null) return null;
+            AppDatabase db = app.getDatabase();
+            if (db == null) return null;
+            BatteryInfoDao dao = db.batteryInfoDao();
+
+            long now = System.currentTimeMillis();
+            long sixMonthsAgo = now - 180L * 24 * 60 * 60 * 1000;
+            List<BatteryInfo> records = dao.getSince(sixMonthsAgo);
+            if (records == null || records.size() < 2) return null;
+
+            // Group records by month and compute average health per month
+            List<Entry> entries = new ArrayList<>();
+            Calendar cal = Calendar.getInstance();
+            int currentMonth = -1;
+            float monthHealthSum = 0f;
+            int monthCount = 0;
+            int monthIndex = 0;
+
+            // Determine the starting month index (0 = 6 months ago)
+            cal.setTimeInMillis(sixMonthsAgo);
+            int startMonth = cal.get(Calendar.YEAR) * 12 + cal.get(Calendar.MONTH);
+
+            for (BatteryInfo info : records) {
+                float health = info.getHealthPercentage();
+                if (health < 0) continue; // skip invalid health records
+
+                cal.setTimeInMillis(info.getTimestamp());
+                int recordMonth = cal.get(Calendar.YEAR) * 12 + cal.get(Calendar.MONTH);
+
+                if (currentMonth < 0) {
+                    currentMonth = recordMonth;
+                }
+
+                if (recordMonth != currentMonth) {
+                    // Save the previous month's average
+                    if (monthCount > 0) {
+                        int idx = currentMonth - startMonth;
+                        if (idx >= 0 && idx < 6) {
+                            entries.add(new Entry(idx, monthHealthSum / monthCount));
+                        }
+                    }
+                    currentMonth = recordMonth;
+                    monthHealthSum = health;
+                    monthCount = 1;
+                } else {
+                    monthHealthSum += health;
+                    monthCount++;
+                }
+            }
+
+            // Don't forget the last month
+            if (monthCount > 0 && currentMonth >= 0) {
+                int idx = currentMonth - startMonth;
+                if (idx >= 0 && idx < 6) {
+                    entries.add(new Entry(idx, monthHealthSum / monthCount));
+                }
+            }
+
+            return entries.size() >= 2 ? entries : null;
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 }

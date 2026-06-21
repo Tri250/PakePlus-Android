@@ -25,7 +25,6 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Locale;
@@ -45,13 +44,19 @@ public class PerformanceFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
 
+    // CPU usage tracking: need two readings to compute delta
+    private long prevCpuIdle = -1;
+    private long prevCpuTotal = -1;
+
+    private View rootView;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_performance, container, false);
-        initViews(view);
-        animateEntry(view);
-        return view;
+        rootView = inflater.inflate(R.layout.fragment_performance, container, false);
+        initViews(rootView);
+        animateEntry(rootView);
+        return rootView;
     }
 
     private void initViews(View view) {
@@ -82,6 +87,9 @@ public class PerformanceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Reset CPU baseline so first reading after resume doesn't use stale data
+        prevCpuIdle = -1;
+        prevCpuTotal = -1;
         startPeriodicUpdate();
     }
 
@@ -91,12 +99,42 @@ public class PerformanceFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopPeriodicUpdate();
+        rootView = null;
+        tvCpuUsage = null;
+        tvMemoryUsage = null;
+        tvPerformanceScore = null;
+        tvStorageUsage = null;
+        progressCpu = null;
+        progressMemory = null;
+        progressScore = null;
+        progressStorage = null;
+        tvAppCpu = null;
+        tvAppMemory = null;
+        tvRuntime = null;
+        tvForegroundService = null;
+        tvGpuRenderer = null;
+        tvOpenglVersion = null;
+        tvVulkanVersion = null;
+    }
+
+    private boolean isViewAvailable() {
+        return rootView != null && isAdded() && getActivity() != null;
+    }
+
     private void startPeriodicUpdate() {
+        stopPeriodicUpdate();
         updateRunnable = new Runnable() {
             @Override
             public void run() {
+                if (!isViewAvailable()) return;
                 loadData();
-                handler.postDelayed(this, 2000);
+                if (isViewAvailable()) {
+                    handler.postDelayed(this, 2000);
+                }
             }
         };
         handler.post(updateRunnable);
@@ -105,66 +143,131 @@ public class PerformanceFragment extends Fragment {
     private void stopPeriodicUpdate() {
         if (updateRunnable != null) {
             handler.removeCallbacks(updateRunnable);
+            updateRunnable = null;
         }
     }
 
     private void loadData() {
+        if (!isViewAvailable()) return;
+
         // CPU
         int cpuUsage = readCpuUsage();
-        tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
-        UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
+        if (tvCpuUsage != null) {
+            tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
+            UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
+        }
 
-        // Memory
+        // Memory - use ActivityManager for real memory info (no hardcoded defaults)
+        int memUsage = 0;
         ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         if (am != null) {
             am.getMemoryInfo(mi);
-            int memUsage = (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
+            if (mi.totalMem > 0) {
+                memUsage = (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
+            }
+        }
+        if (tvMemoryUsage != null) {
             tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memUsage));
             UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
         }
 
         // Storage
+        int storageUsage = 0;
         StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
         long total = stat.getTotalBytes();
         long used = total - stat.getAvailableBytes();
-        int storageUsage = (int) (used * 100 / total);
-        tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
-        UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
+        if (total > 0) {
+            storageUsage = (int) (used * 100 / total);
+        }
+        if (tvStorageUsage != null) {
+            tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
+            UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
+        }
 
         // Performance score
-        int score = calculatePerformanceScore(cpuUsage, mi.totalMem == 0 ? 50 : (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem), storageUsage);
-        tvPerformanceScore.setText(String.valueOf(score));
-        UiAnimationHelper.animateProgressBar(progressScore, score);
+        int score = calculatePerformanceScore(cpuUsage, memUsage, storageUsage);
+        if (tvPerformanceScore != null) {
+            tvPerformanceScore.setText(String.valueOf(score));
+            UiAnimationHelper.animateProgressBar(progressScore, score);
+        }
 
         // App info
-        tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
-        tvAppMemory.setText(formatSize(getAppMemoryUsage()));
-        long runtimeMs = SystemClock.elapsedRealtime();
-        tvRuntime.setText(formatDuration(runtimeMs));
-        tvForegroundService.setText(getString(R.string.status_running));
+        if (tvAppCpu != null) {
+            tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
+        }
+        if (tvAppMemory != null) {
+            tvAppMemory.setText(formatSize(getAppMemoryUsage()));
+        }
+        if (tvRuntime != null) {
+            long runtimeMs = SystemClock.elapsedRealtime();
+            tvRuntime.setText(formatDuration(runtimeMs));
+        }
+        if (tvForegroundService != null) {
+            tvForegroundService.setText(getString(R.string.status_running));
+        }
 
         // GPU
         loadGpuInfo();
     }
 
+    /**
+     * Calculates CPU usage from /proc/stat using two readings over a time interval.
+     * CPU usage must be computed from delta: (delta_total - delta_idle) / delta_total.
+     * On the first call, stores the baseline and returns 0.
+     */
     private int readCpuUsage() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
+        long[] current = readCpuStatLine();
+        if (current == null) return 0;
+
+        long currIdle = current[0];
+        long currTotal = current[1];
+
+        if (prevCpuIdle < 0 || prevCpuTotal < 0) {
+            // First reading: store baseline, return 0
+            prevCpuIdle = currIdle;
+            prevCpuTotal = currTotal;
+            return 0;
+        }
+
+        long deltaIdle = currIdle - prevCpuIdle;
+        long deltaTotal = currTotal - prevCpuTotal;
+
+        prevCpuIdle = currIdle;
+        prevCpuTotal = currTotal;
+
+        if (deltaTotal <= 0) return 0;
+        return (int) ((deltaTotal - deltaIdle) * 100 / deltaTotal);
+    }
+
+    /**
+     * Reads the aggregate "cpu " line from /proc/stat.
+     * Returns [idle, total] where idle = idle + iowait,
+     * total = user + nice + system + idle + iowait + irq + softirq + steal.
+     * Uses try-with-resources to prevent resource leaks.
+     */
+    private long[] readCpuStatLine() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
             String line = reader.readLine();
-            reader.close();
             if (line != null && line.startsWith("cpu ")) {
                 String[] parts = line.split("\\s+");
+                if (parts.length < 5) return null;
                 long user = Long.parseLong(parts[1]);
                 long nice = Long.parseLong(parts[2]);
                 long system = Long.parseLong(parts[3]);
                 long idle = Long.parseLong(parts[4]);
-                long total = user + nice + system + idle;
-                return (int) ((user + nice + system) * 100 / total);
+                long iowait = parts.length > 5 ? Long.parseLong(parts[5]) : 0;
+                long irq = parts.length > 6 ? Long.parseLong(parts[6]) : 0;
+                long softirq = parts.length > 7 ? Long.parseLong(parts[7]) : 0;
+                long steal = parts.length > 8 ? Long.parseLong(parts[8]) : 0;
+
+                long totalIdle = idle + iowait;
+                long total = user + nice + system + idle + iowait + irq + softirq + steal;
+                return new long[]{totalIdle, total};
             }
         } catch (IOException | NumberFormatException ignored) {
         }
-        return 0;
+        return null;
     }
 
     private int calculatePerformanceScore(int cpu, int memory, int storage) {
@@ -197,6 +300,8 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void loadGpuInfo() {
+        if (tvGpuRenderer == null || tvOpenglVersion == null || tvVulkanVersion == null) return;
+
         try {
             EGL10 egl = (EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
             EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
@@ -210,16 +315,22 @@ public class PerformanceFragment extends Fragment {
             String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
             String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
 
-            tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
-            tvOpenglVersion.setText(version != null ? version : "Unknown");
+            if (tvGpuRenderer != null) {
+                tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
+            }
+            if (tvOpenglVersion != null) {
+                tvOpenglVersion.setText(version != null ? version : "Unknown");
+            }
 
             egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
             egl.eglDestroyContext(display, context);
             egl.eglTerminate(display);
         } catch (Exception e) {
-            tvGpuRenderer.setText("Unknown");
-            tvOpenglVersion.setText("Unknown");
+            if (tvGpuRenderer != null) tvGpuRenderer.setText("Unknown");
+            if (tvOpenglVersion != null) tvOpenglVersion.setText("Unknown");
         }
-        tvVulkanVersion.setText("N/A");
+        if (tvVulkanVersion != null) {
+            tvVulkanVersion.setText("N/A");
+        }
     }
 }

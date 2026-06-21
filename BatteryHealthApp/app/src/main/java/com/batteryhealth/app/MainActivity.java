@@ -3,8 +3,10 @@ package com.batteryhealth.app;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -33,6 +35,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
+import com.batteryhealth.app.ui.bugreport.BugReportFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
@@ -67,9 +70,12 @@ public class MainActivity extends AppCompatActivity {
 
     private BatteryDataManager batteryDataManager;
     private DeviceInfoManager deviceInfoManager;
-    
+
     private Handler mainHandler;
     private boolean servicesStarted = false;
+
+    // 电池广播接收器：在 onResume 注册，在 onPause 注销，避免内存泄漏
+    private BroadcastReceiver batteryUpdateReceiver;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,8 +133,7 @@ public class MainActivity extends AppCompatActivity {
             // 引导用户关闭电池优化
             promptBatteryOptimizationIfNeeded();
 
-            // 注意：电池广播由BatteryMonitorService统一处理
-            // 不再在MainActivity中注册电池广播接收器，避免重复监听
+            // 电池广播在 onResume 中注册，onPause 中注销，避免内存泄漏
 
             // 延迟启动服务，避免启动时闪退
             mainHandler.postDelayed(() -> {
@@ -158,9 +163,73 @@ public class MainActivity extends AppCompatActivity {
     }
     
     @Override
+    protected void onResume() {
+        super.onResume();
+        registerBatteryUpdateReceiver();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterBatteryUpdateReceiver();
+    }
+
+    @Override
     protected void onDestroy() {
+        // 注销广播接收器（以防 onPause 未被调用的极端情况）
+        unregisterBatteryUpdateReceiver();
+
+        // 清除 Handler 回调，防止 Activity 销毁后仍执行
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+
+        // 释放管理器引用
+        batteryDataManager = null;
+        deviceInfoManager = null;
+        viewPager = null;
+        bottomNavigation = null;
+        mainHandler = null;
+
         super.onDestroy();
-        // 不再需要注销广播接收器，因为已经移除了
+    }
+
+    /**
+     * 注册电池更新广播接收器
+     */
+    private void registerBatteryUpdateReceiver() {
+        if (batteryUpdateReceiver == null) {
+            batteryUpdateReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (batteryDataManager != null && !isFinishing()) {
+                        batteryDataManager.refreshFromStickyIntent();
+                    }
+                }
+            };
+        }
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            registerReceiver(batteryUpdateReceiver, filter);
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering battery update receiver: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 注销电池更新广播接收器
+     */
+    private void unregisterBatteryUpdateReceiver() {
+        if (batteryUpdateReceiver != null) {
+            try {
+                unregisterReceiver(batteryUpdateReceiver);
+            } catch (IllegalArgumentException ignored) {
+                // 接收器未注册时忽略
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering battery update receiver: " + e.getMessage());
+            }
+            batteryUpdateReceiver = null;
+        }
     }
     
     /**
@@ -250,6 +319,8 @@ public class MainActivity extends AppCompatActivity {
                         return new TrendFragment();
                     case 5:
                         return new PowerFragment();
+                    case 6:
+                        return new BugReportFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -257,11 +328,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 6;
+                return 7;
             }
         });
 
-        viewPager.setOffscreenPageLimit(4);
+        viewPager.setOffscreenPageLimit(1);
         // 设置页面切换动画
         viewPager.setPageTransformer((page, position) -> {
             float absPosition = Math.abs(position);
@@ -294,7 +365,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航（6项：健康 / 配置 / 性能 / 续航 / 趋势 / 充电）
+     * 设置底部导航（7项：健康 / 配置 / 性能 / 续航 / 趋势 / 充电 / 分析）
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
@@ -304,6 +375,7 @@ public class MainActivity extends AppCompatActivity {
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_bugreport), R.drawable.ic_bugreport));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {

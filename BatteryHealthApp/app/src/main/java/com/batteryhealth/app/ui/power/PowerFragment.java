@@ -20,9 +20,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.PowerHistoryDao;
+import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.util.List;
 import java.util.Locale;
 
 public class PowerFragment extends Fragment {
@@ -34,6 +41,8 @@ public class PowerFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+
+    private BatteryDataManager batteryDataManager;
 
     @Nullable
     @Override
@@ -65,11 +74,20 @@ public class PowerFragment extends Fragment {
         view.startAnimation(fadeUp);
     }
 
+    private BatteryDataManager getBatteryDataManager() {
+        if (batteryDataManager != null) return batteryDataManager;
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        return batteryDataManager;
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        loadChargingHistory();
     }
 
     @Override
@@ -111,69 +129,175 @@ public class PowerFragment extends Fragment {
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateFromIntent(intent);
+            updateBatteryData();
         }
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
-        }
-    }
+        BatteryDataManager bdm = getBatteryDataManager();
+        if (bdm == null) return;
 
-    private void updateFromIntent(Intent intent) {
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
+        BatteryInfo info = bdm.getBatteryInfo();
+        if (info == null) return;
 
-        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
-                || status == BatteryManager.BATTERY_STATUS_FULL;
+        int batteryPct = info.getLevel();
+        boolean isCharging = info.isCharging();
 
-        int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
-        float voltageV = voltage / 1000f;
+        // Read real voltage (mV) and current (mA) via BatteryDataManager
+        int voltageMv = bdm.readVoltageNow();
+        int currentMa = bdm.readCurrentMa();
 
-        int current = 0;
-        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        }
-        float currentA = Math.abs(current) / 1000000f;
-
-        int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
-
+        // Calculate power correctly: Power(W) = Voltage(V) × Current(A)
+        // voltageMv is in mV, currentMa is in mA
+        // W = (voltageMv / 1000.0) × (Math.abs(currentMa) / 1000.0)
+        float voltageV = voltageMv > 0 ? voltageMv / 1000f : 0f;
+        float currentA = Math.abs(currentMa) / 1000f;
         float watt = voltageV * currentA;
 
+        float tempC = info.getTemperature();
+
         // Update hero
-        tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
-        String powerType = watt > 20 ? getString(R.string.status_super_fast_charge)
-                : watt > 10 ? getString(R.string.status_fast_charge)
-                : isCharging ? getString(R.string.status_normal_charge) : getString(R.string.status_not_charging);
+        tvWatt.setText(isCharging && watt > 0
+                ? String.format(Locale.getDefault(), "%.1f", watt)
+                : "--");
+        String powerType = isCharging ? bdm.getPowerLevelLabel(watt) : getString(R.string.status_not_charging);
         tvPowerType.setText(powerType);
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
         // Update details
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(current) / 1000f));
-        tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
-
-        // Today stats (placeholders)
-        tvChargeCount.setText("2");
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
-        tvTotalChargeTime.setText("45分");
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        tvVoltage.setText(voltageMv > 0
+                ? String.format(Locale.getDefault(), "%.2f V", voltageV)
+                : "-- V");
+        tvCurrent.setText(currentMa != 0
+                ? String.format(Locale.getDefault(), "%.0f mA", (float) Math.abs(currentMa))
+                : "-- mA");
+        tvChargeStage.setText(isCharging
+                ? (batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast))
+                : "--");
+        tvTemperature.setText(tempC >= 0
+                ? String.format(Locale.getDefault(), "%.1f°C", tempC)
+                : "--°C");
+        tvBatteryLevel.setText(batteryPct >= 0
+                ? String.format(Locale.getDefault(), "%d%%", batteryPct)
+                : "--%");
+        tvEstimatedFull.setText(isCharging && currentA > 0
+                ? calculateTimeToFull(batteryPct, currentA, voltageV)
+                : "--");
     }
 
-    private String calculateTimeToFull(int batteryPct, float currentA) {
+    /**
+     * Load real charging history from the database on a background thread.
+     */
+    private void loadChargingHistory() {
+        new Thread(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
+                if (app == null) return;
+                PowerHistoryDao dao = app.getDatabase().powerHistoryDao();
+                if (dao == null) return;
+
+                // Get today's start timestamp
+                long todayStart = getTodayStartTime();
+
+                // Query today's charging sessions
+                List<PowerHistory> todayRecords = dao.getSince(todayStart);
+                List<String> allSessions = dao.getAllSessions();
+
+                // Calculate stats from real data
+                int chargeSessionCount = 0;
+                float totalPower = 0f;
+                int powerCount = 0;
+                long earliestTs = Long.MAX_VALUE;
+                long latestTs = 0;
+                int lowestLevel = Integer.MAX_VALUE;
+                int highestLevel = Integer.MIN_VALUE;
+
+                // Count distinct sessions from today's records
+                String lastSessionId = null;
+                for (PowerHistory record : todayRecords) {
+                    String sid = record.getSessionId();
+                    if (sid != null && !sid.equals(lastSessionId)) {
+                        chargeSessionCount++;
+                        lastSessionId = sid;
+                    }
+                    if (record.getPower() > 0) {
+                        totalPower += record.getPower();
+                        powerCount++;
+                    }
+                    if (record.getTimestamp() < earliestTs) earliestTs = record.getTimestamp();
+                    if (record.getTimestamp() > latestTs) latestTs = record.getTimestamp();
+                    if (record.getBatteryLevel() < lowestLevel) lowestLevel = record.getBatteryLevel();
+                    if (record.getBatteryLevel() > highestLevel) highestLevel = record.getBatteryLevel();
+                }
+
+                float avgPower = powerCount > 0 ? totalPower / powerCount : 0f;
+                long totalChargeMs = (latestTs > earliestTs) ? (latestTs - earliestTs) : 0;
+                int totalChargeMin = (int) (totalChargeMs / 60000);
+                int totalChargedPct = (highestLevel > lowestLevel && lowestLevel < Integer.MAX_VALUE)
+                        ? (highestLevel - lowestLevel) : 0;
+
+                // Update UI on main thread
+                float finalAvgPower = avgPower;
+                int finalChargeSessionCount = chargeSessionCount;
+                int finalTotalChargeMin = totalChargeMin;
+                int finalTotalChargedPct = totalChargedPct;
+                handler.post(() -> {
+                    tvChargeCount.setText(finalChargeSessionCount > 0
+                            ? String.format(Locale.getDefault(), "%d", finalChargeSessionCount)
+                            : "--");
+                    tvAvgPower.setText(finalAvgPower > 0
+                            ? String.format(Locale.getDefault(), "%.1f W", finalAvgPower)
+                            : "-- W");
+                    tvTotalChargeTime.setText(finalTotalChargeMin > 0
+                            ? String.format(Locale.getDefault(), "%d分", finalTotalChargeMin)
+                            : "--");
+                    tvTotalCharged.setText(finalTotalChargedPct > 0
+                            ? String.format(Locale.getDefault(), "%d%%", finalTotalChargedPct)
+                            : "--");
+                });
+            } catch (Exception e) {
+                // Database not available, show placeholders
+                handler.post(() -> {
+                    tvChargeCount.setText("--");
+                    tvAvgPower.setText("-- W");
+                    tvTotalChargeTime.setText("--");
+                    tvTotalCharged.setText("--");
+                });
+            }
+        }).start();
+    }
+
+    private long getTodayStartTime() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        return cal.getTimeInMillis();
+    }
+
+    /**
+     * Estimate time to full charge.
+     * Uses: remaining capacity (mAh) / charging current (mA) = hours
+     * Remaining capacity estimated from battery level and design capacity.
+     */
+    private String calculateTimeToFull(int batteryPct, float currentA, float voltageV) {
         if (currentA <= 0) return "--";
+        BatteryDataManager bdm = getBatteryDataManager();
+        if (bdm == null) return "--";
+
+        // Get design capacity from BatteryInfo for a reasonable estimate
+        BatteryInfo info = bdm.getCurrentBatteryInfo();
+        int designCapacityMah = info != null ? info.getDesignCapacity() : -1;
+        if (designCapacityMah <= 0) designCapacityMah = 4000; // fallback typical capacity
+
         int remaining = 100 - batteryPct;
-        float hours = remaining / (currentA * 100 / 3f); // rough estimate
-        int mins = (int) (hours * 60);
+        float remainingMah = designCapacityMah * (remaining / 100f);
+        float currentMa = currentA * 1000f;
+        if (currentMa <= 0) return "--";
+
+        float hours = remainingMah / currentMa;
+        int mins = Math.max(1, (int) (hours * 60));
         return String.format(Locale.getDefault(), "%d分", mins);
     }
 }

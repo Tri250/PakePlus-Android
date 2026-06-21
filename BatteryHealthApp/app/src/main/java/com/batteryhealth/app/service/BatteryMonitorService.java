@@ -10,11 +10,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.util.Log;
 
 import java.util.concurrent.ExecutorService;
@@ -40,7 +42,7 @@ import java.io.FileReader;
 
 /**
  * 电池监测服务
- * 
+ *
  * 功能：
  * 1. 实时监测电池容量、温度、电压、电流
  * 2. 读取充电循环次数
@@ -48,7 +50,7 @@ import java.io.FileReader;
  * 4. 发送前台通知显示电池状态
  */
 public class BatteryMonitorService extends Service {
-    
+
     private static final String TAG = "BatteryMonitorService";
     private static final String CHANNEL_ID = "battery_monitor_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -71,14 +73,17 @@ public class BatteryMonitorService extends Service {
     private Handler handler;
     private BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
-    private boolean isRunning = false;
+    private volatile boolean isRunning = false;
     private long lastSaveTime = 0;
     private SharedPreferences prefs;
     private BatteryInfo lastSavedBatteryInfo;
     private boolean healthCheckScheduled = false;
     private BatteryDataManager batteryDataManager;
     private ExecutorService ioExecutor;
-    
+    private PowerManager.WakeLock wakeLock;
+    private volatile boolean isReceiverRegistered = false;
+    private final Object dbLock = new Object();
+
     // 电池广播接收器
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
@@ -86,7 +91,7 @@ public class BatteryMonitorService extends Service {
             updateBatteryData(intent);
         }
     };
-    
+
     // 定时更新任务
     private Runnable updateTask = new Runnable() {
         @Override
@@ -138,23 +143,23 @@ public class BatteryMonitorService extends Service {
         @Override
         public void run() {
             if (!isRunning) return;
-            
+
             try {
                 checkHealthDegradation();
             } catch (Exception e) {
                 Log.e(TAG, "Error in health check task: " + e.getMessage());
             }
-            
+
             if (handler != null) {
                 handler.postDelayed(this, HEALTH_CHECK_INTERVAL);
             }
         }
     };
-    
+
     public interface OnBatteryDataListener {
         void onBatteryDataUpdated(BatteryInfo info);
     }
-    
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -179,18 +184,38 @@ public class BatteryMonitorService extends Service {
             createNotificationChannel();
             createHealthAlertChannel();
             registerBatteryReceiver();
+
+            // 获取 WakeLock
+            PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (powerManager != null) {
+                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                        "BatteryHealth::BatteryMonitor");
+                wakeLock.setReferenceCounted(false);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error in onCreate: " + e.getMessage());
         }
     }
-    
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
             if (!isRunning) {
                 isRunning = true;
+
+                // 获取 WakeLock
+                if (wakeLock != null && !wakeLock.isHeld()) {
+                    try {
+                        wakeLock.acquire();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error acquiring wakeLock: " + e.getMessage());
+                    }
+                }
+
                 try {
-                    startForeground(NOTIFICATION_ID, buildNotification());
+                    // 确保通知渠道在构建通知前已创建
+                    createNotificationChannel();
+                    startForegroundWithServiceType(NOTIFICATION_ID, buildNotification());
                 } catch (Exception e) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                             && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
@@ -199,6 +224,7 @@ public class BatteryMonitorService extends Service {
                         Log.e(TAG, "Error starting foreground: " + e.getMessage(), e);
                     }
                     isRunning = false;
+                    releaseWakeLock();
                     // 启动前台服务失败后不再以 START_STICKY 重试，避免崩溃循环
                     return START_NOT_STICKY;
                 }
@@ -244,22 +270,31 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error scheduling restart on task removed: " + e.getMessage());
         }
     }
-    
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-    
+
     @Override
     public void onDestroy() {
         super.onDestroy();
         isRunning = false;
-        try {
-            unregisterReceiver(batteryReceiver);
-        } catch (Exception e) {
-            // 接收器可能未注册
+
+        // 注销广播接收器
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(batteryReceiver);
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering battery receiver: " + e.getMessage());
+            }
+            isReceiverRegistered = false;
         }
+
+        // 释放 WakeLock
+        releaseWakeLock();
+
         if (handler != null) {
             handler.removeCallbacks(updateTask);
             handler.removeCallbacks(healthCheckTask);
@@ -267,6 +302,19 @@ public class BatteryMonitorService extends Service {
         if (ioExecutor != null) {
             ioExecutor.shutdown();
             ioExecutor = null;
+        }
+    }
+
+    /**
+     * 安全释放 WakeLock
+     */
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            try {
+                wakeLock.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing wakeLock: " + e.getMessage());
+            }
         }
     }
 
@@ -279,18 +327,19 @@ public class BatteryMonitorService extends Service {
             filter.addAction(Intent.ACTION_BATTERY_CHANGED);
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
             filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            
+
             // Android 14+ 需要指定导出标志
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
             } else {
                 registerReceiver(batteryReceiver, filter);
             }
+            isReceiverRegistered = true;
         } catch (Exception e) {
             Log.e(TAG, "Error registering receiver: " + e.getMessage());
         }
     }
-    
+
     /**
      * 更新电池数据（广播回调，主线程）。仅负责将耗时操作转到后台，避免主线程做 sysfs IO。
      */
@@ -318,7 +367,7 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error dispatching battery data update: " + e.getMessage());
         }
     }
-    
+
     /**
      * 创建通知渠道
      */
@@ -397,6 +446,7 @@ public class BatteryMonitorService extends Service {
             ioExecutor.submit(() -> {
             try {
                 BatteryHealthApplication app = (BatteryHealthApplication) getApplicationContext();
+                if (app == null) return;
                 AppDatabase db = app.getDatabase();
                 if (db == null) {
                     return;
@@ -433,6 +483,9 @@ public class BatteryMonitorService extends Service {
      */
     private void sendHealthAlertNotification(float drop, float historicalHealth, float currentHealth) {
         try {
+            // 确保通知渠道已创建
+            createHealthAlertChannel();
+
             Intent intent = new Intent(this, MainActivity.class);
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this, 1, intent, PendingIntent.FLAG_IMMUTABLE
@@ -469,6 +522,9 @@ public class BatteryMonitorService extends Service {
      */
     private Notification buildNotification() {
         try {
+            // 确保通知渠道在构建通知前已创建（防御性调用，创建已存在的渠道是空操作）
+            createNotificationChannel();
+
             Intent intent = new Intent(this, MainActivity.class);
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this, 0, intent, PendingIntent.FLAG_IMMUTABLE
@@ -491,7 +547,8 @@ public class BatteryMonitorService extends Service {
                     .build();
         } catch (Exception e) {
             Log.e(TAG, "Error building notification: " + e.getMessage());
-            // 返回一个基本通知
+            // 确保通知渠道存在后再构建回退通知
+            createNotificationChannel();
             return new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle(getString(R.string.battery_monitor_channel_name))
                     .setContentText(getString(R.string.battery_monitor_notification_fallback))
@@ -499,7 +556,7 @@ public class BatteryMonitorService extends Service {
                     .build();
         }
     }
-    
+
     /**
      * 更新通知
      */
@@ -513,21 +570,21 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error updating notification: " + e.getMessage());
         }
     }
-    
+
     /**
      * 设置数据监听器
      */
     public void setDataListener(OnBatteryDataListener listener) {
         this.dataListener = listener;
     }
-    
+
     /**
      * 获取当前电池信息
      */
     public BatteryInfo getCurrentBatteryInfo() {
         return currentBatteryInfo;
     }
-    
+
     /**
      * 保存电池数据到数据库
      */
@@ -560,25 +617,47 @@ public class BatteryMonitorService extends Service {
 
         lastSavedBatteryInfo = snapshot.copy();
 
-        new Thread(() -> {
-            try {
-                com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
-                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
-                if (db != null) {
-                    db.batteryInfoDao().insert(snapshot);
-                    if (BuildConfigHelper.isDebugMode()) {
-                        Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
-                    }
+        // 使用 ioExecutor 执行数据库写入，并加同步锁保证线程安全
+        if (ioExecutor != null) {
+            ioExecutor.submit(() -> {
+                synchronized (dbLock) {
+                    try {
+                        BatteryHealthApplication app =
+                            (BatteryHealthApplication) getApplicationContext();
+                        if (app == null) return;
+                        AppDatabase db = app.getDatabase();
+                        if (db != null) {
+                            db.batteryInfoDao().insert(snapshot);
+                            if (BuildConfigHelper.isDebugMode()) {
+                                Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
+                            }
 
-                    // 清理45天前的旧数据（保留余量给趋势图30天视图）
-                    long fortyFiveDaysAgo = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
-                    db.batteryInfoDao().deleteOlderThan(fortyFiveDaysAgo);
+                            // 清理45天前的旧数据（保留余量给趋势图30天视图）
+                            long fortyFiveDaysAgo = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
+                            db.batteryInfoDao().deleteOlderThan(fortyFiveDaysAgo);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error saving battery data: " + e.getMessage());
+                    }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving battery data: " + e.getMessage());
-            }
-        }).start();
+            });
+        }
+    }
+
+    /**
+     * 带 foregroundServiceType 的 startForeground 调用，兼容 Android 14+。
+     */
+    private void startForegroundWithServiceType(int notificationId, Notification notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(notificationId, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                            | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(notificationId, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(notificationId, notification);
+        }
     }
 
     /**

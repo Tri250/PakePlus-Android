@@ -3,6 +3,7 @@
     <string name="app_name">电池健康</string>
     <string name="nav_health">健康</string>
     <string name="nav_power">充电</string>
+    <string name="nav_bugreport">分析</string>
     <string name="nav_community">电池江湖</string>
     <string name="nav_config">配置</string>
     <string name="nav_performance">性能</string>

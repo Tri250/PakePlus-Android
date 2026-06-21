@@ -2,11 +2,7 @@ package com.batteryhealth.app.ui.config;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.StatFs;
-import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,9 +15,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -35,6 +33,8 @@ public class DeviceConfigFragment extends Fragment {
             tvScreen, tvActivationDate, tvUsageDays, tvActivationSource, tvAvailableRam,
             tvAvailableStorage, tvNetworkType;
     private Switch switchHealthAlert;
+
+    private DeviceInfoManager deviceInfoManager;
 
     @Nullable
     @Override
@@ -74,33 +74,102 @@ public class DeviceConfigFragment extends Fragment {
         view.startAnimation(fadeUp);
     }
 
-    private void loadData() {
-        tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
-        tvDeviceModel.setText(Build.MODEL);
-        tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
-        tvProcessor.setText(Build.HARDWARE);
-
-        long totalRam = getTotalRam();
-        tvRam.setText(formatSize(totalRam));
-
-        long totalStorage = getTotalStorage();
-        tvStorage.setText(formatSize(totalStorage));
-
-        tvScreen.setText(getScreenResolution());
-
-        long activationTime = getActivationTime();
-        tvActivationDate.setText(formatDate(activationTime));
-        tvUsageDays.setText(getUsageDays(activationTime) + " 天");
-        tvActivationSource.setText(getString(R.string.source_internal));
-
-        long availableRam = getAvailableRam();
-        tvAvailableRam.setText(formatSize(availableRam));
-
-        long availableStorage = getAvailableStorage();
-        tvAvailableStorage.setText(formatSize(availableStorage));
-
-        tvNetworkType.setText(getNetworkType());
+    private DeviceInfoManager getDeviceInfoManager() {
+        if (deviceInfoManager != null) return deviceInfoManager;
+        if (getActivity() instanceof MainActivity) {
+            deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
+        }
+        if (deviceInfoManager == null) {
+            deviceInfoManager = new DeviceInfoManager(requireContext());
+        }
+        return deviceInfoManager;
     }
+
+    private void loadData() {
+        DeviceInfoManager dim = getDeviceInfoManager();
+        DeviceConfig config = dim.getDeviceConfig();
+
+        // 设备名称：优先使用机型数据库的营销名称
+        String marketName = dim.getMarketModelName();
+        if (marketName != null && !marketName.equals(android.os.Build.MODEL)) {
+            tvDeviceName.setText(marketName);
+        } else if (config != null) {
+            tvDeviceName.setText(config.getFullModelName());
+        } else {
+            tvDeviceName.setText(android.os.Build.BRAND + " " + android.os.Build.MODEL);
+        }
+
+        // 设备型号：优先使用营销名称，否则使用 Build.MODEL
+        String modelDisplay = dim.getMarketModelName();
+        tvDeviceModel.setText(modelDisplay != null ? modelDisplay : android.os.Build.MODEL);
+
+        // Android 版本
+        if (config != null) {
+            tvAndroidVersion.setText(config.getAndroidCodename() + " (API " + android.os.Build.VERSION.SDK_INT + ")");
+        } else {
+            tvAndroidVersion.setText(android.os.Build.VERSION.RELEASE + " (API " + android.os.Build.VERSION.SDK_INT + ")");
+        }
+
+        // 处理器：使用 DeviceInfoManager 的多路 fallback（数据库 > sysprop > /proc/cpuinfo > Build.HARDWARE）
+        tvProcessor.setText(dim.getProcessorInfo());
+
+        // 内存：使用 DeviceConfig 的营销规格取整
+        if (config != null) {
+            tvRam.setText(config.getFormattedMemory());
+            tvAvailableRam.setText(formatSize(config.getAvailableMemory() * 1024 * 1024));
+        } else {
+            long totalRam = getTotalRam();
+            tvRam.setText(formatSize(totalRam));
+            tvAvailableRam.setText(formatSize(getAvailableRam()));
+        }
+
+        // 存储：使用 DeviceConfig 的格式化存储
+        if (config != null) {
+            tvStorage.setText(config.getFormattedStorage());
+            long availStorageBytes = config.getAvailableStorage() * 1024 * 1024 * 1024;
+            tvAvailableStorage.setText(formatSize(availStorageBytes > 0 ? availStorageBytes : getAvailableStorage()));
+        } else {
+            tvStorage.setText(formatSize(getTotalStorage()));
+            tvAvailableStorage.setText(formatSize(getAvailableStorage()));
+        }
+
+        // 屏幕：使用 DeviceConfig 的屏幕信息
+        if (config != null && config.getScreenWidth() > 0) {
+            String screenInfo = config.getScreenResolution();
+            if (config.getScreenSize() > 0) {
+                screenInfo += " · " + config.getFormattedScreenSize();
+            }
+            tvScreen.setText(screenInfo);
+        } else {
+            tvScreen.setText(getScreenResolution());
+        }
+
+        // 激活日期：使用 DeviceInfoManager 的激活日期检测
+        if (config != null && config.getActivationDate() > 0) {
+            tvActivationDate.setText(formatDate(config.getActivationDate()));
+            tvUsageDays.setText(config.getUsageDays() + " 天");
+            String sourceText = config.getActivationSource();
+            if (sourceText != null && !sourceText.isEmpty() && !"unknown".equals(sourceText)) {
+                tvActivationSource.setText(sourceText);
+            } else {
+                tvActivationSource.setText(getString(R.string.source_internal));
+            }
+        } else {
+            long activationTime = getActivationTime();
+            tvActivationDate.setText(formatDate(activationTime));
+            tvUsageDays.setText(getUsageDays(activationTime) + " 天");
+            tvActivationSource.setText(getString(R.string.source_internal));
+        }
+
+        // 网络类型：使用 DeviceConfig 的网络信息
+        if (config != null && config.getNetworkType() != null && !config.getNetworkType().isEmpty()) {
+            tvNetworkType.setText(config.getNetworkType());
+        } else {
+            tvNetworkType.setText(getNetworkType());
+        }
+    }
+
+    // === 以下为 fallback 方法，仅在 DeviceConfig 不可用时使用 ===
 
     private long getTotalRam() {
         android.app.ActivityManager am = (android.app.ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
@@ -123,12 +192,12 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private long getTotalStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+        android.os.StatFs stat = new android.os.StatFs(android.os.Environment.getDataDirectory().getPath());
         return stat.getTotalBytes();
     }
 
     private long getAvailableStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+        android.os.StatFs stat = new android.os.StatFs(android.os.Environment.getDataDirectory().getPath());
         return stat.getAvailableBytes();
     }
 
@@ -138,7 +207,7 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private long getActivationTime() {
-        File file = new File(Environment.getRootDirectory(), "build.prop");
+        java.io.File file = new java.io.File(android.os.Environment.getRootDirectory(), "build.prop");
         long time = file.lastModified();
         if (time == 0) {
             time = System.currentTimeMillis() - 86400000L * 365;
@@ -165,32 +234,32 @@ public class DeviceConfigFragment extends Fragment {
 
     private String getNetworkType() {
         try {
-            TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
+            android.telephony.TelephonyManager tm = (android.telephony.TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
             if (tm == null) return "Unknown";
             int networkType = tm.getNetworkType();
             switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "2G";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "3G";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "4G";
-            case TelephonyManager.NETWORK_TYPE_NR:
-                return "5G";
-            default:
-                return "Unknown";
+                case android.telephony.TelephonyManager.NETWORK_TYPE_GPRS:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_EDGE:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_CDMA:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_1xRTT:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_IDEN:
+                    return "2G";
+                case android.telephony.TelephonyManager.NETWORK_TYPE_UMTS:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_EVDO_0:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_EVDO_A:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_HSDPA:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_HSUPA:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_HSPA:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_EVDO_B:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_EHRPD:
+                case android.telephony.TelephonyManager.NETWORK_TYPE_HSPAP:
+                    return "3G";
+                case android.telephony.TelephonyManager.NETWORK_TYPE_LTE:
+                    return "4G";
+                case android.telephony.TelephonyManager.NETWORK_TYPE_NR:
+                    return "5G";
+                default:
+                    return "Unknown";
             }
         } catch (Exception e) {
             return "Unknown";
