@@ -36,30 +36,15 @@ android {
     }
 
     // 签名配置 - 从 keystore.properties 读取；若文件不存在或 keystore 文件无效则回退到 debug 签名
-    // 仅用于本地编译验证，正式发版前必须提供真实的 keystore.properties
     signingConfigs {
-        release {
-            def storeFilePath = keystoreProperties['storeFile'] ?: 'release-keystore.jks'
-            def releaseStoreFile = rootProject.file(storeFilePath)
-            if (keystorePropertiesFile.exists() && releaseStoreFile.exists()) {
-                storeFile releaseStoreFile
-                storePassword keystoreProperties['storePassword'] ?: ''
-                keyAlias keystoreProperties['keyAlias'] ?: ''
-                keyPassword keystoreProperties['keyPassword'] ?: ''
-            } else {
-                if (!keystorePropertiesFile.exists()) {
-                    println "Warning: keystore.properties not found, release signing falls back to debug keystore."
-                } else if (!releaseStoreFile.exists()) {
-                    println "Warning: release keystore file not found at ${releaseStoreFile.absolutePath}, release signing falls back to debug keystore."
-                }
-                storeFile android.signingConfigs.debug.storeFile
-                storePassword android.signingConfigs.debug.storePassword
-                keyAlias android.signingConfigs.debug.keyAlias
-                keyPassword android.signingConfigs.debug.keyPassword
-            }
-        }
         debug {
             // Debug 使用默认调试签名
+        }
+        release {
+            storeFile rootProject.file(keystoreProperties['storeFile'] ?: 'release-keystore.jks')
+            storePassword keystoreProperties['storePassword'] ?: 'batteryhealth123'
+            keyAlias keystoreProperties['keyAlias'] ?: 'batteryhealth'
+            keyPassword keystoreProperties['keyPassword'] ?: 'batteryhealth123'
         }
     }
 
