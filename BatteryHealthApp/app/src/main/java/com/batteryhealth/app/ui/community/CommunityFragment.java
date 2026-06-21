@@ -98,19 +98,33 @@ public class CommunityFragment extends Fragment {
         try {
             View view = inflater.inflate(R.layout.fragment_community, container, false);
             initViews(view);
-            // 初始化 StateLayoutHelper
-            if (view instanceof ViewGroup) {
-                ViewGroup scrollChild = (ViewGroup) view;
-                if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
-                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
-                    stateLayoutHelper.showLoading(null);
-                }
-            }
             loadPosts();
             return view;
         } catch (Exception e) {
             Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
             return createErrorView(e);
+        }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // 在 onViewCreated 后初始化 StateLayoutHelper，确保视图层级已完整构建
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                try {
+                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                } catch (Exception e) {
+                    Log.e(TAG, "StateLayoutHelper init failed", e);
+                }
+            }
+        }
+        // 入场动画
+        try {
+            UiAnimationHelper.animateCardsEntry(view);
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
         }
     }
 
@@ -330,16 +344,6 @@ public class CommunityFragment extends Fragment {
         errorView.setPadding(40, 100, 40, 40);
         errorView.setBackgroundColor(ContextCompat.getColor(ctx, R.color.bg_canvas));
         return errorView;
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        try {
-            UiAnimationHelper.animateCardsEntry(view);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onViewCreated: " + e.getMessage());
-        }
     }
 
     // ===== Post Model =====

@@ -7,12 +7,13 @@
     android:background="?attr/selectableItemBackgroundBorderless"
     android:minWidth="52dp"
     android:maxWidth="96dp"
-    android:paddingTop="4dp">
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
 
     <ImageView
         android:id="@+id/nav_icon"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:scaleType="fitCenter"
         android:importantForAccessibility="no"
         app:layout_constraintBottom_toTopOf="@id/nav_label"
@@ -25,13 +26,13 @@
         android:id="@+id/nav_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
+        android:layout_marginTop="2dp"
         android:ellipsize="end"
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:maxLines="1"
         android:textColor="@color/bottom_nav_color"
-        android:textSize="10sp"
+        android:textSize="11sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

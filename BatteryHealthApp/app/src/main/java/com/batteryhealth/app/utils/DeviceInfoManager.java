@@ -392,32 +392,330 @@ public class DeviceInfoManager {
     }
 
     /**
-     * 格式化 Build.HARDWARE 为更可读的处理器名称。
-     * 例如 "qcom" → "Qualcomm Snapdragon", "mt6789" → "MediaTek MT6789"
+     * 格式化 Build.HARDWARE 为更可读的处理器名称（2026年国内品牌规范）。
+     * 
+     * 国内品牌处理器命名规范：
+     * - 小米/Redmi: 骁龙 8 Gen 4 / 天玑 9400+
+     * - OPPO/一加/realme: 骁龙 8 Gen 4 / 天玑 9400
+     * - vivo/iQOO: 骁龙 8 Gen 4 / 天玑 9400+
+     * - 华为/荣耀: 麒麟 9010 / 骁龙 8 Gen 4
+     * - 努比亚/红魔: 骁龙 8 Gen 4 Leading Version
+     * 
+     * 例如 "qcom" → "高通骁龙", "mt6789" → "联发科天玑"
      */
     private String formatHardwareName(String hw) {
         if (hw == null || hw.isEmpty()) return "";
         String lower = hw.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("qcom") || lower.contains("snapdragon")) {
-            return "Qualcomm Snapdragon (" + hw + ")";
+        
+        // Qualcomm Snapdragon 系列（2024-2026）
+        if (lower.startsWith("qcom") || lower.contains("snapdragon") || lower.contains("sm")) {
+            // 尝试从 SoC 属性获取完整型号
+            String socModel = SystemPropertiesCompat.get("ro.boot.soc_model");
+            if (socModel != null && !socModel.isEmpty() && !socModel.equalsIgnoreCase("unknown")) {
+                return formatQualcommSoC(socModel);
+            }
+            // 从 Build.HARDWARE 推断
+            if (lower.contains("sm8750") || lower.contains("gen4") || lower.contains("8gen4")) {
+                return "高通骁龙 8 Gen 4";
+            }
+            if (lower.contains("sm8650") || lower.contains("gen3") || lower.contains("8gen3")) {
+                return "高通骁龙 8 Gen 3";
+            }
+            if (lower.contains("sm8550") || lower.contains("gen2") || lower.contains("8gen2")) {
+                return "高通骁龙 8 Gen 2";
+            }
+            if (lower.contains("sm7650") || lower.contains("7gen3")) {
+                return "高通骁龙 7+ Gen 3";
+            }
+            if (lower.contains("sm7550") || lower.contains("7gen2")) {
+                return "高通骁龙 7 Gen 2";
+            }
+            if (lower.contains("sm6")) {
+                return "高通骁龙 6 系列";
+            }
+            return "高通骁龙 (" + hw + ")";
         }
-        if (lower.startsWith("mt") || lower.startsWith("mtk")) {
-            return "MediaTek " + hw.toUpperCase(Locale.ROOT);
+        
+        // MediaTek Dimensity 系列（2024-2026）
+        if (lower.startsWith("mt") || lower.startsWith("mtk") || lower.contains("dimensity")) {
+            String socModel = SystemPropertiesCompat.get("ro.boot.soc_model");
+            if (socModel != null && !socModel.isEmpty() && !socModel.equalsIgnoreCase("unknown")) {
+                return formatMediaTekSoC(socModel);
+            }
+            // 从型号推断
+            if (lower.contains("mt6999") || lower.contains("9500")) {
+                return "联发科天玑 9500";
+            }
+            if (lower.contains("mt6989") || lower.contains("9400")) {
+                return "联发科天玑 9400";
+            }
+            if (lower.contains("mt6983") || lower.contains("9300")) {
+                return "联发科天玑 9300";
+            }
+            if (lower.contains("mt6897") || lower.contains("9200")) {
+                return "联发科天玑 9200";
+            }
+            if (lower.contains("mt8")) {
+                return "联发科天玑 8 系列";
+            }
+            if (lower.contains("mt7")) {
+                return "联发科天玑 7 系列";
+            }
+            return "联发科 (" + hw.toUpperCase(Locale.ROOT) + ")";
         }
-        if (lower.startsWith("exynos")) {
-            return "Samsung Exynos (" + hw + ")";
+        
+        // Samsung Exynos 系列
+        if (lower.startsWith("exynos") || lower.contains("s5e")) {
+            if (lower.contains("2500") || lower.contains("exynos2500")) {
+                return "三星 Exynos 2500";
+            }
+            if (lower.contains("2400") || lower.contains("exynos2400")) {
+                return "三星 Exynos 2400";
+            }
+            if (lower.contains("2200") || lower.contains("exynos2200")) {
+                return "三星 Exynos 2200";
+            }
+            return "三星 Exynos (" + hw + ")";
         }
-        if (lower.startsWith("kirin")) {
-            return "HiSilicon Kirin (" + hw + ")";
+        
+        // HiSilicon Kirin 系列（华为/荣耀）
+        if (lower.startsWith("kirin") || lower.contains("hi36") || lower.contains("huawei")) {
+            String socModel = SystemPropertiesCompat.get("ro.boot.soc_model");
+            if (socModel != null && !socModel.isEmpty()) {
+                if (socModel.contains("9010") || socModel.contains("kirin9010")) {
+                    return "华为麒麟 9010";
+                }
+                if (socModel.contains("9000s") || socModel.contains("kirin9000s")) {
+                    return "华为麒麟 9000S";
+                }
+                if (socModel.contains("9000") || socModel.contains("kirin9000")) {
+                    return "华为麒麟 9000";
+                }
+            }
+            if (lower.contains("9010")) {
+                return "华为麒麟 9010";
+            }
+            if (lower.contains("9000s")) {
+                return "华为麒麟 9000S";
+            }
+            if (lower.contains("9000")) {
+                return "华为麒麟 9000";
+            }
+            if (lower.contains("990")) {
+                return "华为麒麟 990";
+            }
+            if (lower.contains("980")) {
+                return "华为麒麟 980";
+            }
+            return "华为麒麟 (" + hw + ")";
         }
+        
+        // UNISOC 展锐系列
         if (lower.contains("unisoc") || lower.startsWith("ud7") || lower.startsWith("t7")
-                || lower.startsWith("s8") || lower.startsWith("t3")) {
-            return "UNISOC (" + hw + ")";
+                || lower.startsWith("s8") || lower.startsWith("t3") || lower.contains("sprd")) {
+            if (lower.contains("t820") || lower.contains("t820")) {
+                return "展锐 T820";
+            }
+            if (lower.contains("t770") || lower.contains("t770")) {
+                return "展锐 T770";
+            }
+            if (lower.contains("t760") || lower.contains("t760")) {
+                return "展锐 T760";
+            }
+            return "展锐 (" + hw + ")";
         }
-        if (lower.startsWith("google")) {
+        
+        // Google Tensor 系列
+        if (lower.startsWith("google") || lower.contains("tensor") || lower.contains("gs")) {
+            String socModel = SystemPropertiesCompat.get("ro.boot.soc_model");
+            if (socModel != null && !socModel.isEmpty()) {
+                if (socModel.contains("g5") || socModel.contains("tensorG5")) {
+                    return "Google Tensor G5";
+                }
+                if (socModel.contains("g4") || socModel.contains("tensorG4")) {
+                    return "Google Tensor G4";
+                }
+                if (socModel.contains("g3") || socModel.contains("tensorG3")) {
+                    return "Google Tensor G3";
+                }
+            }
+            if (lower.contains("g5") || lower.contains("tensorG5")) {
+                return "Google Tensor G5";
+            }
+            if (lower.contains("g4") || lower.contains("tensorG4")) {
+                return "Google Tensor G4";
+            }
+            if (lower.contains("g3") || lower.contains("tensorG3")) {
+                return "Google Tensor G3";
+            }
             return "Google Tensor (" + hw + ")";
         }
+        
+        // Apple A 系列（iPad 等）
+        if (lower.contains("apple") || lower.contains("a18") || lower.contains("a17") || lower.contains("a16")) {
+            if (lower.contains("a18pro") || lower.contains("a18 pro")) {
+                return "Apple A18 Pro";
+            }
+            if (lower.contains("a18")) {
+                return "Apple A18";
+            }
+            if (lower.contains("a17pro") || lower.contains("a17 pro")) {
+                return "Apple A17 Pro";
+            }
+            if (lower.contains("a17")) {
+                return "Apple A17";
+            }
+            if (lower.contains("a16")) {
+                return "Apple A16";
+            }
+            return "Apple A 系列";
+        }
+        
         return hw;
+    }
+    
+    /**
+     * 格式化 Qualcomm SoC 型号为中文营销名称。
+     */
+    private String formatQualcommSoC(String socModel) {
+        if (socModel == null) return null;
+        String upper = socModel.toUpperCase(Locale.ROOT);
+        
+        // Snapdragon 8 系列（旗舰）
+        if (upper.contains("SM8750") || upper.contains("GEN4") || upper.contains("8GEN4")) {
+            return "高通骁龙 8 Gen 4";
+        }
+        if (upper.contains("SM8650") || upper.contains("GEN3") || upper.contains("8GEN3")) {
+            if (upper.contains("AC") || upper.contains("LEADING")) {
+                return "高通骁龙 8 Gen 3 领先版";
+            }
+            return "高通骁龙 8 Gen 3";
+        }
+        if (upper.contains("SM8550") || upper.contains("GEN2") || upper.contains("8GEN2")) {
+            if (upper.contains("AC") || upper.contains("LEADING")) {
+                return "高通骁龙 8 Gen 2 领先版";
+            }
+            return "高通骁龙 8 Gen 2";
+        }
+        if (upper.contains("SM8475") || upper.contains("8+GEN1")) {
+            return "高通骁龙 8+ Gen 1";
+        }
+        if (upper.contains("SM8450") || upper.contains("8GEN1")) {
+            return "高通骁龙 8 Gen 1";
+        }
+        
+        // Snapdragon 7 系列（高端）
+        if (upper.contains("SM7650") || upper.contains("7+GEN3")) {
+            return "高通骁龙 7+ Gen 3";
+        }
+        if (upper.contains("SM7550") || upper.contains("7GEN3")) {
+            return "高通骁龙 7 Gen 3";
+        }
+        if (upper.contains("SM7475") || upper.contains("7+GEN2")) {
+            return "高通骁龙 7+ Gen 2";
+        }
+        if (upper.contains("SM7450") || upper.contains("7GEN2")) {
+            return "高通骁龙 7 Gen 2";
+        }
+        
+        // Snapdragon 6 系列（中端）
+        if (upper.contains("SM66") || upper.contains("6GEN")) {
+            return "高通骁龙 6 Gen 1";
+        }
+        
+        // Snapdragon 4 系列（入门）
+        if (upper.contains("SM44") || upper.contains("4GEN")) {
+            return "高通骁龙 4 Gen 1";
+        }
+        
+        return "高通骁龙 " + socModel;
+    }
+    
+    /**
+     * 格式化 MediaTek SoC 型号为中文营销名称。
+     */
+    private String formatMediaTekSoC(String socModel) {
+        if (socModel == null) return null;
+        String upper = socModel.toUpperCase(Locale.ROOT);
+        
+        // Dimensity 9 系列（旗舰）
+        if (upper.contains("MT6999") || upper.contains("9500")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 9500+";
+            }
+            return "联发科天玑 9500";
+        }
+        if (upper.contains("MT6989") || upper.contains("9400")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 9400+";
+            }
+            return "联发科天玑 9400";
+        }
+        if (upper.contains("MT6983") || upper.contains("9300")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 9300+";
+            }
+            return "联发科天玑 9300";
+        }
+        if (upper.contains("MT6897") || upper.contains("9200")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 9200+";
+            }
+            return "联发科天玑 9200";
+        }
+        if (upper.contains("MT6893") || upper.contains("9000")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 9000+";
+            }
+            return "联发科天玑 9000";
+        }
+        
+        // Dimensity 8 系列（高端）
+        if (upper.contains("MT6895") || upper.contains("8300")) {
+            if (upper.contains("-ULTRA") || upper.contains("ULTRA")) {
+                return "联发科天玑 8300-Ultra";
+            }
+            return "联发科天玑 8300";
+        }
+        if (upper.contains("MT6878") || upper.contains("8200")) {
+            if (upper.contains("-ULTRA") || upper.contains("ULTRA")) {
+                return "联发科天玑 8200-Ultra";
+            }
+            return "联发科天玑 8200";
+        }
+        if (upper.contains("MT6891") || upper.contains("8000")) {
+            if (upper.contains("-MAX") || upper.contains("MAX")) {
+                return "联发科天玑 8000-MAX";
+            }
+            return "联发科天玑 8000";
+        }
+        
+        // Dimensity 7 系列（中高端）
+        if (upper.contains("MT6878") || upper.contains("7300")) {
+            if (upper.contains("-X") || upper.contains("X")) {
+                return "联发科天玑 7300-X";
+            }
+            return "联发科天玑 7300";
+        }
+        if (upper.contains("MT6855") || upper.contains("7200")) {
+            if (upper.contains("-ULTRA") || upper.contains("ULTRA")) {
+                return "联发科天玑 7200-Ultra";
+            }
+            return "联发科天玑 7200";
+        }
+        
+        // Dimensity 6 系列（中端）
+        if (upper.contains("MT6833") || upper.contains("6100")) {
+            if (upper.contains("+")) {
+                return "联发科天玑 6100+";
+            }
+            return "联发科天玑 6100";
+        }
+        if (upper.contains("MT685") || upper.contains("60")) {
+            return "联发科天玑 6 系列";
+        }
+        
+        return "联发科天玑 " + socModel;
     }
 
     private void collectMemoryInfo(DeviceConfig config) {

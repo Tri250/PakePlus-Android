@@ -215,18 +215,26 @@ public class EnduranceFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_endurance, container, false);
         isWatch = detectWatch();
         initViews(view);
-        // 初始化 StateLayoutHelper
-        if (view instanceof ViewGroup) {
-            ViewGroup scrollChild = (ViewGroup) view;
-            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
-                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
-                stateLayoutHelper.showLoading(null);
-            }
-        }
         animateEntry(view);
         loadSavedState();
         dischargeRateTracker = new DischargeRateTracker();
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // 在 onViewCreated 后初始化 StateLayoutHelper，确保视图层级已完整构建
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                try {
+                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                } catch (Exception e) {
+                    android.util.Log.e("EnduranceFragment", "StateLayoutHelper init failed", e);
+                }
+            }
+        }
     }
 
     private boolean detectWatch() {

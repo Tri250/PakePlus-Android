@@ -62,17 +62,25 @@ public class PerformanceFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_performance, container, false);
         initViews(view);
-        // 初始化 StateLayoutHelper
-        if (view instanceof ViewGroup) {
-            ViewGroup scrollChild = (ViewGroup) view;
-            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
-                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
-                stateLayoutHelper.showLoading(null);
-            }
-        }
         animateEntry(view);
         runBenchmarkIfNeeded();
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // 在 onViewCreated 后初始化 StateLayoutHelper，确保视图层级已完整构建
+        if (view instanceof ViewGroup) {
+            ViewGroup scrollChild = (ViewGroup) view;
+            if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
+                try {
+                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                } catch (Exception e) {
+                    android.util.Log.e("PerformanceFragment", "StateLayoutHelper init failed", e);
+                }
+            }
+        }
     }
 
     private void initViews(View view) {

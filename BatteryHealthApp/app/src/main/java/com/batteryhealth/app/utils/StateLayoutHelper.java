@@ -65,26 +65,46 @@ public class StateLayoutHelper {
                 ViewGroup.LayoutParams.MATCH_PARENT));
         overlayContainer.setVisibility(View.GONE);
 
-        if (contentContainer.getParent() instanceof ViewGroup) {
-            ViewGroup parent = (ViewGroup) contentContainer.getParent();
-            int index = parent.indexOfChild(contentContainer);
-            parent.removeView(contentContainer);
+        // 安全初始化：处理 parent 为 null 或其他异常情况
+        try {
+            if (contentContainer.getParent() instanceof ViewGroup) {
+                ViewGroup parent = (ViewGroup) contentContainer.getParent();
+                int index = parent.indexOfChild(contentContainer);
+                if (index >= 0) {
+                    parent.removeView(contentContainer);
 
-            FrameLayout wrapper = new FrameLayout(contentContainer.getContext());
-            wrapper.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT));
+                    FrameLayout wrapper = new FrameLayout(contentContainer.getContext());
+                    wrapper.setLayoutParams(new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
 
-            contentContainer.setLayoutParams(new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT));
+                    contentContainer.setLayoutParams(new FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT));
 
-            wrapper.addView(contentContainer);
-            wrapper.addView(overlayContainer);
+                    wrapper.addView(contentContainer);
+                    wrapper.addView(overlayContainer);
 
-            parent.addView(wrapper, index);
-        } else {
-            contentContainer.addView(overlayContainer);
+                    parent.addView(wrapper, index);
+                } else {
+                    // index 异常时直接添加 overlay 到 contentContainer
+                    contentContainer.addView(overlayContainer);
+                }
+            } else {
+                // parent 为 null 或非 ViewGroup 时，直接添加 overlay 到 contentContainer
+                contentContainer.addView(overlayContainer);
+            }
+        } catch (Exception e) {
+            // 任何异常情况下，尝试直接添加 overlay
+            try {
+                if (contentContainer.getChildCount() == 0 || 
+                    contentContainer.indexOfChild(overlayContainer) < 0) {
+                    contentContainer.addView(overlayContainer);
+                }
+            } catch (Exception ignored) {
+                // 最终兜底：忽略 overlay，仅记录日志
+                android.util.Log.e("StateLayoutHelper", "Failed to add overlay container", e);
+            }
         }
 
         initOverlayViews();

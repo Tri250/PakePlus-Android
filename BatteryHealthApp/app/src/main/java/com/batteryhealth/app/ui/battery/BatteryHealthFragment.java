@@ -59,18 +59,32 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
-        batteryDataManager = BatteryDataManager.getInstance(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) {
+            return view;
+        }
+        batteryDataManager = BatteryDataManager.getInstance(ctx);
         initViews(view);
-        // 初始化 StateLayoutHelper，使用内容容器（ScrollView 内的 LinearLayout）
+        animateEntry(view);
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // 在 onViewCreated 后初始化 StateLayoutHelper，确保视图层级已完整构建
         if (view instanceof ViewGroup) {
             ViewGroup scrollChild = (ViewGroup) view;
             if (scrollChild.getChildCount() > 0 && scrollChild.getChildAt(0) instanceof ViewGroup) {
-                stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
-                stateLayoutHelper.showLoading(null);
+                try {
+                    stateLayoutHelper = new StateLayoutHelper((ViewGroup) scrollChild.getChildAt(0));
+                    stateLayoutHelper.showLoading(null);
+                } catch (Exception e) {
+                    // StateLayoutHelper 初始化失败时忽略，不影响主流程
+                    android.util.Log.e("BatteryHealthFragment", "StateLayoutHelper init failed", e);
+                }
             }
         }
-        animateEntry(view);
-        return view;
     }
 
     private void initViews(View view) {
