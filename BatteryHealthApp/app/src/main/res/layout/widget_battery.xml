@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card"
+    android:padding="12dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="电池健康"
+        android:textSize="12sp"
+        android:textColor="@color/ios_secondary_label"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_widget_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="--%"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/ios_label"
+        android:layout_marginBottom="4dp" />
+
+    <ProgressBar
+        android:id="@+id/progress_widget_battery"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/bg_progress_green"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_widget_health"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="健康 --%"
+        android:textSize="13sp"
+        android:textColor="@color/ios_secondary_label"
+        android:layout_marginBottom="2dp" />
+
+    <TextView
+        android:id="@+id/tv_widget_temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="--°C"
+        android:textSize="13sp"
+        android:textColor="@color/ios_secondary_label" />
+
+</LinearLayout>

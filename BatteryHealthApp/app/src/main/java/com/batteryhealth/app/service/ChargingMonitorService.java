@@ -54,7 +54,9 @@ public class ChargingMonitorService extends Service {
 
     private static final String TAG = "ChargingMonitorService";
     private static final String CHANNEL_ID = "charging_monitor_channel";
+    private static final String CHANNEL_ID_ALARM = "charging_alarm_channel";
     private static final int NOTIFICATION_ID = 1003;
+    private static final int ALARM_NOTIFICATION_ID = 1004;
     private static final long UPDATE_INTERVAL = 3000; // 3秒更新一次
 
     private Handler handler;
@@ -64,6 +66,7 @@ public class ChargingMonitorService extends Service {
     private boolean foregroundStarted = false;
     private long chargingStartTime;
     private SharedPreferences prefs;
+    private boolean alarmFiredThisSession = false;
 
     // 充电统计数据
     private float maxPower = 0;
@@ -105,6 +108,8 @@ public class ChargingMonitorService extends Service {
                 executor.submit(() -> {
                     PowerHistory history = readChargingPower();
                     if (history != null) {
+                        // 充电保护：检查是否到达目标电量
+                        checkChargingAlarm(history.getBatteryLevel());
                         handler.post(() -> {
                             if (!isCharging) return;
                             if (isNotificationEnabled()) {
@@ -327,6 +332,7 @@ public class ChargingMonitorService extends Service {
         powerSampleCount = 0;
         totalPower = 0;
         powerSamples.clear();
+        alarmFiredThisSession = false;
 
         Log.d(TAG, "Charging session started: " + currentSessionId);
 
@@ -747,6 +753,65 @@ public class ChargingMonitorService extends Service {
             if (manager != null) {
                 manager.createNotificationChannel(channel);
             }
+
+            // 充电保护告警通道（高优先级）
+            NotificationChannel alarmChannel = new NotificationChannel(
+                    CHANNEL_ID_ALARM,
+                    getString(R.string.charging_alarm_channel_name),
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            alarmChannel.setDescription(getString(R.string.charging_alarm_channel_description));
+            alarmChannel.enableVibration(true);
+            alarmChannel.setVibrationPattern(new long[]{0, 500, 200, 500});
+            if (manager != null) {
+                manager.createNotificationChannel(alarmChannel);
+            }
+        }
+    }
+
+    /**
+     * 检查充电保护告警：当电量达到目标值时发送高优先级通知
+     */
+    private void checkChargingAlarm(int batteryLevel) {
+        if (alarmFiredThisSession || !isCharging || !isNotificationEnabled()) return;
+
+        int targetLevel = prefs != null ? prefs.getInt("target_battery_level", 80) : 80;
+        if (batteryLevel >= targetLevel) {
+            alarmFiredThisSession = true;
+            sendChargingAlarmNotification(batteryLevel);
+        }
+    }
+
+    /**
+     * 发送充电保护告警通知
+     */
+    private void sendChargingAlarmNotification(int batteryLevel) {
+        try {
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager == null) return;
+
+            Intent intent = new Intent(this, com.batteryhealth.app.MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+            );
+
+            String content = String.format(Locale.getDefault(),
+                    getString(R.string.charging_alarm_content), batteryLevel);
+
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ALARM)
+                    .setContentTitle(getString(R.string.charging_alarm_title))
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(Notification.DEFAULT_VIBRATE | Notification.DEFAULT_SOUND)
+                    .build();
+
+            manager.notify(ALARM_NOTIFICATION_ID, notification);
+            Log.d(TAG, "Charging alarm sent at " + batteryLevel + "%");
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending charging alarm: " + e.getMessage());
         }
     }
 

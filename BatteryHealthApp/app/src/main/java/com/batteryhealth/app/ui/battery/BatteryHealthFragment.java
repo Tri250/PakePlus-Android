@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
@@ -33,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class BatteryHealthFragment extends Fragment {
 
     private HealthRingView healthRing;
+    private SwipeRefreshLayout swipeRefresh;
     private TextView tvHealthPercentage;
     private TextView tvHealthGrade;
     private TextView tvHealthStatus;
@@ -45,6 +48,9 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvBatterySource;
     private TextView tvTechnology;
+    private TextView tvPredictedLife;
+    private TextView tvBatteryStatus;
+    private TextView tvAdvice;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
@@ -69,6 +75,7 @@ public class BatteryHealthFragment extends Fragment {
 
     private void initViews(View view) {
         healthRing = view.findViewById(R.id.health_ring);
+        swipeRefresh = view.findViewById(R.id.swipe_refresh);
         tvHealthPercentage = view.findViewById(R.id.tv_health_percentage);
         tvHealthGrade = view.findViewById(R.id.tv_health_grade);
         tvHealthStatus = view.findViewById(R.id.tv_health_status);
@@ -81,6 +88,9 @@ public class BatteryHealthFragment extends Fragment {
         tvVoltage = view.findViewById(R.id.tv_voltage);
         tvBatterySource = view.findViewById(R.id.tv_battery_source);
         tvTechnology = view.findViewById(R.id.tv_technology);
+        tvPredictedLife = view.findViewById(R.id.tv_predicted_life);
+        tvBatteryStatus = view.findViewById(R.id.tv_battery_status);
+        tvAdvice = view.findViewById(R.id.tv_advice);
     }
 
     private void animateEntry(View view) {
@@ -95,6 +105,18 @@ public class BatteryHealthFragment extends Fragment {
         startPeriodicUpdate();
         // 立即拉取一次，避免等待首个 2 秒 tick
         updateBatteryData();
+
+        // 下拉刷新
+        if (swipeRefresh != null) {
+            swipeRefresh.setOnRefreshListener(() -> {
+                updateBatteryData();
+                handler.postDelayed(() -> {
+                    if (swipeRefresh != null) {
+                        swipeRefresh.setRefreshing(false);
+                    }
+                }, 1500);
+            });
+        }
     }
 
     @Override
@@ -274,6 +296,9 @@ public class BatteryHealthFragment extends Fragment {
         tvHealthStatus.setText(statusText);
 
         UiAnimationHelper.animateRingProgress(healthRing, healthInt);
+
+        // 6. 电池预测
+        updatePrediction(healthInt);
     }
 
     private String calculateGrade(int health) {
@@ -285,5 +310,62 @@ public class BatteryHealthFragment extends Fragment {
         if (health >= 70) return "B-";
         if (health >= 60) return "C";
         return "D";
+    }
+
+    /**
+     * 更新电池预测信息：剩余寿命、电池状态、养护建议
+     */
+    private void updatePrediction(int healthPct) {
+        if (tvPredictedLife == null || tvBatteryStatus == null || tvAdvice == null) return;
+
+        try {
+            // 从趋势数据获取月衰减率
+            SharedPreferences trendPrefs = requireContext().getSharedPreferences("trend_prefs", Context.MODE_PRIVATE);
+            float monthlyDecay = trendPrefs.getFloat("monthly_decay_pct", 0.15f);
+
+            // 预测剩余寿命
+            if (monthlyDecay > 0.01f && healthPct > 60) {
+                float remainingMonths = (healthPct - 60f) / monthlyDecay;
+                int months = Math.round(remainingMonths);
+                if (months > 0) {
+                    tvPredictedLife.setText(String.format(Locale.getDefault(), "约 %d 个月", months));
+                } else {
+                    tvPredictedLife.setText(getString(R.string.prediction_no_data));
+                }
+            } else {
+                tvPredictedLife.setText(getString(R.string.prediction_no_data));
+            }
+
+            // 电池状态
+            String status;
+            if (healthPct >= 95) {
+                status = "优秀";
+            } else if (healthPct >= 85) {
+                status = "良好";
+            } else if (healthPct >= 70) {
+                status = "一般";
+            } else {
+                status = "需更换";
+            }
+            tvBatteryStatus.setText(status);
+
+            // 养护建议
+            String advice;
+            if (healthPct >= 90) {
+                advice = "保持 20%-80% 充电区间，避免过度放电";
+            } else if (healthPct >= 80) {
+                advice = "建议开启充电保护，避免满充过夜";
+            } else if (healthPct >= 70) {
+                advice = "减少快充使用，注意电池温度";
+            } else {
+                advice = "建议考虑更换电池，联系官方售后";
+            }
+            tvAdvice.setText(advice);
+
+        } catch (Exception e) {
+            tvPredictedLife.setText("--");
+            tvBatteryStatus.setText("--");
+            tvAdvice.setText("--");
+        }
     }
 }

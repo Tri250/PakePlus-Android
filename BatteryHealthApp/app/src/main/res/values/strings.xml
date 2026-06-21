@@ -222,4 +222,24 @@
     <string name="bugreport_guide_action_view">查看引导</string>
     <string name="bugreport_guide_action_close">关闭</string>
     <string name="bugreport_guide_action_config">去配置查询</string>
+
+    <!-- 充电保护 -->
+    <string name="charging_alarm_channel_name">充电保护提醒</string>
+    <string name="charging_alarm_channel_description">充电达到目标电量时发送提醒</string>
+    <string name="charging_alarm_title">充电保护提醒</string>
+    <string name="charging_alarm_content">充电已到达目标电量 %d%%，建议断开充电器以保护电池</string>
+    <string name="charging_alarm_stop">知道了</string>
+
+    <!-- 电池健康预测 -->
+    <string name="label_predicted_life">预计剩余寿命</string>
+    <string name="label_battery_status">电池状态</string>
+    <string name="label_advice">养护建议</string>
+    <string name="unit_months">个月</string>
+    <string name="prediction_no_data">需要更多数据</string>
+
+    <!-- 小组件 -->
+    <string name="widget_description">电池健康桌面小组件：显示电量、健康度、温度</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
 </resources>

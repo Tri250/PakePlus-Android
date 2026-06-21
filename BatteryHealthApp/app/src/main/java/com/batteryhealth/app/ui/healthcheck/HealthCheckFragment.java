@@ -107,6 +107,12 @@ public class HealthCheckFragment extends Fragment {
             tvActionCheck.setOnClickListener(v -> startCheck());
             tvActionReport.setOnClickListener(v -> exportReport());
 
+            // 分享按钮
+            View tvActionShare = view.findViewById(R.id.tv_action_share);
+            if (tvActionShare != null) {
+                tvActionShare.setOnClickListener(v -> shareReport());
+            }
+
             engine = HealthCheckEngine.getInstance();
 
             // 首次进入自动触发一次检测
@@ -212,6 +218,54 @@ public class HealthCheckFragment extends Fragment {
             Toast.makeText(ctx, getString(R.string.health_check_export_success), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 分享电池健康报告
+     */
+    private void shareReport() {
+        if (lastResults.isEmpty()) {
+            Toast.makeText(getContext(), R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            Context ctx = getContext();
+            if (ctx == null) return;
+
+            // 构建分享文本
+            StringBuilder sb = new StringBuilder();
+            sb.append("📊 电池健康报告\n");
+            sb.append("═══════════════\n");
+            sb.append("应用版本：电池健康 v4.9.5\n");
+            sb.append("品牌：").append(Build.BRAND).append("\n");
+            sb.append("型号：").append(Build.MODEL).append("\n");
+            sb.append("系统：Android ").append(Build.VERSION.RELEASE).append("\n");
+            sb.append("═══════════════\n\n");
+
+            for (HealthCheckResult result : lastResults) {
+                sb.append("▸ ").append(result.getTitle()).append("\n");
+                boolean passed = result.getSeverity() == HealthCheckResult.SEVERITY_GOOD;
+                sb.append("  状态：").append(passed ? "✓ 通过" : "✗ 异常").append("\n");
+                if (result.getDescription() != null && !result.getDescription().isEmpty()) {
+                    sb.append("  详情：").append(result.getDescription()).append("\n");
+                }
+                if (result.getAdvice() != null && !result.getAdvice().isEmpty()) {
+                    sb.append("  建议：").append(result.getAdvice()).append("\n");
+                }
+                sb.append("\n");
+            }
+            sb.append("通过 电池健康 App 生成");
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "电池健康报告");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+            startActivity(Intent.createChooser(shareIntent, "分享报告"));
+
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "分享失败", Toast.LENGTH_SHORT).show();
         }
     }
 

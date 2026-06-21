@@ -16,6 +16,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.ui.error.ErrorActivity;
+import com.batteryhealth.app.utils.ThemeManager;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -55,6 +56,9 @@ public class BatteryHealthApplication extends Application {
             instance = this;
             appStartTime = System.currentTimeMillis();
             mainHandler = new Handler(Looper.getMainLooper());
+
+            // 应用主题（暗色模式支持）
+            ThemeManager.applyTheme(this);
 
             // 启用 StrictMode（仅 Debug 构建时，避免 Release 性能开销）
             if (BuildConfig.DEBUG) {

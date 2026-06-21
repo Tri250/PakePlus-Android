@@ -35,12 +35,16 @@ import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;
+import com.batteryhealth.app.ui.healthcheck.HealthCheckFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.ui.trend.TrendFragment;
+import com.batteryhealth.app.ui.onboarding.OnboardingActivity;
+import com.batteryhealth.app.ui.settings.SettingsActivity;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PermissionManager;
+import com.batteryhealth.app.utils.ThemeManager;
 import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -74,9 +78,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 应用主题
+        ThemeManager.applyTheme(this);
         
         try {
             setContentView(R.layout.activity_main);
+
+            // 首次启动：显示引导页
+            if (OnboardingActivity.shouldShow(this)) {
+                startActivity(new Intent(this, OnboardingActivity.class));
+                finish();
+                return;
+            }
 
             // Android 15+ 强制 edge-to-edge
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -243,6 +257,14 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         viewPager = findViewById(R.id.view_pager);
         bottomNavigation = findViewById(R.id.bottom_navigation);
+
+        // 设置按钮（程序化添加，避免修改布局）
+        View btnSettings = findViewById(R.id.btn_settings);
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(v -> {
+                startActivity(new Intent(this, SettingsActivity.class));
+            });
+        }
         
         if (viewPager == null || bottomNavigation == null) {
             Log.e(TAG, "Required views not found in layout");
@@ -270,15 +292,15 @@ public class MainActivity extends AppCompatActivity {
                         case 0:
                             return new BatteryHealthFragment();
                         case 1:
-                            return new DeviceConfigFragment();
+                            return new PowerFragment();
                         case 2:
                             return new PerformanceFragment();
                         case 3:
-                            return new EnduranceFragment();
+                            return new HealthCheckFragment();
                         case 4:
                             return new TrendFragment();
                         case 5:
-                            return new PowerFragment();
+                            return new DeviceConfigFragment();
                         default:
                             return createFallbackFragment("未知页面");
                     }
@@ -332,11 +354,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health), R.drawable.ic_battery_health));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health_check), R.drawable.ic_health_check));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {

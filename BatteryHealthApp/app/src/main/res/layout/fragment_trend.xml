@@ -62,70 +62,8 @@
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/line_chart"
                     android:layout_width="match_parent"
-                    android:layout_height="220dp"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="1月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="2月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="3月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="4月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="6月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                </LinearLayout>
+                    android:layout_height="240dp"
+                    android:layout_marginBottom="4dp" />
 
             </LinearLayout>
 
