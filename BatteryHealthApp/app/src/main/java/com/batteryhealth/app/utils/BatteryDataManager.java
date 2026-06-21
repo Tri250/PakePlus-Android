@@ -994,17 +994,23 @@ public class BatteryDataManager {
         return currentPowerW >= official * 0.6f;
     }
 
+    private final Object refreshLock = new Object();
+
     public void refreshFromStickyIntent() {
-        currentBatteryInfo = getBatteryInfo();
-        if (currentBatteryInfo != null) {
-            chargingStatusText = getStatusString(currentBatteryInfo.getStatus());
-            healthSourceText = formatHealthSource(currentBatteryInfo);
-            batterySourceText = formatBatterySource(currentBatteryInfo);
+        synchronized (refreshLock) {
+            currentBatteryInfo = getBatteryInfo();
+            if (currentBatteryInfo != null) {
+                chargingStatusText = getStatusString(currentBatteryInfo.getStatus());
+                healthSourceText = formatHealthSource(currentBatteryInfo);
+                batterySourceText = formatBatterySource(currentBatteryInfo);
+            }
         }
     }
 
     public BatteryInfo getCurrentBatteryInfo() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        if (currentBatteryInfo == null) {
+            refreshFromStickyIntent();
+        }
         return currentBatteryInfo;
     }
 

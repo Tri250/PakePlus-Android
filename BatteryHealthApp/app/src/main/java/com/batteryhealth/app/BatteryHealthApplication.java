@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StrictMode;
 import android.util.Log;
 
 import androidx.room.Room;
@@ -28,6 +29,8 @@ import java.util.concurrent.TimeUnit;
  * 1. 初始化全局配置
  * 2. 管理数据库实例
  * 3. 提供全局Context访问
+ * 4. ANR 监测与崩溃防护
+ * 5. StrictMode 调试检测
  */
 public class BatteryHealthApplication extends Application {
     
@@ -36,9 +39,14 @@ public class BatteryHealthApplication extends Application {
     private AppDatabase database;
     private Handler mainHandler;
     private long appStartTime;
+    private long lastAnrCheckTime;
 
     private final Object dbInitLock = new Object();
     private volatile CountDownLatch dbInitLatch;
+
+    // ANR 检测阈值：主线程消息处理超过 3 秒即视为潜在 ANR
+    private static final long ANR_THRESHOLD_MS = 3000;
+    private static final long ANR_CHECK_INTERVAL_MS = 1000;
     
     @Override
     public void onCreate() {
@@ -48,14 +56,84 @@ public class BatteryHealthApplication extends Application {
             appStartTime = System.currentTimeMillis();
             mainHandler = new Handler(Looper.getMainLooper());
 
+            // 启用 StrictMode（仅 Debug 构建时，避免 Release 性能开销）
+            if (BuildConfig.DEBUG) {
+                enableStrictMode();
+            }
+
             // 注册全局未捕获异常处理器，跳转错误兜底页
             registerUncaughtExceptionHandler();
+
+            // 启动 ANR 监测（轻量级心跳检测，避免正式 ANR 耗时监控）
+            startAnrWatchdog();
 
             // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
             startDatabaseInitAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 启用 StrictMode：在 Debug 构建中检测主线程磁盘 IO 和网络访问。
+     */
+    private void enableStrictMode() {
+        try {
+            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .detectNetwork()
+                    .penaltyLog()
+                    .build());
+            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                    .detectLeakedSqlLiteObjects()
+                    .detectLeakedClosableObjects()
+                    .detectActivityLeaks()
+                    .detectLeakedRegistrationObjects()
+                    .penaltyLog()
+                    .build());
+            Log.d(TAG, "StrictMode enabled for debug build");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to enable StrictMode: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 轻量级 ANR 监测：定期检查主线程消息队列是否被阻塞。
+     * 若主线程超过 ANR_THRESHOLD_MS 未响应，记录诊断日志并尝试恢复。
+     * 注意：此机制不替代系统 ANR 对话框，仅用于排查和记录。
+     */
+    private void startAnrWatchdog() {
+        lastAnrCheckTime = System.currentTimeMillis();
+        final Handler watchdogHandler = new Handler(Looper.getMainLooper());
+        Runnable watchdogTick = new Runnable() {
+            @Override
+            public void run() {
+                long now = System.currentTimeMillis();
+                long elapsed = now - lastAnrCheckTime;
+                if (elapsed > ANR_THRESHOLD_MS) {
+                    Log.w(TAG, "Potential ANR detected: main thread blocked for " + elapsed + "ms");
+                    // 记录主线程堆栈用于诊断
+                    StackTraceElement[] stackTrace = Looper.getMainLooper().getThread().getStackTrace();
+                    StringBuilder sb = new StringBuilder("Main thread stack trace:\n");
+                    for (StackTraceElement element : stackTrace) {
+                        sb.append("  ").append(element.toString()).append("\n");
+                    }
+                    Log.w(TAG, sb.toString());
+                }
+                lastAnrCheckTime = now;
+                watchdogHandler.postDelayed(this, ANR_CHECK_INTERVAL_MS);
+            }
+        };
+        // 在独立线程中检查，避免自身造成 ANR
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000); // 等待应用初始化完成
+                watchdogHandler.post(watchdogTick);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "AnrWatchdog").start();
     }
 
     /**

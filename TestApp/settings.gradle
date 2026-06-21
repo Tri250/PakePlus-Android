@@ -1,33 +1,22 @@
-// Top-level build file - 仓库配置已迁移到 settings.gradle 统一管理
-buildscript {
+pluginManagement {
     repositories {
-        // Android 依赖优先走 Google 仓库
         google()
-        // 通用依赖走阿里云/腾讯云镜像，避免 Maven Central 429
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         mavenCentral()
         gradlePluginPortal()
     }
-    dependencies {
-        // 升级到 AGP 8.8.2 以支持 Android 16 (SDK 36)
-        classpath 'com.android.tools.build:gradle:8.7.3'
-    }
 }
-
-allprojects {
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        // Android 依赖优先走 Google 仓库
         google()
-        // 通用依赖走阿里云/腾讯云镜像，避免 Maven Central 429
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         mavenCentral()
     }
 }
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
+rootProject.name = "TestApp"
+include ':app'

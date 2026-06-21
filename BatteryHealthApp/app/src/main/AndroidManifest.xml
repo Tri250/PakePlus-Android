@@ -42,6 +42,9 @@
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
         android:name=".BatteryHealthApplication"
+        android:allowNativeHeapPointerTagging="true"
+        android:requestLegacyExternalStorage="false"
+        android:hasFragileUserData="true"
         tools:targetApi="36">
         
         <activity

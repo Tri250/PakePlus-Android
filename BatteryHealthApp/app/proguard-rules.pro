@@ -1,7 +1,47 @@
 # ProGuard规则 for Battery Health App
+# 安全策略：仅保留必要的类和方法，其余全部混淆，防止逆向工程
 
-# 保留类名和方法名
--keep public class com.batteryhealth.app.** { *; }
+# === 保留 Application 入口 ===
+-keep class com.batteryhealth.app.BatteryHealthApplication { *; }
+-keep class com.batteryhealth.app.MainActivity { *; }
+-keep class com.batteryhealth.app.ui.error.ErrorActivity { *; }
+
+# === 保留数据模型（Room 实体 + Gson 序列化） ===
+-keep class com.batteryhealth.app.data.model.** { *; }
+-keep class com.batteryhealth.app.data.model.BatteryInfo { *; }
+-keep class com.batteryhealth.app.data.model.PerformanceData { *; }
+-keep class com.batteryhealth.app.data.model.PowerHistory { *; }
+-keep class com.batteryhealth.app.data.model.DeviceConfig { *; }
+-keep class com.batteryhealth.app.data.model.HealthCheckResult { *; }
+
+# === 保留 Service（系统通过反射启动） ===
+-keep class com.batteryhealth.app.service.BatteryMonitorService { *; }
+-keep class com.batteryhealth.app.service.ChargingMonitorService { *; }
+
+# === 保留内部接口和回调 ===
+-keep class com.batteryhealth.app.service.BatteryMonitorService$OnBatteryDataListener { *; }
+-keep class com.batteryhealth.app.service.BatteryMonitorService$NamedThreadFactory { *; }
+-keep class com.batteryhealth.app.service.ChargingMonitorService$OnChargingDataListener { *; }
+-keep class com.batteryhealth.app.service.ChargingMonitorService$ChargingSummary { *; }
+
+# === 保留自定义 View（XML 反射创建） ===
+-keep class com.batteryhealth.app.ui.view.CustomBottomNavigationView { *; }
+-keep class com.batteryhealth.app.ui.view.CustomBottomNavigationView$NavItem { *; }
+-keep class com.batteryhealth.app.ui.view.HealthRingView { *; }
+
+# === 保留 Fragment（反射创建） ===
+-keep class * extends androidx.fragment.app.Fragment { *; }
+
+# === 保留 DAO 接口（Room 编译期生成） ===
+-keep class com.batteryhealth.app.data.database.BatteryInfoDao { *; }
+-keep class com.batteryhealth.app.data.database.PowerHistoryDao { *; }
+-keep class com.batteryhealth.app.data.database.PerformanceDataDao { *; }
+-keep class com.batteryhealth.app.data.database.AppDatabase { *; }
+-keep class com.batteryhealth.app.data.database.AppDatabase_Impl { *; }
+
+# === 保留 healthcheck checker 接口 ===
+-keep class com.batteryhealth.app.utils.healthcheck.IHealthChecker { *; }
+-keep class com.batteryhealth.app.utils.healthcheck.HealthCheckEngine { *; }
 
 # OkHttp - 忽略缺失的平台类
 -dontwarn org.bouncycastle.jsse.**
@@ -137,8 +177,8 @@
     public static int e(...);
 }
 
-# 优化
--optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+# R8 优化
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*,!code/allocation/variable
 -optimizationpasses 5
 -allowaccessmodification
--dontpreverify
+-repackageclasses 'com.batteryhealth.app.internal'

@@ -12,7 +12,7 @@ buildscript {
     }
     dependencies {
         // 升级到 AGP 8.8.2 以支持 Android 16 (SDK 36)
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:8.8.2'
     }
 }
 

@@ -160,7 +160,35 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // 不再需要注销广播接收器，因为已经移除了
+        // 清理 handler 回调，防止内存泄漏
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+            mainHandler = null;
+        }
+        // 释放管理器引用
+        batteryDataManager = null;
+        deviceInfoManager = null;
+        // 清理 View 引用
+        viewPager = null;
+        bottomNavigation = null;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Activity 不可见时，释放大型资源引用（GC 友好）
+        if (viewPager != null) {
+            viewPager.setAdapter(null);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Activity 恢复可见时，重新绑定 ViewPager 适配器
+        if (viewPager != null && viewPager.getAdapter() == null) {
+            setupViewPager();
+        }
     }
     
     /**
