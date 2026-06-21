@@ -324,13 +324,14 @@ public class PerformanceFragment extends Fragment {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                 android.content.pm.PackageManager pm = requireContext().getPackageManager();
-                boolean hasVulkan1_1 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.1");
-                boolean hasVulkan1_2 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.2");
-                boolean hasVulkan1_3 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.3");
+                // Vulkan 硬件版本编码：0x4MMmm001，MM=主版本, mm=次版本
+                boolean hasVulkan1_1 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, 0x40010001);
+                boolean hasVulkan1_2 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, 0x40020001);
+                boolean hasVulkan1_3 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, 0x40030001);
                 if (hasVulkan1_3) return "1.3";
                 if (hasVulkan1_2) return "1.2";
                 if (hasVulkan1_1) return "1.1";
-                boolean hasVulkan1_0 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.0");
+                boolean hasVulkan1_0 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, 0x40000001);
                 if (hasVulkan1_0) return "1.0";
             }
         } catch (Throwable ignored) {
