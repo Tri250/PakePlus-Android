@@ -20,10 +20,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class PowerFragment extends Fragment {
 
@@ -34,6 +43,9 @@ public class PowerFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
+    private long lastTodayStatsLoad = 0;
+    private static final long TODAY_STATS_REFRESH_INTERVAL = 30_000L; // 30 秒刷新一次今日统计
 
     @Nullable
     @Override
@@ -70,6 +82,9 @@ public class PowerFragment extends Fragment {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        // 进入页面立即拉取一次今日统计
+        lastTodayStatsLoad = 0;
+        loadTodayChargeStats();
     }
 
     @Override
@@ -105,6 +120,22 @@ public class PowerFragment extends Fragment {
     private void stopPeriodicUpdate() {
         if (updateRunnable != null) {
             handler.removeCallbacks(updateRunnable);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (dbExecutor != null) {
+            dbExecutor.shutdown();
+            try {
+                if (!dbExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    dbExecutor.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                dbExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -154,7 +185,7 @@ public class PowerFragment extends Fragment {
         tvPowerType.setText(powerType);
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
-        // Update details
+        // Details
         tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
         tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(current) / 1000f));
         tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
@@ -162,11 +193,109 @@ public class PowerFragment extends Fragment {
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
 
-        // Today stats (placeholders)
-        tvChargeCount.setText("2");
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
-        tvTotalChargeTime.setText("45分");
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        // 今日充电统计：异步从数据库读取真实数据，每 30 秒刷新一次
+        long now = System.currentTimeMillis();
+        if (now - lastTodayStatsLoad >= TODAY_STATS_REFRESH_INTERVAL) {
+            lastTodayStatsLoad = now;
+            loadTodayChargeStats();
+        }
+    }
+
+    /**
+     * 异步从 power_history 表中加载今日（00:00 起）充电统计数据：
+     *  - 充电次数：去重 session_id 数量
+     *  - 平均功率：所有样本功率的均值
+     *  - 累计时长：去重会话总持续时间（最后一次 - 第一次样本）
+     *  - 累计充入：基于平均电流 × 时长换算到百分比
+     */
+    private void loadTodayChargeStats() {
+        if (!isAdded()) return;
+        final Context appCtx = requireContext().getApplicationContext();
+        dbExecutor.submit(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) appCtx;
+                AppDatabase db = app.getDatabase();
+                if (db == null) {
+                    renderTodayStatsEmpty();
+                    return;
+                }
+
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                cal.set(java.util.Calendar.MINUTE, 0);
+                cal.set(java.util.Calendar.SECOND, 0);
+                cal.set(java.util.Calendar.MILLISECOND, 0);
+                long todayStart = cal.getTimeInMillis();
+
+                List<PowerHistory> records = db.powerHistoryDao().getSince(todayStart);
+                if (records == null || records.isEmpty()) {
+                    renderTodayStatsEmpty();
+                    return;
+                }
+
+                // 1. 充电次数：按 session_id 去重
+                Set<String> sessions = new HashSet<>();
+                float totalPower = 0f;
+                int count = 0;
+                long earliestTs = Long.MAX_VALUE;
+                long latestTs = Long.MIN_VALUE;
+                int minLevel = Integer.MAX_VALUE;
+                int maxLevel = Integer.MIN_VALUE;
+                for (PowerHistory h : records) {
+                    if (h.getSessionId() != null) sessions.add(h.getSessionId());
+                    if (h.getPower() > 0) {
+                        totalPower += h.getPower();
+                        count++;
+                    }
+                    if (h.getTimestamp() < earliestTs) earliestTs = h.getTimestamp();
+                    if (h.getTimestamp() > latestTs) latestTs = h.getTimestamp();
+                    if (h.getBatteryLevel() < minLevel) minLevel = h.getBatteryLevel();
+                    if (h.getBatteryLevel() > maxLevel) maxLevel = h.getBatteryLevel();
+                }
+                int chargeCount = sessions.size();
+                float avgPower = count > 0 ? totalPower / count : 0f;
+                long totalDurationMs = (sessions.isEmpty() || latestTs < earliestTs)
+                        ? 0 : latestTs - earliestTs;
+                int charged = (minLevel != Integer.MAX_VALUE && maxLevel != Integer.MIN_VALUE)
+                        ? Math.max(0, maxLevel - minLevel) : 0;
+
+                final int finalCount = chargeCount;
+                final float finalAvgPower = avgPower;
+                final long finalDuration = totalDurationMs;
+                final int finalCharged = charged;
+                handler.post(() -> {
+                    if (!isAdded()) return;
+                    tvChargeCount.setText(String.format(Locale.getDefault(), "%d 次", finalCount));
+                    tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", finalAvgPower));
+                    tvTotalChargeTime.setText(formatDuration(finalDuration));
+                    tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", finalCharged));
+                });
+            } catch (Throwable t) {
+                renderTodayStatsEmpty();
+            }
+        });
+    }
+
+    private void renderTodayStatsEmpty() {
+        if (!isAdded()) return;
+        handler.post(() -> {
+            if (!isAdded()) return;
+            tvChargeCount.setText("0 次");
+            tvAvgPower.setText("--");
+            tvTotalChargeTime.setText("--");
+            tvTotalCharged.setText("--");
+        });
+    }
+
+    private String formatDuration(long ms) {
+        if (ms <= 0) return "--";
+        long minutes = ms / (1000 * 60);
+        if (minutes < 60) {
+            return String.format(Locale.getDefault(), "%d 分", minutes);
+        }
+        long hours = minutes / 60;
+        long remMins = minutes % 60;
+        return String.format(Locale.getDefault(), "%d 小时 %d 分", hours, remMins);
     }
 
     private String calculateTimeToFull(int batteryPct, float currentA) {

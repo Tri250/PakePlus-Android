@@ -1,6 +1,5 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.animation.ObjectAnimator;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,11 +18,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
+import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class BatteryHealthFragment extends Fragment {
 
@@ -43,6 +48,8 @@ public class BatteryHealthFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
+    private BatteryDataManager batteryDataManager;
 
     @Nullable
     @Override
@@ -50,6 +57,13 @@ public class BatteryHealthFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
         initViews(view);
         animateEntry(view);
+        // 优先通过 MainActivity 获取共享的 BatteryDataManager，确保与监测服务使用同一份数据
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        if (batteryDataManager == null) {
+            batteryDataManager = new BatteryDataManager(requireContext().getApplicationContext());
+        }
         return view;
     }
 
@@ -79,6 +93,8 @@ public class BatteryHealthFragment extends Fragment {
         super.onResume();
         registerBatteryReceiver();
         startPeriodicUpdate();
+        // 立即拉取一次，避免等待首个 2 秒 tick
+        updateBatteryData();
     }
 
     @Override
@@ -88,9 +104,32 @@ public class BatteryHealthFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (ioExecutor != null) {
+            ioExecutor.shutdown();
+            try {
+                if (!ioExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    ioExecutor.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                ioExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireContext().registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void unregisterBatteryReceiver() {
@@ -120,88 +159,121 @@ public class BatteryHealthFragment extends Fragment {
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateFromIntent(intent);
+            updateBatteryData();
         }
     };
 
+    /**
+     * 异步调用 BatteryDataManager 获取完整电池信息（含健康度/容量/循环/来源/技术等），
+     * 然后回到主线程刷新 UI。所有耗时 IO 在 ioExecutor 完成。
+     */
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
-        }
+        if (!isAdded() || batteryDataManager == null) return;
+        ioExecutor.submit(() -> {
+            try {
+                batteryDataManager.refreshFromStickyIntent();
+                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                Intent live = null;
+                try {
+                    live = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                } catch (Exception ignored) {
+                }
+                final BatteryInfo snapshot = info;
+                final Intent sticky = live;
+                if (handler != null) {
+                    handler.post(() -> {
+                        if (isAdded()) renderInfo(snapshot, sticky);
+                    });
+                }
+            } catch (Exception ignored) {
+            }
+        });
     }
 
-    private void updateFromIntent(Intent intent) {
-        int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
+    private void renderInfo(BatteryInfo info, Intent sticky) {
+        // 1. 基础电量与状态
+        int level = -1;
+        int status = -1;
+        int tempRaw = -1;
+        int voltageMv = 0;
+        int currentUa = 0;
+        String technology = null;
+        if (sticky != null) {
+            int rawLevel = sticky.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+            int scale = sticky.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+            level = (rawLevel >= 0 && scale > 0) ? (int) ((rawLevel / (float) scale) * 100) : rawLevel;
+            status = sticky.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
+            tempRaw = sticky.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, -1);
+            voltageMv = sticky.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, 0);
+            currentUa = ((android.os.BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE))
+                    .getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+            technology = sticky.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY);
+        }
 
-        int status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
         boolean isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
                 || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
-        String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
-
-        int current = 0;
-        android.os.BatteryManager bm = (android.os.BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        if (level < 0 && info != null) level = info.getLevel();
+        if (info != null && info.getTemperature() > 0 && tempRaw < 0) {
+            tempRaw = Math.round(info.getTemperature() * 10f);
         }
-        float currentMa = current / 1000f;
+        if (info != null && info.getVoltage() > 0 && voltageMv <= 0) {
+            voltageMv = (int) info.getVoltage();
+        }
+        if (info != null && info.getCurrentNow() != 0 && currentUa == 0) {
+            currentUa = info.getCurrentNow();
+        }
 
-        int voltage = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, 0);
-        float voltageV = voltage / 1000f;
+        float voltageV = voltageMv / 1000f;
+        float currentMa = Math.abs(currentUa) / 1000f;
+        float tempC = tempRaw / 10f;
 
-        int temp = intent.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
-
-        String technology = intent.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY);
-        if (technology == null) technology = "Li-ion";
-
-        int capacityMah = batteryPct;
-
-        // Update UI
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvChargingStatus.setText(chargingStatus);
-        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
-        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", capacityMah * 10));
+        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", Math.max(0, level)));
+        tvChargingStatus.setText(batteryDataManager.getChargingStatusText());
+        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
         tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
         tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvTechnology.setText(technology);
-        tvBatterySource.setText(getString(R.string.source_internal));
 
-        // Cycle count estimate
-        int cycleCount = estimateCycleCount(capacityMah * 10, batteryPct);
-        tvCycleCount.setText(String.valueOf(cycleCount));
+        // 2. 容量：使用 BatteryDataManager 计算的 design/fcc
+        int design = info != null ? info.getDesignCapacity() : 0;
+        int fcc = info != null ? info.getCurrentCapacity() : 0;
+        if (design <= 0) design = 3000; // 兜底显示，避免负值
+        if (fcc <= 0) fcc = (int) (design * (info != null ? Math.max(0f, info.getHealthPercentage()) / 100f : 0.85f));
+        tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", fcc, design));
 
-        // Health grade and ring
-        int health = Math.max(0, Math.min(100, capacityMah));
-        String grade = calculateGrade(health);
+        // 3. 循环次数：使用 BatteryDataManager 的真实读取结果
+        if (info != null && info.hasValidCycleCount()) {
+            String cycleText = batteryDataManager.formatCycleCount(info);
+            tvCycleCount.setText(cycleText);
+        } else {
+            tvCycleCount.setText(getString(R.string.cycle_count_unreadable));
+        }
+
+        // 4. 技术与电池来源
+        String tech = info != null && info.getTechnology() != null && !info.getTechnology().isEmpty()
+                ? info.getTechnology() : (technology != null ? technology : getString(R.string.battery_technology_default));
+        tvTechnology.setText(tech);
+        tvBatterySource.setText(batteryDataManager.getBatterySourceText());
+
+        // 5. 健康度大数字、等级、状态
+        float healthPct = info != null ? info.getHealthPercentage() : 0f;
+        int healthInt = Math.max(0, Math.min(100, Math.round(healthPct)));
+        String grade = calculateGrade(healthInt);
         tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
-        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", health));
+        tvHealthPercentage.setText(String.format(Locale.getDefault(), "%d%%", healthInt));
 
         String statusText;
-        if (health >= 90) {
+        if (healthInt >= 90) {
             statusText = getString(R.string.status_excellent);
-        } else if (health >= 80) {
+        } else if (healthInt >= 80) {
             statusText = getString(R.string.status_good);
-        } else if (health >= 60) {
+        } else if (healthInt >= 60) {
             statusText = getString(R.string.status_fair);
         } else {
             statusText = getString(R.string.status_poor);
         }
         tvHealthStatus.setText(statusText);
 
-        UiAnimationHelper.animateRingProgress(healthRing, health);
-    }
-
-    private int estimateCycleCount(int capacityMah, int batteryPct) {
-        // Rough estimate based on typical 3000mAh battery and 500 cycles for 20% degradation
-        int typicalCapacity = 3000;
-        if (capacityMah > 0) {
-            typicalCapacity = capacityMah;
-        }
-        float degradation = (100f - batteryPct) / 100f;
-        return (int) (degradation * 500 * (typicalCapacity / 3000f));
+        UiAnimationHelper.animateRingProgress(healthRing, healthInt);
     }
 
     private String calculateGrade(int health) {

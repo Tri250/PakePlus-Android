@@ -172,8 +172,94 @@ public class PerformanceFragment extends Fragment {
         return Math.max(0, Math.min(100, baseScore));
     }
 
+    private long lastAppCpuTotal = 0;
+    private long lastAppCpuTimestamp = 0;
+    private float lastAppCpuPercent = 0f;
+
     private float getAppCpuUsage() {
-        return 0.5f; // Placeholder
+        // 真实实现：读取 /proc/<pid>/stat 的 utime+stime，结合两次采样的差值计算占用率
+        long now = System.nanoTime();
+        long totalTime = readProcessCpuTicks(android.os.Process.myPid());
+        if (totalTime <= 0) {
+            return lastAppCpuPercent; // 读取失败时保持上一次结果
+        }
+        long clockTicksPerSecond = sysconfClockTicksPerSecond();
+        if (lastAppCpuTotal > 0 && lastAppCpuTimestamp > 0 && clockTicksPerSecond > 0) {
+            long deltaTicks = totalTime - lastAppCpuTotal;
+            long deltaNanos = now - lastAppCpuTimestamp;
+            if (deltaNanos > 0 && deltaTicks >= 0) {
+                // 进程 CPU 时间（秒）= ticks / clockTicks；占用率 = 进程时间 / 实际墙钟时间 * 100
+                double cpuSeconds = deltaTicks / (double) clockTicksPerSecond;
+                double wallSeconds = deltaNanos / 1_000_000_000.0;
+                double cores = Math.max(1L, Runtime.getRuntime().availableProcessors());
+                double usage = (cpuSeconds / wallSeconds) * 100.0 / cores;
+                if (usage >= 0 && usage <= 100) {
+                    lastAppCpuPercent = (float) usage;
+                }
+            }
+        }
+        lastAppCpuTotal = totalTime;
+        lastAppCpuTimestamp = now;
+        return lastAppCpuPercent;
+    }
+
+    /**
+     * 读取 /proc/<pid>/stat，提取 utime（第 14 字段）+ stime（第 15 字段）作为进程 CPU 时钟 tick 数。
+     * 由于进程名可能包含空格或括号，使用最后一个 ')' 定位字段起始。
+     */
+    private long readProcessCpuTicks(int pid) {
+        if (pid <= 0) return -1;
+        File stat = new File("/proc/" + pid + "/stat");
+        if (!stat.exists() || !stat.canRead()) return -1;
+        try (BufferedReader reader = new BufferedReader(new FileReader(stat))) {
+            String line = reader.readLine();
+            if (line == null) return -1;
+            int rParen = line.lastIndexOf(')');
+            if (rParen < 0 || rParen >= line.length() - 1) return -1;
+            // 进程名字段在第 2 个字段（"(" 和 ")" 包裹），因此从 ')' 后开始拆分
+            String[] tokens = line.substring(rParen + 1).trim().split("\\s+");
+            // tokens[0] = 状态（字段 3），向后偏移到字段 13 = utime，字段 14 = stime
+            // 字段 3 = state → tokens[0]
+            // 字段 4 = ppid → tokens[1]
+            // 字段 5 = pgrp
+            // 字段 6 = session
+            // 字段 7 = tty_nr
+            // 字段 8 = tpgid
+            // 字段 9 = flags
+            // 字段 10 = minflt
+            // 字段 11 = cminflt
+            // 字段 12 = majflt
+            // 字段 13 = cmajflt
+            // 字段 14 = utime
+            // 字段 15 = stime
+            if (tokens.length < 13) return -1;
+            long utime;
+            long stime;
+            try {
+                utime = Long.parseLong(tokens[11]);
+                stime = Long.parseLong(tokens[12]);
+            } catch (NumberFormatException nfe) {
+                return -1;
+            }
+            return utime + stime;
+        } catch (IOException io) {
+            return -1;
+        }
+    }
+
+    private long sysconfClockTicksPerSecond() {
+        // 优先读 /proc/self/kernel/clocktick，兜底 100（Linux 默认）
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/kernel/clocktick"))) {
+            String line = reader.readLine();
+            if (line != null && !line.isEmpty()) {
+                String[] kv = line.split(":");
+                if (kv.length == 2) {
+                    return Long.parseLong(kv[1].trim());
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return 100L;
     }
 
     private long getAppMemoryUsage() {
@@ -220,6 +306,55 @@ public class PerformanceFragment extends Fragment {
             tvGpuRenderer.setText("Unknown");
             tvOpenglVersion.setText("Unknown");
         }
-        tvVulkanVersion.setText("N/A");
+        // 真实检测 Vulkan 版本：优先系统属性 ro.hardware.vulkan，其次通过反射调用 Vk API
+        tvVulkanVersion.setText(detectVulkanVersion());
+    }
+
+    /**
+     * 检测设备 Vulkan 支持版本。优先读取系统属性 ro.hardware.vulkan 与 device_api，
+     * 兜底为 "N/A"。
+     */
+    private String detectVulkanVersion() {
+        // 1) 系统属性 ro.hardware.vulkan（部分设备厂商写入，形如 "1.1.128"）
+        String v = readSystemProperty("ro.hardware.vulkan");
+        if (v != null && !v.isEmpty() && !"unknown".equalsIgnoreCase(v)) {
+            return v;
+        }
+        // 2) Android device_api 中设备可选 API 列表（仅在 Android 11+ 可用）
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                android.content.pm.PackageManager pm = requireContext().getPackageManager();
+                boolean hasVulkan1_1 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.1");
+                boolean hasVulkan1_2 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.2");
+                boolean hasVulkan1_3 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.3");
+                if (hasVulkan1_3) return "1.3";
+                if (hasVulkan1_2) return "1.2";
+                if (hasVulkan1_1) return "1.1";
+                boolean hasVulkan1_0 = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL, "1.0");
+                if (hasVulkan1_0) return "1.0";
+            }
+        } catch (Throwable ignored) {
+        }
+        // 3) 旧 API 仅有布尔支持
+        try {
+            android.content.pm.PackageManager pm = requireContext().getPackageManager();
+            if (pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL)) {
+                return "1.0";
+            }
+        } catch (Throwable ignored) {
+        }
+        return "N/A";
+    }
+
+    @android.annotation.SuppressLint("PrivateApi")
+    private String readSystemProperty(String key) {
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = sp.getMethod("get", String.class);
+            Object value = get.invoke(null, key);
+            return value != null ? value.toString() : null;
+        } catch (Throwable t) {
+            return null;
+        }
     }
 }
