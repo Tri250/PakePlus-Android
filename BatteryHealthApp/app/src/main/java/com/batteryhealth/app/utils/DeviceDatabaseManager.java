@@ -28,6 +28,7 @@ public class DeviceDatabaseManager {
     private static final String ASSET_FILE = "device_database.json";
 
     private static volatile DeviceDatabaseManager instance;
+    private final Object dbLock = new Object();
     private volatile DeviceDatabase database;
     private final CountDownLatch loadLatch = new CountDownLatch(1);
 
@@ -35,25 +36,35 @@ public class DeviceDatabaseManager {
     private volatile DeviceEntry cachedDeviceEntry;
     private volatile boolean deviceEntrySearched = false;
 
-    public static synchronized DeviceDatabaseManager getInstance(Context context) {
-        if (instance == null) {
-            instance = new DeviceDatabaseManager(context.getApplicationContext());
+    public static DeviceDatabaseManager getInstance(Context context) {
+        DeviceDatabaseManager result = instance;
+        if (result != null) return result;
+        synchronized (DeviceDatabaseManager.class) {
+            if (instance == null) {
+                instance = new DeviceDatabaseManager(context.getApplicationContext());
+            }
+            return instance;
         }
-        return instance;
     }
 
     private DeviceDatabaseManager(final Context context) {
         // 在后台线程异步加载，避免 Application.onCreate 阻塞主线程
-        new Thread(() -> {
+        Thread loader = new Thread(() -> {
             try {
                 loadDatabase(context);
             } finally {
                 loadLatch.countDown();
             }
-        }, "DeviceDbLoader").start();
+        }, "DeviceDbLoader");
+        loader.setDaemon(true);
+        loader.start();
     }
 
     private void loadDatabase(Context context) {
+        if (context == null) {
+            database = newEmptyDatabase();
+            return;
+        }
         try (InputStream is = context.getAssets().open(ASSET_FILE);
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[8192];
@@ -62,28 +73,33 @@ public class DeviceDatabaseManager {
                 baos.write(buffer, 0, read);
             }
             String json = baos.toString(StandardCharsets.UTF_8.name());
-            database = new Gson().fromJson(json, DeviceDatabase.class);
-            if (database == null) {
-                database = new DeviceDatabase();
+            DeviceDatabase parsed = new Gson().fromJson(json, DeviceDatabase.class);
+            if (parsed == null) {
+                parsed = newEmptyDatabase();
+            } else {
+                if (parsed.devices == null) parsed.devices = new ArrayList<>();
+                if (parsed.brands == null) parsed.brands = new ArrayList<>();
             }
-            if (database.devices == null) {
-                database.devices = new ArrayList<>();
-            }
-            if (database.brands == null) {
-                database.brands = new ArrayList<>();
-            }
+            database = parsed;
             Log.i(TAG, "Loaded device database: " + database.devices.size() + " entries");
         } catch (Exception e) {
             Log.e(TAG, "Failed to load device database", e);
-            database = new DeviceDatabase();
-            database.devices = new ArrayList<>();
-            database.brands = new ArrayList<>();
+            database = newEmptyDatabase();
         }
+    }
+
+    private static DeviceDatabase newEmptyDatabase() {
+        DeviceDatabase db = new DeviceDatabase();
+        db.devices = new ArrayList<>();
+        db.brands = new ArrayList<>();
+        return db;
     }
 
     private void awaitLoaded() {
         try {
-            loadLatch.await(2, TimeUnit.SECONDS);
+            if (!loadLatch.await(2, TimeUnit.SECONDS)) {
+                Log.w(TAG, "Database load timed out");
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -92,86 +108,91 @@ public class DeviceDatabaseManager {
     /**
      * 根据 Build.MODEL 或 Build.DEVICE 匹配机型。
      * 支持：精确 model 匹配、codename 匹配、market_name 匹配、品牌+型号关键词模糊匹配。
-     * Result is cached after first lookup.
+     * Result is cached after first lookup. Thread-safe.
      */
     public DeviceEntry findDevice() {
         if (deviceEntrySearched) {
             return cachedDeviceEntry;
         }
-        awaitLoaded();
-        if (database == null || database.devices == null) {
-            deviceEntrySearched = true;
-            return null;
-        }
-        String rawModel = Build.MODEL != null ? Build.MODEL : "";
-        String rawDevice = Build.DEVICE != null ? Build.DEVICE : "";
-        String rawBrand = Build.BRAND != null ? Build.BRAND : "";
-
-        String modelNorm = normalizeModel(rawModel);
-        String deviceNorm = normalizeModel(rawDevice);
-        String brandNorm = normalizeBrand(rawBrand);
-
-        DeviceEntry result = null;
-
-        // 1. 精确匹配 model（忽略大小写/空格）
-        for (DeviceEntry entry : database.devices) {
-            if (entry.model != null && normalizeModel(entry.model).equals(modelNorm)) {
-                result = entry;
-                break;
+        synchronized (dbLock) {
+            if (deviceEntrySearched) {
+                return cachedDeviceEntry;
             }
-        }
+            awaitLoaded();
+            if (database == null || database.devices == null) {
+                deviceEntrySearched = true;
+                return null;
+            }
+            String rawModel = Build.MODEL != null ? Build.MODEL : "";
+            String rawDevice = Build.DEVICE != null ? Build.DEVICE : "";
+            String rawBrand = Build.BRAND != null ? Build.BRAND : "";
 
-        // 2. 精确匹配 marketing name（中文 model 常见于国产 ROM）
-        if (result == null) {
+            String modelNorm = normalizeModel(rawModel);
+            String deviceNorm = normalizeModel(rawDevice);
+            String brandNorm = normalizeBrand(rawBrand);
+
+            DeviceEntry result = null;
+
+            // 1. 精确匹配 model（忽略大小写/空格）
             for (DeviceEntry entry : database.devices) {
-                if (entry.marketName != null && normalizeModel(entry.marketName).equals(modelNorm)) {
+                if (entry.model != null && normalizeModel(entry.model).equals(modelNorm)) {
                     result = entry;
                     break;
                 }
             }
-        }
 
-        // 3. 匹配 codename/device
-        if (result == null) {
-            for (DeviceEntry entry : database.devices) {
-                if (entry.codename != null && !entry.codename.equalsIgnoreCase("unknown")) {
-                    String codeNorm = entry.codename.toLowerCase(Locale.ROOT);
-                    if (codeNorm.equals(deviceNorm) || deviceNorm.contains(codeNorm)) {
+            // 2. 精确匹配 marketing name（中文 model 常见于国产 ROM）
+            if (result == null) {
+                for (DeviceEntry entry : database.devices) {
+                    if (entry.marketName != null && normalizeModel(entry.marketName).equals(modelNorm)) {
                         result = entry;
                         break;
                     }
                 }
             }
-        }
 
-        // 4. 模糊匹配：品牌 + 型号关键词
-        if (result == null) {
-            for (DeviceEntry entry : database.devices) {
-                if (entry.brand != null) {
-                    String entryBrandNorm = normalizeBrand(entry.brand);
-                    if (brandNorm.contains(entryBrandNorm) || entryBrandNorm.contains(brandNorm)) {
-                        if (entry.model != null) {
-                            String keyword = extractModelKeyword(entry.model);
-                            if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
-                                result = entry;
-                                break;
-                            }
+            // 3. 匹配 codename/device
+            if (result == null) {
+                for (DeviceEntry entry : database.devices) {
+                    if (entry.codename != null && !entry.codename.equalsIgnoreCase("unknown")) {
+                        String codeNorm = entry.codename.toLowerCase(Locale.ROOT);
+                        if (codeNorm.equals(deviceNorm) || deviceNorm.contains(codeNorm)) {
+                            result = entry;
+                            break;
                         }
-                        if (result == null && entry.marketName != null) {
-                            String keyword = extractModelKeyword(entry.marketName);
-                            if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
-                                result = entry;
-                                break;
+                    }
+                }
+            }
+
+            // 4. 模糊匹配：品牌 + 型号关键词
+            if (result == null) {
+                for (DeviceEntry entry : database.devices) {
+                    if (entry.brand != null) {
+                        String entryBrandNorm = normalizeBrand(entry.brand);
+                        if (brandNorm.contains(entryBrandNorm) || entryBrandNorm.contains(brandNorm)) {
+                            if (entry.model != null) {
+                                String keyword = extractModelKeyword(entry.model);
+                                if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
+                                    result = entry;
+                                    break;
+                                }
+                            }
+                            if (entry.marketName != null) {
+                                String keyword = extractModelKeyword(entry.marketName);
+                                if (!keyword.isEmpty() && modelNorm.contains(keyword)) {
+                                    result = entry;
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        cachedDeviceEntry = result;
-        deviceEntrySearched = true;
-        return result;
+            cachedDeviceEntry = result;
+            deviceEntrySearched = true;
+            return result;
+        }
     }
 
     private String normalizeModel(String model) {
@@ -284,8 +305,9 @@ public class DeviceDatabaseManager {
 
     public List<DeviceEntry> getAllDevices() {
         awaitLoaded();
-        if (database != null && database.devices != null) {
-            return Collections.unmodifiableList(database.devices);
+        DeviceDatabase db = database;
+        if (db != null && db.devices != null) {
+            return Collections.unmodifiableList(db.devices);
         }
         return Collections.emptyList();
     }

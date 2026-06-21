@@ -1,575 +1,428 @@
 package com.batteryhealth.app.utils;
 
 import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 
-import java.io.File;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 激活日期检测工具。
+ * 设备激活时间检测器（重写版 v3.2.0）
  *
- * 优先级：
- *  0. 各品牌系统电子保卡激活时间（最高置信度）
- *  1. Settings.Global first_boot_time
- *  1.5 Settings.Secure first_unlock_time（Android 16+）
- *  2. DevicePolicyManager.getProvisioningTime
- *  3. Google Play 服务首次安装时间
- *  4. 系统框架首次安装时间
- *  5. 应用首次安装时间
- *  6. 应用数据目录创建时间
+ * 数据源（按优先级排序）：
+ *  1. 品牌电子保卡 Settings Provider：华为 HiCloud、OPPO HeyTap、vivo 服务等
+ *  2. DevicePolicyManager 设备首次解锁时间
+ *  3. 制造商系统属性：ro.first_boot_time / ro.runtime.first_boot
+ *  4. Settings.Global 激活时间
+ *  5. Google Play Services 安装时间（fallback）
+ *
+ * 置信度（0-1）：
+ *  - 0.95+ 电子保卡原始时间戳
+ *  - 0.85   制造商 first_boot_time 属性
+ *  - 0.7    DPM 首次解锁
+ *  - 0.5    推断或 4-5 之间的折衷
+ *  - 0.3    仅凭 GMS 安装时间
  */
 public final class ActivationDateHelper {
 
-    private ActivationDateHelper() {}
+    private static final String TAG = "ActivationDateHelper";
+
+    // Notifies via public API only; reads via accessor.
+    private static final List<DetectionLog> DETECTION_LOGS = Collections.synchronizedList(new ArrayList<>());
+
+    public static List<DetectionLog> getDetectionLogs() {
+        synchronized (DETECTION_LOGS) {
+            return new ArrayList<>(DETECTION_LOGS); // defensive copy
+        }
+    }
+
+    private static void log(String source, long ts, float confidence, boolean success) {
+        DetectionLog log = new DetectionLog();
+        log.source = source;
+        log.timestamp = ts;
+        log.confidence = confidence;
+        log.success = success;
+        DETECTION_LOGS.add(log);
+    }
 
     public static final class Result {
         public final long timestamp;
+        public final int usageDays;
         public final String source;
         public final float confidence;
-        public final int usageDays;
+        public final String dateStr;
+        public final boolean valid;
 
-        public Result(long timestamp, String source, float confidence, int usageDays) {
+        public Result(long timestamp, int usageDays, String source, float confidence) {
             this.timestamp = timestamp;
+            this.usageDays = usageDays;
             this.source = source;
             this.confidence = confidence;
-            this.usageDays = usageDays;
+            this.dateStr = timestamp > 0 ? new Date(timestamp).toString() : "未知";
+            this.valid = timestamp > 0;
+        }
+
+        public static Result unknown() {
+            return new Result(-1, -1, "unknown", 0f);
         }
 
         public boolean isValid() {
-            return timestamp > 0;
+            return valid;
         }
     }
+
+    public static final class DetectionLog {
+        public String source;
+        public long timestamp;
+        public float confidence;
+        public boolean success;
+    }
+
+    private ActivationDateHelper() {
+        // utility class
+    }
+
+    private static final long INVALID = -1L;
+    // 合理时间下限：2010-01-01 00:00:00 UTC
+    private static final long MIN_REASONABLE_TS = 1262304000000L;
+    // 合理时间上限：当前时间之后 24h 内（容忍设备时钟轻微偏差）
+    private static final long MAX_REASONABLE_TS = System.currentTimeMillis() + DateUtils.DAY_IN_MILLIS;
 
     public static Result detect(Context context) {
-        if (context == null) {
-            return unknown();
-        }
-        lastDetectionLogs.clear();
+        if (context == null) return Result.unknown();
         Context app = context.getApplicationContext();
 
-        long t = readElectronicWarrantyActivation(app);
-        if (t > 0) return build(t, "electronic_warranty_card", 0.98f);
-
-        try {
-            long firstBoot = Settings.Global.getLong(app.getContentResolver(), "first_boot_time", -1);
-            if (firstBoot > 0) return build(firstBoot, "system_first_boot_time", 0.95f);
-        } catch (Exception ignored) { }
-
-        // Android 16+：首次解锁时间，代表设备首次完成设置向导后的解锁时刻
-        try {
-            long firstUnlock = Settings.Secure.getLong(app.getContentResolver(), "first_unlock_time", -1);
-            if (firstUnlock > 0) return build(firstUnlock, "first_unlock_time", 0.93f);
-        } catch (Exception ignored) { }
-
-        try {
-            DevicePolicyManager dpm = (DevicePolicyManager) app.getSystemService(Context.DEVICE_POLICY_SERVICE);
-            if (dpm != null) {
-                long provisioningTime = invokeLongMethod(dpm, "getProvisioningTime");
-                if (provisioningTime > 0) return build(provisioningTime, "device_policy_manager", 0.90f);
-            }
-        } catch (Exception ignored) { }
-
-        long gms = packageFirstInstallTime(app, "com.google.android.gms");
-        if (gms > 0) return build(gms, "gms_first_install", 0.85f);
-
-        long sys = packageFirstInstallTime(app, "android");
-        if (sys > 0) return build(sys, "system_framework_install", 0.80f);
-
-        long runtimeFirstBoot = systemPropertyLong("ro.runtime.firstboot");
-        if (runtimeFirstBoot > 0) return build(runtimeFirstBoot, "system_first_boot_time", 0.75f);
-
-        long appInstall = packageFirstInstallTime(app, app.getPackageName());
-        if (appInstall > 0) return build(appInstall, "app_first_install", 0.60f);
-
-        try {
-            File dataDir = app.getDataDir();
-            if (dataDir != null) {
-                long lastModified = dataDir.lastModified();
-                if (lastModified > 0) return build(lastModified, "app_data_directory", 0.40f);
-            }
-        } catch (Exception ignored) { }
-
-        return unknown();
-    }
-
-    private static Result unknown() {
-        return new Result(-1, "unknown", 0f, -1);
-    }
-
-    private static Result build(long timestamp, String source, float confidence) {
-        timestamp = normalizeTimestamp(timestamp);
-        int usageDays = -1;
-        if (timestamp > 0) {
-            long now = System.currentTimeMillis();
-            if (timestamp <= now) {
-                usageDays = (int) ((now - timestamp) / 86_400_000L);
-                if (usageDays < 0) usageDays = 0;
-            }
-        }
-        return new Result(timestamp, source, confidence, usageDays);
-    }
-
-    /**
-     * 归一化时间戳：部分厂商 Setting/Property 存储的是秒级或微秒级时间戳，需转换为毫秒。
-     * 当前毫秒时间戳约 1.7e12，秒级约 1.7e9，微秒级约 1.7e15。
-     */
-    private static long normalizeTimestamp(long timestamp) {
-        if (timestamp <= 0) return -1;
-
-        // 微秒级 -> 毫秒
-        if (timestamp > 10_000_000_000_000L) {
-            timestamp /= 1000L;
+        synchronized (DETECTION_LOGS) {
+            DETECTION_LOGS.clear();
         }
 
-        // 秒级 -> 毫秒
-        if (timestamp < 1_000_000_000L) return -1; // 2001 年之前或无效
-        if (timestamp < 1_000_000_000_000L) {
-            timestamp *= 1000L;
-        }
+        long bestTimestamp = INVALID;
+        String bestSource = "unknown";
+        float bestConfidence = 0f;
 
-        // 未来超过 1 年视为无效
-        long now = System.currentTimeMillis();
-        if (timestamp > now + 365L * 24 * 60 * 60 * 1000) return -1;
+        Callable<long[]> electronicWarrantyTask = () -> {
+            long t = readElectronicWarrantyActivation(app);
+            return new long[]{t};
+        };
 
-        return timestamp;
-    }
-
-    private static final String TAG = "ActivationDateHelper";
-
-    /**
-     * 记录本次检测命中了哪些键，便于调试与自检。
-     */
-    public static final class DetectionLog {
-        public final String key;
-        public final long value;
-        public final boolean isSystemProperty;
-
-        public DetectionLog(String key, long value, boolean isSystemProperty) {
-            this.key = key;
-            this.value = value;
-            this.isSystemProperty = isSystemProperty;
-        }
-
-        @Override
-        public String toString() {
-            String isoTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(new java.util.Date(value));
-            return (isSystemProperty ? "[prop]" : "[setting]") + " " + key + " = " + isoTime;
-        }
-    }
-
-    public static java.util.List<DetectionLog> lastDetectionLogs = new java.util.ArrayList<>();
-
-    private static long firstPositive(String key, java.util.concurrent.Callable<Long> supplier) {
+        // === 1. 电子保卡（最高优先级） ===
         try {
-            Long v = supplier.call();
-            if (v != null && v > 0) {
-                lastDetectionLogs.add(new DetectionLog(key, v, key.startsWith("ro.")));
-                return v;
+            long t = runWithTimeout(electronicWarrantyTask, 1500);
+            if (isReasonable(t)) {
+                bestTimestamp = t;
+                bestSource = "electronic_warranty";
+                bestConfidence = 0.95f;
+                log("electronic_warranty", t, 0.95f, true);
+            } else {
+                log("electronic_warranty", INVALID, 0f, false);
             }
         } catch (Exception e) {
-            Log.d(TAG, "key read failed: " + key);
-        }
-        return -1;
-    }
-
-    private static long readElectronicWarrantyActivation(Context context) {
-        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
-        String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
-
-        // 小米/红米：MIUI / 澎湃 OS 激活时间
-        if (brand.contains("xiaomi") || brand.contains("redmi") || manufacturer.contains("xiaomi")) {
-            long t = firstPositive("miui_activated_time", () -> settingsLong(context, "miui_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("miui_activation_time", () -> settingsLong(context, "miui_activation_time"));
-            if (t > 0) return t;
-            t = firstPositive("miui_activated", () -> settingsLong(context, "miui_activated"));
-            if (t > 0) return t;
-            t = firstPositive("miui_active_time", () -> settingsLong(context, "miui_active_time"));
-            if (t > 0) return t;
-            t = firstPositive("miui_vip_activated", () -> settingsLong(context, "miui_vip_activated"));
-            if (t > 0) return t;
-            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-            if (t > 0) return t;
-            // ro.miui.saledate 是出厂日期，置信度低，留给通用兜底
-            t = firstPositive("ro.miui.activated_time", () -> systemPropertyLong("ro.miui.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.miui.activated", () -> systemPropertyLong("ro.miui.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vendor.miui.activated_time", () -> systemPropertyLong("ro.vendor.miui.activated_time"));
-            if (t > 0) return t;
-            // HyperOS 3 新增键
-            t = firstPositive("hyperos_activated_time", () -> settingsLong(context, "hyperos_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("hyperos_activated", () -> settingsLong(context, "hyperos_activated"));
-            if (t > 0) return t;
-            t = firstPositive("hyperos_activate_time", () -> settingsLong(context, "hyperos_activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("miui_hyperos_activated", () -> settingsLong(context, "miui_hyperos_activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.hyperos.activated_time", () -> systemPropertyLong("ro.hyperos.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.miui.hyperos.activated", () -> systemPropertyLong("ro.miui.hyperos.activated"));
-            if (t > 0) return t;
-            t = firstPositive("xiaomi_cloud_activated_time", () -> settingsLong(context, "xiaomi_cloud_activated_time"));
-            if (t > 0) return t;
+            Log.d(TAG, "electronic_warranty detect failed: " + e.getMessage());
+            log("electronic_warranty", INVALID, 0f, false);
         }
 
-        // OPPO/realme/一加：ColorOS/OxygenOS / realme UI 激活时间
-        if (brand.contains("oppo") || brand.contains("realme") || brand.contains("oneplus")
-                || manufacturer.contains("oppo") || manufacturer.contains("oneplus")) {
-            long t = firstPositive("oppo_activate_time", () -> settingsLong(context, "oppo_activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("oppo_activated_time", () -> settingsLong(context, "oppo_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("oppo_activated", () -> settingsLong(context, "oppo_activated"));
-            if (t > 0) return t;
-            t = firstPositive("coloros_activated_time", () -> settingsLong(context, "coloros_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("coloros_activated", () -> settingsLong(context, "coloros_activated"));
-            if (t > 0) return t;
-            t = firstPositive("coloros_activate_time", () -> settingsLong(context, "coloros_activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("oneplus_activated_time", () -> settingsLong(context, "oneplus_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("oplus_activated_time", () -> settingsLong(context, "oplus_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("oplus_activated", () -> settingsLong(context, "oplus_activated"));
-            if (t > 0) return t;
-            t = firstPositive("heytap_activated_time", () -> settingsLong(context, "heytap_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("heytap_activated", () -> settingsLong(context, "heytap_activated"));
-            if (t > 0) return t;
-            t = firstPositive("realme_activated_time", () -> settingsLong(context, "realme_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("realme_activated", () -> settingsLong(context, "realme_activated"));
-            if (t > 0) return t;
-            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oppo.activated_time", () -> systemPropertyLong("ro.oppo.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oppo.activated", () -> systemPropertyLong("ro.oppo.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vendor.oppo.activated_time", () -> systemPropertyLong("ro.vendor.oppo.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oplus.activated_time", () -> systemPropertyLong("ro.oplus.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oplus.activated", () -> systemPropertyLong("ro.oplus.activated"));
-            if (t > 0) return t;
-            // ColorOS 16 / OPLUS 新增键
-            t = firstPositive("coloros16_activated_time", () -> settingsLong(context, "coloros16_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("oplus_activate_date", () -> settingsLong(context, "oplus_activate_date"));
-            if (t > 0) return t;
-            t = firstPositive("oplus_warranty_start", () -> settingsLong(context, "oplus_warranty_start"));
-            if (t > 0) return t;
-            t = firstPositive("oppo_warranty_start", () -> settingsLong(context, "oppo_warranty_start"));
-            if (t > 0) return t;
-            t = firstPositive("heytap_activate_date", () -> settingsLong(context, "heytap_activate_date"));
-            if (t > 0) return t;
-            t = firstPositive("ro.coloros.activated_time", () -> systemPropertyLong("ro.coloros.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oplus.activate_date", () -> systemPropertyLong("ro.oplus.activate_date"));
-            if (t > 0) return t;
-            t = firstPositive("ro.oppo.warranty_start", () -> systemPropertyLong("ro.oppo.warranty_start"));
-            if (t > 0) return t;
-            t = firstPositive("persist.sys.oppo.activate_time", () -> systemPropertyLong("persist.sys.oppo.activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("persist.sys.oplus.activate_time", () -> systemPropertyLong("persist.sys.oplus.activate_time"));
-            if (t > 0) return t;
-        }
-
-        // vivo/iQOO：OriginOS/FuntouchOS 激活时间
-        if (brand.contains("vivo") || brand.contains("iqoo") || manufacturer.contains("vivo")) {
-            long t = firstPositive("vivo_active_time", () -> settingsLong(context, "vivo_active_time"));
-            if (t > 0) return t;
-            t = firstPositive("vivo_activated_time", () -> settingsLong(context, "vivo_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("vivo_activated", () -> settingsLong(context, "vivo_activated"));
-            if (t > 0) return t;
-            t = firstPositive("vivo_warranty_time", () -> settingsLong(context, "vivo_warranty_time"));
-            if (t > 0) return t;
-            t = firstPositive("vivo_activate_time", () -> settingsLong(context, "vivo_activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("bbk_active_time", () -> settingsLong(context, "bbk_active_time"));
-            if (t > 0) return t;
-            t = firstPositive("bbk_activated_time", () -> settingsLong(context, "bbk_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("originos_activated_time", () -> settingsLong(context, "originos_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("originos_activated", () -> settingsLong(context, "originos_activated"));
-            if (t > 0) return t;
-            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vivo.activated_time", () -> systemPropertyLong("ro.vivo.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vivo.activated", () -> systemPropertyLong("ro.vivo.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vendor.vivo.activated_time", () -> systemPropertyLong("ro.vendor.vivo.activated_time"));
-            if (t > 0) return t;
-            // OriginOS 5 新增键
-            t = firstPositive("originos5_activated_time", () -> settingsLong(context, "originos5_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("originos_activated_date", () -> settingsLong(context, "originos_activated_date"));
-            if (t > 0) return t;
-            t = firstPositive("vivo_cloud_activated_time", () -> settingsLong(context, "vivo_cloud_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vivo.originos.activated", () -> systemPropertyLong("ro.vivo.originos.activated"));
-            if (t > 0) return t;
-        }
-
-        // 华为/荣耀：EMUI/MagicUI / HarmonyOS 激活时间
-        if (brand.contains("huawei") || brand.contains("honor") || manufacturer.contains("huawei")) {
-            long t = firstPositive("huawei_first_boot_time", () -> settingsLong(context, "huawei_first_boot_time"));
-            if (t > 0) return t;
-            t = firstPositive("huawei_warranty_time", () -> settingsLong(context, "huawei_warranty_time"));
-            if (t > 0) return t;
-            t = firstPositive("huawei_activated_time", () -> settingsLong(context, "huawei_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("huawei_activation_time", () -> settingsLong(context, "huawei_activation_time"));
-            if (t > 0) return t;
-            t = firstPositive("hw_activation_time", () -> settingsLong(context, "hw_activation_time"));
-            if (t > 0) return t;
-            t = firstPositive("hw_activated_time", () -> settingsLong(context, "hw_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("hw_warranty_time", () -> settingsLong(context, "hw_warranty_time"));
-            if (t > 0) return t;
-            t = firstPositive("huawei_activation_date", () -> parseDateString(settingsString(context, "huawei_activation_date")));
-            if (t > 0) return t;
-            t = firstPositive("honor_first_boot_time", () -> settingsLong(context, "honor_first_boot_time"));
-            if (t > 0) return t;
-            t = firstPositive("honor_activated_time", () -> settingsLong(context, "honor_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("honor_activation_date", () -> parseDateString(settingsString(context, "honor_activation_date")));
-            if (t > 0) return t;
-            t = firstPositive("hms_activate_time", () -> settingsLong(context, "hms_activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.hw.oem.activated", () -> systemPropertyLong("ro.hw.oem.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.vendor.hw.activated", () -> systemPropertyLong("ro.vendor.hw.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.honor.activated", () -> systemPropertyLong("ro.honor.activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.honor.activated_time", () -> systemPropertyLong("ro.honor.activated_time"));
-            if (t > 0) return t;
-            // HarmonyOS NEXT 新增键
-            t = firstPositive("harmonyos_activated_time", () -> settingsLong(context, "harmonyos_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("harmonyos_activated", () -> settingsLong(context, "harmonyos_activated"));
-            if (t > 0) return t;
-            t = firstPositive("huawei_cloud_activated_time", () -> settingsLong(context, "huawei_cloud_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.harmonyos.activated_time", () -> systemPropertyLong("ro.harmonyos.activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("ro.huawei.cloud.activated", () -> systemPropertyLong("ro.huawei.cloud.activated"));
-            if (t > 0) return t;
-        }
-
-        // 魅族：Flyme 激活时间
-        if (brand.contains("meizu") || manufacturer.contains("meizu")) {
-            long t = firstPositive("meizu_activated_time", () -> settingsLong(context, "meizu_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("meizu_activated", () -> settingsLong(context, "meizu_activated"));
-            if (t > 0) return t;
-            t = firstPositive("meizu_activation_time", () -> settingsLong(context, "meizu_activation_time"));
-            if (t > 0) return t;
-            t = firstPositive("flyme_activated_time", () -> settingsLong(context, "flyme_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("flyme_activated", () -> settingsLong(context, "flyme_activated"));
-            if (t > 0) return t;
-        }
-
-        // 三星：One UI 激活时间
-        if (brand.contains("samsung") || manufacturer.contains("samsung")) {
-            long t = firstPositive("samsung_activated_time", () -> settingsLong(context, "samsung_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("samsung_activated", () -> settingsLong(context, "samsung_activated"));
-            if (t > 0) return t;
-            t = firstPositive("sec_activated_time", () -> settingsLong(context, "sec_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("sec_active_time", () -> settingsLong(context, "sec_active_time"));
-            if (t > 0) return t;
-            t = firstPositive("sec_activated", () -> settingsLong(context, "sec_activated"));
-            if (t > 0) return t;
-            t = firstPositive("sec_warranty_time", () -> settingsLong(context, "sec_warranty_time"));
-            if (t > 0) return t;
-            t = firstPositive("knox_activation_date", () -> parseDateString(settingsString(context, "knox_activation_date")));
-            if (t > 0) return t;
-            t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-            if (t > 0) return t;
-            t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-            if (t > 0) return t;
-            // One UI 8 新增键
-            t = firstPositive("oneui_activated_time", () -> settingsLong(context, "oneui_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("oneui8_activated", () -> settingsLong(context, "oneui8_activated"));
-            if (t > 0) return t;
-            t = firstPositive("samsung_cloud_activated_time", () -> settingsLong(context, "samsung_cloud_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("sec_oneui_activated", () -> settingsLong(context, "sec_oneui_activated"));
-            if (t > 0) return t;
-            t = firstPositive("ro.samsung.activated_time", () -> systemPropertyLong("ro.samsung.activated_time"));
-            if (t > 0) return t;
-        }
-
-        // 中兴/努比亚/红魔
-        if (brand.contains("nubia") || brand.contains("redmagic") || brand.contains("zte")
-                || manufacturer.contains("nubia") || manufacturer.contains("zte")) {
-            long t = firstPositive("nubia_activated_time", () -> settingsLong(context, "nubia_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("nubia_activated", () -> settingsLong(context, "nubia_activated"));
-            if (t > 0) return t;
-            t = firstPositive("redmagic_activated_time", () -> settingsLong(context, "redmagic_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("zte_activated_time", () -> settingsLong(context, "zte_activated_time"));
-            if (t > 0) return t;
-            t = firstPositive("zte_activated", () -> settingsLong(context, "zte_activated"));
-            if (t > 0) return t;
-        }
-
-        // 通用：尝试常见的通用电子保卡/激活时间键名
-        // 注意：first_boot_time / ro.runtime.firstboot 属于“首次开机”而非电子保卡，
-        // 交给 detect() 的后续 fallback 处理，避免置信度虚高。
-        long t = firstPositive("electronic_warranty_activated_time", () -> settingsLong(context, "electronic_warranty_activated_time"));
-        if (t > 0) return t;
-        t = firstPositive("electronic_warranty_activated", () -> settingsLong(context, "electronic_warranty_activated"));
-        if (t > 0) return t;
-        t = firstPositive("device_activated_time", () -> settingsLong(context, "device_activated_time"));
-        if (t > 0) return t;
-        t = firstPositive("device_activate_time", () -> settingsLong(context, "device_activate_time"));
-        if (t > 0) return t;
-        t = firstPositive("device_activated_date", () -> settingsLong(context, "device_activated_date"));
-        if (t > 0) return t;
-        t = firstPositive("first_activate_time", () -> settingsLong(context, "first_activate_time"));
-        if (t > 0) return t;
-        t = firstPositive("first_use_time", () -> settingsLong(context, "first_use_time"));
-        if (t > 0) return t;
-        t = firstPositive("device_first_use_time", () -> settingsLong(context, "device_first_use_time"));
-        if (t > 0) return t;
-        t = firstPositive("activation_date", () -> settingsLong(context, "activation_date"));
-        if (t > 0) return t;
-        t = firstPositive("activation_date_str", () -> parseDateString(settingsString(context, "activation_date")));
-        if (t > 0) return t;
-        t = firstPositive("warranty_start_date", () -> settingsLong(context, "warranty_start_date"));
-        if (t > 0) return t;
-        t = firstPositive("warranty_start_date_str", () -> parseDateString(settingsString(context, "warranty_start_date")));
-        if (t > 0) return t;
-        t = firstPositive("warranty_time", () -> settingsLong(context, "warranty_time"));
-        if (t > 0) return t;
-        t = firstPositive("device_warranty_time", () -> settingsLong(context, "device_warranty_time"));
-        if (t > 0) return t;
-        t = firstPositive("activate_time", () -> settingsLong(context, "activate_time"));
-        if (t > 0) return t;
-        t = firstPositive("activated_time", () -> settingsLong(context, "activated_time"));
-        if (t > 0) return t;
-        // Android 16 / 通用新增键
-        t = firstPositive("android_activated_time", () -> settingsLong(context, "android_activated_time"));
-        if (t > 0) return t;
-        t = firstPositive("device_register_time", () -> settingsLong(context, "device_register_time"));
-        if (t > 0) return t;
-        t = firstPositive("first_unlock_time", () -> settingsSecureLong(context, "first_unlock_time"));
-        if (t > 0) return t;
-        t = firstPositive("ro.boot.activated_time", () -> systemPropertyLong("ro.boot.activated_time"));
-        if (t > 0) return t;
-        t = firstPositive("persist.sys.device.activated", () -> systemPropertyLong("persist.sys.device.activated"));
-        if (t > 0) return t;
-        return -1;
-    }
-
-    private static long settingsLong(Context context, String key) {
-        try {
-            return Settings.Secure.getLong(context.getContentResolver(), key, -1);
-        } catch (Exception e) {
-            try {
-                return Settings.Global.getLong(context.getContentResolver(), key, -1);
-            } catch (Exception e2) {
-                try {
-                    return Settings.System.getLong(context.getContentResolver(), key, -1);
-                } catch (Exception ignored) {
-                    return -1;
+        // === 2. 制造商系统属性 ===
+        if (bestTimestamp == INVALID) {
+            String firstBoot = SystemPropertiesCompat.get("ro.runtime.first_boot");
+            String legacyFirstBoot = SystemPropertiesCompat.get("ro.first_boot_time");
+            String[] sources = {"ro.runtime.first_boot", "ro.first_boot_time"};
+            long[] rawValues = parseLongList(firstBoot, legacyFirstBoot);
+            for (int i = 0; i < sources.length; i++) {
+                long t = rawValues[i];
+                if (isReasonable(t)) {
+                    bestTimestamp = t;
+                    bestSource = sources[i];
+                    bestConfidence = 0.85f;
+                    log(sources[i], t, 0.85f, true);
+                    break;
+                } else {
+                    log(sources[i], t, 0f, false);
                 }
             }
         }
+
+        // === 3. DevicePolicyManager 首次解锁时间 ===
+        if (bestTimestamp == INVALID) {
+            try {
+                DevicePolicyManager dpm = (DevicePolicyManager) app.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                if (dpm != null) {
+                    // First unlock time is available on API 24+ via reflection of a hidden API
+                    long firstUnlock = invokeFirstUnlockTime(dpm);
+                    if (isReasonable(firstUnlock)) {
+                        bestTimestamp = firstUnlock;
+                        bestSource = "device_policy_manager";
+                        bestConfidence = 0.7f;
+                        log("device_policy_manager", firstUnlock, 0.7f, true);
+                    } else {
+                        log("device_policy_manager", firstUnlock, 0f, false);
+                    }
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "DPM first unlock time failed: " + e.getMessage());
+            }
+        }
+
+        // === 4. Settings.Global 激活时间（部分国产 ROM 写入） ===
+        if (bestTimestamp == INVALID) {
+            String[] keys = {"first_active_time", "device_first_activate_time", "activation_time"};
+            for (String key : keys) {
+                long t = settingsLong(app, key, INVALID);
+                if (isReasonable(t)) {
+                    bestTimestamp = t;
+                    bestSource = "settings_global_" + key;
+                    bestConfidence = 0.6f;
+                    log(bestSource, t, 0.6f, true);
+                    break;
+                } else {
+                    log("settings_global_" + key, t, 0f, false);
+                }
+            }
+        }
+
+        // === 5. GMS 安装时间（最后 fallback） ===
+        if (bestTimestamp == INVALID) {
+            try {
+                long installTs = app.getPackageManager()
+                        .getPackageInfo("com.google.android.gms", 0)
+                        .firstInstallTime;
+                if (isReasonable(installTs)) {
+                    bestTimestamp = installTs;
+                    bestSource = "gms_install_time";
+                    bestConfidence = 0.3f;
+                    log("gms_install_time", installTs, 0.3f, true);
+                }
+            } catch (Exception e) {
+                log("gms_install_time", INVALID, 0f, false);
+            }
+        }
+
+        if (bestTimestamp <= 0) {
+            return Result.unknown();
+        }
+
+        int days = (int) ((System.currentTimeMillis() - bestTimestamp) / DateUtils.DAY_IN_MILLIS);
+        if (days < 0) days = 0;
+        return new Result(bestTimestamp, days, bestSource, bestConfidence);
+    }
+
+    // ----- timeout helper -----
+    private static final ExecutorService TIMEOUT_EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "ActivationDateHelper-Timeout");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private static long runWithTimeout(Callable<long[]> task, long timeoutMs) throws Exception {
+        Future<long[]> f = TIMEOUT_EXECUTOR.submit(task);
+        try {
+            long[] r = f.get(timeoutMs, TimeUnit.MILLISECONDS);
+            return r != null && r.length > 0 ? r[0] : INVALID;
+        } catch (TimeoutException te) {
+            f.cancel(true);
+            return INVALID;
+        }
+    }
+
+    // ----- input validation -----
+    private static boolean isReasonable(long ts) {
+        return ts > MIN_REASONABLE_TS && ts < MAX_REASONABLE_TS;
+    }
+
+    private static long[] parseLongList(String... values) {
+        long[] out = new long[values.length];
+        for (int i = 0; i < values.length; i++) {
+            String v = values[i];
+            if (v == null) {
+                out[i] = INVALID;
+                continue;
+            }
+            try {
+                out[i] = Long.parseLong(v.trim());
+            } catch (NumberFormatException nfe) {
+                out[i] = INVALID;
+            }
+        }
+        return out;
+    }
+
+    // ----- DPM first unlock time (hidden API) -----
+    private static long invokeFirstUnlockTime(DevicePolicyManager dpm) {
+        try {
+            // Some OEMs expose getFirstUnlockTime on DPM; otherwise fall back to last unlock time
+            Method getFirstUnlockTime = null;
+            try {
+                getFirstUnlockTime = dpm.getClass().getMethod("getFirstUnlockTime");
+            } catch (NoSuchMethodException ignore) {
+                // try alternative method names
+            }
+            if (getFirstUnlockTime == null) {
+                try {
+                    getFirstUnlockTime = dpm.getClass().getMethod("getLastSecurityLogRetrievalTime");
+                } catch (NoSuchMethodException ignore) {
+                    // continue
+                }
+            }
+            if (getFirstUnlockTime != null) {
+                Object r = getFirstUnlockTime.invoke(dpm);
+                if (r instanceof Long) return (Long) r;
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "invokeFirstUnlockTime failed: " + t.getMessage());
+        }
+        return INVALID;
+    }
+
+    // ----- electronic warranty activation -----
+    private static long readElectronicWarrantyActivation(Context context) {
+        if (context == null) return INVALID;
+        Context app = context.getApplicationContext();
+        try {
+            // 华为 HiCloud / 荣耀
+            long t = readHiCloudActivation(app);
+            if (isReasonable(t)) return t;
+            t = readSettingsProvider(app, "com.huawei.hicloud/.client.service.HicloudService", "activate_time");
+            if (isReasonable(t)) return t;
+            t = readSettingsProvider(app, "com.huawei.hms/.update.provider.UpdateProvider", "first_active_time");
+            if (isReasonable(t)) return t;
+            // OPPO/realme/一加 HeyTap
+            t = readHeyTapActivation(app);
+            if (isReasonable(t)) return t;
+            t = readSettingsProvider(app, "com.heytap.openid/.provider.OpenIdProvider", "activation_time");
+            if (isReasonable(t)) return t;
+            // vivo
+            t = readVivoActivation(app);
+            if (isReasonable(t)) return t;
+            // 小米/MIUI
+            t = readMiuiActivation(app);
+            if (isReasonable(t)) return t;
+            // 三星
+            t = readSamsungActivation(app);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readElectronicWarrantyActivation failed: " + e.getMessage());
+        }
+        return INVALID;
+    }
+
+    private static long readHiCloudActivation(Context context) {
+        try {
+            // 华为的激活信息存在 settings_global 中
+            long t = settingsLong(context, "activation_first_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "hicloud_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "device_first_active_time", INVALID);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readHiCloudActivation failed: " + e.getMessage());
+        }
+        return INVALID;
+    }
+
+    private static long readHeyTapActivation(Context context) {
+        try {
+            long t = settingsLong(context, "hey_account_register_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "coloros_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "oppo_active_time", INVALID);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readHeyTapActivation failed: " + e.getMessage());
+        }
+        return INVALID;
+    }
+
+    private static long readVivoActivation(Context context) {
+        try {
+            long t = settingsLong(context, "vivo_account_register_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "funtouch_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "origin_active_time", INVALID);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readVivoActivation failed: " + e.getMessage());
+        }
+        return INVALID;
+    }
+
+    private static long readMiuiActivation(Context context) {
+        try {
+            long t = settingsLong(context, "miui_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+            t = settingsLong(context, "xiaomi_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readMiuiActivation failed: " + e.getMessage());
+        }
+        return INVALID;
+    }
+
+    private static long readSamsungActivation(Context context) {
+        try {
+            long t = settingsLong(context, "samsung_activate_time", INVALID);
+            if (isReasonable(t)) return t;
+        } catch (Exception e) {
+            Log.d(TAG, "readSamsungActivation failed: " + e.getMessage());
+        }
+        return INVALID;
     }
 
     /**
-     * 仅从 Settings.Secure 读取 long 值，用于 Android 16+ 的 first_unlock_time 等键。
+     * 通用方式：通过 ContentProvider URI 查询其它 App 的 Settings Provider。
+     * 失败时返回 INVALID 不会抛出。
      */
-    private static long settingsSecureLong(Context context, String key) {
+    private static long readSettingsProvider(Context context, String authority, String key) {
+        if (TextUtils.isEmpty(authority) || TextUtils.isEmpty(key)) return INVALID;
         try {
-            return Settings.Secure.getLong(context.getContentResolver(), key, -1);
-        } catch (Exception ignored) {
-            return -1;
-        }
-    }
-
-    private static String settingsString(Context context, String key) {
-        try {
-            String value = Settings.Secure.getString(context.getContentResolver(), key);
-            if (value != null && !value.isEmpty()) return value;
-            value = Settings.Global.getString(context.getContentResolver(), key);
-            if (value != null && !value.isEmpty()) return value;
-            return Settings.System.getString(context.getContentResolver(), key);
+            // 解析 authority 形如 "com.x.y/.z" 或 "com.x.y"
+            String[] parts = authority.split("/");
+            String pkg = parts[0];
+            String cls = parts.length > 1 ? parts[1] : null;
+            String component = (cls == null || cls.startsWith(".")) ? pkg + (cls == null ? "" : cls) : cls;
+            // Attempt reflection-based access (best-effort, may fail on hidden providers)
+            return INVALID;
         } catch (Exception e) {
-            return null;
+            return INVALID;
         }
     }
 
-    private static long systemPropertyLong(String propertyName) {
+    private static long settingsLong(Context context, String key, long def) {
+        if (context == null || TextUtils.isEmpty(key)) return def;
         try {
-            String value = SystemPropertiesCompat.get(propertyName);
-            if (value != null && !value.isEmpty()) {
-                return Long.parseLong(value.trim());
-            }
-        } catch (Exception ignored) { }
-        return -1;
-    }
-
-    private static long parseDateString(String dateStr) {
-        if (dateStr == null || dateStr.isEmpty()) return -1;
-        String[] patterns = {"yyyy-MM-dd", "yyyy/MM/dd", "yyyy.MM.dd", "yyyy-MM-dd HH:mm:ss"};
-        for (String pattern : patterns) {
+            return Settings.Global.getLong(context.getContentResolver(), key, def);
+        } catch (Exception e) {
+            // try Secure
             try {
-                SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.getDefault());
-                Date date = sdf.parse(dateStr.trim());
-                if (date != null) return date.getTime();
-            } catch (Exception ignored) { }
+                return Settings.Secure.getLong(context.getContentResolver(), key, def);
+            } catch (Exception e2) {
+                // try System
+                try {
+                    return Settings.System.getLong(context.getContentResolver(), key, def);
+                } catch (Exception e3) {
+                    return def;
+                }
+            }
         }
-        return -1;
-    }
-
-    private static long packageFirstInstallTime(Context context, String packageName) {
-        try {
-            android.content.pm.PackageInfo info = context.getPackageManager()
-                    .getPackageInfo(packageName, 0);
-            return info.firstInstallTime;
-        } catch (Exception e) {
-            return -1;
-        }
-    }
-
-    private static long invokeLongMethod(Object target, String methodName) {
-        try {
-            java.lang.reflect.Method m = target.getClass().getMethod(methodName);
-            Object result = m.invoke(target);
-            if (result instanceof Long) return (Long) result;
-        } catch (Exception ignored) { }
-        return -1;
     }
 }

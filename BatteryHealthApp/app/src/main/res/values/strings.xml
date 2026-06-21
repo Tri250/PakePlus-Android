@@ -230,4 +230,19 @@
     <string name="charging_monitor_notification_content_charging">充电中 %1$d%% · %2$.1fW · %3$s</string>
     <string name="charging_monitor_notification_content_idle">未充电 · 电量 %1$d%% · %2$s</string>
     <string name="charging_monitor_notification_title">充电监测中</string>
+
+    <!-- BugReport page -->
+    <string name="bug_report_title">BugReport 分析</string>
+    <string name="bug_report_subtitle">上传 bugreport 文件补充电池数据</string>
+    <string name="section_file_picker">文件选择</string>
+    <string name="action_select_bugreport_file">选择 BugReport 文件</string>
+    <string name="bug_report_parsing">正在解析…</string>
+    <string name="section_analysis_results">分析结果</string>
+    <string name="label_design_capacity">设计容量</string>
+    <string name="label_current_capacity">当前容量</string>
+    <string name="label_health_percent">健康度</string>
+    <string name="action_view_battery_health">查看电池健康</string>
+
+    <!-- Power page unit -->
+    <string name="unit_watt">W</string>
 </resources>

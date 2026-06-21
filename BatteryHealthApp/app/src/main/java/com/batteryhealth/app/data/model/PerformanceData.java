@@ -1,5 +1,6 @@
 package com.batteryhealth.app.data.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
@@ -107,7 +108,11 @@ public class PerformanceData {
     }
 
     public void setCpuUsage(float cpuUsage) {
-        this.cpuUsage = cpuUsage;
+        if (!Float.isFinite(cpuUsage)) {
+            this.cpuUsage = 0f;
+        } else {
+            this.cpuUsage = Math.max(0f, Math.min(100f, cpuUsage));
+        }
     }
 
     public int getCpuFreqMax() {
@@ -115,7 +120,7 @@ public class PerformanceData {
     }
 
     public void setCpuFreqMax(int cpuFreqMax) {
-        this.cpuFreqMax = cpuFreqMax;
+        this.cpuFreqMax = Math.max(0, cpuFreqMax);
     }
 
     public int getCpuFreqCurrent() {
@@ -123,7 +128,7 @@ public class PerformanceData {
     }
 
     public void setCpuFreqCurrent(int cpuFreqCurrent) {
-        this.cpuFreqCurrent = cpuFreqCurrent;
+        this.cpuFreqCurrent = Math.max(0, cpuFreqCurrent);
     }
 
     public long getMemoryTotal() {
@@ -131,7 +136,7 @@ public class PerformanceData {
     }
 
     public void setMemoryTotal(long memoryTotal) {
-        this.memoryTotal = memoryTotal;
+        this.memoryTotal = Math.max(0L, memoryTotal);
     }
 
     public long getMemoryUsed() {
@@ -139,7 +144,7 @@ public class PerformanceData {
     }
 
     public void setMemoryUsed(long memoryUsed) {
-        this.memoryUsed = memoryUsed;
+        this.memoryUsed = Math.max(0L, memoryUsed);
     }
 
     public long getMemoryFree() {
@@ -147,7 +152,7 @@ public class PerformanceData {
     }
 
     public void setMemoryFree(long memoryFree) {
-        this.memoryFree = memoryFree;
+        this.memoryFree = Math.max(0L, memoryFree);
     }
 
     public String getAppPackage() {
@@ -171,7 +176,7 @@ public class PerformanceData {
     }
 
     public void setAppMemory(long appMemory) {
-        this.appMemory = appMemory;
+        this.appMemory = Math.max(0L, appMemory);
     }
 
     public long getAppCpuTime() {
@@ -179,7 +184,7 @@ public class PerformanceData {
     }
 
     public void setAppCpuTime(long appCpuTime) {
-        this.appCpuTime = appCpuTime;
+        this.appCpuTime = Math.max(0L, appCpuTime);
     }
 
     public int getFrameDropCount() {
@@ -187,7 +192,7 @@ public class PerformanceData {
     }
 
     public void setFrameDropCount(int frameDropCount) {
-        this.frameDropCount = frameDropCount;
+        this.frameDropCount = Math.max(0, frameDropCount);
     }
 
     public int getFrameTotal() {
@@ -195,7 +200,7 @@ public class PerformanceData {
     }
 
     public void setFrameTotal(int frameTotal) {
-        this.frameTotal = frameTotal;
+        this.frameTotal = Math.max(0, frameTotal);
     }
 
     public float getFps() {
@@ -203,7 +208,11 @@ public class PerformanceData {
     }
 
     public void setFps(float fps) {
-        this.fps = fps;
+        if (!Float.isFinite(fps)) {
+            this.fps = 0f;
+        } else {
+            this.fps = Math.max(0f, fps);
+        }
     }
 
     public int getPerformanceScore() {
@@ -211,7 +220,7 @@ public class PerformanceData {
     }
 
     public void setPerformanceScore(int performanceScore) {
-        this.performanceScore = performanceScore;
+        this.performanceScore = Math.max(0, Math.min(100, performanceScore));
     }
 
     public boolean isHasIssue() {
@@ -239,19 +248,23 @@ public class PerformanceData {
     }
 
     /**
-     * 计算内存使用率
+     * 计算内存使用率，结果夹紧到 [0, 100]。
      */
     public float getMemoryUsagePercent() {
         if (memoryTotal <= 0) return 0;
-        return (memoryUsed * 100.0f) / memoryTotal;
+        float percent = (memoryUsed * 100.0f) / memoryTotal;
+        if (!Float.isFinite(percent)) return 0;
+        return Math.max(0f, Math.min(100f, percent));
     }
 
     /**
-     * 计算掉帧率
+     * 计算掉帧率，结果夹紧到 [0, 100]。
      */
     public float getFrameDropRate() {
         if (frameTotal <= 0) return 0;
-        return (frameDropCount * 100.0f) / frameTotal;
+        float rate = (frameDropCount * 100.0f) / frameTotal;
+        if (!Float.isFinite(rate)) return 0;
+        return Math.max(0f, Math.min(100f, rate));
     }
 
     /**
@@ -267,5 +280,16 @@ public class PerformanceData {
         } else {
             return "较差";
         }
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "PerformanceData{id=" + id
+                + ", timestamp=" + timestamp
+                + ", appPackage=" + appPackage
+                + ", performanceScore=" + performanceScore
+                + ", hasIssue=" + hasIssue
+                + "}";
     }
 }

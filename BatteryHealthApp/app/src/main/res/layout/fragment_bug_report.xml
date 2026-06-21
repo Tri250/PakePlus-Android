@@ -22,7 +22,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="BugReport 分析"
+            android:text="@string/bug_report_title"
             android:textAppearance="@style/WebPageTitle"
             android:layout_marginBottom="6dp" />
 
@@ -30,7 +30,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="上传 bugreport 文件补充电池数据"
+            android:text="@string/bug_report_subtitle"
             android:textAppearance="@style/WebPageSubtitle"
             android:layout_marginBottom="22dp" />
 
@@ -38,7 +38,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="文件选择"
+            android:text="@string/section_file_picker"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
             android:layout_marginBottom="10dp"
@@ -70,7 +70,7 @@
                     android:id="@+id/btn_select_file"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="选择 BugReport 文件"
+                    android:text="@string/action_select_bugreport_file"
                     android:textAllCaps="false"
                     android:fontFamily="sans-serif-medium" />
 
@@ -98,7 +98,7 @@
                         android:id="@+id/tv_progress_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="正在解析..."
+                        android:text="@string/bug_report_parsing"
                         android:textSize="13sp"
                         android:textColor="@color/label_2"
                         android:layout_marginTop="8dp" />
@@ -114,7 +114,7 @@
             android:id="@+id/eyebrow_results"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="分析结果"
+            android:text="@string/section_analysis_results"
             android:textAppearance="@style/WebSectionEyebrow"
             android:layout_marginTop="18dp"
             android:layout_marginBottom="10dp"
@@ -165,7 +165,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="设计容量"
+                        android:text="@string/label_design_capacity"
                         android:textSize="12sp"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="2dp" />
@@ -193,7 +193,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="当前容量"
+                        android:text="@string/label_current_capacity"
                         android:textSize="12sp"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="2dp" />
@@ -221,7 +221,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="健康度"
+                        android:text="@string/label_health_percent"
                         android:textSize="12sp"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="2dp" />
@@ -249,7 +249,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="循环次数"
+                        android:text="@string/label_cycle_count"
                         android:textSize="12sp"
                         android:textColor="@color/label_3"
                         android:layout_marginTop="2dp" />
@@ -290,7 +290,7 @@
             android:id="@+id/btn_view_health"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="查看电池健康"
+            android:text="@string/action_view_battery_health"
             android:textAllCaps="false"
             android:fontFamily="sans-serif-medium"
             android:layout_marginTop="8dp"

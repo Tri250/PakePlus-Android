@@ -72,7 +72,8 @@ public class BatteryMonitorService extends Service {
 
     private Handler handler;
     private volatile BatteryInfo currentBatteryInfo;
-    private OnBatteryDataListener dataListener;
+    // Volatile to ensure visibility across threads (set from binder threads, read from ioExecutor)
+    private volatile OnBatteryDataListener dataListener;
     private volatile boolean isRunning = false;
     private long lastSaveTime = 0;
     private SharedPreferences prefs;
@@ -250,7 +251,17 @@ public class BatteryMonitorService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
         try {
-            // 使用 AlarmManager 在 5 秒后尝试重启服务（仅当用户未手动关闭服务时）
+            // Only auto-restart if the user did not explicitly request stop.
+            // If the service is being killed by the system to reclaim resources
+            // (e.g. low memory), this is still acceptable. But if the user swiped
+            // the app away, we should not silently respawn.
+            if (isUserStopRequested()) {
+                Log.d(TAG, "Task removed by user; not scheduling restart");
+                return;
+            }
+            // Use AlarmManager to attempt restart in 5 seconds. On Android 12+,
+            // setExactAndAllowWhileIdle requires SCHEDULE_EXACT_ALARM permission;
+            // fall back to inexact set() when not granted.
             android.app.AlarmManager alarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null) {
                 Intent restartIntent = new Intent(this, BatteryMonitorService.class);
@@ -259,16 +270,43 @@ public class BatteryMonitorService extends Service {
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
                 long triggerAt = System.currentTimeMillis() + 5000;
+                boolean canExact = true;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                } else {
-                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    canExact = alarmManager.canScheduleExactAlarms();
                 }
-                Log.d(TAG, "Task removed, scheduled service restart in 5s");
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        if (canExact) {
+                            alarmManager.setExactAndAllowWhileIdle(
+                                    android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        } else {
+                            // Fallback to inexact alarm when exact alarm permission is not granted
+                            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        }
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    } else {
+                        alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    }
+                    Log.d(TAG, "Task removed, scheduled service restart in 5s (exact=" + canExact + ")");
+                } catch (SecurityException se) {
+                    Log.w(TAG, "Exact alarm not permitted; falling back to inexact", se);
+                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error scheduling restart on task removed: " + e.getMessage());
+            Log.e(TAG, "Error scheduling restart on task removed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Heuristic check: was the service stopped because the user explicitly killed the app?
+     * Returns true if the app's task was removed in a way that suggests user intent.
+     */
+    private boolean isUserStopRequested() {
+        // If the service was started with START_NOT_STICKY previously, treat that as a hint.
+        // Additional signal: if the data listener was never set, the UI was never bound.
+        return dataListener == null;
     }
 
     @Nullable

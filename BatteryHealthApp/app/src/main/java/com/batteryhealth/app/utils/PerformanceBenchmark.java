@@ -2,410 +2,442 @@ package com.batteryhealth.app.utils;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Environment;
+import android.os.PowerManager;
+import android.os.StatFs;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Locale;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 性能基准测试工具：CPU、内存带宽、存储 IO、GPU 渲染基准。
+ * 性能基准测试工具（轻量级客户端版）。
+ * 用于在用户设备上跑 CPU、内存、存储和 GPU 代理基准。
  *
- * 设计目标：
- *  1. 真实可执行：在主线程外运行，结果可重复。
- *  2. 跨设备可比：分数采用与安兔兔、鲁大师类似的对数或分段映射。
- *  3. 耗时可控：单测 ≤ 200ms，不阻塞 UI。
+ * 修复问题：
+ *  - 早期版本 thermal / proc 文件读取未使用 try-with-resources，
+ *    异常路径会泄漏文件句柄。
+ *  - 早期版本多线程基准用 raw Thread，本版本改用 ExecutorService。
  */
 public class PerformanceBenchmark {
 
     private static final String TAG = "PerformanceBenchmark";
-    private static final long CPU_THREAD_JOIN_TIMEOUT_MS = 5000;
-    private static final int MAX_CPU_OPS_PER_THREAD = 10_000_000;
 
-    public static final class Result {
-        public final long cpuSingleCoreScore;
-        public final long cpuMultiCoreScore;
-        public final long memoryBandwidthMBps;
-        public final long storageReadMBps;
-        public final long storageWriteMBps;
-        public final long storageRandomReadIOPS;
-        public final long storageRandomWriteIOPS;
-        public final long gpuRenderFps;
-        public final long gpuScore;
-        public final long overallScore;
+    public static final class Score {
+        public final double cpuScore;       // 整数分
+        public final double memBandwidthMBps;
+        public final double storageSeqReadMBps;
+        public final double storageSeqWriteMBps;
+        public final double storageRandReadIOPS;
+        public final double storageRandWriteIOPS;
+        public final double gpuScore;
+        public final double overallScore;
+        public final String cpuLabel;
+        public final String ramLabel;
+        public final String storageLabel;
+        public final String gpuLabel;
+        public final boolean valid;
+        public final long durationMs;
 
-        public Result(long cpuSingleCoreScore, long cpuMultiCoreScore, long memoryBandwidthMBps,
-                      long storageReadMBps, long storageWriteMBps, long storageRandomReadIOPS,
-                      long storageRandomWriteIOPS, long gpuRenderFps, long gpuScore, long overallScore) {
-            this.cpuSingleCoreScore = cpuSingleCoreScore;
-            this.cpuMultiCoreScore = cpuMultiCoreScore;
-            this.memoryBandwidthMBps = memoryBandwidthMBps;
-            this.storageReadMBps = storageReadMBps;
-            this.storageWriteMBps = storageWriteMBps;
-            this.storageRandomReadIOPS = storageRandomReadIOPS;
-            this.storageRandomWriteIOPS = storageRandomWriteIOPS;
-            this.gpuRenderFps = gpuRenderFps;
-            this.gpuScore = gpuScore;
-            this.overallScore = overallScore;
+        public Score(double cpu, double mem, double seqR, double seqW, double randR, double randW,
+                     double gpu, double overall,
+                     String cpuLabel, String ramLabel, String storageLabel, String gpuLabel,
+                     boolean valid, long durationMs) {
+            this.cpuScore = cpu;
+            this.memBandwidthMBps = mem;
+            this.storageSeqReadMBps = seqR;
+            this.storageSeqWriteMBps = seqW;
+            this.storageRandReadIOPS = randR;
+            this.storageRandWriteIOPS = randW;
+            this.gpuScore = gpu;
+            this.overallScore = overall;
+            this.cpuLabel = cpuLabel;
+            this.ramLabel = ramLabel;
+            this.storageLabel = storageLabel;
+            this.gpuLabel = gpuLabel;
+            this.valid = valid;
+            this.durationMs = durationMs;
         }
     }
+
+    private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "PerformanceBenchmark-worker");
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
-     * 执行全部基准测试。在工作线程调用。
+     * 在后台线程上执行完整基准。
+     * 回调在调用方所在线程发起；不要把 UI 直接绑定到 onResult，需要切回主线程。
      */
-    public static Result runFullBenchmark(Context context) {
-        long start = System.currentTimeMillis();
-
-        // CPU 性能：双精度浮点运算多轮
-        int cores = Math.max(1, Math.min(Runtime.getRuntime().availableProcessors(), 8));
-        long cpuScore = benchmarkCpu(cores);
-        long cpuSingle = benchmarkCpu(1);
-        long cpuMulti = benchmarkCpu(cores);
-
-        // 内存带宽
-        long memMBps = benchmarkMemoryBandwidth();
-
-        // 存储 IO
-        long readMBps = benchmarkStorageSequentialRead();
-        long writeMBps = benchmarkStorageSequentialWrite();
-        long randomReadIops = benchmarkStorageRandomRead();
-        long randomWriteIops = benchmarkStorageRandomWrite();
-
-        // GPU 渲染基准：基于 GLES 2.0 离屏渲染（仅能在 GPU helper 注入时执行；此处退化到软件填充估算）
-        long gpuFps = benchmarkGpuViaCpuProxy();
-        long gpuScore = mapGpuScore(gpuFps);
-
-        // 综合分数：CPU 35% + 内存 20% + 存储 20% + GPU 25%（2026年校准，GPU权重提升）
-        long overall = (long) (cpuMulti * 0.35
-                + (memMBps * 0.6) * 0.2   // 10000 MBps ≈ 6000
-                + (readMBps * 0.4 + writeMBps * 0.3 + (randomReadIops / 100) * 0.15) * 0.2
-                + gpuScore * 0.25);
-        overall = Math.max(1, Math.min(250000, overall));
-
-        Log.d(TAG, "Benchmark finished in " + (System.currentTimeMillis() - start) + "ms: "
-                + "cpu=" + cpuMulti + ", mem=" + memMBps + "MB/s, "
-                + "r=" + readMBps + "MB/s w=" + writeMBps + "MB/s, "
-                + "rr=" + randomReadIops + " iops, fps=" + gpuFps + ", overall=" + overall);
-
-        return new Result(cpuSingle, cpuMulti, memMBps, readMBps, writeMBps,
-                randomReadIops, randomWriteIops, gpuFps, gpuScore, overall);
+    public interface ResultCallback {
+        void onResult(Score score);
+        void onError(Throwable t);
     }
 
-    /**
-     * CPU 浮点基准：单/多核场景下的双精度浮点运算速度。
-     * @return 分数（数值越大越好，类比 Geekbench 单核）
-     */
-    private static long benchmarkCpu(int threads) {
-        int operations = 1_500_000; // 单轮运算量
-        // Android 16 热节流检测：读取热区温度，高温时减少运算量以避免进一步降频
-        try {
-            java.io.BufferedReader thermalReader = new java.io.BufferedReader(
-                    new java.io.FileReader("/sys/class/thermal/thermal_zone0/temp"));
-            String tempStr = thermalReader.readLine();
-            thermalReader.close();
-            if (tempStr != null) {
-                int tempMilliC = Integer.parseInt(tempStr.trim());
-                float tempC = tempMilliC / 1000f;
-                if (tempC > 45f) {
-                    Log.d(TAG, "Thermal throttling detected: " + tempC + "°C, reducing CPU iterations");
-                    operations = 800_000;
-                }
-            }
-        } catch (Exception e) {
-            // 无法读取热区温度，使用默认运算量
-        }
-        int rounds = 3;
-        long best = 0;
-        for (int r = 0; r < rounds; r++) {
-            long start = System.nanoTime();
-            Thread[] ts = new Thread[threads];
-            int opsPerThread = Math.min(operations / threads, MAX_CPU_OPS_PER_THREAD);
-            for (int t = 0; t < threads; t++) {
-                final int localOps = opsPerThread;
-                ts[t] = new Thread(() -> {
-                    double acc = 1.0;
-                    for (int i = 0; i < localOps; i++) {
-                        acc = Math.sin(acc) * Math.cos(acc) + Math.sqrt(Math.abs(acc) + 1);
-                    }
-                    if (acc == 0) Log.d(TAG, "noop");
-                }, "BenchCpu-" + t);
-                ts[t].setDaemon(true);
-                ts[t].start();
-            }
-            for (Thread t : ts) {
-                try { t.join(CPU_THREAD_JOIN_TIMEOUT_MS); } catch (InterruptedException ignored) {}
-            }
-            long elapsed = System.nanoTime() - start;
-            // 100ms 跑完 = 10000 分；线性归一化
-            long score = (long) ((double) operations / (elapsed / 1_000_000.0) * 10.0);
-            if (score > best) best = score;
-        }
-        return best;
-    }
-
-    /**
-     * 内存带宽基准：分配大块数组，顺序写入与读取。
-     * 实际数值受 GC 影响，仅供参考。
-     */
-    private static long benchmarkMemoryBandwidth() {
-        int sizeMb = 16;
-        int size = sizeMb * 1024 * 1024 / 4; // int 数组
-        int[] a = new int[size];
-        int[] b = new int[size];
-        int rounds = 3;
-        long best = 0;
-        for (int r = 0; r < rounds; r++) {
-            long start = System.nanoTime();
-            for (int i = 0; i < size; i++) a[i] = i;
-            for (int i = 0; i < size; i++) b[i] = a[i] ^ 0x5A5A5A5A;
-            long sum = 0;
-            for (int i = 0; i < size; i++) sum += b[i];
-            long elapsed = System.nanoTime() - start;
-            if (sum == Long.MAX_VALUE) Log.d(TAG, "noop");
-            // 16MB 写入 + 16MB 读取 ≈ 32MB
-            long mbps = (long) (32.0 * 1_000_000_000.0 / elapsed);
-            if (mbps > best) best = mbps;
-        }
-        return best;
-    }
-
-    /**
-     * 顺序读带宽：基于内部存储的 8MB 文件。
-     */
-    private static long benchmarkStorageSequentialRead() {
-        File cacheDir = context().getCacheDir();
-        // Android 16 兼容：检查缓存目录是否存在且可写
-        if (cacheDir == null || !cacheDir.exists() || !cacheDir.canWrite()) {
-            return 0;
-        }
-        File f = new File(cacheDir, "bench_seq_read.bin");
-        // 写入 8MB 数据
-        try (FileOutputStream fos = new FileOutputStream(f)) {
-            byte[] buf = new byte[64 * 1024];
-            for (int i = 0; i < 8 * 1024 * 1024 / buf.length; i++) {
-                fos.write(buf);
-            }
-            // Android 16：flush/sync 确保数据真正写入存储后再测量读取速度
-            fos.flush();
-            fos.getFD().sync();
-        } catch (IOException e) {
-            Log.w(TAG, "benchmarkStorageSequentialRead write failed", e);
-            return 0;
-        }
-        long best = 0;
-        for (int r = 0; r < 3; r++) {
-            try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-                FileChannel ch = raf.getChannel();
-                ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
-                long start = System.nanoTime();
-                long total = 0;
-                while (ch.read(buf) > 0) {
-                    buf.clear();
-                    total += 64 * 1024;
-                    if (total >= 8L * 1024 * 1024) break;
-                }
-                long elapsed = System.nanoTime() - start;
-                long mbps = (long) (total * 1_000_000_000L / elapsed / 1024 / 1024);
-                if (mbps > best) best = mbps;
-            } catch (IOException e) {
-                Log.w(TAG, "benchmarkStorageSequentialRead read failed", e);
-                return 0;
-            }
-        }
-        //noinspection ResultOfMethodCallIgnored
-        f.delete();
-        return best;
-    }
-
-    /**
-     * 顺序写带宽。
-     */
-    private static long benchmarkStorageSequentialWrite() {
-        File cacheDir = context().getCacheDir();
-        // Android 16 兼容：检查缓存目录是否存在且可写
-        if (cacheDir == null || !cacheDir.exists() || !cacheDir.canWrite()) {
-            return 0;
-        }
-        File f = new File(cacheDir, "bench_seq_write.bin");
-        byte[] buf = new byte[64 * 1024];
-        long best = 0;
-        for (int r = 0; r < 3; r++) {
-            long start = System.nanoTime();
-            boolean writeSuccess = false;
-            try (FileOutputStream fos = new FileOutputStream(f)) {
-                for (int i = 0; i < 8 * 1024 * 1024 / buf.length; i++) {
-                    fos.write(buf);
-                }
-                // Android 16：flush/sync 确保数据真正写入存储
-                fos.flush();
-                fos.getFD().sync();
-                writeSuccess = true;
-            } catch (IOException e) {
-                Log.w(TAG, "benchmarkStorageSequentialWrite failed", e);
-                return 0;
-            }
-            if (!writeSuccess || !f.exists() || f.length() != 8L * 1024 * 1024) {
-                Log.w(TAG, "benchmarkStorageSequentialWrite validation failed: exists=" + f.exists()
-                        + " length=" + (f.exists() ? f.length() : -1));
-                return 0;
-            }
-            long elapsed = System.nanoTime() - start;
-            long mbps = (long) (8L * 1024 * 1024 * 1_000_000_000L / elapsed / 1024 / 1024);
-            if (mbps > best) best = mbps;
-        }
-        //noinspection ResultOfMethodCallIgnored
-        f.delete();
-        return best;
-    }
-
-    /**
-     * 随机读 IOPS：4KB 块随机定位读。
-     */
-    private static long benchmarkStorageRandomRead() {
-        File f = new File(context().getCacheDir(), "bench_rnd_read.bin");
-        try (FileOutputStream fos = new FileOutputStream(f)) {
-            byte[] buf = new byte[4 * 1024];
-            for (int i = 0; i < 16 * 1024; i++) fos.write(buf);
-        } catch (IOException e) {
-            return 0;
-        }
-        long total = 0;
-        int operations = 4000;
-        long start = System.nanoTime();
-        try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-            for (int i = 0; i < operations; i++) {
-                long pos = (Math.abs((i * 2654435761L) % 0x3FFF)) * 4L * 1024L;
-                raf.seek(pos);
-                byte[] b = new byte[4 * 1024];
-                if (raf.read(b) > 0) total += b.length;
-            }
-        } catch (IOException e) {
-            return 0;
-        }
-        long elapsedNs = System.nanoTime() - start;
-        long iops = (long) (operations * 1_000_000_000L / elapsedNs);
-        if (total == 0) return 0;
-        return iops;
-    }
-
-    /**
-     * 随机写 IOPS：4KB 块随机写。
-     */
-    private static long benchmarkStorageRandomWrite() {
-        File f = new File(context().getCacheDir(), "bench_rnd_write.bin");
-        int operations = 2000;
-        long start = System.nanoTime();
-        try (RandomAccessFile raf = new RandomAccessFile(f, "rw")) {
-            raf.setLength(64L * 1024 * 1024);
-            byte[] b = new byte[4 * 1024];
-            for (int i = 0; i < b.length; i++) b[i] = (byte) i;
-            for (int i = 0; i < operations; i++) {
-                long pos = (Math.abs((i * 1597334677L) % 0x3FFF)) * 4L * 1024L;
-                raf.seek(pos);
-                raf.write(b);
-            }
-            // Android 16：sync 确保数据刷入磁盘，获得更准确的 IOPS 测量
-            raf.getFD().sync();
-        } catch (IOException e) {
-            return 0;
-        }
-        long elapsedNs = System.nanoTime() - start;
-        return (long) (operations * 1_000_000_000L / elapsedNs);
-    }
-
-    /**
-     * GPU 性能代理：通过 CPU 矩阵运算的浮点能力估算 GPU 性能。
-     * 真正的 GPU 跑分需通过 EGL 离屏渲染实现，本工具用代理指标。
-     */
-    private static long benchmarkGpuViaCpuProxy() {
-        // 模拟"每秒可执行浮点运算次数"，用作 GPU 算力代理
-        int size = 128;
-        float[] a = new float[size * size];
-        float[] b = new float[size * size];
-        float[] c = new float[size * size];
-        for (int i = 0; i < a.length; i++) {
-            a[i] = (float) Math.sin(i);
-            b[i] = (float) Math.cos(i);
-        }
-        long start = System.nanoTime();
-        for (int r = 0; r < 5; r++) {
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    float s = 0;
-                    for (int k = 0; k < size; k++) s += a[i * size + k] * b[k * size + j];
-                    c[i * size + j] = s;
-                }
-            }
-        }
-        long elapsed = System.nanoTime() - start;
-        // 100ms = 60fps 代理值
-        long fps = (long) (5.0 * 1_000_000_000.0 / elapsed * 60.0 / 16.6);
-        if (fps < 1) fps = 1;
-        if (fps > 999) fps = 999;
-        return fps;
-    }
-
-    private static long mapGpuScore(long fps) {
-        // 60fps ≈ 1000，30fps ≈ 500，120fps ≈ 2000
-        return fps * 17;
-    }
-
-    private static Context context() {
-        try {
-            Class<?> clazz = Class.forName("android.app.AppGlobals");
-            return (Context) clazz.getMethod("getInitialApplication").invoke(null);
-        } catch (Throwable t) {
-            // AppGlobals 失败，尝试 ActivityThread.currentApplication() 回退
+    public void runFullBenchmark(Context context, ResultCallback callback) {
+        if (callback == null) return;
+        EXECUTOR.submit(() -> {
+            long start = System.currentTimeMillis();
             try {
-                Class<?> clazz = Class.forName("android.app.ActivityThread");
-                return (Context) clazz.getMethod("currentApplication").invoke(null);
-            } catch (Throwable t2) {
-                return null;
+                // CPU 跑 1.2s，内存 0.5s，存储 / 随机各 0.4s，GPU 0.4s
+                double cpuScore = benchmarkCpu(1200);
+                double memBandwidth = benchmarkMemoryBandwidth(500);
+                double seqRead = benchmarkStorageSequentialRead(400);
+                double seqWrite = benchmarkStorageSequentialWrite(400);
+                double randRead = benchmarkStorageRandomRead(400);
+                double randWrite = benchmarkStorageRandomWrite(400);
+                double gpuScore = benchmarkGpuViaCpuProxy(400);
+
+                double overall = normalizeOverallScore(cpuScore, memBandwidth, seqRead, seqWrite, randRead, randWrite, gpuScore);
+
+                long duration = System.currentTimeMillis() - start;
+                Score score = new Score(
+                        cpuScore, memBandwidth, seqRead, seqWrite, randRead, randWrite, gpuScore, overall,
+                        getCpuLabel(cpuScore),
+                        getRamLabel(memBandwidth),
+                        getStorageLabel(seqRead, seqWrite),
+                        getGpuLabel(gpuScore),
+                        true, duration
+                );
+                callback.onResult(score);
+            } catch (Throwable t) {
+                Log.e(TAG, "Benchmark failed", t);
+                callback.onError(t);
             }
+        });
+    }
+
+    /**
+     * CPU 整数基准：循环计算斐波那契 + 哈希运算 + 浮点 MAD 混合。
+     * 返回"1000ms 内的迭代次数"，归一化到 0-100。
+     */
+    private double benchmarkCpu(long budgetMs) {
+        final long deadline = System.currentTimeMillis() + budgetMs;
+        long iters = 0;
+        long acc = 0L;
+        int x = 0x9E3779B9;
+        double fx = 0.0;
+        while (System.currentTimeMillis() < deadline) {
+            // fibonacci
+            int a = 1, b = 1, c;
+            for (int i = 0; i < 200; i++) {
+                c = a + b;
+                a = b;
+                b = c;
+                acc += c;
+            }
+            // integer hash
+            int h = x;
+            for (int i = 0; i < 200; i++) {
+                h ^= (h << 13);
+                h ^= (h >>> 17);
+                h ^= (h << 5);
+                acc += h;
+            }
+            // float mad
+            for (int i = 0; i < 200; i++) {
+                fx = fx * 1.0001d + 0.0001d;
+                acc += Double.doubleToLongBits(fx);
+            }
+            iters++;
+            x ^= (int) (acc & 0x7FFFFFFFL);
         }
+        // Reference: 旗舰机约 6,000,000 iter / 1.2s
+        double normalized = (iters / (double) budgetMs) * 1000d / 60_000d * 100d;
+        if (normalized > 100d) normalized = 100d;
+        if (normalized < 0d) normalized = 0d;
+        // Reasonable bounds
+        if (iters < 10) return 0;
+        return Math.min(100d, normalized);
     }
 
-    /**
-     * 评分归一化：让不同档位的手机/平板得到合理的"综合性能分数"。
-     * 2026年校准：旗舰 180k-250k，中端 80k-150k。
-     * 输入为原始浮点，返回 0-250000 区间的整数。
-     */
-    public static int normalizeOverallScore(long raw) {
-        if (raw <= 0) return 0;
-        // 2026年档位映射：低 <30k，中端 80k-150k，高端 150k-180k，旗舰 180k-250k
-        if (raw < 5000) return (int) (raw * 4);
-        if (raw < 30000) return (int) (20000 + (raw - 5000) * 2.5);
-        if (raw < 80000) return (int) (70000 + (raw - 30000) * 0.8);
-        if (raw < 150000) return (int) (110000 + (raw - 80000) * 0.5);
-        return (int) Math.min(250000, 150000 + (raw - 150000) * 0.3);
+    private double benchmarkMemoryBandwidth(long budgetMs) {
+        final int size = 8 * 1024 * 1024; // 8MB
+        byte[] src = new byte[size];
+        byte[] dst = new byte[size];
+        new Random(42).nextBytes(src);
+        final long deadline = System.currentTimeMillis() + budgetMs;
+        long totalBytes = 0L;
+        int runs = 0;
+        while (System.currentTimeMillis() < deadline) {
+            System.arraycopy(src, 0, dst, 0, size);
+            totalBytes += size;
+            runs++;
+        }
+        double seconds = budgetMs / 1000d;
+        double mbps = (totalBytes / (1024.0 * 1024.0)) / seconds;
+        return mbps; // 旗舰机 1500+ MB/s
     }
 
-    /**
-     * 获取设备热状态，用于 UI 展示基准测试期间的热状态。
-     * 读取 /sys/class/thermal/thermal_zone0/temp 获取温度。
-     * @param context 上下文（保留参数以备未来使用 PowerManager API）
-     * @return 热状态字符串："正常"(<35°C), "温暖"(35-40°C), "较热"(40-45°C), "过热"(>45°C)
-     */
-    public static String getThermalStatus(Context context) {
+    private double benchmarkStorageSequentialRead(long budgetMs) {
+        File f = null;
         try {
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.FileReader("/sys/class/thermal/thermal_zone0/temp"));
-            String tempStr = reader.readLine();
-            reader.close();
-            if (tempStr != null) {
-                int tempMilliC = Integer.parseInt(tempStr.trim());
-                float tempC = tempMilliC / 1000f;
-                if (tempC < 35f) return "正常";
-                if (tempC < 40f) return "温暖";
-                if (tempC < 45f) return "较热";
-                return "过热";
+            f = createTestFile(32 * 1024 * 1024, 0xA5);
+            byte[] buf = new byte[256 * 1024];
+            try (FileInputStream fis = new FileInputStream(f)) {
+                FileChannel ch = fis.getChannel();
+                long total = 0L;
+                long deadline = System.currentTimeMillis() + budgetMs;
+                int read;
+                while (System.currentTimeMillis() < deadline && (read = fis.read(buf)) > 0) {
+                    total += read;
+                }
+                double seconds = budgetMs / 1000d;
+                return (total / (1024.0 * 1024.0)) / seconds;
             }
-        } catch (Exception e) {
-            // 无法读取热区温度
+        } catch (Throwable t) {
+            Log.d(TAG, "seq read failed: " + t.getMessage());
+            return 0;
+        } finally {
+            if (f != null) {
+                // Best-effort delete; ignore failures
+                if (!f.delete()) Log.d(TAG, "Could not delete test file " + f);
+            }
         }
-        return "正常";
+    }
+
+    private double benchmarkStorageSequentialWrite(long budgetMs) {
+        File f = null;
+        try {
+            f = new File(Environment.getExternalStorageDirectory(), "battery_bench_write.bin");
+            byte[] buf = new byte[256 * 1024];
+            new Random(1).nextBytes(buf);
+            try (FileOutputStream fos = new FileOutputStream(f)) {
+                long total = 0L;
+                long deadline = System.currentTimeMillis() + budgetMs;
+                int written;
+                while (System.currentTimeMillis() < deadline && (written = (fos.write(buf) > 0 ? buf.length : 0)) > 0) {
+                    total += written;
+                }
+                double seconds = budgetMs / 1000d;
+                return (total / (1024.0 * 1024.0)) / seconds;
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "seq write failed: " + t.getMessage());
+            return 0;
+        } finally {
+            if (f != null) {
+                if (!f.delete()) Log.d(TAG, "Could not delete test file " + f);
+            }
+        }
+    }
+
+    private double benchmarkStorageRandomRead(long budgetMs) {
+        File f = null;
+        try {
+            f = createTestFile(64 * 1024 * 1024, 0x5A);
+            try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
+                byte[] buf = new byte[4 * 1024);
+                Random r = new Random(7);
+                long totalReads = 0;
+                long totalBytes = 0;
+                long deadline = System.currentTimeMillis() + budgetMs;
+                while (System.currentTimeMillis() < deadline) {
+                    long pos = (long) r.nextInt((int) (raf.length() / 4096)) * 4096;
+                    raf.seek(pos);
+                    int read = raf.read(buf);
+                    if (read > 0) {
+                        totalBytes += read;
+                        totalReads++;
+                    }
+                }
+                double seconds = budgetMs / 1000d;
+                if (totalBytes == 0) return 0;
+                return totalReads / seconds;
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "rand read failed: " + t.getMessage());
+            return 0;
+        } finally {
+            if (f != null) {
+                if (!f.delete()) Log.d(TAG, "Could not delete test file " + f);
+            }
+        }
+    }
+
+    private double benchmarkStorageRandomWrite(long budgetMs) {
+        File f = null;
+        try {
+            f = new File(Environment.getExternalStorageDirectory(), "battery_bench_rand_write.bin");
+            try (RandomAccessFile raf = new RandomAccessFile(f, "rw")) {
+                raf.setLength(64L * 1024 * 1024);
+                byte[] buf = new byte[4 * 1024];
+                new Random(13).nextBytes(buf);
+                Random r = new Random(11);
+                long writes = 0;
+                long deadline = System.currentTimeMillis() + budgetMs;
+                while (System.currentTimeMillis() < deadline) {
+                    long pos = (long) r.nextInt((int) (raf.length() / 4096)) * 4096;
+                    raf.seek(pos);
+                    raf.write(buf);
+                    writes++;
+                }
+                double seconds = budgetMs / 1000d;
+                return writes / seconds;
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "rand write failed: " + t.getMessage());
+            return 0;
+        } finally {
+            if (f != null) {
+                if (!f.delete()) Log.d(TAG, "Could not delete test file " + f);
+            }
+        }
+    }
+
+    private double benchmarkGpuViaCpuProxy(long budgetMs) {
+        // 简单的 Mandelbrot 浮点计算作为 GPU 性能代理
+        final int w = 200;
+        final int h = 200;
+        final double xmin = -2.0, xmax = 1.0, ymin = -1.5, ymax = 1.5;
+        int[] pixels = new int[w * h];
+        long deadline = System.currentTimeMillis() + budgetMs;
+        int frames = 0;
+        double scale = 1.0;
+        while (System.currentTimeMillis() < deadline) {
+            for (int j = 0; j < h; j++) {
+                for (int i = 0; i < w; i++) {
+                    double zx = 0, zy = 0;
+                    double cx = xmin + (xmax - xmin) * i / w * scale;
+                    double cy = ymin + (ymax - ymin) * j / h * scale;
+                    int iter = 0;
+                    while (zx * zx + zy * zy < 4.0 && iter < 80) {
+                        double t = zx * zx - zy * zy + cx;
+                        zy = 2.0 * zx * zy + cy;
+                        zx = t;
+                        iter++;
+                    }
+                    pixels[j * w + i] = iter;
+                }
+            }
+            scale += 0.05;
+            frames++;
+        }
+        // 旗舰机能跑到 30+ 帧 / 400ms
+        return Math.min(100d, frames * 100d / 20d);
+    }
+
+    private File createTestFile(int sizeBytes, byte fill) throws IOException {
+        File f = new File(Environment.getExternalStorageDirectory(), "battery_bench_read.bin");
+        try (FileOutputStream fos = new FileOutputStream(f)) {
+            byte[] chunk = new byte[64 * 1024];
+            java.util.Arrays.fill(chunk, fill);
+            int written = 0;
+            while (written < sizeBytes) {
+                int len = Math.min(chunk.length, sizeBytes - written);
+                fos.write(chunk, 0, len);
+                written += len;
+            }
+        }
+        return f;
+    }
+
+    /**
+     * 综合归一化：CPU 35%、内存 15%、存储 30%、GPU 20%。
+     */
+    private double normalizeOverallScore(double cpu, double mem, double seqR, double seqW,
+                                         double randR, double randW, double gpu) {
+        double cpuNorm = clamp(cpu, 0, 100) * 0.35;
+        double memNorm = clamp(mem / 15d, 0, 100) * 0.15;
+        double storageSeq = (clamp(seqR / 8d, 0, 100) + clamp(seqW / 5d, 0, 100)) / 2d * 0.15;
+        double storageRand = (clamp(randR / 100d, 0, 100) + clamp(randW / 100d, 0, 100)) / 2d * 0.15;
+        double gpuNorm = clamp(gpu, 0, 100) * 0.20;
+        return cpuNorm + memNorm + storageSeq + storageRand + gpuNorm;
+    }
+
+    private static double clamp(double v, double lo, double hi) {
+        if (v < lo) return lo;
+        if (v > hi) return hi;
+        return v;
+    }
+
+    private String getCpuLabel(double score) {
+        if (score >= 80) return "旗舰级";
+        if (score >= 60) return "高性能";
+        if (score >= 40) return "中端";
+        if (score >= 20) return "入门级";
+        if (score > 0) return "低端";
+        return "未知";
+    }
+
+    private String getRamLabel(double memMBps) {
+        if (memMBps >= 1500) return "旗舰级 LPDDR5x";
+        if (memMBps >= 900) return "LPDDR5";
+        if (memMBps >= 500) return "LPDDR4x";
+        if (memMBps >= 200) return "LPDDR4";
+        if (memMBps > 0) return "LPDDR3 / 慢速";
+        return "未知";
+    }
+
+    private String getStorageLabel(double seqR, double seqW) {
+        double score = (seqR / 8d + seqW / 5d) / 2d;
+        if (score >= 80) return "UFS 4.0+";
+        if (score >= 50) return "UFS 3.1";
+        if (score >= 25) return "UFS 3.0";
+        if (score >= 10) return "UFS 2.1";
+        if (score > 0) return "eMMC";
+        return "未知";
+    }
+
+    private String getGpuLabel(double score) {
+        if (score >= 80) return "Adreno 700+ / Mali-G700+";
+        if (score >= 60) return "Adreno 600+ / Mali-G600+";
+        if (score >= 40) return "Adreno 500+ / Mali-G50+";
+        if (score >= 20) return "入门级 GPU";
+        if (score > 0) return "低端 GPU";
+        return "未知";
+    }
+
+    /**
+     * 读取当前温控状态（API 29+）：0..6 (NONE..SHUTDOWN)。不支持时返回 -1。
+     */
+    public static int getThermalStatus() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return -1;
+        try {
+            PowerManager pm = (PowerManager)
+                    android.app.ActivityThread.currentApplication().getSystemService(Context.POWER_SERVICE);
+            if (pm == null) return -1;
+            return pm.getCurrentThermalStatus();
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
+    /**
+     * 读取 /sys/class/thermal/thermal_zone0/temp 作为运行时热状态补充数据。
+     */
+    public static double getCurrentTempC() {
+        // 多个厂商节点尝试
+        String[] candidates = {
+                "/sys/class/thermal/thermal_zone0/temp",
+                "/sys/class/thermal/thermal_zone1/temp",
+                "/sys/devices/virtual/thermal/thermal_zone0/temp"
+        };
+        for (String p : candidates) {
+            try (BufferedReader r = new BufferedReader(new FileReader(p))) {
+                String line = r.readLine();
+                if (line == null) continue;
+                long raw = Long.parseLong(line.trim());
+                return raw >= 1000 ? raw / 1000.0 : raw; // m°C or 0.001°C
+            } catch (Throwable t) {
+                // try next
+            }
+        }
+        return -1;
     }
 }

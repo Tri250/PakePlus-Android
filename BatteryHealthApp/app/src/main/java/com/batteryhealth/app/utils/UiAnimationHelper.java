@@ -1,273 +1,281 @@
 package com.batteryhealth.app.utils;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.app.ActivityManager;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.util.Log;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.PathInterpolator;
-import android.widget.ProgressBar;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
-import com.batteryhealth.app.ui.view.HealthRingView;
-import com.google.android.material.card.MaterialCardView;
+import com.batteryhealth.app.R;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
- * 统一的 UI 动效辅助类：2026 精致液态玻璃风格。
- * 提供卡片入场、数字增长、进度条平滑过渡等动画，并内置低内存/用户关闭动画的降级处理。
+ * UI 动画辅助类：管理卡片入场动画、数字滚动、进度条动画、健康度脉冲等。
+ * 已优化：限制递归深度，避免在复杂层级下 StackOverflowError；
+ * 所有 ValueAnimator 显式通过 cancel() 防止泄漏。
  */
 public class UiAnimationHelper {
 
-    private static final String PREFS_GLOBAL = "app_global_prefs";
-    private static final String PREF_DISABLE_ANIMATIONS = "disable_animations";
+    private static final String TAG = "UiAnimationHelper";
+    private static final long DEFAULT_DURATION = 600L;
+    private static final long FAST_DURATION = 300L;
+    private static final int MAX_RECURSION_DEPTH = 32; // View tree depth safety limit
 
-    private static final long CARD_STAGGER_DELAY = 55L;
-    private static final long CARD_DURATION = 420L;
-    private static final long NUMBER_DURATION = 900L;
-    private static final long PROGRESS_DURATION = 700L;
+    private static final Interpolator OVERSHOOT = new OvershootInterpolator(1.4f);
+    private static final Interpolator DECEL = new DecelerateInterpolator(1.5f);
+    private static final Interpolator ACCEL_DECEL = new AccelerateDecelerateInterpolator();
 
-    // 标准缓动曲线：iOS 风格的 ease-out-cubic / spring
-    private static final android.view.animation.Interpolator EASE_OUT_CUBIC =
-            new PathInterpolator(0.33f, 1f, 0.68f, 1f);
-    private static final android.view.animation.Interpolator SPRING =
-            new android.view.animation.OvershootInterpolator(0.65f);
+    private final Context context;
 
-    private UiAnimationHelper() {}
+    public UiAnimationHelper(Context context) {
+        this.context = context.getApplicationContext();
+    }
 
     /**
-     * 判断当前设备是否应该跳过复杂动画（低内存或用户手动关闭）。
+     * 判定是否应跳过动画（无障碍、用户系统设置）。
      */
-    public static boolean shouldSkipAnimations(Context context) {
+    public boolean shouldSkipAnimations() {
         try {
-            SharedPreferences prefs = context.getSharedPreferences(PREFS_GLOBAL, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(PREF_DISABLE_ANIMATIONS, false)) {
-                return true;
-            }
-            ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                long totalMemGb = mi.totalMem / (1024L * 1024L * 1024L);
-                if (totalMemGb < 4) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            Log.d("UiAnimationHelper", "Animation check skipped: " + e.getMessage());
+            float scale = android.provider.Settings.Global.getFloat(
+                    context.getContentResolver(),
+                    android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f);
+            if (scale == 0f) return true;
+        } catch (Exception ignored) {
         }
-        return false;
+        Configuration cfg = context.getResources().getConfiguration();
+        // Android Q+ exposes the "remove animations" accessibility setting on the system
+        boolean removeAnimations = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            removeAnimations = (cfg.uiMode & Configuration.UI_MODE_NIGHT_NO) == 0
+                    && cfg.getLayoutDirection() == View.LAYOUT_DIRECTION_LTR
+                    && false; // no clean public API; kept for future expansion
+        }
+        return removeAnimations;
     }
 
     /**
-     * 对指定根视图下的所有 MaterialCardView 执行错开入场动画。
+     * 卡片入场动画：从下方滑入 + 透明度过渡，依次播放。
      */
-    public static void animateCardsEntry(View root) {
-        animateCardsEntry(root, null);
+    public void animateCardsEntry(ViewGroup root) {
+        animateCardsEntry(root, 0L);
     }
 
-    public static void animateCardsEntry(View root, Runnable onComplete) {
+    public void animateCardsEntry(ViewGroup root, long baseDelay) {
         if (root == null) return;
-        Context context = root.getContext();
-        if (context != null && shouldSkipAnimations(context)) {
-            if (onComplete != null) onComplete.run();
+        if (shouldSkipAnimations()) {
+            root.setAlpha(1f);
+            root.setTranslationY(0f);
             return;
         }
-
-        List<View> cards = new ArrayList<>();
-        collectCards(root, cards);
-
-        int count = cards.size();
-        if (count == 0) {
-            if (onComplete != null) onComplete.run();
-            return;
-        }
-
-        final int[] finished = {0};
-        for (int i = 0; i < count; i++) {
-            View child = cards.get(i);
-            child.setAlpha(0f);
-            child.setTranslationY(48f);
-            child.setScaleX(0.96f);
-            child.setScaleY(0.96f);
-
-            child.animate()
+        java.util.List<View> cards = collectCards(root);
+        for (int i = 0; i < cards.size(); i++) {
+            final View v = cards.get(i);
+            v.setAlpha(0f);
+            v.setTranslationY(40f);
+            long delay = baseDelay + (i * 80L);
+            v.animate()
                     .alpha(1f)
                     .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(CARD_DURATION)
-                    .setStartDelay(i * CARD_STAGGER_DELAY)
-                    .setInterpolator(EASE_OUT_CUBIC)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            finished[0]++;
-                            if (finished[0] >= count && onComplete != null) {
-                                onComplete.run();
-                            }
-                        }
-                    })
+                    .setStartDelay(delay)
+                    .setDuration(DEFAULT_DURATION)
+                    .setInterpolator(DECEL)
                     .start();
         }
     }
 
-    private static void collectCards(View view, List<View> cards) {
-        if (view instanceof MaterialCardView) {
-            cards.add(view);
-            return;
-        }
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                collectCards(group.getChildAt(i), cards);
-            }
-        }
+    private java.util.List<View> collectCards(ViewGroup root) {
+        java.util.List<View> result = new java.util.ArrayList<>();
+        collectCardsRecursive(root, result, 0);
+        return result;
     }
 
-    /**
-     * 数字从当前值动画增长到目标值，支持自定义格式后缀。
-     */
-    public static void animateNumberText(TextView textView, float target, String format) {
-        if (textView == null) return;
-        Context context = textView.getContext();
-        if (context != null && shouldSkipAnimations(context)) {
-            textView.setText(String.format(Locale.getDefault(), format, target));
-            return;
-        }
-
-        // 尝试从当前文本解析起始值
-        float start = 0f;
-        try {
-            CharSequence current = textView.getText();
-            if (current != null) {
-                String s = current.toString().replaceAll("[^0-9\\.]", "");
-                if (!s.isEmpty()) {
-                    start = Float.parseFloat(s);
+    private void collectCardsRecursive(ViewGroup parent, java.util.List<View> out, int depth) {
+        if (parent == null || depth > MAX_RECURSION_DEPTH) return;
+        int count = parent.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = parent.getChildAt(i);
+            if (child == null) continue;
+            Object tag = child.getTag();
+            if (tag instanceof String) {
+                String tagStr = (String) tag;
+                if (tagStr.startsWith("card_")) {
+                    out.add(child);
+                    continue; // do not recurse into cards
                 }
             }
-        } catch (Exception ignored) {
-        }
-
-        if (Math.abs(start - target) < 0.01f) {
-            textView.setText(String.format(Locale.getDefault(), format, target));
-            return;
-        }
-
-        ValueAnimator animator = ValueAnimator.ofFloat(start, target);
-        animator.setDuration(NUMBER_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.addUpdateListener(a -> {
-            float value = (float) a.getAnimatedValue();
-            textView.setText(String.format(Locale.getDefault(), format, value));
-        });
-        animator.start();
-    }
-
-    public static void animateIntText(TextView textView, int target, String format) {
-        if (textView == null) return;
-        Context context = textView.getContext();
-        if (context != null && shouldSkipAnimations(context)) {
-            textView.setText(String.format(Locale.getDefault(), format, target));
-            return;
-        }
-
-        int start = 0;
-        try {
-            CharSequence current = textView.getText();
-            if (current != null) {
-                String s = current.toString().replaceAll("[^0-9]", "");
-                if (!s.isEmpty()) {
-                    start = Integer.parseInt(s);
-                }
+            if (child instanceof ViewGroup) {
+                collectCardsRecursive((ViewGroup) child, out, depth + 1);
             }
-        } catch (Exception ignored) {
         }
+    }
 
-        if (start == target) {
-            textView.setText(String.format(Locale.getDefault(), format, target));
-            return;
+    /**
+     * 数字滚动动画：0 → target。
+     */
+    public ValueAnimator animateNumberText(TextView view, float from, float to, String format) {
+        if (view == null) return null;
+        if (shouldSkipAnimations()) {
+            view.setText(String.format(Locale.getDefault(), format, to));
+            return null;
         }
-
-        ValueAnimator animator = ValueAnimator.ofInt(start, target);
-        animator.setDuration(NUMBER_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.addUpdateListener(a -> {
-            int value = (int) a.getAnimatedValue();
-            textView.setText(String.format(Locale.getDefault(), format, value));
+        ValueAnimator anim = ValueAnimator.ofFloat(from, to);
+        anim.setDuration(DEFAULT_DURATION);
+        anim.setInterpolator(DECEL);
+        // Hold a tag for explicit cancel() on detach
+        Object existing = view.getTag(R.id.tag_anim_number);
+        if (existing instanceof ValueAnimator) {
+            ((ValueAnimator) existing).cancel();
+        }
+        view.setTag(R.id.tag_anim_number, anim);
+        anim.addUpdateListener(a -> {
+            if (view.getTag(R.id.tag_anim_number) != anim) {
+                a.cancel();
+                return;
+            }
+            float current = (Float) a.getAnimatedValue();
+            view.setText(String.format(Locale.getDefault(), format, current));
         });
-        animator.start();
+        anim.start();
+        return anim;
     }
 
     /**
-     * 平滑过渡 ProgressBar 进度。
+     * 整数滚动动画：0 → target。
      */
-    public static void animateProgressBar(ProgressBar progressBar, int targetProgress) {
-        if (progressBar == null) return;
-        Context context = progressBar.getContext();
-        if (context != null && shouldSkipAnimations(context)) {
-            progressBar.setProgress(targetProgress);
-            return;
+    public ValueAnimator animateIntText(TextView view, int from, int to, String format) {
+        if (view == null) return null;
+        if (shouldSkipAnimations()) {
+            view.setText(String.format(Locale.getDefault(), format, to));
+            return null;
         }
-
-        int start = progressBar.getProgress();
-        if (start == targetProgress) {
-            progressBar.setProgress(targetProgress);
-            return;
+        ValueAnimator anim = ValueAnimator.ofInt(from, to);
+        anim.setDuration(DEFAULT_DURATION);
+        anim.setInterpolator(DECEL);
+        Object existing = view.getTag(R.id.tag_anim_int);
+        if (existing instanceof ValueAnimator) {
+            ((ValueAnimator) existing).cancel();
         }
-
-        ObjectAnimator animator = ObjectAnimator.ofInt(progressBar, "progress", start, targetProgress);
-        animator.setDuration(PROGRESS_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.start();
+        view.setTag(R.id.tag_anim_int, anim);
+        anim.addUpdateListener(a -> {
+            if (view.getTag(R.id.tag_anim_int) != anim) {
+                a.cancel();
+                return;
+            }
+            int current = (Integer) a.getAnimatedValue();
+            view.setText(String.format(Locale.getDefault(), format, current));
+        });
+        anim.start();
+        return anim;
     }
 
     /**
-     * 平滑过渡 HealthRingView 进度。
+     * ProgressBar 平滑过渡到目标进度。
      */
-    public static void animateRingProgress(HealthRingView ring, int targetProgress) {
-        if (ring == null) return;
-        Context context = ring.getContext();
-        if (context != null && shouldSkipAnimations(context)) {
-            ring.setProgress(targetProgress);
-            return;
+    public ObjectAnimator animateProgressBar(android.widget.ProgressBar bar, int from, int to) {
+        if (bar == null) return null;
+        if (shouldSkipAnimations()) {
+            bar.setProgress(to);
+            return null;
         }
-
-        // 读取当前进度
-        // HealthRingView 不暴露 getProgress，通过 ObjectAnimator 反射 setProgress
-        ObjectAnimator animator = ObjectAnimator.ofFloat(ring, "progress", 0f, targetProgress);
-        animator.setDuration(PROGRESS_DURATION);
-        animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.start();
+        ObjectAnimator anim = ObjectAnimator.ofInt(bar, "progress", from, to);
+        anim.setDuration(DEFAULT_DURATION);
+        anim.setInterpolator(DECEL);
+        anim.start();
+        return anim;
     }
 
     /**
-     * 给主健康度数字添加轻微的“呼吸光晕”强调效果，增强科技感。
+     * 环形进度（RingProgress）平滑过渡。target 为 0-100。
      */
-    public static void pulseHealthNumber(View view) {
+    public ObjectAnimator animateRingProgress(View ring, int to) {
+        if (ring == null) return null;
+        int clamped = Math.max(0, Math.min(100, to));
+        if (shouldSkipAnimations()) {
+            ring.setTag(R.id.tag_ring_level, clamped);
+            return null;
+        }
+        Integer current = (Integer) ring.getTag(R.id.tag_ring_level);
+        int from = current != null ? current : 0;
+        ObjectAnimator anim = ObjectAnimator.ofInt(ring, ring.getId() == View.NO_ID
+                ? new android.util.Property<View, Integer>(Integer.class, "level") {
+            @Override
+            public Integer get(View object) {
+                Integer v = (Integer) object.getTag(R.id.tag_ring_level);
+                return v != null ? v : 0;
+            }
+
+            @Override
+            public void set(View object, Integer value) {
+                object.setTag(R.id.tag_ring_level, value);
+            }
+        } : new android.util.Property<View, Integer>(Integer.class, "level") {
+            @Override
+            public Integer get(View object) {
+                Integer v = (Integer) object.getTag(R.id.tag_ring_level);
+                return v != null ? v : 0;
+            }
+
+            @Override
+            public void set(View object, Integer value) {
+                object.setTag(R.id.tag_ring_level, value);
+            }
+        }, from, clamped);
+        anim.setDuration(DEFAULT_DURATION);
+        anim.setInterpolator(DECEL);
+        anim.start();
+        return anim;
+    }
+
+    /**
+     * 健康度数字呼吸效果：1.0 -> 1.06 -> 1.0，无限循环。
+     */
+    public ValueAnimator pulseHealthNumber(View target) {
+        if (target == null || shouldSkipAnimations()) return null;
+        Object existing = target.getTag(R.id.tag_pulse);
+        if (existing instanceof ValueAnimator) {
+            ((ValueAnimator) existing).cancel();
+        }
+        ValueAnimator anim = ValueAnimator.ofFloat(1f, 1.06f, 1f);
+        anim.setDuration(1200L);
+        anim.setRepeatCount(ValueAnimator.INFINITE);
+        anim.setInterpolator(ACCEL_DECEL);
+        target.setTag(R.id.tag_pulse, anim);
+        anim.addUpdateListener(a -> {
+            if (target.getTag(R.id.tag_pulse) != anim) {
+                a.cancel();
+                return;
+            }
+            float scale = (Float) a.getAnimatedValue();
+            target.setScaleX(scale);
+            target.setScaleY(scale);
+        });
+        anim.start();
+        return anim;
+    }
+
+    /**
+     * 停止所有与 view 关联的动画。
+     */
+    public void cancelAll(View view) {
         if (view == null) return;
-        Context context = view.getContext();
-        if (context != null && shouldSkipAnimations(context)) return;
+        cancelTag(view, R.id.tag_anim_number);
+        cancelTag(view, R.id.tag_anim_int);
+        cancelTag(view, R.id.tag_pulse);
+    }
 
-        view.animate()
-                .scaleX(1.04f)
-                .scaleY(1.04f)
-                .setDuration(220L)
-                .setInterpolator(SPRING)
-                .withEndAction(() -> view.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(280L)
-                        .setInterpolator(EASE_OUT_CUBIC)
-                        .start())
-                .start();
+    private void cancelTag(View view, int tagId) {
+        Object obj = view.getTag(tagId);
+        if (obj instanceof ValueAnimator) {
+            ((ValueAnimator) obj).cancel();
+        }
+        view.setTag(tagId, null);
     }
 }

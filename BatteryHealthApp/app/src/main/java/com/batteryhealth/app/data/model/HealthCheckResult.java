@@ -1,6 +1,7 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -69,17 +70,40 @@ public class HealthCheckResult {
     private HealthCheckResult(Builder b) {
         this.id = b.id;
         this.title = b.title;
-        this.category = b.category;
-        this.severity = b.severity;
+        this.category = b.category == null ? CATEGORY_BATTERY : b.category;
+        this.severity = clampSeverity(b.severity);
         this.status = b.status;
         this.value = b.value;
         this.unit = b.unit;
         this.description = b.description;
         this.advice = b.advice;
         this.repairable = b.repairable;
-        this.fixAction = b.fixAction;
-        this.itemScore = b.itemScore;
+        this.fixAction = clampFixAction(b.fixAction);
+        this.itemScore = b.itemScore; // Builder 中已夹紧
         this.timestamp = b.timestamp > 0 ? b.timestamp : System.currentTimeMillis();
+    }
+
+    /**
+     * 校验 severity 字段位于合法范围内，避免调用方绕过 IntDef 注解传入非法值。
+     */
+    @Severity
+    private static int clampSeverity(int severity) {
+        if (severity == SEVERITY_GOOD || severity == SEVERITY_INFO
+                || severity == SEVERITY_WARNING || severity == SEVERITY_CRITICAL) {
+            return severity;
+        }
+        return SEVERITY_INFO;
+    }
+
+    /**
+     * 校验 fixAction 字段位于合法范围内。
+     */
+    @FixAction
+    private static int clampFixAction(int fixAction) {
+        if (fixAction < FIX_ACTION_NONE || fixAction > FIX_ACTION_ADVICE_ONLY) {
+            return FIX_ACTION_NONE;
+        }
+        return fixAction;
     }
 
     public String getId() { return id; }
@@ -144,5 +168,16 @@ public class HealthCheckResult {
             }
             return new HealthCheckResult(this);
         }
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "HealthCheckResult{id=" + id
+                + ", title=" + title
+                + ", category=" + category
+                + ", severity=" + severity
+                + ", itemScore=" + itemScore
+                + "}";
     }
 }

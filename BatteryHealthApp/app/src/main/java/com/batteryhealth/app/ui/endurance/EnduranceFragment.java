@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,8 +34,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EnduranceFragment extends Fragment {
+
+    private static final String TAG = "EnduranceFragment";
 
     private TextView tvEnduranceHours;
     private TextView tvEnduranceMeta;
@@ -47,18 +51,23 @@ public class EnduranceFragment extends Fragment {
 
     private BatteryDataManager batteryDataManager;
 
-    // Discharge rate tracking
+    // Discharge rate tracking - guarded by rateLock for thread safety
+    private final Object rateLock = new Object();
     private int lastBatteryLevel = -1;
     private long lastUpdateTime = -1;
     private float dischargeRate = 0f;
-    private boolean hasRealDischargeRate = false;
+    private final AtomicBoolean hasRealDischargeRate = new AtomicBoolean(false);
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_endurance, container, false);
-        initViews(view);
-        animateEntry(view);
+        try {
+            initViews(view);
+            animateEntry(view);
+        } catch (Exception e) {
+            Log.e(TAG, "onCreateView failed: " + e.getMessage(), e);
+        }
         return view;
     }
 
@@ -76,8 +85,12 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            Log.e(TAG, "animateEntry failed: " + e.getMessage());
+        }
     }
 
     private BatteryDataManager getBatteryDataManager() {
@@ -131,15 +144,18 @@ public class EnduranceFragment extends Fragment {
                 requireContext().registerReceiver(batteryReceiver, filter);
             }
         } catch (Exception e) {
-            // Ignore if context is no longer valid
+            Log.e(TAG, "registerBatteryReceiver failed: " + e.getMessage());
         }
     }
 
     private void unregisterBatteryReceiver() {
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
+            if (getContext() != null) {
+                getContext().unregisterReceiver(batteryReceiver);
+            }
         } catch (IllegalArgumentException ignored) {
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.e(TAG, "unregisterBatteryReceiver failed: " + e.getMessage());
         }
     }
 
@@ -175,15 +191,20 @@ public class EnduranceFragment extends Fragment {
     };
 
     private void updateBatteryData() {
-        if (getContext() == null) return;
-        Intent intent = getContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        try {
+            Intent intent = ctx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (intent != null) {
+                updateFromIntent(intent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "updateBatteryData failed: " + e.getMessage());
         }
     }
 
     private void updateFromIntent(Intent intent) {
-        if (!isAdded() || getContext() == null) return;
+        if (!isAdded() || getContext() == null || intent == null) return;
 
         int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
@@ -197,22 +218,26 @@ public class EnduranceFragment extends Fragment {
         int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
         float tempC = temp / 10f;
 
-        // Calculate discharge rate from real data
+        // Calculate discharge rate from real data (synchronized for cross-thread safety)
         long now = System.currentTimeMillis();
         if (!isCharging && batteryPct >= 0) {
-            if (lastBatteryLevel >= 0 && lastUpdateTime > 0 && lastBatteryLevel != batteryPct) {
-                long elapsedMs = now - lastUpdateTime;
-                float elapsedHours = elapsedMs / (1000f * 60 * 60);
-                if (elapsedHours > 0.01f) { // at least ~36 seconds
-                    int delta = lastBatteryLevel - batteryPct;
-                    if (delta > 0) {
-                        float instantRate = delta / elapsedHours;
-                        // Smooth the rate using exponential moving average
-                        if (hasRealDischargeRate) {
-                            dischargeRate = dischargeRate * 0.7f + instantRate * 0.3f;
-                        } else {
-                            dischargeRate = instantRate;
-                            hasRealDischargeRate = true;
+            synchronized (rateLock) {
+                if (lastBatteryLevel >= 0 && lastUpdateTime > 0 && lastBatteryLevel != batteryPct) {
+                    long elapsedMs = now - lastUpdateTime;
+                    float elapsedHours = elapsedMs / (1000f * 60 * 60);
+                    if (elapsedHours > 0.01f) { // at least ~36 seconds
+                        int delta = lastBatteryLevel - batteryPct;
+                        if (delta > 0) {
+                            float instantRate = delta / elapsedHours;
+                            if (instantRate < 0) instantRate = 0;
+                            // Smooth the rate using exponential moving average
+                            if (hasRealDischargeRate.get()) {
+                                dischargeRate = dischargeRate * 0.7f + instantRate * 0.3f;
+                            } else {
+                                dischargeRate = instantRate;
+                                hasRealDischargeRate.set(true);
+                            }
+                            if (dischargeRate < 0) dischargeRate = 0;
                         }
                     }
                 }
@@ -220,34 +245,40 @@ public class EnduranceFragment extends Fragment {
         }
 
         // If we don't have a real discharge rate yet, try to estimate from historical data
-        if (!hasRealDischargeRate) {
+        if (!hasRealDischargeRate.get()) {
             estimateDischargeRateFromHistoryAsync(batteryPct, isCharging);
         }
 
-        lastBatteryLevel = batteryPct;
-        lastUpdateTime = now;
+        synchronized (rateLock) {
+            lastBatteryLevel = batteryPct;
+            lastUpdateTime = now;
+        }
 
-        // Endurance estimate
+        // Endurance estimate (snapshot under lock for consistent read)
+        float currentDischargeRate;
+        boolean realRate;
+        synchronized (rateLock) {
+            currentDischargeRate = dischargeRate;
+            realRate = hasRealDischargeRate.get();
+        }
         float remainingHours = 0f;
-        if (dischargeRate > 0 && batteryPct > 0 && !isCharging) {
-            remainingHours = batteryPct / dischargeRate;
+        if (currentDischargeRate > 0 && batteryPct > 0 && !isCharging) {
+            remainingHours = batteryPct / currentDischargeRate;
         }
         int hours = (int) remainingHours;
         int minutes = (int) ((remainingHours - hours) * 60);
 
         if (tvEnduranceHours != null) {
-            if (isCharging) {
+            if (isCharging || (!realRate && currentDischargeRate <= 0)) {
                 tvEnduranceHours.setText("--");
-            } else if (hasRealDischargeRate || dischargeRate > 0) {
-                tvEnduranceHours.setText(String.valueOf(hours));
             } else {
-                tvEnduranceHours.setText("--");
+                tvEnduranceHours.setText(String.valueOf(hours));
             }
         }
 
         if (tvEnduranceMeta != null) {
             tvEnduranceMeta.setText(String.format(Locale.getDefault(),
-                    getString(R.string.meta_endurance), batteryPct, dischargeRate));
+                    getString(R.string.meta_endurance), batteryPct, currentDischargeRate));
         }
 
         // Quick metrics
@@ -255,10 +286,10 @@ public class EnduranceFragment extends Fragment {
             tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         }
         if (tvMetricDischarge != null) {
-            if (hasRealDischargeRate) {
-                tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
+            if (realRate) {
+                tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", currentDischargeRate));
             } else {
-                tvMetricDischarge.setText(String.format(Locale.getDefault(), "~%.1f%%/h", dischargeRate));
+                tvMetricDischarge.setText(String.format(Locale.getDefault(), "~%.1f%%/h", currentDischargeRate));
             }
         }
         if (tvMetricTemp != null) {
@@ -269,7 +300,8 @@ public class EnduranceFragment extends Fragment {
         if (tvChargingStatus != null) tvChargingStatus.setText(chargingStatus);
         if (tvUsedTime != null) tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
         if (tvConsumedBattery != null) {
-            tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
+            int consumed = (batteryPct >= 0) ? (100 - batteryPct) : 0;
+            tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", consumed));
         }
 
         // Estimated time to full charge
@@ -281,7 +313,7 @@ public class EnduranceFragment extends Fragment {
             }
         }
 
-        // Screen-on time estimate based on real discharge rate
+        // Screen-on time estimate
         if (tvScreenOnTime != null) {
             tvScreenOnTime.setText(formatDuration(SystemClock.uptimeMillis()));
         }
@@ -296,13 +328,24 @@ public class EnduranceFragment extends Fragment {
             dbExecutor = Executors.newSingleThreadExecutor();
         }
         dbExecutor.submit(() -> {
-            float rate = estimateDischargeRateFromHistory(currentLevel, isCharging);
-            if (rate > 0 && !hasRealDischargeRate && isAdded()) {
-                handler.post(() -> {
-                    if (!hasRealDischargeRate && isAdded()) {
-                        dischargeRate = rate;
-                    }
-                });
+            try {
+                float rate = estimateDischargeRateFromHistory(currentLevel, isCharging);
+                if (rate > 0 && !hasRealDischargeRate.get() && isAdded()) {
+                    final float finalRate = rate;
+                    handler.post(() -> {
+                        // Double-check after posting to handler to avoid races
+                        if (!hasRealDischargeRate.get() && isAdded()) {
+                            synchronized (rateLock) {
+                                if (!hasRealDischargeRate.get()) {
+                                    dischargeRate = finalRate;
+                                    hasRealDischargeRate.set(true);
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "estimateDischargeRateFromHistoryAsync failed: " + e.getMessage());
             }
         });
     }
@@ -347,9 +390,11 @@ public class EnduranceFragment extends Fragment {
             }
 
             if (rateCount > 0) {
-                return totalRate / rateCount;
+                float result = totalRate / rateCount;
+                return (result < 0) ? 0f : result;
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.e(TAG, "estimateDischargeRateFromHistory failed: " + e.getMessage());
         }
         return 0f;
     }
@@ -373,26 +418,30 @@ public class EnduranceFragment extends Fragment {
             int effectiveCapacity = currentCapacity > 0 ? currentCapacity : designCapacity;
             if (effectiveCapacity <= 0) return getString(R.string.status_calculating);
 
-            if (chargingPower > 0) {
+            if (chargingPower > 0 && currentLevel >= 0 && currentLevel < 100) {
                 int remainingMah = (int) (effectiveCapacity * (100 - currentLevel) / 100f);
                 // Charging is not 100% efficient; assume ~80% efficiency
                 float hoursNeeded = (remainingMah / (chargingPower * 1000f)) / 0.8f;
+                if (hoursNeeded < 0) hoursNeeded = 0;
                 int h = (int) hoursNeeded;
                 int m = (int) ((hoursNeeded - h) * 60);
+                if (m < 0) m = 0;
                 if (h > 0) {
                     return String.format(Locale.getDefault(), "%d小时%d分", h, m);
                 } else {
                     return String.format(Locale.getDefault(), "%d分", m);
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.e(TAG, "estimateChargeTimeRemaining failed: " + e.getMessage());
         }
         return getString(R.string.status_calculating);
     }
 
     private String formatDuration(long ms) {
-        long hours = ms / (1000 * 60 * 60);
-        long minutes = (ms % (1000 * 60 * 60)) / (1000 * 60);
+        if (ms < 0) ms = 0;
+        long hours = ms / (1000L * 60 * 60);
+        long minutes = (ms % (1000L * 60 * 60)) / (1000L * 60);
         return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
     }
 }

@@ -21,7 +21,8 @@
         android:pathData="M32,37h44v34h-44z"/>
     <!-- Plus sign -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="3"
         android:pathData="M54,45v20M44,55h20"/>
 </vector>

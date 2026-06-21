@@ -43,9 +43,6 @@ public class PolicyActivity extends AppCompatActivity {
             scroll.setFillViewport(true);
             scroll.setBackgroundColor(ContextCompat.getColor(this, R.color.ios_background));
             scroll.addView(tv);
-            setContentView(scroll);
-
-            // 自定义顶部标题栏
             android.widget.LinearLayout titleBar = new android.widget.LinearLayout(this);
             titleBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
             titleBar.setGravity(android.view.Gravity.CENTER_VERTICAL);

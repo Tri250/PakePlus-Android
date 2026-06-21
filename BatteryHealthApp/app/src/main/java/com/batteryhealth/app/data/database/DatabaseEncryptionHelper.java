@@ -23,6 +23,10 @@ import java.util.List;
  * 2. 将明文数据库重命名为备份，再创建加密数据库。
  * 3. 将历史数据导入加密数据库，成功后删除备份。
  * 4. 若任何步骤失败，从备份恢复明文数据库并回退到无加密模式，避免用户数据丢失。
+ *
+ * 关键修复：
+ * - 重命名 wal/shm 辅助文件时检查返回值，避免遗留脏文件。
+ * - 集中日志门禁以避免在 release 包泄露诊断信息。
  */
 public class DatabaseEncryptionHelper {
 
@@ -61,7 +65,7 @@ public class DatabaseEncryptionHelper {
                     // 一旦初始化失败，后续整个安装周期都使用明文存储，避免密钥不一致
                     forcePlain = true;
                     fallbackFlagPrefs.edit().putBoolean(KEY_USE_PLAIN_PREFS, true).commit();
-                    Log.w(TAG, "EncryptedSharedPreferences unavailable, falling back to plain prefs");
+                    logWarn("EncryptedSharedPreferences unavailable, falling back to plain prefs");
                 }
             }
             if (prefs == null) {
@@ -107,15 +111,13 @@ public class DatabaseEncryptionHelper {
             List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList =
                     plainDb.powerHistoryDao().getAll();
 
-            if (com.batteryhealth.app.BuildConfigHelper.isDebugMode()) {
-                Log.d(TAG, "Migrating plain database: battery=" + batteryInfoList.size()
-                        + ", performance=" + performanceDataList.size()
-                        + ", power=" + powerHistoryList.size());
-            }
+            logDebug("Migrating plain database: battery=" + batteryInfoList.size()
+                    + ", performance=" + performanceDataList.size()
+                    + ", power=" + powerHistoryList.size());
 
             return new DatabaseSnapshot(batteryInfoList, performanceDataList, powerHistoryList);
         } catch (Exception e) {
-            Log.e(TAG, "Failed to read plain database: " + e.getMessage(), e);
+            logError("Failed to read plain database: " + e.getMessage(), e);
             return null;
         } finally {
             if (plainDb != null) {
@@ -138,16 +140,20 @@ public class DatabaseEncryptionHelper {
             deleteBackupFiles(backupFile);
             boolean renamed = dbFile.renameTo(backupFile);
             if (renamed) {
-                // 同时重命名 wal/shm 文件
-                new File(dbFile.getAbsolutePath() + "-wal")
-                        .renameTo(new File(backupFile.getAbsolutePath() + "-wal"));
-                new File(dbFile.getAbsolutePath() + "-shm")
-                        .renameTo(new File(backupFile.getAbsolutePath() + "-shm"));
+                // 同时重命名 wal/shm 文件；任一失败都需要记录，便于排查脏文件
+                File wal = new File(dbFile.getAbsolutePath() + "-wal");
+                File shm = new File(dbFile.getAbsolutePath() + "-shm");
+                if (wal.exists() && !wal.renameTo(new File(backupFile.getAbsolutePath() + "-wal"))) {
+                    logWarn("Failed to rename wal file; leftover wal may exist");
+                }
+                if (shm.exists() && !shm.renameTo(new File(backupFile.getAbsolutePath() + "-shm"))) {
+                    logWarn("Failed to rename shm file; leftover shm may exist");
+                }
             }
-            Log.d(TAG, "Plain database renamed to backup: " + renamed);
+            logDebug("Plain database renamed to backup: " + renamed);
             return renamed;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to rename plain database: " + e.getMessage(), e);
+            logError("Failed to rename plain database: " + e.getMessage(), e);
             return false;
         }
     }
@@ -171,17 +177,19 @@ public class DatabaseEncryptionHelper {
             if (restored) {
                 File backupWal = new File(backupFile.getAbsolutePath() + "-wal");
                 File backupShm = new File(backupFile.getAbsolutePath() + "-shm");
-                if (backupWal.exists()) {
-                    backupWal.renameTo(new File(dbFile.getAbsolutePath() + "-wal"));
+                if (backupWal.exists()
+                        && !backupWal.renameTo(new File(dbFile.getAbsolutePath() + "-wal"))) {
+                    logWarn("Failed to restore wal file");
                 }
-                if (backupShm.exists()) {
-                    backupShm.renameTo(new File(dbFile.getAbsolutePath() + "-shm"));
+                if (backupShm.exists()
+                        && !backupShm.renameTo(new File(dbFile.getAbsolutePath() + "-shm"))) {
+                    logWarn("Failed to restore shm file");
                 }
             }
-            Log.d(TAG, "Plain database restored from backup: " + restored);
+            logDebug("Plain database restored from backup: " + restored);
             return restored;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to restore plain database: " + e.getMessage(), e);
+            logError("Failed to restore plain database: " + e.getMessage(), e);
             return false;
         }
     }
@@ -198,10 +206,10 @@ public class DatabaseEncryptionHelper {
             }
             File backupFile = new File(dbFile.getParent(), DATABASE_NAME + "_plain_backup");
             boolean deleted = deleteBackupFiles(backupFile);
-            Log.d(TAG, "Plain database backup deleted: " + deleted);
+            logDebug("Plain database backup deleted: " + deleted);
             return deleted;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to delete plain database backup: " + e.getMessage(), e);
+            logError("Failed to delete plain database backup: " + e.getMessage(), e);
             return false;
         }
     }
@@ -234,7 +242,7 @@ public class DatabaseEncryptionHelper {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
         } catch (Exception e) {
-            Log.e(TAG, "Failed to initialize encrypted preferences", e);
+            logError("Failed to initialize encrypted preferences", e);
             return null;
         }
     }
@@ -243,6 +251,31 @@ public class DatabaseEncryptionHelper {
         byte[] bytes = new byte[PASSPHRASE_LENGTH];
         new SecureRandom().nextBytes(bytes);
         return bytes;
+    }
+
+    private static void logDebug(String message) {
+        if (isDebug()) {
+            Log.d(TAG, message);
+        }
+    }
+
+    private static void logWarn(String message) {
+        if (isDebug()) {
+            Log.w(TAG, message);
+        }
+    }
+
+    private static void logError(String message, Throwable t) {
+        // 错误始终记录，方便生产环境排查
+        Log.e(TAG, message, t);
+    }
+
+    private static boolean isDebug() {
+        try {
+            return com.batteryhealth.app.BuildConfigHelper.isDebugMode();
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /**

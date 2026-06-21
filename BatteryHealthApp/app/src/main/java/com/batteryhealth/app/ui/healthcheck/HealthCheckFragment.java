@@ -118,6 +118,9 @@ public class HealthCheckFragment extends Fragment {
         if (engine == null) return;
         if (engine.isRunning()) return;
 
+        Context ctx = getContext();
+        if (ctx == null) return;
+
         if (tvActionCheck != null) {
             tvActionCheck.setEnabled(false);
             tvActionCheck.setText(R.string.health_check_action_checking);
@@ -134,7 +137,6 @@ public class HealthCheckFragment extends Fragment {
             progressOverall.setProgress(0);
         }
 
-        Context ctx = getContext();
         engine.startCheck(ctx, new HealthCheckEngine.Callback() {
             @Override
             public void onProgress(final int percent) {
@@ -153,7 +155,9 @@ public class HealthCheckFragment extends Fragment {
             @Override
             public void onError(final String message) {
                 mainHandler.post(() -> {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    }
                     finishCheckingUI();
                 });
             }
@@ -194,26 +198,26 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void exportReport() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         if (lastResults.isEmpty()) {
-            Toast.makeText(getContext(), R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
             return;
         }
         String csv = engine.exportCsv(lastResults);
         if (csv == null || csv.isEmpty()) {
-            Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
-            Context ctx = getContext();
-            if (ctx == null) return;
             ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText("health-check-report", csv));
             }
             Toast.makeText(ctx, getString(R.string.health_check_export_success), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -265,9 +269,12 @@ public class HealthCheckFragment extends Fragment {
 
             h.itemView.setOnClickListener(v -> showDetailDialog(r));
             h.tvAction.setOnClickListener(v -> {
-                if (engine != null) {
-                    boolean ok = engine.applyFix(getContext(), r);
-                    if (!ok) Toast.makeText(getContext(), R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                Context fixCtx = h.tvAction.getContext();
+                if (engine != null && fixCtx != null) {
+                    boolean ok = engine.applyFix(fixCtx, r);
+                    if (!ok && getContext() != null) {
+                        Toast.makeText(getContext(), R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         }
@@ -314,7 +321,8 @@ public class HealthCheckFragment extends Fragment {
                 .setPositiveButton(android.R.string.cancel, null);
         if (r.isRepairable()) {
             builder.setNeutralButton(R.string.health_check_action_fix, (dialog, which) -> {
-                if (engine != null) engine.applyFix(getContext(), r);
+                Context fixCtx = getContext();
+                if (engine != null && fixCtx != null) engine.applyFix(fixCtx, r);
             });
         }
         try {

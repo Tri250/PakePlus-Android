@@ -2,6 +2,8 @@ package com.batteryhealth.app.data.model;
 
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+
 import java.util.Locale;
 
 /**
@@ -65,27 +67,34 @@ public class DeviceConfig {
     private String activationSource; // 激活日期来源
     private float activationConfidence; // 激活日期可信度 0-1
 
+    /** 标准 RAM 营销规格（GB），按升序排列。静态化以避免重复分配。 */
+    private static final int[] MARKETING_MEMORY_STANDARDS_GB = {1, 2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 48, 64};
+
     public DeviceConfig() {
-        // 初始化基本信息
-        this.brand = Build.BRAND;
-        this.manufacturer = Build.MANUFACTURER;
-        this.model = Build.MODEL;
-        this.device = Build.DEVICE;
-        this.product = Build.PRODUCT;
-        this.board = Build.BOARD;
-        this.hardware = Build.HARDWARE;
+        // 初始化基本信息（Build 常量理论不为 null，但使用空串兜底以防定制 ROM）
+        this.brand = safeStr(Build.BRAND);
+        this.manufacturer = safeStr(Build.MANUFACTURER);
+        this.model = safeStr(Build.MODEL);
+        this.device = safeStr(Build.DEVICE);
+        this.product = safeStr(Build.PRODUCT);
+        this.board = safeStr(Build.BOARD);
+        this.hardware = safeStr(Build.HARDWARE);
 
         // 初始化系统信息
-        this.androidVersion = Build.VERSION.RELEASE;
+        this.androidVersion = safeStr(Build.VERSION.RELEASE);
         this.sdkVersion = Build.VERSION.SDK_INT;
-        this.securityPatch = Build.VERSION.SECURITY_PATCH;
-        this.buildId = Build.ID;
-        this.fingerprint = Build.FINGERPRINT;
+        this.securityPatch = safeStr(Build.VERSION.SECURITY_PATCH);
+        this.buildId = safeStr(Build.ID);
+        this.fingerprint = safeStr(Build.FINGERPRINT);
 
         // 初始化处理器信息（使用非废弃 API）
-        this.supportedAbis = Build.SUPPORTED_ABIS;
+        this.supportedAbis = Build.SUPPORTED_ABIS != null ? Build.SUPPORTED_ABIS.clone() : new String[0];
         this.cpuAbi = supportedAbis.length > 0 ? supportedAbis[0] : "";
         this.cpuAbi2 = supportedAbis.length > 1 ? supportedAbis[1] : "";
+    }
+
+    private static String safeStr(String value) {
+        return value == null ? "" : value;
     }
 
     // Getters and Setters
@@ -390,7 +399,11 @@ public class DeviceConfig {
     }
 
     public void setActivationConfidence(float activationConfidence) {
-        this.activationConfidence = activationConfidence;
+        if (!Float.isFinite(activationConfidence)) {
+            this.activationConfidence = 0f;
+        } else {
+            this.activationConfidence = Math.max(0f, Math.min(1f, activationConfidence));
+        }
     }
 
     /**
@@ -431,10 +444,9 @@ public class DeviceConfig {
     public int getMarketingTotalMemoryGb() {
         if (totalMemory <= 0) return 0;
         double actualGb = totalMemory / 1024.0;
-        int[] standards = {1, 2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 48, 64};
-        int best = standards[standards.length - 1];
+        int best = MARKETING_MEMORY_STANDARDS_GB[MARKETING_MEMORY_STANDARDS_GB.length - 1];
         double minDiff = Double.MAX_VALUE;
-        for (int size : standards) {
+        for (int size : MARKETING_MEMORY_STANDARDS_GB) {
             double diff = Math.abs(actualGb - size);
             if (diff < minDiff) {
                 minDiff = diff;
@@ -485,7 +497,11 @@ public class DeviceConfig {
             case Build.VERSION_CODES.P: return "Android 9";
             case Build.VERSION_CODES.O_MR1: return "Android 8.1";
             case Build.VERSION_CODES.O: return "Android 8.0";
-            default: return "Android " + androidVersion;
+            case Build.VERSION_CODES.N_MR1: return "Android 7.1";
+            case Build.VERSION_CODES.N: return "Android 7.0";
+            default:
+                // androidVersion 在 Android 上不会为 null，但若为 null 则回退到 SDK 号
+                return "Android " + (androidVersion != null ? androidVersion : String.valueOf(sdkVersion));
         }
     }
 
@@ -502,5 +518,16 @@ public class DeviceConfig {
                lowerBrand.contains("oneplus") || lowerBrand.contains("meizu") ||
                lowerBrand.contains("nubia") || lowerBrand.contains("redmagic") ||
                lowerBrand.contains("zte") || lowerBrand.contains("lenovo");
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "DeviceConfig{brand=" + brand
+                + ", model=" + model
+                + ", sdkVersion=" + sdkVersion
+                + ", totalMemory=" + totalMemory
+                + ", totalStorage=" + totalStorage
+                + "}";
     }
 }

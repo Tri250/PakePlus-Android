@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +37,11 @@ import javax.microedition.khronos.egl.EGLDisplay;
 
 public class PerformanceFragment extends Fragment {
 
+    private static final String TAG = "PerformanceFragment";
+
+    // EGL constant for context client version (OpenGL ES major version)
+    private static final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+
     private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
     private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
     private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService;
@@ -51,16 +57,20 @@ public class PerformanceFragment extends Fragment {
     private View rootView;
 
     // Cached GPU info (read once, not every 2 seconds)
-    private String gpuRenderer;
-    private String gpuOpenglVersion;
-    private boolean gpuInfoLoaded = false;
+    private volatile String gpuRenderer;
+    private volatile String gpuOpenglVersion;
+    private volatile boolean gpuInfoLoaded = false;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_performance, container, false);
-        initViews(rootView);
-        animateEntry(rootView);
+        try {
+            initViews(rootView);
+            animateEntry(rootView);
+        } catch (Exception e) {
+            Log.e(TAG, "onCreateView failed: " + e.getMessage(), e);
+        }
         return rootView;
     }
 
@@ -85,8 +95,12 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            Log.e(TAG, "animateEntry failed: " + e.getMessage());
+        }
     }
 
     @Override
@@ -155,69 +169,99 @@ public class PerformanceFragment extends Fragment {
     private void loadData() {
         if (!isViewAvailable()) return;
 
-        // CPU
-        int cpuUsage = readCpuUsage();
-        if (tvCpuUsage != null) {
-            tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
-            UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
-        }
-
-        // Memory - use ActivityManager for real memory info (no hardcoded defaults)
-        int memUsage = 0;
-        ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
-        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-        if (am != null) {
-            am.getMemoryInfo(mi);
-            if (mi.totalMem > 0) {
-                memUsage = (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
+        try {
+            // CPU
+            int cpuUsage = readCpuUsage();
+            if (cpuUsage < 0) cpuUsage = 0;
+            if (cpuUsage > 100) cpuUsage = 100;
+            if (tvCpuUsage != null) {
+                tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpuUsage));
+                if (progressCpu != null) {
+                    UiAnimationHelper.animateProgressBar(progressCpu, cpuUsage);
+                }
             }
-        }
-        if (tvMemoryUsage != null) {
-            tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memUsage));
-            UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
-        }
 
-        // Storage
-        int storageUsage = 0;
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        long total = stat.getTotalBytes();
-        long used = total - stat.getAvailableBytes();
-        if (total > 0) {
-            storageUsage = (int) (used * 100 / total);
-        }
-        if (tvStorageUsage != null) {
-            tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
-            UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
-        }
+            // Memory - use ActivityManager for real memory info (no hardcoded defaults)
+            int memUsage = 0;
+            try {
+                ActivityManager am = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
+                if (am != null) {
+                    ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                    am.getMemoryInfo(mi);
+                    if (mi.totalMem > 0) {
+                        long used = mi.totalMem - mi.availMem;
+                        if (used < 0) used = 0;
+                        memUsage = (int) (used * 100L / mi.totalMem);
+                        if (memUsage < 0) memUsage = 0;
+                        if (memUsage > 100) memUsage = 100;
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read memory info: " + e.getMessage());
+            }
+            if (tvMemoryUsage != null) {
+                tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memUsage));
+                if (progressMemory != null) {
+                    UiAnimationHelper.animateProgressBar(progressMemory, memUsage);
+                }
+            }
 
-        // Performance score
-        int score = calculatePerformanceScore(cpuUsage, memUsage, storageUsage);
-        if (tvPerformanceScore != null) {
-            tvPerformanceScore.setText(String.valueOf(score));
-            UiAnimationHelper.animateProgressBar(progressScore, score);
-        }
+            // Storage
+            int storageUsage = 0;
+            try {
+                StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+                long total = stat.getTotalBytes();
+                long avail = stat.getAvailableBytes();
+                if (total > 0) {
+                    long used = total - avail;
+                    if (used < 0) used = 0;
+                    storageUsage = (int) (used * 100L / total);
+                    if (storageUsage < 0) storageUsage = 0;
+                    if (storageUsage > 100) storageUsage = 100;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read storage info: " + e.getMessage());
+            }
+            if (tvStorageUsage != null) {
+                tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storageUsage));
+                if (progressStorage != null) {
+                    UiAnimationHelper.animateProgressBar(progressStorage, storageUsage);
+                }
+            }
 
-        // App info
-        if (tvAppCpu != null) {
-            tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
-        }
-        if (tvAppMemory != null) {
-            tvAppMemory.setText(formatSize(getAppMemoryUsage()));
-        }
-        if (tvRuntime != null) {
-            long runtimeMs = SystemClock.elapsedRealtime();
-            tvRuntime.setText(formatDuration(runtimeMs));
-        }
-        if (tvForegroundService != null) {
-            tvForegroundService.setText(getString(R.string.status_running));
-        }
+            // Performance score
+            int score = calculatePerformanceScore(cpuUsage, memUsage, storageUsage);
+            if (tvPerformanceScore != null) {
+                tvPerformanceScore.setText(String.valueOf(score));
+                if (progressScore != null) {
+                    UiAnimationHelper.animateProgressBar(progressScore, score);
+                }
+            }
 
-        // GPU - only load once, then use cached values
-        if (!gpuInfoLoaded) {
-            loadGpuInfo();
-            gpuInfoLoaded = true;
-        } else {
-            applyCachedGpuInfo();
+            // App info
+            if (tvAppCpu != null) {
+                tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
+            }
+            if (tvAppMemory != null) {
+                tvAppMemory.setText(formatSize(getAppMemoryUsage()));
+            }
+            if (tvRuntime != null) {
+                long runtimeMs = SystemClock.elapsedRealtime();
+                tvRuntime.setText(formatDuration(runtimeMs));
+            }
+            if (tvForegroundService != null) {
+                tvForegroundService.setText(getString(R.string.status_running));
+            }
+
+            // GPU - only load once, then use cached values
+            if (!gpuInfoLoaded) {
+                loadGpuInfo();
+                gpuInfoLoaded = true;
+            } else {
+                applyCachedGpuInfo();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "loadData failed: " + e.getMessage(), e);
         }
     }
 
@@ -227,27 +271,33 @@ public class PerformanceFragment extends Fragment {
      * On the first call, stores the baseline and returns 0.
      */
     private int readCpuUsage() {
-        long[] current = readCpuStatLine();
-        if (current == null) return 0;
+        try {
+            long[] current = readCpuStatLine();
+            if (current == null) return 0;
 
-        long currIdle = current[0];
-        long currTotal = current[1];
+            long currIdle = current[0];
+            long currTotal = current[1];
 
-        if (prevCpuIdle < 0 || prevCpuTotal < 0) {
-            // First reading: store baseline, return 0
+            if (prevCpuIdle < 0 || prevCpuTotal < 0) {
+                // First reading: store baseline, return 0
+                prevCpuIdle = currIdle;
+                prevCpuTotal = currTotal;
+                return 0;
+            }
+
+            long deltaIdle = currIdle - prevCpuIdle;
+            long deltaTotal = currTotal - prevCpuTotal;
+
             prevCpuIdle = currIdle;
             prevCpuTotal = currTotal;
+
+            if (deltaTotal <= 0) return 0;
+            long usagePct = ((deltaTotal - deltaIdle) * 100L) / deltaTotal;
+            return (int) Math.max(0L, Math.min(100L, usagePct));
+        } catch (Exception e) {
+            Log.e(TAG, "readCpuUsage failed: " + e.getMessage());
             return 0;
         }
-
-        long deltaIdle = currIdle - prevCpuIdle;
-        long deltaTotal = currTotal - prevCpuTotal;
-
-        prevCpuIdle = currIdle;
-        prevCpuTotal = currTotal;
-
-        if (deltaTotal <= 0) return 0;
-        return (int) ((deltaTotal - deltaIdle) * 100 / deltaTotal);
     }
 
     /**
@@ -286,13 +336,20 @@ public class PerformanceFragment extends Fragment {
     }
 
     private float getAppCpuUsage() {
-        return 0.5f; // Placeholder
+        // Placeholder: getting real per-app CPU requires sampling /proc/self/stat across intervals
+        return 0.5f;
     }
 
     private long getAppMemoryUsage() {
-        Debug.MemoryInfo memoryInfo = new Debug.MemoryInfo();
-        Debug.getMemoryInfo(memoryInfo);
-        return memoryInfo.getTotalPss() * 1024L;
+        try {
+            Debug.MemoryInfo memoryInfo = new Debug.MemoryInfo();
+            Debug.getMemoryInfo(memoryInfo);
+            long pss = memoryInfo.getTotalPss();
+            return Math.max(0L, pss) * 1024L;
+        } catch (Exception e) {
+            Log.e(TAG, "getAppMemoryUsage failed: " + e.getMessage());
+            return 0L;
+        }
     }
 
     private String formatSize(long bytes) {
@@ -304,21 +361,27 @@ public class PerformanceFragment extends Fragment {
     }
 
     private String formatDuration(long ms) {
-        long hours = ms / (1000 * 60 * 60);
-        long minutes = (ms % (1000 * 60 * 60)) / (1000 * 60);
+        if (ms < 0) ms = 0;
+        long hours = ms / (1000L * 60 * 60);
+        long minutes = (ms % (1000L * 60 * 60)) / (1000L * 60);
         return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
     }
 
     private void loadGpuInfo() {
         if (tvGpuRenderer == null || tvOpenglVersion == null) return;
 
+        EGL10 egl = null;
+        EGLDisplay display = EGL10.EGL_NO_DISPLAY;
+        EGLContext context = EGL10.EGL_NO_CONTEXT;
+        boolean contextCreated = false;
+        boolean displayInitialized = false;
+
         try {
-            EGL10 egl = (EGL10) EGLContext.getEGL();
-            EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            egl = (EGL10) EGLContext.getEGL();
+            display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (display == EGL10.EGL_NO_DISPLAY) {
                 gpuRenderer = "Unknown";
                 gpuOpenglVersion = "Unknown";
-                applyCachedGpuInfo();
                 return;
             }
 
@@ -326,10 +389,9 @@ public class PerformanceFragment extends Fragment {
             if (!egl.eglInitialize(display, version)) {
                 gpuRenderer = "Unknown";
                 gpuOpenglVersion = "Unknown";
-                egl.eglTerminate(display);
-                applyCachedGpuInfo();
                 return;
             }
+            displayInitialized = true;
 
             EGLConfig[] configs = new EGLConfig[1];
             int[] numConfigs = new int[1];
@@ -337,34 +399,49 @@ public class PerformanceFragment extends Fragment {
                     || configs[0] == null) {
                 gpuRenderer = "Unknown";
                 gpuOpenglVersion = "Unknown";
-                egl.eglTerminate(display);
-                applyCachedGpuInfo();
                 return;
             }
 
-            EGLContext context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, EGL10.EGL_NONE});
+            context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT,
+                    new int[]{EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE});
             if (context == null || context == EGL10.EGL_NO_CONTEXT) {
                 gpuRenderer = "Unknown";
                 gpuOpenglVersion = "Unknown";
-                egl.eglTerminate(display);
-                applyCachedGpuInfo();
                 return;
             }
+            contextCreated = true;
 
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context);
+            if (!egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context)) {
+                gpuRenderer = "Unknown";
+                gpuOpenglVersion = "Unknown";
+                return;
+            }
 
             String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
             String versionStr = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
 
             gpuRenderer = renderer != null ? renderer : "Unknown";
             gpuOpenglVersion = versionStr != null ? versionStr : "Unknown";
-
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
-            egl.eglDestroyContext(display, context);
-            egl.eglTerminate(display);
         } catch (Exception e) {
-            gpuRenderer = "Unknown";
-            gpuOpenglVersion = "Unknown";
+            Log.e(TAG, "loadGpuInfo failed: " + e.getMessage());
+            if (gpuRenderer == null) gpuRenderer = "Unknown";
+            if (gpuOpenglVersion == null) gpuOpenglVersion = "Unknown";
+        } finally {
+            // Ensure EGL resources are always released, even on exception
+            if (egl != null && display != EGL10.EGL_NO_DISPLAY) {
+                try {
+                    if (contextCreated) {
+                        egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE,
+                                EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+                        egl.eglDestroyContext(display, context);
+                    }
+                    if (displayInitialized) {
+                        egl.eglTerminate(display);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "EGL cleanup failed: " + e.getMessage());
+                }
+            }
         }
         applyCachedGpuInfo();
     }

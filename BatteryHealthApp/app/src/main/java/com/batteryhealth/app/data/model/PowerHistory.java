@@ -1,5 +1,6 @@
 package com.batteryhealth.app.data.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
@@ -78,7 +79,11 @@ public class PowerHistory {
     }
 
     public void setPower(float power) {
-        this.power = power;
+        if (!Float.isFinite(power)) {
+            this.power = 0f;
+        } else {
+            this.power = Math.max(0f, power);
+        }
     }
 
     public float getVoltage() {
@@ -102,7 +107,7 @@ public class PowerHistory {
     }
 
     public void setBatteryLevel(int batteryLevel) {
-        this.batteryLevel = batteryLevel;
+        this.batteryLevel = Math.max(0, Math.min(100, batteryLevel));
     }
 
     public float getBatteryTemp() {
@@ -144,7 +149,8 @@ public class PowerHistory {
      * 若外部传入的是 mV/mA，需先除以 1000 再调用本方法。
      */
     public void calculatePower() {
-        if (voltage > 0 && current > 0) {
+        if (voltage > 0 && current > 0
+                && Float.isFinite(voltage) && Float.isFinite(current)) {
             // 功率 = 电压(V) × 电流(A)，结果单位为 W
             this.power = voltage * current;
         } else {
@@ -203,5 +209,15 @@ public class PowerHistory {
             default:
                 return "充电中";
         }
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "PowerHistory{id=" + id
+                + ", timestamp=" + timestamp
+                + ", power=" + power
+                + ", sessionId=" + sessionId
+                + "}";
     }
 }

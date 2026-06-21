@@ -151,7 +151,10 @@ public class MainActivity extends AppCompatActivity {
             
         } catch (Exception e) {
             Log.e(TAG, "Critical error in onCreate: " + e.getMessage(), e);
-            Toast.makeText(this, getString(R.string.status_app_init_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+            // status_app_init_failed has %1$s placeholder; safely handle null message.
+            String safeMessage = (e.getMessage() != null) ? e.getMessage() : e.getClass().getSimpleName();
+            String toastMessage = getString(R.string.status_app_init_failed, safeMessage);
+            Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
             // 记录详细错误信息
             StringBuilder errorDetail = new StringBuilder();
             errorDetail.append("Error: ").append(e.getMessage()).append("\n");

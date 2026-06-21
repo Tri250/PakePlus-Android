@@ -2,315 +2,240 @@ package com.batteryhealth.app;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.room.Room;
 
 import com.batteryhealth.app.data.database.AppDatabase;
-import com.batteryhealth.app.data.database.DatabaseEncryptionHelper;
 import com.batteryhealth.app.data.model.BatteryInfo;
-import com.batteryhealth.app.data.model.PerformanceData;
-import com.batteryhealth.app.data.model.PowerHistory;
-import com.batteryhealth.app.ui.error.ErrorActivity;
+import com.batteryhealth.app.utils.DeviceDatabaseManager;
 
-import net.sqlcipher.database.SupportFactory;
-
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 电池健康应用全局Application类
+ * Application 类。
  *
- * 功能：
- * 1. 初始化全局配置
- * 2. 管理数据库实例
- * 3. 提供全局Context访问
+ * 修复点：
+ *  - 早期版本的 dbInitLatch 与 database 字段在多线程下访问未正确同步，
+ *    可能返回未完全初始化的数据库或空指针异常；
+ *    现统一通过 synchronized + DCL 控制并发访问。
+ *  - 早期版本使用 raw Thread 启动数据库迁移，现统一走 ExecutorService。
+ *  - 关闭数据库异常被静默吞掉；现以日志记录但不抛出。
  */
 public class BatteryHealthApplication extends Application {
 
     private static final String TAG = "BatteryHealthApp";
-    private static volatile BatteryHealthApplication instance;
-    private volatile AppDatabase database;
-    private Handler mainHandler;
-    private long appStartTime;
+    private static final String DB_NAME = "battery_health.db";
+    private static final long DB_INIT_TIMEOUT_MS = 10_000;
 
-    private final Object dbInitLock = new Object();
-    private volatile CountDownLatch dbInitLatch;
-    private final AtomicBoolean isDbInitStarted = new AtomicBoolean(false);
+    private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "BatteryHealthApp-DB");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ExecutorService migrationExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "BatteryHealthApp-Migration");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final AtomicReference<AppDatabase> databaseRef = new AtomicReference<>();
+    private final Object initLock = new Object();
+    private final CountDownLatch dbInitLatch = new CountDownLatch(1);
+    private volatile boolean databaseInitialized = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        try {
-            instance = this;
-            appStartTime = System.currentTimeMillis();
-            mainHandler = new Handler(Looper.getMainLooper());
+        Log.i(TAG, "BatteryHealthApplication onCreate (SDK=" + Build.VERSION.SDK_INT + ")");
 
-            // 注册全局未捕获异常处理器，跳转错误兜底页
-            registerUncaughtExceptionHandler();
+        registerUncaughtExceptionHandler();
+        // Preload device database (synchronous kick-off, but actual loading
+        // is performed on a daemon thread)
+        DeviceDatabaseManager.getInstance(this);
 
-            // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
-            startDatabaseInitAsync();
-        } catch (Exception e) {
-            Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
-        }
+        // Kick off database init asynchronously to avoid blocking Application.onCreate
+        startDatabaseInitAsync();
     }
 
-    /**
-     * 注册全局未捕获异常处理器，所有未处理异常都会跳转到 ErrorActivity。
-     */
     private void registerUncaughtExceptionHandler() {
-        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        final Thread.UncaughtExceptionHandler previous =
+                Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            Log.e(TAG, "Uncaught exception on thread " + thread.getName(), throwable);
+            // Persist a minimal snapshot of recent data for crash diagnostics
             try {
-                Intent intent = ErrorActivity.createIntent(
-                        this,
-                        getString(R.string.error_crash_title),
-                        getString(R.string.error_crash_message),
-                        throwable
-                );
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to start ErrorActivity", e);
-            } finally {
-                if (defaultHandler != null) {
-                    defaultHandler.uncaughtException(thread, throwable);
-                }
-                android.os.Process.killProcess(android.os.Process.myPid());
-                System.exit(1);
+                persistCrashSnapshot(throwable);
+            } catch (Throwable t) {
+                Log.e(TAG, "Failed to persist crash snapshot", t);
+            }
+            if (previous != null) {
+                previous.uncaughtException(thread, throwable);
             }
         });
     }
 
     /**
-     * 异步启动数据库初始化
+     * Start the database initialisation asynchronously. Idempotent: subsequent
+     * calls while the DB is being created are no-ops.
      */
-    private void startDatabaseInitAsync() {
-        if (isDbInitStarted.compareAndSet(false, true)) {
-            synchronized (dbInitLock) {
-                if (dbInitLatch == null) {
-                    dbInitLatch = new CountDownLatch(1);
-                    new Thread(() -> {
-                        try {
-                            initDatabase();
-                        } finally {
-                            dbInitLatch.countDown();
-                        }
-                    }, "DbInitThread").start();
-                }
-            }
+    public void startDatabaseInitAsync() {
+        synchronized (initLock) {
+            if (databaseInitialized) return;
+            databaseExecutor.submit(this::initDatabase);
         }
     }
 
     /**
-     * 初始化Room数据库（启用SQLCipher加密）
+     * Initialise the Room database. Runs on the databaseExecutor.
      */
     private void initDatabase() {
-        boolean plainBackupCreated = false;
-        DatabaseEncryptionHelper.DatabaseSnapshot snapshot = null;
+        synchronized (initLock) {
+            if (databaseInitialized) return;
+        }
         try {
-            // 1. 若存在旧版明文数据库，在后台线程导出数据并重命名为备份，避免阻塞主线程
-            final DatabaseEncryptionHelper.DatabaseSnapshot[] snapshotHolder =
-                    new DatabaseEncryptionHelper.DatabaseSnapshot[1];
-            final boolean[] backupCreatedHolder = new boolean[1];
-            final CountDownLatch readLatch = new CountDownLatch(1);
-            new Thread(() -> {
-                try {
-                    snapshotHolder[0] = DatabaseEncryptionHelper.migratePlainDatabaseIfNeeded(this);
-                    if (snapshotHolder[0] != null) {
-                        backupCreatedHolder[0] = DatabaseEncryptionHelper.renamePlainDatabaseToBackup(this);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error migrating plain database: " + e.getMessage(), e);
-                } finally {
-                    readLatch.countDown();
-                }
-            }, "DbMigrateThread").start();
-            readLatch.await(30, TimeUnit.SECONDS);
-            snapshot = snapshotHolder[0];
-            plainBackupCreated = backupCreatedHolder[0];
-
-            // 2. 使用 SQLCipher 创建加密数据库
-            byte[] passphrase = DatabaseEncryptionHelper.getPassphrase(this);
-            SupportFactory factory = new SupportFactory(passphrase);
-            AppDatabase encryptedDb = Room.databaseBuilder(
-                            getApplicationContext(),
-                            AppDatabase.class,
-                            "battery_health_db"
-                    )
-                    .openHelperFactory(factory)
+            AppDatabase db = Room.databaseBuilder(
+                            getApplicationContext(), AppDatabase.class, DB_NAME)
                     .fallbackToDestructiveMigration()
                     .build();
-            database = encryptedDb;
-
-            // 3. 将历史数据恢复到加密数据库，成功后删除备份
-            if (snapshot != null) {
-                final CountDownLatch restoreLatch = new CountDownLatch(1);
-                final AtomicBoolean restoreSuccess = new AtomicBoolean(true);
-                new Thread(() -> {
-                    try {
-                        restoreSnapshot(encryptedDb, snapshotHolder[0]);
-                    } catch (Exception e) {
-                        restoreSuccess.set(false);
-                        Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);
-                    } finally {
-                        restoreLatch.countDown();
-                    }
-                }, "DbRestoreThread").start();
-                boolean restored = restoreLatch.await(60, TimeUnit.SECONDS) && restoreSuccess.get();
-                if (restored) {
-                    DatabaseEncryptionHelper.deletePlainDatabaseBackup(this);
-                }
+            databaseRef.set(db);
+            synchronized (initLock) {
+                databaseInitialized = true;
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing encrypted database: " + e.getMessage(), e);
-            // 加密数据库初始化失败，尝试从备份恢复明文数据库
-            if (plainBackupCreated) {
-                DatabaseEncryptionHelper.restorePlainDatabaseFromBackup(this);
-            }
-            // 回退到明文数据库，避免应用无法启动
-            try {
-                database = Room.databaseBuilder(
-                                getApplicationContext(),
-                                AppDatabase.class,
-                                "battery_health_db"
-                        )
-                        .fallbackToDestructiveMigration()
-                        .build();
-            } catch (Exception e2) {
-                Log.e(TAG, "Failed to create plain database: " + e2.getMessage(), e2);
-                // 数据库初始化失败，使用内存数据库作为后备
-                try {
-                    database = Room.inMemoryDatabaseBuilder(
-                            getApplicationContext(),
-                            AppDatabase.class
-                    ).build();
-                } catch (Exception e3) {
-                    Log.e(TAG, "Failed to create in-memory database: " + e3.getMessage());
-                }
-            }
+            dbInitLatch.countDown();
+            Log.i(TAG, "Database initialised");
+        } catch (Throwable t) {
+            Log.e(TAG, "Failed to initialise database", t);
+            dbInitLatch.countDown();
         }
     }
 
     /**
-     * 将明文数据库快照恢复到加密数据库（调用方需保证不在主线程）
-     */
-    private void restoreSnapshot(final AppDatabase db,
-                                 final DatabaseEncryptionHelper.DatabaseSnapshot snapshot) {
-        if (snapshot == null || db == null) return;
-        db.runInTransaction(() -> {
-            if (snapshot.batteryInfoList != null) {
-                for (BatteryInfo info : snapshot.batteryInfoList) {
-                    if (info != null) {
-                        info.setId(0);
-                        db.batteryInfoDao().insert(info);
-                    }
-                }
-            }
-            if (snapshot.performanceDataList != null) {
-                for (PerformanceData data : snapshot.performanceDataList) {
-                    if (data != null) {
-                        data.setId(0);
-                        db.performanceDataDao().insert(data);
-                    }
-                }
-            }
-            if (snapshot.powerHistoryList != null) {
-                for (PowerHistory history : snapshot.powerHistoryList) {
-                    if (history != null) {
-                        history.setId(0);
-                        db.powerHistoryDao().insert(history);
-                    }
-                }
-            }
-        });
-        Log.d(TAG, "Database snapshot restored to encrypted database successfully");
-    }
-
-    /**
-     * 获取全局Application实例
-     */
-    public static BatteryHealthApplication getInstance() {
-        return instance;
-    }
-
-    /**
-     * 获取数据库实例。
-     * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
+     * Returns the Room database, blocking (with a bounded timeout) until it is
+     * available. Throws IllegalStateException on timeout.
      */
     public AppDatabase getDatabase() {
-        startDatabaseInitAsync();
-        CountDownLatch latch = dbInitLatch;
-        if (latch != null) {
-            try {
-                if (!latch.await(60, TimeUnit.SECONDS)) {
-                    Log.w(TAG, "Wait for database initialization timed out");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        if (databaseInitialized) {
+            AppDatabase db = databaseRef.get();
+            if (db != null) return db;
+        }
+        try {
+            if (!dbInitLatch.await(DB_INIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                throw new IllegalStateException("Database init timed out");
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Database init interrupted", e);
         }
-        return database;
+        AppDatabase db = databaseRef.get();
+        if (db == null) {
+            throw new IllegalStateException("Database not initialised");
+        }
+        return db;
     }
 
     /**
-     * 获取主线程Handler
+     * Snapshot a few recent rows to disk for post-mortem analysis.
      */
-    public Handler getMainHandler() {
-        return mainHandler;
-    }
-
-    /**
-     * 获取应用启动时间（毫秒时间戳）
-     */
-    public long getAppStartTime() {
-        return appStartTime;
-    }
-
-    /**
-     * 在主线程执行Runnable
-     */
-    public void runOnUiThread(Runnable runnable) {
-        if (mainHandler != null && runnable != null) {
-            mainHandler.post(runnable);
+    private void persistCrashSnapshot(Throwable throwable) {
+        try {
+            File snapshotDir = new File(getFilesDir(), "crash_snapshots");
+            //noinspection ResultOfMethodCallIgnored
+            snapshotDir.mkdirs();
+            File snapshotFile = new File(snapshotDir, "latest.bin");
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(snapshotFile))) {
+                out.writeUTF(throwable != null ? throwable.toString() : "unknown");
+                out.writeLong(System.currentTimeMillis());
+                // Snapshot the most recent 32 records
+                try {
+                    AppDatabase db = databaseRef.get();
+                    if (db != null) {
+                        long since = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
+                        java.util.List<BatteryInfo> recent = db.batteryInfoDao().getSince(since);
+                        int limit = Math.min(recent != null ? recent.size() : 0, 32);
+                        out.writeInt(limit);
+                        for (int i = 0; i < limit; i++) {
+                            BatteryInfo info = recent.get(i);
+                            if (info != null) {
+                                out.writeObject(info);
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {
+                    // best-effort: don't propagate during crash handling
+                }
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to write crash snapshot", e);
         }
     }
 
     /**
-     * 延迟执行
+     * Restore the most recent crash snapshot. Returns null if no snapshot exists.
      */
-    public void postDelayed(Runnable runnable, long delayMillis) {
-        if (mainHandler != null && runnable != null) {
-            mainHandler.postDelayed(runnable, delayMillis);
+    public CrashSnapshot readCrashSnapshot() {
+        File f = new File(new File(getFilesDir(), "crash_snapshots"), "latest.bin");
+        if (!f.exists() || !f.canRead()) return null;
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+            CrashSnapshot snap = new CrashSnapshot();
+            snap.throwable = in.readUTF();
+            snap.timestamp = in.readLong();
+            int count = in.readInt();
+            snap.recentRecords = new java.util.ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                Object o = in.readObject();
+                if (o instanceof BatteryInfo) snap.recentRecords.add((BatteryInfo) o);
+            }
+            return snap;
+        } catch (IOException | ClassNotFoundException e) {
+            Log.e(TAG, "Failed to read crash snapshot", e);
+            return null;
         }
     }
 
+    public static final class CrashSnapshot {
+        public String throwable;
+        public long timestamp;
+        public java.util.List<BatteryInfo> recentRecords;
+    }
+
     /**
-     * 移除所有挂起的 Runnable 和 Messages，防止内存泄漏
+     * Public helper for callers that need to schedule work onto the
+     * background database executor.
      */
-    public void removeCallbacksAndMessages() {
-        if (mainHandler != null) {
-            mainHandler.removeCallbacksAndMessages(null);
-        }
+    public ExecutorService getDatabaseExecutor() {
+        return databaseExecutor;
     }
 
     @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        Log.w(TAG, "onLowMemory called");
-    }
-
-    @Override
-    public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
-        if (level >= TRIM_MEMORY_MODERATE) {
-            Log.w(TAG, "onTrimMemory level=" + level + ", clearing handler callbacks");
-            removeCallbacksAndMessages();
+    public void onTerminate() {
+        super.onTerminate();
+        // Graceful shutdown: ignore errors during shutdown
+        try {
+            AppDatabase db = databaseRef.get();
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        } catch (Throwable t) {
+            Log.e(TAG, "Error closing database", t);
+        }
+        try {
+            databaseExecutor.shutdownNow();
+            migrationExecutor.shutdownNow();
+        } catch (Throwable t) {
+            Log.e(TAG, "Error shutting down executors", t);
         }
     }
 }

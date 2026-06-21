@@ -84,7 +84,8 @@ public class ChargingMonitorService extends Service {
     private static final int MAX_SAMPLES = 30;
     private final LinkedList<PowerSample> powerSamples = new LinkedList<>();
 
-    private OnChargingDataListener dataListener;
+    // Volatile for cross-thread visibility (set from binder thread, read from executor/handler)
+    private volatile OnChargingDataListener dataListener;
 
     private PowerManager.WakeLock wakeLock;
     private volatile boolean isReceiverRegistered = false;

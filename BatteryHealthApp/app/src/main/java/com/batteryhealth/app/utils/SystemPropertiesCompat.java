@@ -1,65 +1,118 @@
 package com.batteryhealth.app.utils;
 
 import android.os.Build;
+import android.util.Log;
 
 import java.lang.reflect.Method;
 
 /**
- * 反射读取系统属性的兼容封装。优先使用公开 API，无权限时回退反射。
+ * android.os.SystemProperties 反射访问工具（Android 内部隐藏 API）。
+ * 主要用于读取 ro.* 类的只读系统属性。反射调用使用 Throwable 捕获以兼容所有错误场景。
  */
 public final class SystemPropertiesCompat {
 
-    private SystemPropertiesCompat() {}
+    private static final String TAG = "SystemPropertiesCompat";
+    private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
+
+    private SystemPropertiesCompat() {
+        // utility class
+    }
+
+    private static final class ReflectHolder {
+        static final Method GET = lookup("get", String.class, String.class);
+        static final Method GET_INT = lookup("getInt", String.class, int.class);
+        static final Method GET_LONG = lookup("getLong", String.class, long.class);
+        static final Method GET_BOOLEAN = lookup("getBoolean", String.class, boolean.class);
+
+        private static Method lookup(String name, Class<?>... paramTypes) {
+            try {
+                return Class.forName(SYSTEM_PROPERTIES_CLASS).getMethod(name, paramTypes);
+            } catch (Throwable t) {
+                Log.d(TAG, "SystemProperties." + name + " not available: " + t.getMessage());
+                return null;
+            }
+        }
+    }
 
     public static String get(String key) {
-        if (key == null) return null;
-        try {
-            Class<?> clazz = Class.forName("android.os.SystemProperties");
-            Method getter = clazz.getMethod("get", String.class);
-            Object value = getter.invoke(null, key);
-            return value == null ? null : value.toString();
-        } catch (Throwable t) {
-            return null;
-        }
+        return get(key, "");
     }
 
     public static String get(String key, String defaultValue) {
-        String value = get(key);
-        return value == null ? defaultValue : value;
+        if (key == null) return defaultValue;
+        try {
+            Method m = ReflectHolder.GET;
+            if (m == null) return defaultValue;
+            Object r = m.invoke(null, key, defaultValue);
+            return r instanceof String ? (String) r : defaultValue;
+        } catch (Throwable t) {
+            return defaultValue;
+        }
     }
 
+    public static int getInt(String key, int defaultValue) {
+        if (key == null) return defaultValue;
+        try {
+            Method m = ReflectHolder.GET_INT;
+            if (m == null) return defaultValue;
+            Object r = m.invoke(null, key, defaultValue);
+            return r instanceof Integer ? (Integer) r : defaultValue;
+        } catch (Throwable t) {
+            return defaultValue;
+        }
+    }
+
+    public static long getLong(String key, long defaultValue) {
+        if (key == null) return defaultValue;
+        try {
+            Method m = ReflectHolder.GET_LONG;
+            if (m == null) return defaultValue;
+            Object r = m.invoke(null, key, defaultValue);
+            return r instanceof Long ? (Long) r : defaultValue;
+        } catch (Throwable t) {
+            return defaultValue;
+        }
+    }
+
+    public static boolean getBoolean(String key, boolean defaultValue) {
+        if (key == null) return defaultValue;
+        try {
+            Method m = ReflectHolder.GET_BOOLEAN;
+            if (m == null) return defaultValue;
+            Object r = m.invoke(null, key, defaultValue);
+            return r instanceof Boolean ? (Boolean) r : defaultValue;
+        } catch (Throwable t) {
+            return defaultValue;
+        }
+    }
+
+    /**
+     * 读取 SoC 厂商。Build.SOC_MANUFACTURER 在 API 31+ 才可访问。
+     * 早期版本会回退到 ro.board.platform / ro.soc.manufacturer / ro.hardware.chipname。
+     */
     public static String getSoC() {
-        // 多个常见 sysprop 候选
-        String[] keys = {
-                "ro.boot.soc",
-                "ro.boot.platform",
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                String s = Build.SOC_MANUFACTURER;
+                if (s != null && !s.isEmpty()) return s;
+            } catch (Throwable t) {
+                // ignore and fall back
+            }
+        }
+        String[] candidates = {
+                "ro.soc.manufacturer",
                 "ro.board.platform",
                 "ro.hardware.chipname",
-                "ro.hardware",
-                "ro.chipname",
-                "ro.product.cpu.abi"
+                "ro.boot.platform",
+                "ro.boot.soc_id",
+                "ro.boot.chipname"
         };
-        for (String key : keys) {
-            String value = get(key);
-            if (value != null && !value.isEmpty() && !"unknown".equalsIgnoreCase(value)) {
-                return value;
+        for (String key : candidates) {
+            String v = get(key);
+            if (v != null && !v.isEmpty() && !"unknown".equalsIgnoreCase(v)) {
+                return v;
             }
         }
         return null;
-    }
-
-    public static String getDeviceMarketingName() {
-        String[] keys = {
-                "ro.product.marketname",
-                "ro.product.model",
-                "ro.product.brand"
-        };
-        for (String key : keys) {
-            String value = get(key);
-            if (value != null && !value.isEmpty()) {
-                return value;
-            }
-        }
-        return Build.MODEL;
     }
 }

@@ -40,9 +40,18 @@ public class DeviceInfoManager {
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
 
+    // Use double-checked locking for thread-safe lazy initialisation
     private volatile DeviceConfig cachedConfig;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
+    private final Object configLock = new Object();
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(
+            new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    // SimpleDateFormat is not thread-safe; reuse via ThreadLocal where multiple
+    // threads may call ActivationInfo.set() concurrently.
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()));
 
     // GPU 渲染器 sysfs / 属性候选路径
     private static final String[] GPU_RENDERER_PATHS = {
@@ -73,26 +82,29 @@ public class DeviceInfoManager {
      * 获取完整设备配置（同步，首次调用可能阻塞，建议 UI 层使用异步接口）。
      */
     public DeviceConfig getDeviceConfig() {
-        if (cachedConfig != null) {
+        DeviceConfig result = cachedConfig;
+        if (result != null) return result;
+        synchronized (configLock) {
+            if (cachedConfig == null) {
+                cachedConfig = buildDeviceConfig();
+            }
             return cachedConfig;
         }
-        DeviceConfig config = buildDeviceConfig();
-        cachedConfig = config;
-        return config;
     }
 
     /**
      * 异步获取完整设备配置，避免主线程阻塞。
      */
     public void getDeviceConfigAsync(DeviceConfigCallback callback) {
-        if (cachedConfig != null) {
-            callback.onConfigLoaded(cachedConfig);
+        if (callback == null) return;
+        DeviceConfig existing = cachedConfig;
+        if (existing != null) {
+            callback.onConfigLoaded(existing);
             return;
         }
         executor.submit(() -> {
             try {
-                DeviceConfig config = buildDeviceConfig();
-                cachedConfig = config;
+                DeviceConfig config = getDeviceConfig();
                 mainHandler.post(() -> callback.onConfigLoaded(config));
             } catch (Exception e) {
                 Log.e(TAG, "Error building device config async", e);
@@ -231,7 +243,7 @@ public class DeviceInfoManager {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String lower = line.toLowerCase();
+                String lower = line.toLowerCase(Locale.ROOT);
                 if (lower.startsWith("hardware") || lower.startsWith("model name")
                         || lower.startsWith("processor") || lower.startsWith("chip name")) {
                     int idx = line.indexOf(':');
@@ -327,7 +339,7 @@ public class DeviceInfoManager {
                 String path = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_max_freq";
                 String value = readFile(path);
                 if (value != null) {
-                    int freq = Integer.parseInt(value);
+                    int freq = Integer.parseInt(value.trim());
                     if (freq > maxFreq) maxFreq = freq;
                 }
             } catch (Exception ignored) {
@@ -339,7 +351,7 @@ public class DeviceInfoManager {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String lower = line.toLowerCase();
+                String lower = line.toLowerCase(Locale.ROOT);
                 // 扩展匹配关键词：覆盖 ARM 设备常见的 SoC 标识字段
                 if (lower.startsWith("hardware") || lower.startsWith("model name")
                         || lower.startsWith("processor") || lower.startsWith("chip name")
@@ -451,6 +463,10 @@ public class DeviceInfoManager {
                         // Android 16 可能因存储权限限制抛出 SecurityException，回退到 UUID_DEFAULT
                         Log.d(TAG, "StorageVolume UUID access denied on Android 16+, using UUID_DEFAULT: " + se.getMessage());
                         uuid = StorageManager.UUID_DEFAULT;
+                    } catch (IllegalArgumentException iae) {
+                        // Malformed UUID string
+                        Log.d(TAG, "StorageVolume UUID malformed, using UUID_DEFAULT: " + iae.getMessage());
+                        uuid = StorageManager.UUID_DEFAULT;
                     }
                     totalBytes = ssm.getTotalBytes(uuid);
                     availableBytes = ssm.getFreeBytes(uuid);
@@ -469,16 +485,18 @@ public class DeviceInfoManager {
                 StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
                 if (sm != null) {
                     android.os.storage.StorageVolume primaryVolume = sm.getPrimaryStorageVolume();
-                    // 通过反射调用 isDirectoryEncrypted()（Android 16 新增 API）
-                    try {
-                        java.lang.reflect.Method isEncryptedMethod = primaryVolume.getClass()
-                                .getMethod("isDirectoryEncrypted");
-                        Object result = isEncryptedMethod.invoke(primaryVolume);
-                        if (result instanceof Boolean) {
-                            Log.d(TAG, "Primary storage encrypted: " + result);
+                    if (primaryVolume != null) {
+                        // 通过反射调用 isDirectoryEncrypted()（Android 16 新增 API）
+                        try {
+                            java.lang.reflect.Method isEncryptedMethod = primaryVolume.getClass()
+                                    .getMethod("isDirectoryEncrypted");
+                            Object result = isEncryptedMethod.invoke(primaryVolume);
+                            if (result instanceof Boolean) {
+                                Log.d(TAG, "Primary storage encrypted: " + result);
+                            }
+                        } catch (NoSuchMethodException nsme) {
+                            Log.d(TAG, "isDirectoryEncrypted() not available on this device");
                         }
-                    } catch (NoSuchMethodException nsme) {
-                        Log.d(TAG, "isDirectoryEncrypted() not available on this device");
                     }
                 }
             } catch (SecurityException e) {
@@ -495,8 +513,10 @@ public class DeviceInfoManager {
                 if (path != null) {
                     StatFs statFs = new StatFs(path.getPath());
                     long blockSize = statFs.getBlockSizeLong();
-                    totalBytes = statFs.getBlockCountLong() * blockSize;
-                    availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+                    long newTotal = statFs.getBlockCountLong() * blockSize;
+                    long newAvail = statFs.getAvailableBlocksLong() * blockSize;
+                    if (totalBytes <= 0) totalBytes = newTotal;
+                    if (availableBytes <= 0) availableBytes = newAvail;
                 }
             } catch (Exception e) {
                 Log.d(TAG, "External storage StatFs failed: " + e.getMessage());
@@ -506,10 +526,15 @@ public class DeviceInfoManager {
         // 最后兜底：/data 分区
         if (totalBytes <= 0 || availableBytes <= 0) {
             try {
-                StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
-                long blockSize = statFs.getBlockSizeLong();
-                totalBytes = statFs.getBlockCountLong() * blockSize;
-                availableBytes = statFs.getAvailableBlocksLong() * blockSize;
+                File dataDir = Environment.getDataDirectory();
+                if (dataDir != null) {
+                    StatFs statFs = new StatFs(dataDir.getPath());
+                    long blockSize = statFs.getBlockSizeLong();
+                    long newTotal = statFs.getBlockCountLong() * blockSize;
+                    long newAvail = statFs.getAvailableBlocksLong() * blockSize;
+                    if (totalBytes <= 0) totalBytes = newTotal;
+                    if (availableBytes <= 0) availableBytes = newAvail;
+                }
             } catch (Exception e) {
                 Log.d(TAG, "Data directory StatFs failed: " + e.getMessage());
             }
@@ -781,7 +806,7 @@ public class DeviceInfoManager {
                     return renderer;
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
         return null;
     }
@@ -792,7 +817,9 @@ public class DeviceInfoManager {
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("Hardware")) {
                     String[] parts = line.split(":", 2);
-                    return parts.length > 1 ? parts[1].trim() : null;
+                    if (parts.length > 1) {
+                        return parts[1].trim();
+                    }
                 }
             }
         } catch (IOException ignored) {
@@ -811,7 +838,7 @@ public class DeviceInfoManager {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                sb.append(line).append("\n");
+                sb.append(line).append('\n');
             }
         } catch (IOException e) {
             return null;
@@ -831,12 +858,13 @@ public class DeviceInfoManager {
 
     @android.annotation.SuppressLint("PrivateApi")
     private String getSystemProperty(String propertyName) {
+        if (propertyName == null) return null;
         try {
             Class<?> systemProperties = Class.forName("android.os.SystemProperties");
             Method get = systemProperties.getMethod("get", String.class);
             Object value = get.invoke(null, propertyName);
             return value != null ? value.toString() : null;
-        } catch (Exception e) {
+        } catch (Throwable t) {
             return null;
         }
     }
@@ -854,8 +882,8 @@ public class DeviceInfoManager {
             this.timestamp = timestamp;
             this.source = source;
             this.confidence = confidence;
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            this.dateStr = sdf.format(new Date(timestamp));
+            // Use ThreadLocal to avoid SimpleDateFormat thread-safety issues
+            this.dateStr = DATE_FORMAT.get().format(new Date(timestamp));
             this.usageDays = (int) ((System.currentTimeMillis() - timestamp) / (24 * 60 * 60 * 1000L));
         }
 
@@ -882,9 +910,9 @@ public class DeviceInfoManager {
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
-            t.setUncaughtExceptionHandler((thread, ex) -> {
-                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
-            });
+            t.setDaemon(true);
+            t.setUncaughtExceptionHandler((thread, ex) ->
+                    Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex));
             return t;
         }
     }

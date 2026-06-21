@@ -7,6 +7,7 @@ import android.util.Log;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.Locale;
 
 /**
  * 充电协议识别工具：
@@ -54,21 +55,17 @@ public class ChargeProtocolDetector {
         StringBuilder details = new StringBuilder();
         String primary = readFileTrim("/sys/class/power_supply/battery/charge_type");
         String adapterType = readFileTrim("/sys/class/power_supply/usb/typec_mode");
-        String currentType = readFileTrim("/sys/class/power_supply/battery/constant_charge_current_max");
         String quickChargeType = readFileTrim("/sys/class/power_supply/battery/quick_charge_type");
-        String quickChargeOps = readFileTrim("/sys/class/power_supply/battery/quick_charge_ops");
         String ufcsType = readFileTrim("/sys/class/power_supply/usb/ufcs_type");
         String pdType = readFileTrim("/sys/class/power_supply/usb/pd_type");
         String bypassSysfs = readFileTrim("/sys/class/power_supply/battery/bypass_charging");
-        String chargeProtocol = readFileTrim("/sys/class/power_supply/battery/charge_protocol");
-        String bmsChargeType = readFileTrim("/sys/class/power_supply/bms/charge_type");
         // 2. 系统属性
         String quickCharge = sysProperty("persist.sys.quick_charge");
         String powerDelivery = sysProperty("persist.sys.pd");
         String ufcsProp = sysProperty("persist.sys.ufcs");
         // 3. 制造商
-        String mfg = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase() : "";
-        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase() : "";
+        String mfg = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase(Locale.ROOT) : "";
+        String brand = Build.BRAND != null ? Build.BRAND.toLowerCase(Locale.ROOT) : "";
 
         boolean bypass = "1".equals(bypassSysfs);
         boolean fast = currentPowerW >= 18.0f;
@@ -76,7 +73,7 @@ public class ChargeProtocolDetector {
         String secondary = "";
 
         // UFCS 融合快充（中国跨品牌快充国家标准，优先检测）
-        if ((ufcsType != null && ufcsType.toLowerCase().contains("ufcs"))
+        if ((ufcsType != null && ufcsType.toLowerCase(Locale.ROOT).contains("ufcs"))
                 || "1".equals(ufcsProp)) {
             if (currentPowerW >= 55) result = "UFCS 2.0 (55W)";
             else if (currentPowerW >= 44) result = "UFCS 2.0 (44W)";
@@ -85,20 +82,20 @@ public class ChargeProtocolDetector {
             fast = true;
         }
         // 高通 QC — Build.SOC_MANUFACTURER requires API 31+
-        else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && "Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER))
+        else if (isQualcommSoc()
                 || "qc".equalsIgnoreCase(quickCharge) || "qc3".equalsIgnoreCase(quickCharge)
                 || "qc4".equalsIgnoreCase(quickCharge) || "qcb".equalsIgnoreCase(quickCharge)
-                || (quickChargeType != null && quickChargeType.toLowerCase().contains("qc"))) {
-            if (currentPowerW >= 100 || (quickChargeType != null && quickChargeType.toLowerCase().contains("qc5"))) result = "QC 5 (Quick Charge 5)";
+                || (quickChargeType != null && quickChargeType.toLowerCase(Locale.ROOT).contains("qc"))) {
+            if (currentPowerW >= 100 || (quickChargeType != null && quickChargeType.toLowerCase(Locale.ROOT).contains("qc5"))) result = "QC 5 (Quick Charge 5)";
             else if (currentPowerW >= 27) result = "QC 4+";
             else if (currentPowerW >= 18) result = "QC 3.0";
             else if (currentPowerW >= 10) result = "QC 2.0";
             fast = true;
         }
         // USB PD — explicit parentheses for operator precedence clarity
-        else if ((powerDelivery != null && powerDelivery.toLowerCase().contains("pd"))
-                || (pdType != null && pdType.toLowerCase().contains("pd"))) {
-            if ((pdType != null && (pdType.toLowerCase().contains("pd3.1") || pdType.toLowerCase().contains("epr")))
+        else if ((powerDelivery != null && powerDelivery.toLowerCase(Locale.ROOT).contains("pd"))
+                || (pdType != null && pdType.toLowerCase(Locale.ROOT).contains("pd"))) {
+            if ((pdType != null && (pdType.toLowerCase(Locale.ROOT).contains("pd3.1") || pdType.toLowerCase(Locale.ROOT).contains("epr")))
                     || currentPowerW >= 140) result = "USB PD 3.1 EPR (240W)";
             else if (currentPowerW >= 100) result = "USB PD 3.1 (100W+)";
             else if (currentPowerW >= 60) result = "USB PD 3.0 / PPS";
@@ -169,7 +166,7 @@ public class ChargeProtocolDetector {
         }
 
         if (currentPowerW > 0) {
-            details.append(String.format("%.1f W", currentPowerW));
+            details.append(String.format(Locale.getDefault(), "%.1f W", currentPowerW));
         }
         if (adapterType != null && !adapterType.isEmpty()) {
             if (details.length() > 0) details.append(" · ");
@@ -179,14 +176,25 @@ public class ChargeProtocolDetector {
         return new Result(result, secondary, details.toString(), currentPowerW, fast, bypass);
     }
 
-    private static String readFileTrim(String path) {
+    /**
+     * Check whether the device's SoC is from Qualcomm.
+     * Build.SOC_MANUFACTURER was added in API 31 (Android S).
+     */
+    private static boolean isQualcommSoc() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false;
         try {
-            File f = new File(path);
-            if (!f.exists() || !f.canRead()) return "";
-            try (BufferedReader r = new BufferedReader(new FileReader(f))) {
-                String line = r.readLine();
-                return line != null ? line.trim() : "";
-            }
+            return "Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static String readFileTrim(String path) {
+        File f = new File(path);
+        if (!f.exists() || !f.canRead()) return "";
+        try (BufferedReader r = new BufferedReader(new FileReader(f))) {
+            String line = r.readLine();
+            return line != null ? line.trim() : "";
         } catch (Exception e) {
             return "";
         }
@@ -197,7 +205,7 @@ public class ChargeProtocolDetector {
             return (String) Class.forName("android.os.SystemProperties")
                     .getMethod("get", String.class, String.class)
                     .invoke(null, key, "");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return "";
         }
     }

@@ -27,6 +27,9 @@ public class BatteryInfo {
     public static final int STATUS_NOT_CHARGING = 4;
     public static final int STATUS_FULL = 5;
 
+    /** 健康度"无数据"哨兵值：小于 0 表示该字段没有有效数据。 */
+    public static final float HEALTH_UNAVAILABLE = -1f;
+
     @PrimaryKey(autoGenerate = true)
     private long id;
 
@@ -146,6 +149,7 @@ public class BatteryInfo {
 
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
+        this.healthPercentage = HEALTH_UNAVAILABLE;
     }
 
     // Getters and Setters
@@ -193,8 +197,17 @@ public class BatteryInfo {
         return healthPercentage;
     }
 
+    /**
+     * 设置健康度百分比。保留负数作为"无数据"哨兵值，NaN/Infinity 视为无数据。
+     * 有效值会被夹紧到 [0, 100]。
+     */
     public void setHealthPercentage(float healthPercentage) {
-        this.healthPercentage = Math.max(0, Math.min(100, healthPercentage));
+        if (!Float.isFinite(healthPercentage) || healthPercentage < 0f) {
+            // NaN / Infinity / 负数：保持哨兵语义，统一为 HEALTH_UNAVAILABLE
+            this.healthPercentage = HEALTH_UNAVAILABLE;
+        } else {
+            this.healthPercentage = Math.min(100f, healthPercentage);
+        }
     }
 
     public String getHealthStatus() {
@@ -210,6 +223,7 @@ public class BatteryInfo {
     }
 
     public void setCycleCount(int cycleCount) {
+        // 允许 -1 作为"无数据"哨兵值
         this.cycleCount = cycleCount;
     }
 
@@ -218,6 +232,7 @@ public class BatteryInfo {
     }
 
     public void setTemperature(float temperature) {
+        // 不修改 NaN，让调用方决定如何处理
         this.temperature = temperature;
     }
 
@@ -370,7 +385,11 @@ public class BatteryInfo {
     }
 
     public void setHealthConfidence(float healthConfidence) {
-        this.healthConfidence = Math.max(0f, Math.min(1f, healthConfidence));
+        if (!Float.isFinite(healthConfidence)) {
+            this.healthConfidence = 0f;
+        } else {
+            this.healthConfidence = Math.max(0f, Math.min(1f, healthConfidence));
+        }
     }
 
     public int getSystemHealth() {
@@ -394,7 +413,11 @@ public class BatteryInfo {
     }
 
     public void setBatterySourceConfidence(float batterySourceConfidence) {
-        this.batterySourceConfidence = Math.max(0f, Math.min(1f, batterySourceConfidence));
+        if (!Float.isFinite(batterySourceConfidence)) {
+            this.batterySourceConfidence = 0f;
+        } else {
+            this.batterySourceConfidence = Math.max(0f, Math.min(1f, batterySourceConfidence));
+        }
     }
 
     public float getFactoryLossPercent() {
@@ -402,7 +425,12 @@ public class BatteryInfo {
     }
 
     public void setFactoryLossPercent(float factoryLossPercent) {
-        this.factoryLossPercent = factoryLossPercent;
+        if (!Float.isFinite(factoryLossPercent)) {
+            this.factoryLossPercent = 0f;
+        } else {
+            // 损耗百分比物理上不应超过 100%
+            this.factoryLossPercent = Math.max(0f, Math.min(100f, factoryLossPercent));
+        }
     }
 
     public float getCycleLossPercent() {
@@ -410,7 +438,11 @@ public class BatteryInfo {
     }
 
     public void setCycleLossPercent(float cycleLossPercent) {
-        this.cycleLossPercent = cycleLossPercent;
+        if (!Float.isFinite(cycleLossPercent)) {
+            this.cycleLossPercent = 0f;
+        } else {
+            this.cycleLossPercent = Math.max(0f, Math.min(100f, cycleLossPercent));
+        }
     }
 
     public float getUsageLossPercent() {
@@ -418,7 +450,11 @@ public class BatteryInfo {
     }
 
     public void setUsageLossPercent(float usageLossPercent) {
-        this.usageLossPercent = usageLossPercent;
+        if (!Float.isFinite(usageLossPercent)) {
+            this.usageLossPercent = 0f;
+        } else {
+            this.usageLossPercent = Math.max(0f, Math.min(100f, usageLossPercent));
+        }
     }
 
     public String getBatterySourceReason() {
@@ -433,7 +469,8 @@ public class BatteryInfo {
      * 计算充电功率
      */
     public void calculateChargingPower() {
-        if (chargingVoltage > 0 && chargingCurrent > 0) {
+        if (chargingVoltage > 0 && chargingCurrent > 0
+                && Float.isFinite(chargingVoltage) && Float.isFinite(chargingCurrent)) {
             this.chargingPower = chargingVoltage * chargingCurrent;
         } else {
             this.chargingPower = 0;
@@ -447,7 +484,7 @@ public class BatteryInfo {
      * 95+ A+，85-94 A，75-84 B，60-74 C，<60 D。
      */
     public String getHealthGrade() {
-        if (healthPercentage < 0) {
+        if (healthPercentage < 0 || !Float.isFinite(healthPercentage)) {
             return "--";
         } else if (healthPercentage >= 95) {
             return "A+";
@@ -470,7 +507,7 @@ public class BatteryInfo {
      */
     public String getHealthDescription() {
         // 注意：此处返回硬编码字符串仅作为数据模型默认值，实际展示文本由 UI 层通过 strings.xml 控制
-        if (healthPercentage < 0) {
+        if (healthPercentage < 0 || !Float.isFinite(healthPercentage)) {
             return "无法获取电池健康数据";
         } else if (healthPercentage >= 95) {
             return "电池状态极佳";
@@ -489,7 +526,7 @@ public class BatteryInfo {
      * 是否有有效的健康度数据
      */
     public boolean hasValidHealthData() {
-        return healthPercentage >= 0;
+        return Float.isFinite(healthPercentage) && healthPercentage >= 0f;
     }
 
     /**
@@ -547,5 +584,65 @@ public class BatteryInfo {
         snapshot.usageLossPercent = this.usageLossPercent;
         snapshot.batterySourceReason = this.batterySourceReason;
         return snapshot;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BatteryInfo)) return false;
+        BatteryInfo that = (BatteryInfo) o;
+        return id == that.id
+                && timestamp == that.timestamp
+                && designCapacity == that.designCapacity
+                && currentCapacity == that.currentCapacity
+                && chargeCounter == that.chargeCounter
+                && Float.compare(that.healthPercentage, healthPercentage) == 0
+                && cycleCount == that.cycleCount
+                && Float.compare(that.temperature, temperature) == 0
+                && Float.compare(that.voltage, voltage) == 0
+                && currentNow == that.currentNow
+                && status == that.status
+                && plugged == that.plugged
+                && level == that.level
+                && Float.compare(that.chargingPower, chargingPower) == 0
+                && Float.compare(that.chargingVoltage, chargingVoltage) == 0
+                && Float.compare(that.chargingCurrent, chargingCurrent) == 0
+                && cycleCountEstimated == that.cycleCountEstimated
+                && Float.compare(that.healthConfidence, healthConfidence) == 0
+                && systemHealth == that.systemHealth
+                && energyCounter == that.energyCounter
+                && Float.compare(that.batterySourceConfidence, batterySourceConfidence) == 0
+                && Float.compare(that.factoryLossPercent, factoryLossPercent) == 0
+                && Float.compare(that.cycleLossPercent, cycleLossPercent) == 0
+                && Float.compare(that.usageLossPercent, usageLossPercent) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (int) (id ^ (id >>> 32));
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + designCapacity;
+        result = 31 * result + currentCapacity;
+        result = 31 * result + chargeCounter;
+        result = 31 * result + Float.floatToIntBits(healthPercentage);
+        result = 31 * result + cycleCount;
+        result = 31 * result + Float.floatToIntBits(temperature);
+        result = 31 * result + Float.floatToIntBits(voltage);
+        result = 31 * result + currentNow;
+        result = 31 * result + status;
+        result = 31 * result + plugged;
+        result = 31 * result + level;
+        result = 31 * result + Float.floatToIntBits(chargingPower);
+        result = 31 * result + Float.floatToIntBits(chargingVoltage);
+        result = 31 * result + Float.floatToIntBits(chargingCurrent);
+        result = 31 * result + (cycleCountEstimated ? 1 : 0);
+        result = 31 * result + Float.floatToIntBits(healthConfidence);
+        result = 31 * result + systemHealth;
+        result = 31 * result + energyCounter;
+        result = 31 * result + Float.floatToIntBits(batterySourceConfidence);
+        result = 31 * result + Float.floatToIntBits(factoryLossPercent);
+        result = 31 * result + Float.floatToIntBits(cycleLossPercent);
+        result = 31 * result + Float.floatToIntBits(usageLossPercent);
+        return result;
     }
 }

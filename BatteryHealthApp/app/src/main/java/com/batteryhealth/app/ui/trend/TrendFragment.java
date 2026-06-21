@@ -53,9 +53,13 @@ public class TrendFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_trend, container, false);
-        initViews(view);
-        animateEntry(view);
-        loadDataAsync();
+        try {
+            initViews(view);
+            animateEntry(view);
+            loadDataAsync();
+        } catch (Exception e) {
+            android.util.Log.e("TrendFragment", "onCreateView failed: " + e.getMessage(), e);
+        }
         return view;
     }
 

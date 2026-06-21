@@ -5,7 +5,9 @@ import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Transaction;
 import androidx.room.Update;
 
 import com.batteryhealth.app.data.model.BatteryInfo;
@@ -20,12 +22,21 @@ import java.util.List;
  *    getAverageHealthSince、getCountSince、deleteOlderThan）。
  * 2. health_percentage 字段建立了索引，以加速按健康度排序或筛选的查询。
  * 3. 默认主键 id 已有 Room 隐式索引。
+ *
+ * 实现说明：
+ * - 聚合查询（AVG）使用 COALESCE 兜底，避免空表时返回 NULL 进而导致 Java 端
+ *   拆箱 NPE。
+ * - 批量插入（insertAll）和多语句操作（pruneOlderThan）使用 @Transaction 包裹
+ *   以保证原子性。
  */
 @Dao
 public interface BatteryInfoDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(BatteryInfo batteryInfo);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    List<Long> insertAll(List<BatteryInfo> batteryInfos);
 
     @Update
     void update(BatteryInfo batteryInfo);
@@ -48,7 +59,10 @@ public interface BatteryInfoDao {
     @Query("SELECT * FROM battery_info WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp ASC")
     List<BatteryInfo> getBetween(long startTime, long endTime);
 
-    @Query("SELECT AVG(health_percentage) FROM battery_info WHERE timestamp >= :startTime")
+    /**
+     * 返回指定时间之后的平均健康度。空表返回 0，避免 NULL 拆箱。
+     */
+    @Query("SELECT COALESCE(AVG(health_percentage), 0) FROM battery_info WHERE timestamp >= :startTime")
     float getAverageHealthSince(long startTime);
 
     @Query("SELECT COUNT(*) FROM battery_info WHERE timestamp >= :startTime")
@@ -66,4 +80,14 @@ public interface BatteryInfoDao {
 
     @Query("DELETE FROM battery_info")
     void deleteAll();
+
+    /**
+     * 事务性清理：先删除再统计，保证外部读取到的 count 与实际一致。
+     */
+    @Transaction
+    default int pruneOlderThan(long timestamp) {
+        int before = getCount();
+        deleteOlderThan(timestamp);
+        return before - getCount();
+    }
 }

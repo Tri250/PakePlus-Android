@@ -71,7 +71,10 @@ public class BugReportFragment extends Fragment {
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private volatile boolean parsingCancelled = false;
-    private Thread parsingThread;
+    private volatile Thread parsingThread;
+    // Monotonically increasing token to identify the current parsing session.
+    // mainHandler callbacks only proceed if their captured token still matches.
+    private volatile int parsingToken = 0;
 
     private final ActivityResultLauncher<String[]> filePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::onFileSelected);
@@ -127,25 +130,47 @@ public class BugReportFragment extends Fragment {
         showProgress(true);
         updateProgress(10, "正在复制文件...");
 
+        // Cancel any existing parsing operation and wait briefly for it to abort
+        parsingCancelled = true;
+        Thread oldThread = parsingThread;
+        if (oldThread != null && oldThread.isAlive()) {
+            oldThread.interrupt();
+            try {
+                oldThread.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         parsingCancelled = false;
+        // Bump token; old threads' callbacks will see mismatch and skip work
+        final int myToken = ++parsingToken;
 
-        parsingThread = new Thread(() -> {
+        final Thread newThread = new Thread(() -> {
             try {
                 // Copy file to cache directory (needed for ZipFile which requires a file path)
                 File cachedFile = copyToCache(uri);
                 if (cachedFile == null) {
-                    mainHandler.post(() -> onParseFailed("无法读取文件"));
+                    mainHandler.post(() -> {
+                        if (parsingToken == myToken) {
+                            onParseFailed("无法读取文件");
+                        }
+                    });
                     return;
                 }
 
-                if (parsingCancelled) return;
+                if (parsingCancelled || Thread.currentThread().isInterrupted()) return;
 
                 updateProgress(40, "正在解析 BugReport...");
 
                 BugReportParser parser = new BugReportParser();
                 BugReportParser.BugReportData data = parser.parseFromZip(cachedFile.getAbsolutePath());
 
-                if (parsingCancelled) return;
+                if (parsingCancelled || Thread.currentThread().isInterrupted()) {
+                    if (cachedFile != null) {
+                        try { cachedFile.delete(); } catch (Exception ignore) {}
+                    }
+                    return;
+                }
 
                 updateProgress(80, "正在提取数据...");
 
@@ -153,24 +178,47 @@ public class BugReportFragment extends Fragment {
                 saveToSharedPreferences(data);
 
                 // Feed data to BatteryDataManager
-                mainHandler.post(() -> feedToBatteryDataManager(data));
+                mainHandler.post(() -> {
+                    if (parsingToken == myToken) {
+                        feedToBatteryDataManager(data);
+                    }
+                });
 
                 updateProgress(100, "解析完成");
 
-                if (parsingCancelled) return;
+                if (parsingCancelled || Thread.currentThread().isInterrupted()) {
+                    if (cachedFile != null) {
+                        try { cachedFile.delete(); } catch (Exception ignore) {}
+                    }
+                    return;
+                }
 
-                mainHandler.post(() -> onParseComplete(data));
+                mainHandler.post(() -> {
+                    if (parsingToken == myToken) {
+                        onParseComplete(data);
+                    }
+                });
 
                 // Clean up cached file
-                cachedFile.delete();
+                if (cachedFile != null) {
+                    try {
+                        cachedFile.delete();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Failed to delete cached file: " + e.getMessage());
+                    }
+                }
 
             } catch (Exception e) {
                 Log.e(TAG, "Error parsing bugreport", e);
-                mainHandler.post(() -> onParseFailed("解析失败: " + e.getMessage()));
+                mainHandler.post(() -> {
+                    if (parsingToken == myToken) {
+                        onParseFailed("解析失败: " + e.getMessage());
+                    }
+                });
             }
-        });
-
-        parsingThread.start();
+        }, "BugReportParser");
+        parsingThread = newThread;
+        newThread.start();
     }
 
     private File copyToCache(Uri uri) {
@@ -475,8 +523,11 @@ public class BugReportFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         parsingCancelled = true;
-        if (parsingThread != null && parsingThread.isAlive()) {
-            parsingThread.interrupt();
+        // Bump token so any in-flight mainHandler.post callbacks skip their work
+        parsingToken++;
+        Thread t = parsingThread;
+        if (t != null && t.isAlive()) {
+            t.interrupt();
         }
         mainHandler.removeCallbacksAndMessages(null);
     }

@@ -65,6 +65,14 @@ public class HealthRingView extends View {
     public void setColors(int startColor, int endColor) {
         this.startColor = startColor;
         this.endColor = endColor;
+        // Rebuild the gradient shader; without this the old colors are stored
+        // but the ring continues to draw with the previous gradient until a size change.
+        if (rectF.width() > 0 && rectF.height() > 0) {
+            LinearGradient gradient = new LinearGradient(
+                    rectF.left, rectF.top, rectF.right, rectF.bottom,
+                    startColor, endColor, Shader.TileMode.CLAMP);
+            ringPaint.setShader(gradient);
+        }
         invalidate();
     }
 

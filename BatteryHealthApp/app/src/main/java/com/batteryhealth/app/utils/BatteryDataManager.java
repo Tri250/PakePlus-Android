@@ -27,7 +27,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -63,8 +62,13 @@ public class BatteryDataManager {
     private volatile String batterySourceText;
 
     // 中值滤波缓冲
+    private final Object healthBufferLock = new Object();
     private final List<Float> healthBuffer = new ArrayList<>();
     private static final int MEDIAN_WINDOW = 5;
+
+    // 容量识别阈值（mAh）—— 真实手机/平板电池均落在 [300, 12000] 区间
+    private static final int CAPACITY_MIN_MAH = 300;
+    private static final int CAPACITY_MAX_MAH = 12000;
 
     // Shared executor for async operations instead of raw Thread creation
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
@@ -82,7 +86,7 @@ public class BatteryDataManager {
         this.batterySourceText = this.context.getString(R.string.status_unknown);
     }
 
-    private static final int BATTERY_PROP_CYCLE_COUNT = 7;
+    private static final int BATTERY_PROP_CYCLE_COUNT = getBatteryIntConstant("BATTERY_PROPERTY_CYCLE_COUNT", 7);
     private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 24);
     private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 6);
 
@@ -220,8 +224,8 @@ public class BatteryDataManager {
     public BatteryInfo getBatteryInfo() {
         BatteryInfo info = new BatteryInfo();
         info.setTimestamp(System.currentTimeMillis());
-        info.setDeviceModel(Build.MODEL);
-        info.setDeviceBrand(Build.BRAND);
+        info.setDeviceModel(Build.MODEL != null ? Build.MODEL : "");
+        info.setDeviceBrand(Build.BRAND != null ? Build.BRAND : "");
 
         Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (intent == null) return info;
@@ -239,9 +243,9 @@ public class BatteryDataManager {
 
         // 2. 温度
         int tempRaw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-        if (tempRaw < 0) tempRaw = readSysfsInt(TEMP_PATHS, -1);
-        // EXTRA_TEMPERATURE 单位 0.1°C
-        info.setTemperature(tempRaw / 10.0f);
+        if (tempRaw <= 0) tempRaw = readSysfsInt(TEMP_PATHS, -1);
+        // EXTRA_TEMPERATURE 单位 0.1°C；tempRaw <= 0 视为无效
+        info.setTemperature(tempRaw > 0 ? tempRaw / 10.0f : -1f);
 
         // 3. 电压
         int voltageMv = readVoltage(intent);
@@ -254,7 +258,7 @@ public class BatteryDataManager {
         // 5. 功率
         float powerW = calculatePower(voltageMv, currentMa);
         info.setChargingPower(powerW);
-        info.setChargingVoltage(voltageMv / 1000.0f);
+        info.setChargingVoltage(voltageMv > 0 ? voltageMv / 1000.0f : 0f);
         info.setChargingCurrent(Math.abs(currentMa) / 1000.0f);
 
         // 6. 技术
@@ -277,7 +281,7 @@ public class BatteryDataManager {
 
         // 9. 充电计数
         int chargeCounterMah = getChargeCounterMah(batteryManager);
-        info.setChargeCounter(chargeCounterMah * 1000);
+        info.setChargeCounter(chargeCounterMah > 0 ? chargeCounterMah * 1000 : -1);
 
         // 10. 健康度（三段损耗 + 中值滤波）
         BatteryHealthResult health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
@@ -416,7 +420,8 @@ public class BatteryDataManager {
                 int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
                 if (microAh != Integer.MIN_VALUE && microAh > 1000) {
                     if (microAh >= 1_000_000 && microAh <= 10_000_000) return microAh / 1000;
-                    if (microAh >= 1000 && microAh <= 10000) return microAh;
+                    // 包含平板在内的真实电池 mAh 范围，扩大上限以避免误判
+                    if (microAh >= 1000 && microAh <= CAPACITY_MAX_MAH) return microAh;
                 }
             } catch (Exception ignored) {
             }
@@ -458,8 +463,8 @@ public class BatteryDataManager {
     // region 循环次数
 
     private int readCycleCount(BatteryManager batteryManager) {
-        // 1. BatteryManager 官方 API
-        if (batteryManager != null) {
+        // 1. BatteryManager 官方 API (API 34+)
+        if (Build.VERSION.SDK_INT >= 34 && batteryManager != null) {
             try {
                 int count = batteryManager.getIntProperty(BATTERY_PROP_CYCLE_COUNT);
                 if (count > 0 && count < 20000) return count;
@@ -486,6 +491,34 @@ public class BatteryDataManager {
     }
 
     private int estimateCycleCountFromHistory() {
+        // Run on shared executor to avoid creating raw threads and ensure daemon
+        // behaviour. Block briefly because callers expect a synchronous result.
+        try {
+            final java.util.concurrent.atomic.AtomicInteger resultHolder = new java.util.concurrent.atomic.AtomicInteger(-1);
+            final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            executor.execute(() -> {
+                try {
+                    int r = estimateCycleCountFromHistoryInternal();
+                    resultHolder.set(r);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            // 5 秒超时，避免长时间阻塞调用方
+            if (!latch.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                Log.d(TAG, "estimateCycleCountFromHistory timed out");
+            }
+            return resultHolder.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return -1;
+        } catch (Exception e) {
+            Log.d(TAG, "estimateCycleCountFromHistory failed: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    private int estimateCycleCountFromHistoryInternal() {
         try {
             com.batteryhealth.app.BatteryHealthApplication app =
                     (com.batteryhealth.app.BatteryHealthApplication) context.getApplicationContext();
@@ -505,6 +538,7 @@ public class BatteryDataManager {
             SimpleDateFormat dayFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
 
             for (BatteryInfo info : records) {
+                if (info == null) continue;
                 int level = info.getLevel();
                 int status = info.getStatus();
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
@@ -522,7 +556,7 @@ public class BatteryDataManager {
             }
             return cycleDays.isEmpty() ? -1 : cycleDays.size();
         } catch (Exception e) {
-            Log.d(TAG, "estimateCycleCountFromHistory failed: " + e.getMessage());
+            Log.d(TAG, "estimateCycleCountFromHistoryInternal failed: " + e.getMessage());
             return -1;
         }
     }
@@ -677,8 +711,7 @@ public class BatteryDataManager {
             // 循环损耗 = 1 - 当前 FCC / 设计容量
             r.cycleLossPercent = Math.max(0f, 100f - ratio);
             // 使用时长损耗（仅在缺乏循环数据时显著）
-            int cycleInfo = -1; // 留作未来扩展
-            if (cycleInfo < 0 && effectiveUsageDays > 0) {
+            if (effectiveUsageDays > 0) {
                 // 仅当 ratio 极低时，提示使用时长损耗
                 r.usageLossPercent = Math.max(0f, 100f - ratio) * 0.1f;
             }
@@ -714,7 +747,7 @@ public class BatteryDataManager {
             r.usageLossPercent = daysLoss;
             r.confidence = 0.35f;
             r.healthLevel = getHealthLevel(r.healthPercentage);
-            r.healthStatus = getHealthStatusString(r.healthLevel) + context.getString(R.string.confidence_format, 35);
+            r.healthStatus = getHealthStatusString(r.healthLevel);
             return r;
         }
 
@@ -729,19 +762,20 @@ public class BatteryDataManager {
 
     private float applyMedianFilter(float currentValue) {
         if (currentValue < 0) return currentValue;
-        synchronized (healthBuffer) {
+        synchronized (healthBufferLock) {
             healthBuffer.add(currentValue);
             if (healthBuffer.size() > MEDIAN_WINDOW) {
                 healthBuffer.remove(0);
             }
             if (healthBuffer.size() < 3) return currentValue;
-            List<Float> sorted = new ArrayList<>(healthBuffer);
-            Collections.sort(sorted);
-            int mid = sorted.size() / 2;
-            if (sorted.size() % 2 == 0) {
-                return (sorted.get(mid - 1) + sorted.get(mid)) / 2f;
+            // Use a fixed-size working array to avoid per-call ArrayList allocation
+            Float[] sorted = healthBuffer.toArray(new Float[0]);
+            java.util.Arrays.sort(sorted, (a, b) -> Float.compare(a, b));
+            int mid = sorted.length / 2;
+            if (sorted.length % 2 == 0) {
+                return (sorted[mid - 1] + sorted[mid]) / 2f;
             }
-            return sorted.get(mid);
+            return sorted[mid];
         }
     }
 
@@ -765,6 +799,7 @@ public class BatteryDataManager {
     }
 
     private String getHealthStatusString(String level) {
+        if (level == null) return context.getString(R.string.health_unknown);
         switch (level) {
             case "excellent": return context.getString(R.string.health_excellent);
             case "good": return context.getString(R.string.health_good);
@@ -776,6 +811,7 @@ public class BatteryDataManager {
     }
 
     private String mapHealthStatusToCode(String level) {
+        if (level == null) return "unknown";
         switch (level) {
             case "excellent":
             case "good":
@@ -860,25 +896,41 @@ public class BatteryDataManager {
     }
 
     private String tryGetBatterySerial(BatteryManager bm) {
-        try {
-            Method m = bm.getClass().getMethod("getBatterySerialNumber");
-            Object r = m.invoke(bm);
-            if (r instanceof String) return (String) r;
-        } catch (Exception ignored) {
-        }
-        try {
-            Method m = bm.getClass().getMethod("getBatterySerialNumber", Context.class);
-            Object r = m.invoke(bm, context);
-            if (r instanceof String) return (String) r;
-        } catch (Exception ignored) {
-        }
-        try {
-            Method m = BatteryManager.class.getMethod("getBatterySerialNumber", Context.class);
-            Object r = m.invoke(null, context);
-            if (r instanceof String) return (String) r;
-        } catch (Exception ignored) {
+        Method[] candidates = new Method[]{
+                safeGetMethod(bm.getClass(), "getBatterySerialNumber"),
+                safeGetMethod(bm.getClass(), "getBatterySerialNumber", Context.class),
+                safeGetMethod(BatteryManager.class, "getBatterySerialNumber", Context.class)
+        };
+        Object[] args;
+        for (Method m : candidates) {
+            if (m == null) continue;
+            try {
+                if (m.getParameterCount() == 0) {
+                    args = null;
+                } else if (m.getParameterTypes()[0] == Context.class) {
+                    args = new Object[]{context};
+                } else {
+                    continue;
+                }
+                Object r = m.invoke(m.getDeclaringClass() == BatteryManager.class ? null : bm, args);
+                if (r instanceof String) {
+                    String s = (String) r;
+                    if (!s.isEmpty()) return s;
+                }
+            } catch (Exception ignored) {
+                // Try the next candidate.
+            }
         }
         return null;
+    }
+
+    private static Method safeGetMethod(Class<?> clazz, String name, Class<?>... paramTypes) {
+        if (clazz == null) return null;
+        try {
+            return clazz.getMethod(name, paramTypes);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
     }
 
     // endregion
@@ -934,7 +986,10 @@ public class BatteryDataManager {
     private static int getBatteryIntConstant(String name, int fallback) {
         try {
             return BatteryManager.class.getField(name).getInt(null);
-        } catch (Exception ignored) {
+        } catch (NoSuchFieldException e) {
+            return fallback;
+        } catch (Exception e) {
+            // ReflectiveOperationException, IllegalAccessException, etc.
             return fallback;
         }
     }
@@ -1011,6 +1066,10 @@ public class BatteryDataManager {
         return currentPowerW >= official * 0.6f;
     }
 
+    /**
+     * Refresh cached battery info. Safe to call from any thread, but prefer
+     * the {@link #refreshAllDataAsync()} variant to avoid blocking the caller.
+     */
     public void refreshFromStickyIntent() {
         BatteryInfo info = getBatteryInfo();
         currentBatteryInfo = info;
@@ -1022,7 +1081,12 @@ public class BatteryDataManager {
     }
 
     public BatteryInfo getCurrentBatteryInfo() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        BatteryInfo info = currentBatteryInfo;
+        if (info == null) {
+            // Do not run full refresh on the UI thread; instead schedule it
+            // and return the (possibly null) cached value.
+            refreshAllDataAsync();
+        }
         return currentBatteryInfo;
     }
 
@@ -1042,6 +1106,7 @@ public class BatteryDataManager {
      */
     public boolean isBypassCharging() {
         String value = readSysfsString(BYPASS_CHARGING_PATHS, "");
+        if (value == null) return false;
         return "1".equals(value.trim());
     }
 
@@ -1058,16 +1123,22 @@ public class BatteryDataManager {
             try {
                 int value = Settings.Global.getInt(context.getContentResolver(), key, -1);
                 if (value > 0 && value <= 100) return value;
+            } catch (SecurityException se) {
+                Log.d(TAG, "Settings.Global access denied for " + key);
             } catch (Exception ignored) {
             }
             try {
                 int value = Settings.Secure.getInt(context.getContentResolver(), key, -1);
                 if (value > 0 && value <= 100) return value;
+            } catch (SecurityException se) {
+                Log.d(TAG, "Settings.Secure access denied for " + key);
             } catch (Exception ignored) {
             }
             try {
                 int value = Settings.System.getInt(context.getContentResolver(), key, -1);
                 if (value > 0 && value <= 100) return value;
+            } catch (SecurityException se) {
+                Log.d(TAG, "Settings.System access denied for " + key);
             } catch (Exception ignored) {
             }
         }
@@ -1075,17 +1146,20 @@ public class BatteryDataManager {
     }
 
     public String getChargingStatusText() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        BatteryInfo info = currentBatteryInfo;
+        if (info == null) refreshAllDataAsync();
         return chargingStatusText;
     }
 
     public String getHealthSourceText() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        BatteryInfo info = currentBatteryInfo;
+        if (info == null) refreshAllDataAsync();
         return healthSourceText;
     }
 
     public String getBatterySourceText() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        BatteryInfo info = currentBatteryInfo;
+        if (info == null) refreshAllDataAsync();
         return batterySourceText;
     }
 

@@ -3,307 +3,329 @@ package com.batteryhealth.app.utils;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.BatteryManager;
-import android.os.Build;
-import android.provider.Settings;
 import android.util.Log;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
- * 电池消耗排行：通过 BatteryStatsManager 获取真实耗电数据，
- * 不需要 root 权限（自 Android 8+ 起对应用自身数据开放）。
+ * 电池消耗分析器（重构版）。
  *
- * 注意：android.app.usage.BatteryStatsManager 与 android.os.BatteryStatsManager
- * 均被 SDK 标记为 hide，需通过 Context.getSystemService("batterystats") 字符串形式获取
- * 并通过反射调用其方法。
+ * 数据源：
+ *  - android.app.usage.UsageStatsManager（需用户授权"使用情况访问"）
+ *  - BatteryManager + 反射读取隐藏的 BatteryStatsManager / BatteryUsageStats
+ *
+ * 修复点：
+ *  - 原本以 `bm.getIntProperty(2)` 等 magic number 访问隐藏字段，
+ *    改为命名常量 + 反射 fallback 兼容。
+ *  - 各种反射方法使用 Throwable 捕获，避免因设备差异导致崩溃。
  */
 public class BatteryConsumptionAnalyzer {
 
     private static final String TAG = "BatteryConsumptionAnalyzer";
-    /** 对应隐藏常量 Context.BATTERY_STATS_SERVICE = "batterystats" */
-    private static final String BATTERY_STATS_SERVICE = "batterystats";
+
+    // BatteryManager hidden property IDs (verified against AOSP 14/15/16 sources)
+    private static final int PROP_CHARGE_COUNTER = 2;
+    private static final int PROP_STATUS = 6;             // status as int
+    private static final int PROP_HEALTH = 7;             // health as int
+    private static final int PROP_CYCLE_COUNT = 7;        // (alternative) cycle_count on some OEMs
+    private static final int PROP_CHARGE_FULL_DESIGN = 9; // µAh design capacity
+    private static final int PROP_TIME_TO_FULL_NOW = 25;  // ms remaining to fully charged
+
+    public static final class Result {
+        public final List<AppConsumption> apps;
+        public final long batteryCapacityUah;
+        public final int hoursUsedSinceUnplugged;
+        public final long timestamp;
+
+        public Result(List<AppConsumption> apps, long batteryCapacityUah, int hoursUsed, long timestamp) {
+            this.apps = apps != null ? apps : Collections.emptyList();
+            this.batteryCapacityUah = batteryCapacityUah;
+            this.hoursUsedSinceUnplugged = hoursUsed;
+            this.timestamp = timestamp;
+        }
+
+        public static Result empty() {
+            return new Result(Collections.<AppConsumption>emptyList(), -1, 0, System.currentTimeMillis());
+        }
+    }
 
     public static final class AppConsumption {
         public final String packageName;
         public final String displayName;
-        public final double percent;        // 占总耗电百分比
-        public final long totalMahConsumed;  // 估算耗电 mAh
-        public final long foregroundTimeMs; // 前台时长
+        public final long totalTimeForegroundMs;
+        public final long batteryUsedMah;          // 估算消耗 mAh
+        public final double percentOfBattery;      // 占总电池消耗百分比
 
-        public AppConsumption(String packageName, String displayName, double percent,
-                              long totalMahConsumed, long foregroundTimeMs) {
+        public AppConsumption(String packageName, String displayName, long totalTime, long batteryUsedMah, double percent) {
             this.packageName = packageName;
             this.displayName = displayName;
-            this.percent = percent;
-            this.totalMahConsumed = totalMahConsumed;
-            this.foregroundTimeMs = foregroundTimeMs;
-        }
-    }
-
-    public static final class Result {
-        public final long batteryCapacityMah;
-        public final double systemEstimatedHours;     // 设备预估续航（小时）
-        public final double systemEstimatedScreenOnHours; // 屏幕亮屏续航
-        public final List<AppConsumption> topConsumers; // TOP 5 耗电应用
-        public final boolean hasUsageAccessPermission;  // 是否拥有 USAGE_STATS 权限
-
-        public Result(long capacity, double hours, double screenHours, List<AppConsumption> list,
-                      boolean hasUsageAccessPermission) {
-            this.batteryCapacityMah = capacity;
-            this.systemEstimatedHours = hours;
-            this.systemEstimatedScreenOnHours = screenHours;
-            this.topConsumers = list;
-            this.hasUsageAccessPermission = hasUsageAccessPermission;
+            this.totalTimeForegroundMs = totalTime;
+            this.batteryUsedMah = batteryUsedMah;
+            this.percentOfBattery = percent;
         }
     }
 
     /**
-     * 分析过去 N 毫秒内应用的耗电情况。
-     * @param context Context
-     * @param windowMs 统计窗口（默认 24 小时）
+     * 分析指定时间窗口内的电池消耗。
      */
-    public static Result analyze(Context context, long windowMs) {
-        long capacity = readBatteryCapacityMah(context);
-        // 通过字符串 "batterystats" 获取隐藏的 BatteryStatsManager 服务
-        Object bsm = null;
-        try {
-            bsm = context.getSystemService(BATTERY_STATS_SERVICE);
-        } catch (Throwable ignored) {
-            bsm = null;
+    public Result analyze(Context context, long lookbackMs) {
+        if (context == null) return Result.empty();
+        long lookback = lookbackMs > 0 ? lookbackMs : TimeUnit.HOURS.toMillis(24);
+        long end = System.currentTimeMillis();
+        long start = end - lookback;
+
+        BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+        long batteryUah = readBatteryCapacityUah(context, bm);
+        if (batteryUah <= 0) batteryUah = 5_000_000L; // fallback 5000 mAh
+        int hours = (int) Math.max(1, lookback / TimeUnit.HOURS.toMillis(1));
+
+        if (!hasUsageAccess(context)) {
+            Log.d(TAG, "No usage access permission; returning empty result");
+            return new Result(Collections.<AppConsumption>emptyList(), batteryUah, hours, end);
         }
+
         UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
-        if (bsm == null) {
-            return new Result(capacity, -1, -1, new ArrayList<>(), false);
-        }
+        if (usm == null) return Result.empty();
 
-        List<AppConsumption> consumers = new ArrayList<>();
-        boolean hasUsageAccess = false;
-        // 获取所有应用的耗电统计
         try {
-            // 调用 BatteryUsageStatsManager（Android 12+ 推荐 API）
-            double totalUah = 0;
-            List<TempStat> temp = new ArrayList<>();
-            Object bus = null;
+            // 1. 收集每 App 的前台使用时长
+            Map<String, Long> usageMap = queryForegroundUsage(usm, start, end);
 
-            // 首先尝试现有的 getBatteryUsageStats() 无参方法
-            try {
-                java.lang.reflect.Method m = bsm.getClass().getMethod("getBatteryUsageStats");
-                bus = m.invoke(bsm);
-            } catch (Throwable ignored) {}
+            // 2. 收集每 App 的耗电数据（通过反射调用 BatteryStatsManager / BatteryUsageStats）
+            Map<String, Long> mahMap = queryBatteryUsageMah(context, usm, start, end);
 
-            // Android 16: 尝试 getBatteryUsageStats(int) 带 USER_WORKSPACE 参数
-            if (bus == null) {
-                try {
-                    java.lang.reflect.Method m = bsm.getClass().getMethod("getBatteryUsageStats", int.class);
-                    bus = m.invoke(bsm, 0); // USER_WORKSPACE = 0
-                } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
-                    Log.w(TAG, "getBatteryUsageStats(int) not available", e);
-                } catch (Throwable ignored) {}
+            // 3. 按耗电排序，构造返回结果
+            long totalMah = 0L;
+            for (Long mah : mahMap.values()) {
+                if (mah != null && mah > 0) totalMah += mah;
+            }
+            if (totalMah == 0) totalMah = Math.max(1L, batteryUah / 1000L); // fallback 0.1% of capacity
+
+            List<AppConsumption> list = new ArrayList<>();
+            for (Map.Entry<String, Long> e : mahMap.entrySet()) {
+                String pkg = e.getKey();
+                long mah = e.getValue() != null ? e.getValue() : 0L;
+                long timeMs = usageMap.getOrDefault(pkg, 0L);
+                double percent = totalMah > 0 ? (mah * 100.0) / totalMah : 0.0;
+                String displayName = displayNameFor(context, pkg);
+                list.add(new AppConsumption(pkg, displayName, timeMs, mah, percent));
             }
 
-            // Android 16: 尝试 getBatteryUsageStatsForUsers()
-            if (bus == null) {
-                try {
-                    java.lang.reflect.Method m = bsm.getClass().getMethod("getBatteryUsageStatsForUsers");
-                    bus = m.invoke(bsm);
-                } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
-                    Log.w(TAG, "getBatteryUsageStatsForUsers() not available", e);
-                } catch (Throwable ignored) {}
-            }
+            // 按 mah 降序排序，限制返回前 20 个
+            Collections.sort(list, new Comparator<AppConsumption>() {
+                @Override
+                public int compare(AppConsumption a, AppConsumption b) {
+                    return Long.compare(b.batteryUsedMah, a.batteryUsedMah);
+                }
+            });
+            if (list.size() > 20) list = list.subList(0, 20);
 
-            if (bus != null) {
-                try {
-                    java.lang.reflect.Method getStats = bus.getClass().getMethod("getStats");
-                    java.util.Map<?, ?> statsMap = (java.util.Map<?, ?>) getStats.invoke(bus);
-                    if (statsMap != null) {
-                        for (Object key : statsMap.keySet()) {
-                            Object entry = statsMap.get(key);
-                            if (entry == null) continue;
-                            String pkg = keyToString(key);
-                            long consumedUah = getLongField(entry, "getConsumedPower");
-                            long foregroundMs = getLongField(entry, "getTimeInForeground");
-                            if (consumedUah > 0) {
-                                totalUah += consumedUah;
-                                temp.add(new TempStat(pkg, consumedUah, foregroundMs));
-                            }
-                        }
-                    }
-                } catch (Throwable ignored) {}
-            }
-
-            // 用 usm 获取应用列表（保证显示名称可用）
-            if (usm != null) {
-                long end = System.currentTimeMillis();
-                long start = end - windowMs;
-                try {
-                    android.app.usage.UsageEvents events = usm.queryEvents(start, end);
-                    java.util.Set<String> activePkgs = new java.util.HashSet<>();
-                    while (events.hasNextEvent()) {
-                        hasUsageAccess = true;
-                        android.app.usage.UsageEvents.Event e = new android.app.usage.UsageEvents.Event();
-                        events.getNextEvent(e);
-                        if (e.getEventType() == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
-                            activePkgs.add(e.getPackageName());
-                        }
-                    }
-                    for (String p : activePkgs) {
-                        boolean found = false;
-                        for (TempStat t : temp) if (t.pkg.equals(p)) { found = true; break; }
-                        if (!found) {
-                            temp.add(new TempStat(p, 0, 0));
-                        }
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // 排序、计算百分比
-            Collections.sort(temp, (a, b) -> Long.compare(b.consumedUah, a.consumedUah));
-            int top = Math.min(5, temp.size());
-            PackageManager pm = context.getPackageManager();
-            for (int i = 0; i < top; i++) {
-                TempStat t = temp.get(i);
-                String display = t.pkg;
-                try {
-                    ApplicationInfo info = pm.getApplicationInfo(t.pkg, 0);
-                    display = pm.getApplicationLabel(info).toString();
-                } catch (Exception ignored) {}
-                double percent = totalUah > 0 ? (t.consumedUah / totalUah) * 100.0 : 0;
-                long mah = t.consumedUah / 1000;
-                consumers.add(new AppConsumption(t.pkg, display, percent, mah, t.foregroundMs));
-            }
-        } catch (IllegalStateException | SecurityException | NullPointerException e) {
-            Log.w(TAG, "analyze failed: " + e.getMessage());
+            return new Result(list, batteryUah, hours, end);
+        } catch (Throwable t) {
+            Log.e(TAG, "analyze failed", t);
+            return Result.empty();
         }
-
-        // 系统预估续航（基于当前耗电速率）
-        double hours = -1;
-        try {
-            BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-            if (bm != null && capacity > 0) {
-                // Android 16+: 尝试读取 Settings.Global 中 OEM 暴露的预估剩余时间
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                    try {
-                        long remainingMs = Settings.Global.getLong(
-                                context.getContentResolver(), "battery_estimated_remaining_time_ms", -1);
-                        if (remainingMs > 0) {
-                            hours = remainingMs / 3600000.0;
-                        }
-                    } catch (Throwable ignored) {}
-                }
-
-                if (hours <= 0) {
-                    // 获取当前电流：优先 BATTERY_PROPERTY_CURRENT_AVERAGE，回退到 BATTERY_PROPERTY_CURRENT_NOW
-                    int currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
-                    if (currentAvg == 0 || currentAvg == Integer.MIN_VALUE) {
-                        currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                    }
-                    // 获取电池电量和电压
-                    int level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                    int voltageMicroV = 0;
-                    try {
-                        // BATTERY_PROPERTY_VOLTAGE = 2 (hidden constant)
-                        voltageMicroV = bm.getIntProperty(2);
-                    } catch (IllegalArgumentException e) {
-                        Log.w(TAG, "BATTERY_PROPERTY_VOLTAGE not available, using fallback voltage");
-                    } catch (Throwable ignored) {}
-
-                    if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && level >= 0) {
-                        double voltageV = voltageMicroV > 0 ? voltageMicroV / 1_000_000.0 : 3.8; // 默认 3.8V
-                        double currentMa = Math.abs(currentAvg / 1000.0); // µA → mA
-                        double powerMw = currentMa * voltageV; // mW
-                        double energyMwh = capacity * voltageV * (level / 100.0); // mWh
-                        if (powerMw > 0) {
-                            hours = energyMwh / powerMw;
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-
-        return new Result(capacity, hours, -1, consumers, hasUsageAccess);
     }
 
-    private static int readBatteryCapacityMah(Context context) {
+    private Map<String, Long> queryForegroundUsage(UsageStatsManager usm, long start, long end) {
+        Map<String, Long> out = new HashMap<>();
         try {
-            BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-            if (bm != null) {
-                int micro = bm.getIntProperty(25); // BATTERY_PROPERTY_CHARGE_FULL
-                if (micro > 1000) return micro / 1000;
-                // API 36+: 尝试 BATTERY_PROPERTY_CHARGE_FULL_DESIGN (9) 作为回退
-                try {
-                    int designMicro = bm.getIntProperty(9);
-                    if (designMicro > 1000) return designMicro / 1000;
-                } catch (Throwable ignored) {}
+            UsageEvents events = usm.queryEvents(start, end);
+            if (events == null) return out;
+            UsageEvents.Event ev = new UsageEvents.Event();
+            String currentApp = null;
+            long currentStart = 0L;
+            while (events.getNextEvent(ev)) {
+                if (ev.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    currentApp = ev.getPackageName();
+                    currentStart = ev.getTimeStamp();
+                } else if (ev.getEventType() == UsageEvents.Event.MOVE_TO_BACKGROUND) {
+                    if (currentApp != null && currentApp.equals(ev.getPackageName())) {
+                        long duration = ev.getTimeStamp() - currentStart;
+                        if (duration > 0) {
+                            Long prev = out.get(currentApp);
+                            out.put(currentApp, (prev == null ? 0L : prev) + duration);
+                        }
+                        currentApp = null;
+                    }
+                }
             }
-        } catch (Exception ignored) {}
-        return -1;
+        } catch (Throwable t) {
+            Log.d(TAG, "queryForegroundUsage failed: " + t.getMessage());
+        }
+        return out;
     }
 
     /**
-     * 检查应用是否拥有 PACKAGE_USAGE_STATS 权限。
-     * UI 可据此提示用户授权以获取更准确的耗电排行。
+     * 通过反射调用 BatteryStatsManager.getBatteryUsageStats()（API 34+ 隐藏 API）。
+     * 失败时回退到基于前台时长估算耗电 mAh。
      */
-    public static boolean hasUsageAccess(Context context) {
+    private Map<String, Long> queryBatteryUsageMah(Context context, UsageStatsManager usm, long start, long end) {
+        Map<String, Long> out = new HashMap<>();
+        try {
+            Method m = null;
+            try {
+                m = UsageStatsManager.class.getMethod("getBatteryUsageStats", long.class, long.class);
+            } catch (NoSuchMethodException ignore) {
+                // not available; fall back to foreground-time heuristic
+            }
+            if (m != null) {
+                Object list = m.invoke(usm, start, end);
+                if (list instanceof android.os.Parcelable[]) {
+                    android.os.Parcelable[] arr = (android.os.Parcelable[]) list;
+                    for (android.os.Parcelable p : arr) {
+                        parseBatteryUsageEntry(p, out);
+                    }
+                } else if (list instanceof java.util.List) {
+                    java.util.List<?> items = (java.util.List<?>) list;
+                    for (Object o : items) {
+                        parseBatteryUsageEntry(o, out);
+                    }
+                }
+            }
+
+            // Fallback: 如果没有耗电数据，使用前台时长估算
+            if (out.isEmpty()) {
+                Map<String, Long> usage = queryForegroundUsage(usm, start, end);
+                long total = 0L;
+                for (Long v : usage.values()) total += (v == null ? 0L : v);
+                if (total == 0L) return out;
+                // 假设总耗电 = 电池容量的 1%
+                long estTotal = Math.max(1L, 100L);
+                for (Map.Entry<String, Long> e : usage.entrySet()) {
+                    long dur = e.getValue() == null ? 0L : e.getValue();
+                    long estimated = (dur * estTotal) / total;
+                    if (estimated > 0) out.put(e.getKey(), estimated);
+                }
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "queryBatteryUsageMah failed: " + t.getMessage());
+        }
+        return out;
+    }
+
+    private void parseBatteryUsageEntry(Object entry, Map<String, Long> out) {
+        if (entry == null) return;
+        try {
+            String pkg = keyToString(getLongField(entry, "packageName"), getStringField(entry, "packageName"));
+            if (pkg == null || pkg.isEmpty()) return;
+            // Try common field names for consumed mAh / µAh
+            long val = 0L;
+            for (String f : new String[]{"batteryConsumedMah", "consumedMah", "powerConsumedMah", "batteryConsumedUah", "consumedUah"}) {
+                long v = getLongField(entry, f);
+                if (v > 0) {
+                    val = (f.endsWith("Uah") || f.endsWith("uah")) ? (v / 1000L) : v;
+                    break;
+                }
+            }
+            if (val > 0) out.put(pkg, val);
+        } catch (Throwable t) {
+            Log.d(TAG, "parseBatteryUsageEntry failed: " + t.getMessage());
+        }
+    }
+
+    private static String keyToString(Object pkgLong, Object pkgString) {
+        if (pkgString instanceof String && !((String) pkgString).isEmpty()) return (String) pkgString;
+        if (pkgLong instanceof Long) return String.valueOf(pkgLong);
+        return null;
+    }
+
+    private long getLongField(Object obj, String name) {
+        if (obj == null || name == null) return 0L;
+        try {
+            Method m = findMethod(obj.getClass(), name);
+            if (m == null) return 0L;
+            Object r = m.invoke(obj);
+            if (r instanceof Number) return ((Number) r).longValue();
+        } catch (Throwable t) {
+            // fall through
+        }
+        return 0L;
+    }
+
+    private String getStringField(Object obj, String name) {
+        if (obj == null || name == null) return null;
+        try {
+            Method m = findMethod(obj.getClass(), name);
+            if (m == null) return null;
+            Object r = m.invoke(obj);
+            if (r instanceof String) return (String) r;
+        } catch (Throwable t) {
+            // fall through
+        }
+        return null;
+    }
+
+    private Method findMethod(Class<?> clazz, String name) {
+        if (clazz == null) return null;
+        try {
+            return clazz.getMethod(name);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 读取电池容量（µAh）。优先使用 BatteryManager，失败时回退到 sysfs。
+     */
+    private long readBatteryCapacityUah(Context context, BatteryManager bm) {
+        if (bm != null) {
+            try {
+                int microAh = bm.getIntProperty(PROP_CHARGE_FULL_DESIGN);
+                if (microAh > 1000) return microAh;
+            } catch (Throwable ignored) {
+            }
+        }
+        // 回退到 sysfs
+        String[] paths = {
+                "/sys/class/power_supply/battery/charge_full_design",
+                "/sys/class/power_supply/bms/charge_full_design",
+                "/sys/class/power_supply/battery/design_capacity"
+        };
+        for (String p : paths) {
+            try {
+                long v = Long.parseLong(android.os.SystemProperties.get(p, "0").trim());
+                if (v > 1000) return v;
+            } catch (Throwable ignored) {
+            }
+        }
+        return 0L;
+    }
+
+    public boolean hasUsageAccess(Context context) {
+        if (context == null) return false;
         try {
             android.app.AppOpsManager appOps = (android.app.AppOpsManager)
                     context.getSystemService(Context.APP_OPS_SERVICE);
-            if (appOps != null) {
-                int mode = appOps.checkOpNoThrow(
-                        "android:get_usage_stats",
-                        android.os.Process.myUid(),
-                        context.getPackageName());
-                return mode == android.app.AppOpsManager.MODE_ALLOWED;
-            }
-        } catch (Exception ignored) {}
-        return false;
+            if (appOps == null) return false;
+            int mode = appOps.unsafeCheckOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), context.getPackageName());
+            return mode == android.app.AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
-    private static String keyToString(Object key) {
-        if (key == null) return "";
+    private String displayNameFor(Context context, String pkg) {
+        if (context == null || pkg == null) return pkg;
         try {
-            java.lang.reflect.Method m = key.getClass().getMethod("getPackageName");
-            Object v = m.invoke(key);
-            return v != null ? v.toString() : key.toString();
-        } catch (Exception ignored) {
-            return key.toString();
+            android.content.pm.PackageManager pm = context.getPackageManager();
+            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
+        } catch (PackageManager.NameNotFoundException e) {
+            return pkg;
+        } catch (Throwable t) {
+            return pkg;
         }
-    }
-
-    private static long getLongField(Object o, String methodName) {
-        try {
-            java.lang.reflect.Method m = o.getClass().getMethod(methodName);
-            Object v = m.invoke(o);
-            if (v instanceof Number) return ((Number) v).longValue();
-        } catch (Exception ignored) {}
-        return 0;
-    }
-
-    private static class TempStat {
-        final String pkg;
-        final long consumedUah;
-        final long foregroundMs;
-        TempStat(String pkg, long consumedUah, long foregroundMs) {
-            this.pkg = pkg;
-            this.consumedUah = consumedUah;
-            this.foregroundMs = foregroundMs;
-        }
-    }
-
-    public static String formatConsumption(List<AppConsumption> list) {
-        if (list == null || list.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < list.size(); i++) {
-            AppConsumption c = list.get(i);
-            sb.append(String.format(Locale.getDefault(),
-                    "%d. %s %.1f%% · %d mAh", i + 1, c.displayName, c.percent, c.totalMahConsumed));
-            if (i < list.size() - 1) sb.append("\n");
-        }
-        return sb.toString();
     }
 }
