@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"ബഗ് റിപ്പോർട്ട്"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"സെഷൻ അവസാനിപ്പിക്കുക"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"സ്‌ക്രീൻഷോട്ട്"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"സ്‌റ്റാൻഡ്‌ബൈ"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"ബഗ് റിപ്പോർട്ട്"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"ഒരു ഇമെയിൽ സന്ദേശമായി അയയ്‌ക്കുന്നതിന്, ഇത് നിങ്ങളുടെ നിലവിലെ ഉപകരണ നിലയെക്കുറിച്ചുള്ള വിവരങ്ങൾ ശേഖരിക്കും. ബഗ് റിപ്പോർട്ട് ആരംഭിക്കുന്നതിൽ നിന്ന് ഇത് അയയ്‌ക്കാനായി തയ്യാറാകുന്നതുവരെ അൽപ്പസമയമെടുക്കും; ക്ഷമയോടെ കാത്തിരിക്കുക."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"ഇന്റരാക്റ്റീവ് റിപ്പോർട്ട്"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"ഒറ്റക്കൈ മോഡ്"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"കൂടുതൽ ഡിം ചെയ്യൽ"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"ശ്രവണ ഉപകരണങ്ങൾ"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"ഓട്ടോക്ലിക്ക്"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"വിച്‌ഛേദിച്ചു"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"കണക്റ്റ് ചെയ്‌തു"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"സജീവം"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"ഹാൻഡ്‌സ്‌-ഫ്രീ ആയി കോൾ ചെയ്യാൻ നിങ്ങളുടെ ശ്രവണ സഹായി മൈക്രോഫോൺ ഉപയോഗിക്കാം. ഇത് കോൾ സമയത്ത് മാത്രം നിങ്ങളുടെ മൈക്ക് മാറ്റുന്നു."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"മാറുക"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"ക്രമീകരണം"</string>
+    <string name="user_switched" msgid="7249833311585228097">"നിലവിലെ ഉപയോക്താവ് <xliff:g id="NAME">%1$s</xliff:g> ആണ്."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g> എന്ന ഉപയോക്താവിലേക്ക് മാറുന്നു…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g> ലോഗൌട്ട് ചെയ്യുന്നു…"</string>
     <string name="owner_name" msgid="8713560351570795743">"ഉടമ"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"അൺപിന്നിനുമുമ്പ് അൺലോക്ക് പാറ്റേൺ ആവശ്യപ്പെടൂ"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"അൺപിന്നിനുമുമ്പ് പാസ്‌വേഡ് ആവശ്യപ്പെടൂ"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"നിങ്ങളുടെ അഡ്‌മിൻ ഇൻസ്‌റ്റാൾ ചെയ്തത്.\nനൽകിയ അനുമതികൾ കാണാൻ ക്രമീകരണത്തിലേക്ക് പോകുക"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"നിങ്ങളുടെ അഡ്‌മിൻ അപ്‌ഡേറ്റ് ചെയ്തത്.\nനൽകിയ അനുമതികൾ കാണാൻ ക്രമീകരണത്തിലേക്ക് പോകുക"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"നിങ്ങളുടെ അഡ്‌മിൻ അപ്‌ഡേറ്റ് ചെയ്യുന്നത്"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"നിങ്ങളുടെ അഡ്‌മിൻ ഇല്ലാതാക്കുന്നത്"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"ശരി"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"\'ബാറ്ററി സേവർ\' ഡാർക്ക് തീം ഓണാക്കുന്നു, ഒപ്പം പശ്ചാത്തല ആക്‌റ്റിവിറ്റിയും ചില വിഷ്വൽ ഇഫക്റ്റുകളും ചില ഫീച്ചറുകളും ചില നെറ്റ്‌വർക്ക് കണക്ഷനുകളും പരിമിതപ്പെടുത്തുകയോ ഓഫാക്കുകയോ ചെയ്യുന്നു."</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"സ്‌ക്രോൾ ചെയ്യുക"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"താൽക്കാലികമായി നിർത്തുക"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"സ്ഥാനം"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"മുകളിലേക്ക് സ്‌ക്രോൾ ചെയ്യുക"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"താഴേക്ക് സ്‌ക്രോൾ ചെയ്യുക"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"ഇടത്തേക്ക് സ്‌ക്രോൾ ചെയ്യുക"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"വലത്തേക്ക് സ്‌ക്രോൾ ചെയ്യുക"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"സ്ക്രോൾ മോഡിൽ നിന്ന് പുറത്തുകടക്കുക"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"സ്‌ക്രോൾ പാനൽ"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> നിയന്ത്രിത ബക്കറ്റിലേക്ക് നീക്കി"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"ചിത്രം അയച്ചു"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"ഔദ്യോഗികം 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"ടെസ്‌റ്റ്"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"കമ്മ്യൂണൽ"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"മേൽനോട്ടമുണ്ട്"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"ഔദ്യോഗിക പ്രൊഫൈൽ"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"സ്വകാര്യ സ്പേസ്"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"ക്ലോൺ ചെയ്യുക"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android ലോക്കായിരിക്കുമ്പോഴാണ് USB ഉപകരണം പ്ലഗ്-ഇൻ ചെയ്തത്. ഉപകരണം ഉപയോഗിക്കാൻ ആദ്യം Android അൺലോക്ക് ചെയ്യുക, ശേഷം USB ഉപകരണം വീണ്ടും ഇൻസേർട്ട് ചെയ്ത് ഉപയോഗിക്കുക."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"സംശയാസ്പദമായ USB ആക്റ്റിവിറ്റി"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB ഡാറ്റാ സിഗ്‌നൽ പ്രവർത്തനരഹിതമാക്കി."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"ഫിംഗർപ്രിന്റ് അൺലോക്കുമായി ബന്ധപ്പെട്ട് പ്രശ്നം നേരിടുന്നുണ്ടോ?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"അൺലോക്കിംഗ് അനുഭവം മെച്ചപ്പെടുത്താനുള്ള നുറുങ്ങുകൾ അവലോകനം ചെയ്യാൻ ടാപ്പ് ചെയ്യുക"</string>
 </resources>

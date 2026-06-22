@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"ବଗ୍‌ ରିପୋର୍ଟ"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"ସେସନ୍‍ ଶେଷ କରନ୍ତୁ"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"ସ୍କ୍ରିନସଟ"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"ଷ୍ଟାଣ୍ଡବାଏ"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"ବଗ୍‌ ରିପୋର୍ଟ"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"ଇ-ମେଲ୍ ମେସେଜ୍‍ ଭାବରେ ପଠାଇବାକୁ, ଆପଣଙ୍କ ବର୍ତ୍ତମାନର ଡିଭାଇସ୍‌ ବିଷୟରେ ଏହା ସୂଚନା ସଂଗ୍ରହ କରିବ। ବଗ୍ ରିପୋର୍ଟ ଆରମ୍ଭ ହେବାପରଠାରୁ ଏହାକୁ ପଠାଇବା ପାଇଁ କିଛି ସମୟ ଲାଗିବ, ଦୟାକରି ଧୈର୍ଯ୍ୟ ରଖନ୍ତୁ।"</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"ଇଣ୍ଟରାକ୍ଟିଭ୍‍ ରିପୋର୍ଟ"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"ଏକ-ହାତ ମୋଡ୍"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"ଅତ୍ୟଧିକ ଡିମ"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"ଶ୍ରବଣ ଡିଭାଇସଗୁଡ଼ିକ"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"ଅଟୋକ୍ଲିକ"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"ଡିସକନେକ୍ଟ କରାଯାଇଛି"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"କନେକ୍ଟ କରାଯାଇଛି"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"ସକ୍ରିୟ"</string>
@@ -1821,10 +1819,11 @@
     <string name="accessibility_magnification_chooser_text" msgid="1502075582164931596">"ମେଗ୍ନିଫିକେସନ"</string>
     <string name="hearing_device_switch_phone_mic_notification_title" msgid="6645178038359708836">"ଫୋନ ମାଇକକୁ ସୁଇଚ କରିବେ?"</string>
     <string name="hearing_device_switch_hearing_mic_notification_title" msgid="4612074852145289569">"ଶ୍ରବଣ ଯନ୍ତ୍ର ମାଇକକୁ ସୁଇଚ କରିବେ?"</string>
-    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"ଭଲ ସାଉଣ୍ଡ ପାଇଁ କିମ୍ବା ଯଦି ଆପଣଙ୍କର ଶ୍ରବଣ ଯନ୍ତ୍ରର ବେଟେରୀ କମ ଥାଏ। କଲ ସମୟରେ ଏହା କେବଳ ଆପଣଙ୍କର ମାଇକକୁ ସୁଇଚ କରିଥାଏ।"</string>
+    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"ଭଲ ସାଉଣ୍ଡ ପାଇଁ କିମ୍ବା ଯଦି ଆପଣଙ୍କର ଶ୍ରବଣ ଯନ୍ତ୍ର ବେଟେରୀ କମ ଥିଲେ। କଲ ସମୟରେ ଏହା କେବଳ ଆପଣଙ୍କର ମାଇକକୁ ସୁଇଚ କରିଥାଏ।"</string>
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"ହେଣ୍ଡସ-ଫ୍ରି କଲିଂ ପାଇଁ ଆପଣ ଆପଣଙ୍କର ଶ୍ରବଣ ଯନ୍ତ୍ର ମାଇକ୍ରୋଫୋନ ବ୍ୟବହାର କରିପାରିବେ। କଲ ସମୟରେ ଏହା କେବଳ ଆପଣଙ୍କର ମାଇକକୁ ସୁଇଚ କରିଥାଏ।"</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"ସୁଇଚ କରନ୍ତୁ"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"ସେଟିଂସ"</string>
+    <string name="user_switched" msgid="7249833311585228097">"ବର୍ତ୍ତମାନର ୟୁଜର୍‌ ହେଉଛନ୍ତି <xliff:g id="NAME">%1$s</xliff:g>।"</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g>ରେ ସୁଇଚ ହେଉଛି…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g>ଙ୍କୁ ଲଗଆଉଟ୍‍ କରାଯାଉଛି…"</string>
     <string name="owner_name" msgid="8713560351570795743">"ମାଲିକ"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"ଅନପିନ୍‌ କରିବା ପୂର୍ବରୁ ଲକ୍‌ ଖୋଲିବା ପାଟର୍ନ ପଚାରନ୍ତୁ"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"ଅନପିନ୍‌ କରିବା ପୂର୍ବରୁ ପାସ୍‌ୱର୍ଡ ପଚାରନ୍ତୁ"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"ଆପଣଙ୍କ ଆଡମିନଙ୍କ ଦ୍ୱାରା ଇନଷ୍ଟଲ କରାଯାଇଛି।\nଅନୁମୋଦିତ ଅମୁମତିଗୁଡ଼ିକ ଭ୍ୟୁ କରିବା ପାଇଁ ସେଟିଂସକୁ ଯାଆନ୍ତୁ"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"ଆପଣଙ୍କ ଆଡମିନଙ୍କ ଦ୍ୱାରା ଅପଡେଟ କରାଯାଇଛି।\nଅନୁମୋଦିତ ଅମୁମତିଗୁଡ଼ିକ ଭ୍ୟୁ କରିବା ପାଇଁ ସେଟିଂସକୁ ଯାଆନ୍ତୁ"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"ଆପଣଙ୍କ ଆଡମିନ୍‌‌ ଅପଡେଟ୍‍ କରିଛନ୍ତି"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"ଆପଣଙ୍କ ଆଡମିନ୍‌‌ ଡିଲିଟ୍‍ କରିଛନ୍ତି"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"ଠିକ ଅଛି"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"ବେଟେରୀ ସେଭର ଗାଢ଼ା ଥିମକୁ ଚାଲୁ କରେ ଏବଂ ପୃଷ୍ଠପଟ କାର୍ଯ୍ୟକଳାପ, କିଛି ଭିଜୁଆଲ ଇଫେକ୍ଟ, କିଛି ଫିଚର ଏବଂ କିଛି ନେଟୱାର୍କ ସଂଯୋଗକୁ ସୀମିତ କିମ୍ବା ବନ୍ଦ କରେ।"</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"ସ୍କ୍ରୋଲ କରନ୍ତୁ"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"ବିରତ କରନ୍ତୁ"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"ସ୍ଥିତି"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"ଉପରକୁ ସ୍କ୍ରୋଲ କରନ୍ତୁ"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"ତଳକୁ ସ୍କ୍ରୋଲ କରନ୍ତୁ"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"ବାମକୁ ସ୍କ୍ରୋଲ କରନ୍ତୁ"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"ଡାହାଣକୁ ସ୍କ୍ରୋଲ କରନ୍ତୁ"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"ସ୍କ୍ରୋଲ ମୋଡରୁ ବାହାରି ଯାଆନ୍ତୁ"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"ସ୍କ୍ରୋଲ ପେନେଲ"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g>କୁ ପ୍ରତିବନ୍ଧିତ ବକେଟରେ ରଖାଯାଇଛି"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"ଏକ ଛବି ପଠାଯାଇଛି"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"ୱାର୍କ 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"ଟେଷ୍ଟ"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"କମ୍ୟୁନାଲ"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"ନିରୀକ୍ଷଣ କରାଯାଉଛି"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"ୱାର୍କ ପ୍ରୋଫାଇଲ"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"ପ୍ରାଇଭେଟ ସ୍ପେସ"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"କ୍ଲୋନ"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android ଲକ ଥିବାବେଳେ USB ଡିଭାଇସ ପ୍ଲଗ ଇନ ହୋଇଥାଏ। ଡିଭାଇସ ବ୍ୟବହାର କରିବାକୁ, ଦୟାକରି ପ୍ରଥମେ Android ଅନଲକ କରନ୍ତୁ ଏବଂ ତାପରେ ଏହାକୁ ବ୍ୟବହାର କରିବାକୁ USB ଡିଭାଇସ ପୁଣି ଭର୍ତ୍ତି କରନ୍ତୁ।"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"ସନ୍ଦେହଜନକ USB କାର୍ଯ୍ୟକଳାପ"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB ଡାଟା ସିଗନାଲକୁ ଅକ୍ଷମ କରାଯାଇଛି।"</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"ଫିଙ୍ଗରପ୍ରିଣ୍ଟ ଅନଲକରେ ଅସୁବିଧାର ସମ୍ମୁଖୀନ ହେଉଛନ୍ତି?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"ଆପଣଙ୍କ ଅନଲକ କରିବାର ଅନୁଭୂତିକୁ ଉନ୍ନତ କରିବା ପାଇଁ ଟିପ୍ସର ସମୀକ୍ଷା କରିବାକୁ ଟାପ କରନ୍ତୁ"</string>
 </resources>

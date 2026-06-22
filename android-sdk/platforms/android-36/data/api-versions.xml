@@ -4000,7 +4000,7 @@
 	<class name="android/adservices/adid/AdIdManager" module="framework-adservices" since="34" sdks="1000000:4,0:34">
 		<extends name="java/lang/Object"/>
 		<method name="get(Landroid/content/Context;)Landroid/adservices/adid/AdIdManager;" sdks="1000000:6,0:34"/>
-		<method name="getAdId(Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="getAdId(Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="getAdId(Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
 	</class>
 	<class name="android/adservices/adselection/AdSelectionConfig" module="framework-adservices" since="34" sdks="1000000:4,0:34">
@@ -4063,9 +4063,8 @@
 	<class name="android/adservices/adselection/AdSelectionOutcome" module="framework-adservices" since="34" sdks="1000000:4,0:34">
 		<extends name="java/lang/Object"/>
 		<method name="getAdSelectionId()J"/>
-		<method name="getComponentAdUris()Ljava/util/List;" since="36" sdks="1000000:16,0:36"/>
+		<method name="getComponentAdUris()Ljava/util/List;" since="36" sdks="1000000:16,36:16,0:36"/>
 		<method name="getRenderUri()Landroid/net/Uri;"/>
-		<method name="getWinningSeller()Landroid/adservices/common/AdTechIdentifier;" since="36"/>
 		<method name="hasOutcome()Z" since="35" sdks="1000000:10,0:35"/>
 		<field name="NO_OUTCOME" since="35" sdks="1000000:10,0:35"/>
 	</class>
@@ -4074,7 +4073,7 @@
 		<method name="&lt;init>()V"/>
 		<method name="build()Landroid/adservices/adselection/AdSelectionOutcome;"/>
 		<method name="setAdSelectionId(J)Landroid/adservices/adselection/AdSelectionOutcome$Builder;"/>
-		<method name="setComponentAdUris(Ljava/util/List;)Landroid/adservices/adselection/AdSelectionOutcome$Builder;" since="36" sdks="1000000:16,0:36"/>
+		<method name="setComponentAdUris(Ljava/util/List;)Landroid/adservices/adselection/AdSelectionOutcome$Builder;" since="36" sdks="1000000:16,36:16,0:36"/>
 		<method name="setRenderUri(Landroid/net/Uri;)Landroid/adservices/adselection/AdSelectionOutcome$Builder;"/>
 	</class>
 	<class name="android/adservices/adselection/AdWithBid" module="framework-adservices" since="35" sdks="1000000:12,0:35">
@@ -4112,13 +4111,13 @@
 		<extends name="java/lang/Object"/>
 		<method name="getAdSelectionData()[B"/>
 		<method name="getAdSelectionDataId()J" sdks="1000000:12,0:35"/>
-		<method name="getAdSelectionId()J" deprecated="36"/>
+		<method name="getAdSelectionId()J" deprecated="37"/>
 	</class>
 	<class name="android/adservices/adselection/GetAdSelectionDataRequest" module="framework-adservices" since="35" sdks="1000000:10,0:35">
 		<extends name="java/lang/Object"/>
 		<method name="getCoordinatorOriginUri()Landroid/net/Uri;" sdks="1000000:12,0:35"/>
 		<method name="getSeller()Landroid/adservices/common/AdTechIdentifier;"/>
-		<method name="getSellerConfiguration()Landroid/adservices/adselection/SellerConfiguration;" since="36" sdks="1000000:14,0:36"/>
+		<method name="getSellerConfiguration()Landroid/adservices/adselection/SellerConfiguration;" since="36" sdks="1000000:14,36:14,0:36"/>
 	</class>
 	<class name="android/adservices/adselection/GetAdSelectionDataRequest$Builder" module="framework-adservices" since="35" sdks="1000000:10,0:35">
 		<extends name="java/lang/Object"/>
@@ -4126,16 +4125,16 @@
 		<method name="build()Landroid/adservices/adselection/GetAdSelectionDataRequest;"/>
 		<method name="setCoordinatorOriginUri(Landroid/net/Uri;)Landroid/adservices/adselection/GetAdSelectionDataRequest$Builder;" sdks="1000000:12,0:35"/>
 		<method name="setSeller(Landroid/adservices/common/AdTechIdentifier;)Landroid/adservices/adselection/GetAdSelectionDataRequest$Builder;"/>
-		<method name="setSellerConfiguration(Landroid/adservices/adselection/SellerConfiguration;)Landroid/adservices/adselection/GetAdSelectionDataRequest$Builder;" since="36" sdks="1000000:14,0:36"/>
+		<method name="setSellerConfiguration(Landroid/adservices/adselection/SellerConfiguration;)Landroid/adservices/adselection/GetAdSelectionDataRequest$Builder;" since="36" sdks="1000000:14,36:14,0:36"/>
 	</class>
-	<class name="android/adservices/adselection/PerBuyerConfiguration" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/adselection/PerBuyerConfiguration" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<implements name="android/os/Parcelable"/>
 		<method name="getBuyer()Landroid/adservices/common/AdTechIdentifier;"/>
 		<method name="getTargetInputSizeBytes()I"/>
 		<field name="CREATOR"/>
 	</class>
-	<class name="android/adservices/adselection/PerBuyerConfiguration$Builder" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/adselection/PerBuyerConfiguration$Builder" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>()V"/>
 		<method name="build()Landroid/adservices/adselection/PerBuyerConfiguration;"/>
@@ -4153,7 +4152,7 @@
 	<class name="android/adservices/adselection/PersistAdSelectionResultRequest" module="framework-adservices" since="35" sdks="1000000:10,0:35">
 		<extends name="java/lang/Object"/>
 		<method name="getAdSelectionDataId()J" sdks="1000000:12,0:35"/>
-		<method name="getAdSelectionId()J" deprecated="36"/>
+		<method name="getAdSelectionId()J" deprecated="37"/>
 		<method name="getAdSelectionResult()[B"/>
 		<method name="getSeller()Landroid/adservices/common/AdTechIdentifier;"/>
 	</class>
@@ -4162,7 +4161,7 @@
 		<method name="&lt;init>()V"/>
 		<method name="build()Landroid/adservices/adselection/PersistAdSelectionResultRequest;"/>
 		<method name="setAdSelectionDataId(J)Landroid/adservices/adselection/PersistAdSelectionResultRequest$Builder;" sdks="1000000:12,0:35"/>
-		<method name="setAdSelectionId(J)Landroid/adservices/adselection/PersistAdSelectionResultRequest$Builder;" deprecated="36"/>
+		<method name="setAdSelectionId(J)Landroid/adservices/adselection/PersistAdSelectionResultRequest$Builder;" deprecated="37"/>
 		<method name="setAdSelectionResult([B)Landroid/adservices/adselection/PersistAdSelectionResultRequest$Builder;"/>
 		<method name="setSeller(Landroid/adservices/common/AdTechIdentifier;)Landroid/adservices/adselection/PersistAdSelectionResultRequest$Builder;"/>
 	</class>
@@ -4184,7 +4183,6 @@
 		<method name="getKey()Ljava/lang/String;"/>
 		<method name="getReportingDestinations()I"/>
 		<field name="FLAG_REPORTING_DESTINATION_BUYER"/>
-		<field name="FLAG_REPORTING_DESTINATION_COMPONENT_SELLER" since="36"/>
 		<field name="FLAG_REPORTING_DESTINATION_SELLER"/>
 	</class>
 	<class name="android/adservices/adselection/ReportEventRequest$Builder" module="framework-adservices" since="35" sdks="1000000:8,0:35">
@@ -4204,14 +4202,14 @@
 		<method name="getAdSelectionConfig()Landroid/adservices/adselection/AdSelectionConfig;"/>
 		<method name="getAdSelectionId()J"/>
 	</class>
-	<class name="android/adservices/adselection/SellerConfiguration" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/adselection/SellerConfiguration" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<implements name="android/os/Parcelable"/>
 		<method name="getMaximumPayloadSizeBytes()I"/>
 		<method name="getPerBuyerConfigurations()Ljava/util/Set;"/>
 		<field name="CREATOR"/>
 	</class>
-	<class name="android/adservices/adselection/SellerConfiguration$Builder" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/adselection/SellerConfiguration$Builder" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>()V"/>
 		<method name="build()Landroid/adservices/adselection/SellerConfiguration;"/>
@@ -4324,7 +4322,7 @@
 		<field name="CREATOR"/>
 		<field name="EMPTY"/>
 	</class>
-	<class name="android/adservices/common/AdServicesOutcomeReceiver" module="framework-adservices" since="35" sdks="1000000:10,0:35" deprecated="36">
+	<class name="android/adservices/common/AdServicesOutcomeReceiver" module="framework-adservices" since="35" sdks="1000000:10,0:35" deprecated="37">
 		<extends name="java/lang/Object"/>
 		<method name="onError(Ljava/lang/Throwable;)V"/>
 		<method name="onResult(Ljava/lang/Object;)V"/>
@@ -4356,7 +4354,7 @@
 		<method name="build()Landroid/adservices/common/AppInstallFilters;"/>
 		<method name="setPackageNames(Ljava/util/Set;)Landroid/adservices/common/AppInstallFilters$Builder;"/>
 	</class>
-	<class name="android/adservices/common/ComponentAdData" module="framework-adservices" since="36" sdks="1000000:16,0:36">
+	<class name="android/adservices/common/ComponentAdData" module="framework-adservices" since="36" sdks="1000000:16,36:16,0:36">
 		<extends name="java/lang/Object"/>
 		<implements name="android/os/Parcelable"/>
 		<method name="&lt;init>(Landroid/net/Uri;Ljava/lang/String;)V"/>
@@ -4429,11 +4427,11 @@
 		<method name="getAuctionServerRequestFlags()I" since="35" sdks="1000000:12,0:35"/>
 		<method name="getBiddingLogicUri()Landroid/net/Uri;"/>
 		<method name="getBuyer()Landroid/adservices/common/AdTechIdentifier;"/>
-		<method name="getComponentAds()Ljava/util/List;" since="36" sdks="1000000:16,0:36"/>
+		<method name="getComponentAds()Ljava/util/List;" since="36" sdks="1000000:16,36:16,0:36"/>
 		<method name="getDailyUpdateUri()Landroid/net/Uri;"/>
 		<method name="getExpirationTime()Ljava/time/Instant;"/>
 		<method name="getName()Ljava/lang/String;"/>
-		<method name="getPriority()D" since="36" sdks="1000000:14,0:36"/>
+		<method name="getPriority()D" since="36" sdks="1000000:14,36:14,0:36"/>
 		<method name="getTrustedBiddingData()Landroid/adservices/customaudience/TrustedBiddingData;"/>
 		<method name="getUserBiddingSignals()Landroid/adservices/common/AdSelectionSignals;"/>
 		<field name="CREATOR"/>
@@ -4448,11 +4446,11 @@
 		<method name="setAuctionServerRequestFlags(I)Landroid/adservices/customaudience/CustomAudience$Builder;" since="35" sdks="1000000:12,0:35"/>
 		<method name="setBiddingLogicUri(Landroid/net/Uri;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
 		<method name="setBuyer(Landroid/adservices/common/AdTechIdentifier;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
-		<method name="setComponentAds(Ljava/util/List;)Landroid/adservices/customaudience/CustomAudience$Builder;" since="36" sdks="1000000:16,0:36"/>
+		<method name="setComponentAds(Ljava/util/List;)Landroid/adservices/customaudience/CustomAudience$Builder;" since="36" sdks="1000000:16,36:16,0:36"/>
 		<method name="setDailyUpdateUri(Landroid/net/Uri;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
 		<method name="setExpirationTime(Ljava/time/Instant;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
 		<method name="setName(Ljava/lang/String;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
-		<method name="setPriority(D)Landroid/adservices/customaudience/CustomAudience$Builder;" since="36" sdks="1000000:14,0:36"/>
+		<method name="setPriority(D)Landroid/adservices/customaudience/CustomAudience$Builder;" since="36" sdks="1000000:14,36:14,0:36"/>
 		<method name="setTrustedBiddingData(Landroid/adservices/customaudience/TrustedBiddingData;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
 		<method name="setUserBiddingSignals(Landroid/adservices/common/AdSelectionSignals;)Landroid/adservices/customaudience/CustomAudience$Builder;"/>
 	</class>
@@ -4463,7 +4461,7 @@
 		<method name="getTestCustomAudienceManager()Landroid/adservices/customaudience/TestCustomAudienceManager;"/>
 		<method name="joinCustomAudience(Landroid/adservices/customaudience/JoinCustomAudienceRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
 		<method name="leaveCustomAudience(Landroid/adservices/customaudience/LeaveCustomAudienceRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
-		<method name="scheduleCustomAudienceUpdate(Landroid/adservices/customaudience/ScheduleCustomAudienceUpdateRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="36" sdks="1000000:14,0:36"/>
+		<method name="scheduleCustomAudienceUpdate(Landroid/adservices/customaudience/ScheduleCustomAudienceUpdateRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="36" sdks="1000000:14,36:14,0:36"/>
 	</class>
 	<class name="android/adservices/customaudience/FetchAndJoinCustomAudienceRequest" module="framework-adservices" since="35" sdks="1000000:10,0:35">
 		<extends name="java/lang/Object"/>
@@ -4505,7 +4503,7 @@
 		<method name="setBuyer(Landroid/adservices/common/AdTechIdentifier;)Landroid/adservices/customaudience/LeaveCustomAudienceRequest$Builder;"/>
 		<method name="setName(Ljava/lang/String;)Landroid/adservices/customaudience/LeaveCustomAudienceRequest$Builder;"/>
 	</class>
-	<class name="android/adservices/customaudience/PartialCustomAudience" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/customaudience/PartialCustomAudience" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<implements name="android/os/Parcelable"/>
 		<method name="getActivationTime()Ljava/time/Instant;"/>
@@ -4514,7 +4512,7 @@
 		<method name="getUserBiddingSignals()Landroid/adservices/common/AdSelectionSignals;"/>
 		<field name="CREATOR"/>
 	</class>
-	<class name="android/adservices/customaudience/PartialCustomAudience$Builder" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/customaudience/PartialCustomAudience$Builder" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>(Ljava/lang/String;)V"/>
 		<method name="build()Landroid/adservices/customaudience/PartialCustomAudience;"/>
@@ -4535,17 +4533,17 @@
 		<method name="setBuyer(Landroid/adservices/common/AdTechIdentifier;)Landroid/adservices/customaudience/RemoveCustomAudienceOverrideRequest$Builder;"/>
 		<method name="setName(Ljava/lang/String;)Landroid/adservices/customaudience/RemoveCustomAudienceOverrideRequest$Builder;"/>
 	</class>
-	<class name="android/adservices/customaudience/ScheduleCustomAudienceUpdateRequest" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/customaudience/ScheduleCustomAudienceUpdateRequest" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<method name="getMinDelay()Ljava/time/Duration;"/>
 		<method name="getPartialCustomAudienceList()Ljava/util/List;"/>
 		<method name="getUpdateUri()Landroid/net/Uri;"/>
 		<method name="shouldReplacePendingUpdates()Z"/>
 	</class>
-	<class name="android/adservices/customaudience/ScheduleCustomAudienceUpdateRequest$Builder" module="framework-adservices" since="36" sdks="1000000:14,0:36">
+	<class name="android/adservices/customaudience/ScheduleCustomAudienceUpdateRequest$Builder" module="framework-adservices" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
-		<method name="&lt;init>(Landroid/net/Uri;Ljava/time/Duration;)V" sdks="1000000:16,0:36"/>
-		<method name="&lt;init>(Landroid/net/Uri;Ljava/time/Duration;Ljava/util/List;)V" deprecated="36"/>
+		<method name="&lt;init>(Landroid/net/Uri;Ljava/time/Duration;)V" sdks="1000000:16,36:16,0:36"/>
+		<method name="&lt;init>(Landroid/net/Uri;Ljava/time/Duration;Ljava/util/List;)V" deprecated="37"/>
 		<method name="build()Landroid/adservices/customaudience/ScheduleCustomAudienceUpdateRequest;"/>
 		<method name="setMinDelay(Ljava/time/Duration;)Landroid/adservices/customaudience/ScheduleCustomAudienceUpdateRequest$Builder;"/>
 		<method name="setPartialCustomAudienceList(Ljava/util/List;)Landroid/adservices/customaudience/ScheduleCustomAudienceUpdateRequest$Builder;"/>
@@ -4603,20 +4601,20 @@
 	</class>
 	<class name="android/adservices/measurement/MeasurementManager" module="framework-adservices" since="34" sdks="1000000:4,0:34">
 		<extends name="java/lang/Object"/>
-		<method name="deleteRegistrations(Landroid/adservices/measurement/DeletionRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="deleteRegistrations(Landroid/adservices/measurement/DeletionRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="deleteRegistrations(Landroid/adservices/measurement/DeletionRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
 		<method name="get(Landroid/content/Context;)Landroid/adservices/measurement/MeasurementManager;" sdks="1000000:6,0:34"/>
-		<method name="getMeasurementApiStatus(Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="getMeasurementApiStatus(Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="getMeasurementApiStatus(Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
-		<method name="registerSource(Landroid/adservices/measurement/SourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="registerSource(Landroid/adservices/measurement/SourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="registerSource(Landroid/adservices/measurement/SourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V" since="35" sdks="1000000:10,0:35"/>
-		<method name="registerSource(Landroid/net/Uri;Landroid/view/InputEvent;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="registerSource(Landroid/net/Uri;Landroid/view/InputEvent;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="registerSource(Landroid/net/Uri;Landroid/view/InputEvent;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
-		<method name="registerTrigger(Landroid/net/Uri;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="registerTrigger(Landroid/net/Uri;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="registerTrigger(Landroid/net/Uri;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
-		<method name="registerWebSource(Landroid/adservices/measurement/WebSourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="registerWebSource(Landroid/adservices/measurement/WebSourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="registerWebSource(Landroid/adservices/measurement/WebSourceRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
-		<method name="registerWebTrigger(Landroid/adservices/measurement/WebTriggerRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="36"/>
+		<method name="registerWebTrigger(Landroid/adservices/measurement/WebTriggerRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/adservices/common/AdServicesOutcomeReceiver;)V" since="35" sdks="1000000:11,0:35" deprecated="37"/>
 		<method name="registerWebTrigger(Landroid/adservices/measurement/WebTriggerRegistrationRequest;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V"/>
 		<field name="MEASUREMENT_API_STATE_DISABLED"/>
 		<field name="MEASUREMENT_API_STATE_ENABLED"/>
@@ -5123,7 +5121,7 @@
 	</class>
 	<class name="android/adservices/topics/GetTopicsResponse$Builder" module="framework-adservices" since="34" sdks="1000000:4,0:34">
 		<extends name="java/lang/Object"/>
-		<method name="&lt;init>(Ljava/util/List;)V" deprecated="36"/>
+		<method name="&lt;init>(Ljava/util/List;)V" deprecated="37"/>
 		<method name="&lt;init>(Ljava/util/List;Ljava/util/List;)V" since="35" sdks="1000000:11,0:35"/>
 		<method name="build()Landroid/adservices/topics/GetTopicsResponse;"/>
 	</class>
@@ -10566,7 +10564,7 @@
 		<field name="GROUPING_TYPE_PER_SCHEMA" since="35" sdks="33:13,34:13,35:13,0:35"/>
 		<field name="ORDER_ASCENDING"/>
 		<field name="ORDER_DESCENDING"/>
-		<field name="PROJECTION_SCHEMA_TYPE_WILDCARD" deprecated="36"/>
+		<field name="PROJECTION_SCHEMA_TYPE_WILDCARD" deprecated="37"/>
 		<field name="RANKING_STRATEGY_ADVANCED_RANKING_EXPRESSION" since="34" sdks="33:7,34:7,0:34"/>
 		<field name="RANKING_STRATEGY_CREATION_TIMESTAMP"/>
 		<field name="RANKING_STRATEGY_DOCUMENT_SCORE"/>
@@ -11404,7 +11402,7 @@
 		<method name="getLoadSdkErrorCode()I"/>
 		<field name="CREATOR"/>
 	</class>
-	<class name="android/app/sdksandbox/RequestSurfacePackageException" module="framework-sdksandbox" since="34" sdks="1000000:4,0:34" deprecated="36">
+	<class name="android/app/sdksandbox/RequestSurfacePackageException" module="framework-sdksandbox" since="34" sdks="1000000:4,0:34" deprecated="37">
 		<extends name="java/lang/Exception"/>
 		<method name="&lt;init>(ILjava/lang/String;)V"/>
 		<method name="&lt;init>(ILjava/lang/String;Ljava/lang/Throwable;)V"/>
@@ -11426,7 +11424,7 @@
 		<method name="attachContext(Landroid/content/Context;)V"/>
 		<method name="beforeUnloadSdk()V"/>
 		<method name="getContext()Landroid/content/Context;"/>
-		<method name="getView(Landroid/content/Context;Landroid/os/Bundle;II)Landroid/view/View;" deprecated="36"/>
+		<method name="getView(Landroid/content/Context;Landroid/os/Bundle;II)Landroid/view/View;" deprecated="37"/>
 		<method name="onLoadSdk(Landroid/os/Bundle;)Landroid/app/sdksandbox/SandboxedSdk;"/>
 	</class>
 	<class name="android/app/sdksandbox/SdkSandboxManager" module="framework-sdksandbox" since="33" sdks="1000000:3,0:33">
@@ -11441,15 +11439,15 @@
 		<method name="registerAppOwnedSdkSandboxInterface(Landroid/app/sdksandbox/AppOwnedSdkSandboxInterface;)V" since="35" sdks="1000000:8,0:35"/>
 		<method name="removeSdkSandboxProcessDeathCallback(Landroid/app/sdksandbox/SdkSandboxManager$SdkSandboxProcessDeathCallback;)V" since="34" sdks="1000000:4,0:34"/>
 		<method name="removeSyncedSharedPreferencesKeys(Ljava/util/Set;)V" since="34" sdks="1000000:5,0:34"/>
-		<method name="requestSurfacePackage(Ljava/lang/String;Landroid/os/Bundle;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V" since="34" sdks="1000000:4,0:34" deprecated="36"/>
+		<method name="requestSurfacePackage(Ljava/lang/String;Landroid/os/Bundle;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V" since="34" sdks="1000000:4,0:34" deprecated="37"/>
 		<method name="startSdkSandboxActivity(Landroid/app/Activity;Landroid/os/IBinder;)V" since="34" sdks="1000000:7,0:34"/>
 		<method name="unloadSdk(Ljava/lang/String;)V" since="34" sdks="1000000:4,0:34"/>
 		<method name="unregisterAppOwnedSdkSandboxInterface(Ljava/lang/String;)V" since="35" sdks="1000000:8,0:35"/>
-		<field name="EXTRA_DISPLAY_ID" since="34" sdks="1000000:4,0:34" deprecated="36"/>
-		<field name="EXTRA_HEIGHT_IN_PIXELS" since="34" sdks="1000000:4,0:34" deprecated="36"/>
-		<field name="EXTRA_HOST_TOKEN" since="34" sdks="1000000:4,0:34" deprecated="36"/>
-		<field name="EXTRA_SURFACE_PACKAGE" since="34" sdks="1000000:4,0:34" deprecated="36"/>
-		<field name="EXTRA_WIDTH_IN_PIXELS" since="34" sdks="1000000:4,0:34" deprecated="36"/>
+		<field name="EXTRA_DISPLAY_ID" since="34" sdks="1000000:4,0:34" deprecated="37"/>
+		<field name="EXTRA_HEIGHT_IN_PIXELS" since="34" sdks="1000000:4,0:34" deprecated="37"/>
+		<field name="EXTRA_HOST_TOKEN" since="34" sdks="1000000:4,0:34" deprecated="37"/>
+		<field name="EXTRA_SURFACE_PACKAGE" since="34" sdks="1000000:4,0:34" deprecated="37"/>
+		<field name="EXTRA_WIDTH_IN_PIXELS" since="34" sdks="1000000:4,0:34" deprecated="37"/>
 		<field name="LOAD_SDK_ALREADY_LOADED" since="34" sdks="1000000:4,0:34"/>
 		<field name="LOAD_SDK_INTERNAL_ERROR" since="34" sdks="1000000:4,0:34"/>
 		<field name="LOAD_SDK_NOT_FOUND" since="34" sdks="1000000:4,0:34"/>
@@ -11470,7 +11468,7 @@
 		<extends name="java/lang/Object"/>
 		<method name="onActivityCreated(Landroid/app/Activity;)V"/>
 	</class>
-	<class name="android/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener" module="framework-sdksandbox" since="36" sdks="1000000:14,0:36">
+	<class name="android/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener" module="framework-sdksandbox" since="36" sdks="1000000:14,36:14,0:36">
 		<extends name="java/lang/Object"/>
 		<method name="onForegroundImportanceChanged(Z)V"/>
 	</class>
@@ -11482,9 +11480,9 @@
 		<method name="getSandboxedSdks()Ljava/util/List;"/>
 		<method name="loadSdk(Ljava/lang/String;Landroid/os/Bundle;Ljava/util/concurrent/Executor;Landroid/os/OutcomeReceiver;)V" since="35" sdks="1000000:10,0:35"/>
 		<method name="registerSdkSandboxActivityHandler(Landroid/app/sdksandbox/sdkprovider/SdkSandboxActivityHandler;)Landroid/os/IBinder;" sdks="1000000:7,0:34"/>
-		<method name="registerSdkSandboxClientImportanceListener(Ljava/util/concurrent/Executor;Landroid/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener;)V" since="36" sdks="1000000:14,0:36"/>
+		<method name="registerSdkSandboxClientImportanceListener(Ljava/util/concurrent/Executor;Landroid/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener;)V" since="36" sdks="1000000:14,36:14,0:36"/>
 		<method name="unregisterSdkSandboxActivityHandler(Landroid/app/sdksandbox/sdkprovider/SdkSandboxActivityHandler;)V" sdks="1000000:7,0:34"/>
-		<method name="unregisterSdkSandboxClientImportanceListener(Landroid/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener;)V" since="36" sdks="1000000:14,0:36"/>
+		<method name="unregisterSdkSandboxClientImportanceListener(Landroid/app/sdksandbox/sdkprovider/SdkSandboxClientImportanceListener;)V" since="36" sdks="1000000:14,36:14,0:36"/>
 		<field name="SDK_SANDBOX_CONTROLLER_SERVICE"/>
 	</class>
 	<class name="android/app/slice/Slice" since="28" deprecated="35">
@@ -41525,8 +41523,8 @@
 	</class>
 	<class name="android/net/NetworkInfo$DetailedState" since="1" deprecated="29">
 		<extends name="java/lang/Enum"/>
-		<method name="valueOf(Ljava/lang/String;)Landroid/net/NetworkInfo$DetailedState;" deprecated="36"/>
-		<method name="values()[Landroid/net/NetworkInfo$DetailedState;" deprecated="36"/>
+		<method name="valueOf(Ljava/lang/String;)Landroid/net/NetworkInfo$DetailedState;"/>
+		<method name="values()[Landroid/net/NetworkInfo$DetailedState;"/>
 		<field name="AUTHENTICATING"/>
 		<field name="BLOCKED" since="14"/>
 		<field name="CAPTIVE_PORTAL_CHECK" since="17"/>
@@ -41543,8 +41541,8 @@
 	</class>
 	<class name="android/net/NetworkInfo$State" since="1" deprecated="29">
 		<extends name="java/lang/Enum"/>
-		<method name="valueOf(Ljava/lang/String;)Landroid/net/NetworkInfo$State;" deprecated="36"/>
-		<method name="values()[Landroid/net/NetworkInfo$State;" deprecated="36"/>
+		<method name="valueOf(Ljava/lang/String;)Landroid/net/NetworkInfo$State;"/>
+		<method name="values()[Landroid/net/NetworkInfo$State;"/>
 		<field name="CONNECTED"/>
 		<field name="CONNECTING"/>
 		<field name="DISCONNECTED"/>
@@ -42909,8 +42907,8 @@
 		<method name="registerService(Landroid/net/nsd/NsdServiceInfo;ILandroid/net/nsd/NsdManager$RegistrationListener;)V"/>
 		<method name="registerService(Landroid/net/nsd/NsdServiceInfo;ILjava/util/concurrent/Executor;Landroid/net/nsd/NsdManager$RegistrationListener;)V" since="33" sdks="33:3,0:33"/>
 		<method name="registerServiceInfoCallback(Landroid/net/nsd/NsdServiceInfo;Ljava/util/concurrent/Executor;Landroid/net/nsd/NsdManager$ServiceInfoCallback;)V" since="34" sdks="33:7,34:7,0:34"/>
-		<method name="resolveService(Landroid/net/nsd/NsdServiceInfo;Landroid/net/nsd/NsdManager$ResolveListener;)V" deprecated="36"/>
-		<method name="resolveService(Landroid/net/nsd/NsdServiceInfo;Ljava/util/concurrent/Executor;Landroid/net/nsd/NsdManager$ResolveListener;)V" since="33" sdks="33:3,0:33" deprecated="36"/>
+		<method name="resolveService(Landroid/net/nsd/NsdServiceInfo;Landroid/net/nsd/NsdManager$ResolveListener;)V" deprecated="37"/>
+		<method name="resolveService(Landroid/net/nsd/NsdServiceInfo;Ljava/util/concurrent/Executor;Landroid/net/nsd/NsdManager$ResolveListener;)V" since="33" sdks="33:3,0:33" deprecated="37"/>
 		<method name="stopServiceDiscovery(Landroid/net/nsd/NsdManager$DiscoveryListener;)V"/>
 		<method name="stopServiceResolution(Landroid/net/nsd/NsdManager$ResolveListener;)V" since="34" sdks="33:7,34:7,0:34"/>
 		<method name="unregisterService(Landroid/net/nsd/NsdManager$RegistrationListener;)V"/>
@@ -42961,7 +42959,7 @@
 		<implements name="android/os/Parcelable"/>
 		<method name="&lt;init>()V"/>
 		<method name="getAttributes()Ljava/util/Map;" since="21"/>
-		<method name="getHost()Ljava/net/InetAddress;" deprecated="36"/>
+		<method name="getHost()Ljava/net/InetAddress;" deprecated="37"/>
 		<method name="getHostAddresses()Ljava/util/List;" since="34" sdks="33:7,34:7,0:34"/>
 		<method name="getHostname()Ljava/lang/String;" since="36" sdks="33:17,34:17,35:17,36:17,0:36"/>
 		<method name="getNetwork()Landroid/net/Network;" since="33" sdks="33:3,0:33"/>
@@ -42971,7 +42969,7 @@
 		<method name="getSubtypes()Ljava/util/Set;" since="35" sdks="33:12,34:12,35:12,0:35"/>
 		<method name="removeAttribute(Ljava/lang/String;)V" since="21"/>
 		<method name="setAttribute(Ljava/lang/String;Ljava/lang/String;)V" since="21"/>
-		<method name="setHost(Ljava/net/InetAddress;)V" deprecated="36"/>
+		<method name="setHost(Ljava/net/InetAddress;)V" deprecated="37"/>
 		<method name="setHostAddresses(Ljava/util/List;)V" since="34" sdks="33:7,34:7,0:34"/>
 		<method name="setNetwork(Landroid/net/Network;)V" since="33" sdks="33:3,0:33"/>
 		<method name="setPort(I)V"/>
@@ -54517,7 +54515,7 @@
 		<field name="CD_TRACK_NUMBER" since="30"/>
 		<field name="COMPILATION" since="30"/>
 		<field name="COMPOSER" since="30"/>
-		<field name="DATA" deprecated="36"/>
+		<field name="DATA" deprecated="37"/>
 		<field name="DATE_ADDED"/>
 		<field name="DATE_EXPIRES" since="29"/>
 		<field name="DATE_MODIFIED"/>
@@ -66350,27 +66348,27 @@
 		<extends name="java/lang/Object"/>
 		<method name="onEnabledStateChanged(Z)V"/>
 	</class>
-	<class name="android/test/ActivityInstrumentationTestCase" since="1" deprecated="3">
+	<class name="android/test/ActivityInstrumentationTestCase" since="1" deprecated="3" removed="28">
 		<extends name="android/test/ActivityTestCase"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/Class;)V"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/Class;Z)V"/>
 		<method name="testActivityTestCaseSetUpProperly()V"/>
 	</class>
-	<class name="android/test/ActivityInstrumentationTestCase2" since="3" deprecated="24">
+	<class name="android/test/ActivityInstrumentationTestCase2" since="3" deprecated="24" removed="28">
 		<extends name="android/test/ActivityTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;)V" since="8"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/Class;)V" deprecated="15"/>
 		<method name="setActivityInitialTouchMode(Z)V"/>
 		<method name="setActivityIntent(Landroid/content/Intent;)V"/>
 	</class>
-	<class name="android/test/ActivityTestCase" since="1" deprecated="24">
+	<class name="android/test/ActivityTestCase" since="1" deprecated="24" removed="28">
 		<extends name="android/test/InstrumentationTestCase"/>
 		<method name="&lt;init>()V"/>
 		<method name="getActivity()Landroid/app/Activity;"/>
 		<method name="scrubClass(Ljava/lang/Class;)V"/>
 		<method name="setActivity(Landroid/app/Activity;)V"/>
 	</class>
-	<class name="android/test/ActivityUnitTestCase" since="1" deprecated="24">
+	<class name="android/test/ActivityUnitTestCase" since="1" deprecated="24" removed="28">
 		<extends name="android/test/ActivityTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;)V"/>
 		<method name="getFinishedActivityRequest()I"/>
@@ -66382,21 +66380,19 @@
 		<method name="setApplication(Landroid/app/Application;)V"/>
 		<method name="startActivity(Landroid/content/Intent;Landroid/os/Bundle;Ljava/lang/Object;)Landroid/app/Activity;"/>
 	</class>
-	<class name="android/test/AndroidTestCase" since="1" deprecated="24">
+	<class name="android/test/AndroidTestCase" since="1" deprecated="24" removed="28">
 		<extends name="junit/framework/TestCase"/>
 		<method name="&lt;init>()V"/>
 		<method name="assertActivityRequiresPermission(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V" since="4"/>
 		<method name="assertReadingContentUriRequiresPermission(Landroid/net/Uri;Ljava/lang/String;)V" since="4"/>
 		<method name="assertWritingContentUriRequiresPermission(Landroid/net/Uri;Ljava/lang/String;)V" since="4"/>
 		<method name="getContext()Landroid/content/Context;"/>
-		<method name="getTestContext()Landroid/content/Context;" since="36" deprecated="36"/>
 		<method name="scrubClass(Ljava/lang/Class;)V"/>
 		<method name="setContext(Landroid/content/Context;)V"/>
-		<method name="setTestContext(Landroid/content/Context;)V" since="36" deprecated="36"/>
 		<method name="testAndroidTestCaseSetupProperly()V"/>
 		<field name="mContext"/>
 	</class>
-	<class name="android/test/AndroidTestRunner" since="1" deprecated="24">
+	<class name="android/test/AndroidTestRunner" since="1" deprecated="24" removed="28">
 		<extends name="junit/runner/BaseTestRunner"/>
 		<method name="&lt;init>()V"/>
 		<method name="addTestListener(Ljunit/framework/TestListener;)V"/>
@@ -66413,7 +66409,7 @@
 		<method name="setTest(Ljunit/framework/Test;)V"/>
 		<method name="setTestClassName(Ljava/lang/String;Ljava/lang/String;)V"/>
 	</class>
-	<class name="android/test/ApplicationTestCase" since="1" deprecated="24">
+	<class name="android/test/ApplicationTestCase" since="1" deprecated="24" removed="28">
 		<extends name="android/test/AndroidTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;)V"/>
 		<method name="createApplication()V"/>
@@ -66422,21 +66418,21 @@
 		<method name="terminateApplication()V"/>
 		<method name="testApplicationTestCaseSetUpProperly()V"/>
 	</class>
-	<class name="android/test/AssertionFailedError" since="1" deprecated="16">
+	<class name="android/test/AssertionFailedError" since="1" deprecated="16" removed="28">
 		<extends name="java/lang/Error"/>
 		<method name="&lt;init>()V"/>
 		<method name="&lt;init>(Ljava/lang/String;)V"/>
 	</class>
-	<class name="android/test/ComparisonFailure" since="1" deprecated="16">
+	<class name="android/test/ComparisonFailure" since="1" deprecated="16" removed="28">
 		<extends name="android/test/AssertionFailedError"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"/>
 	</class>
-	<class name="android/test/FlakyTest" since="1" deprecated="24">
+	<class name="android/test/FlakyTest" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 		<method name="tolerance()I"/>
 	</class>
-	<class name="android/test/InstrumentationTestCase" since="1" deprecated="24">
+	<class name="android/test/InstrumentationTestCase" since="1" deprecated="24" removed="28">
 		<extends name="junit/framework/TestCase"/>
 		<method name="&lt;init>()V"/>
 		<method name="getInstrumentation()Landroid/app/Instrumentation;"/>
@@ -66449,11 +66445,10 @@
 		<method name="sendKeys([I)V"/>
 		<method name="sendRepeatedKeys([I)V"/>
 	</class>
-	<class name="android/test/InstrumentationTestRunner" since="1" deprecated="24">
+	<class name="android/test/InstrumentationTestRunner" since="1" deprecated="24" removed="28">
 		<extends name="android/app/Instrumentation"/>
 		<implements name="android/test/TestSuiteProvider"/>
 		<method name="&lt;init>()V"/>
-		<method name="addTestListener(Ljunit/framework/TestListener;)V" since="36" deprecated="36"/>
 		<method name="getAllTests()Ljunit/framework/TestSuite;"/>
 		<method name="getAndroidTestRunner()Landroid/test/AndroidTestRunner;"/>
 		<method name="getArguments()Landroid/os/Bundle;" since="18"/>
@@ -66469,30 +66464,23 @@
 		<field name="REPORT_VALUE_RESULT_OK"/>
 		<field name="REPORT_VALUE_RESULT_START"/>
 	</class>
-	<class name="android/test/InstrumentationTestSuite" since="1" deprecated="24">
+	<class name="android/test/InstrumentationTestSuite" since="1" deprecated="24" removed="28">
 		<extends name="junit/framework/TestSuite"/>
 		<method name="&lt;init>(Landroid/app/Instrumentation;)V"/>
 		<method name="&lt;init>(Ljava/lang/Class;Landroid/app/Instrumentation;)V"/>
 		<method name="&lt;init>(Ljava/lang/String;Landroid/app/Instrumentation;)V"/>
 	</class>
-	<class name="android/test/IsolatedContext" since="1" deprecated="24">
+	<class name="android/test/IsolatedContext" since="1" deprecated="24" removed="28">
 		<extends name="android/content/ContextWrapper"/>
 		<method name="&lt;init>(Landroid/content/ContentResolver;Landroid/content/Context;)V"/>
 		<method name="getAndClearBroadcastIntents()Ljava/util/List;"/>
 	</class>
-	<class name="android/test/LaunchPerformanceBase" since="36" deprecated="36">
-		<extends name="android/app/Instrumentation"/>
-		<method name="&lt;init>()V"/>
-		<method name="LaunchApp()V"/>
-		<field name="mIntent"/>
-		<field name="mResults"/>
-	</class>
-	<class name="android/test/LoaderTestCase" since="11">
+	<class name="android/test/LoaderTestCase" since="11" removed="28">
 		<extends name="android/test/AndroidTestCase"/>
 		<method name="&lt;init>()V"/>
 		<method name="getLoaderResultSynchronously(Landroid/content/Loader;)Ljava/lang/Object;"/>
 	</class>
-	<class name="android/test/MoreAsserts" since="1" deprecated="24">
+	<class name="android/test/MoreAsserts" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="assertAssignableFrom(Ljava/lang/Class;Ljava/lang/Class;)V"/>
 		<method name="assertAssignableFrom(Ljava/lang/Class;Ljava/lang/Object;)V"/>
@@ -66531,12 +66519,12 @@
 		<method name="checkEqualsAndHashCodeMethods(Ljava/lang/Object;Ljava/lang/Object;Z)V"/>
 		<method name="checkEqualsAndHashCodeMethods(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;Z)V"/>
 	</class>
-	<class name="android/test/PerformanceTestCase" since="1" deprecated="24">
+	<class name="android/test/PerformanceTestCase" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="isPerformanceOnly()Z"/>
 		<method name="startPerformance(Landroid/test/PerformanceTestCase$Intermediates;)I"/>
 	</class>
-	<class name="android/test/PerformanceTestCase$Intermediates" since="1" deprecated="36">
+	<class name="android/test/PerformanceTestCase$Intermediates" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="addIntermediate(Ljava/lang/String;)V"/>
 		<method name="addIntermediate(Ljava/lang/String;J)V"/>
@@ -66544,7 +66532,7 @@
 		<method name="setInternalIterations(I)V"/>
 		<method name="startTiming(Z)V"/>
 	</class>
-	<class name="android/test/ProviderTestCase" since="1" deprecated="5">
+	<class name="android/test/ProviderTestCase" since="1" deprecated="5" removed="28">
 		<extends name="android/test/InstrumentationTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;Ljava/lang/String;)V"/>
 		<method name="getMockContentResolver()Landroid/test/mock/MockContentResolver;"/>
@@ -66552,7 +66540,7 @@
 		<method name="getProvider()Landroid/content/ContentProvider;"/>
 		<method name="newResolverWithContentProviderFromSql(Landroid/content/Context;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)Landroid/content/ContentResolver;"/>
 	</class>
-	<class name="android/test/ProviderTestCase2" since="3">
+	<class name="android/test/ProviderTestCase2" since="3" removed="28">
 		<extends name="android/test/AndroidTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;Ljava/lang/String;)V"/>
 		<method name="getMockContentResolver()Landroid/test/mock/MockContentResolver;"/>
@@ -66560,7 +66548,7 @@
 		<method name="getProvider()Landroid/content/ContentProvider;"/>
 		<method name="newResolverWithContentProviderFromSql(Landroid/content/Context;Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)Landroid/content/ContentResolver;"/>
 	</class>
-	<class name="android/test/RenamingDelegatingContext" since="1" deprecated="24">
+	<class name="android/test/RenamingDelegatingContext" since="1" deprecated="24" removed="28">
 		<extends name="android/content/ContextWrapper"/>
 		<method name="&lt;init>(Landroid/content/Context;Landroid/content/Context;Ljava/lang/String;)V"/>
 		<method name="&lt;init>(Landroid/content/Context;Ljava/lang/String;)V"/>
@@ -66569,12 +66557,7 @@
 		<method name="providerWithRenamedContext(Ljava/lang/Class;Landroid/content/Context;Ljava/lang/String;)Landroid/content/ContentProvider;"/>
 		<method name="providerWithRenamedContext(Ljava/lang/Class;Landroid/content/Context;Ljava/lang/String;Z)Landroid/content/ContentProvider;"/>
 	</class>
-	<class name="android/test/RepetitiveTest" since="36" deprecated="36">
-		<extends name="java/lang/Object"/>
-		<implements name="java/lang/annotation/Annotation"/>
-		<method name="numIterations()I"/>
-	</class>
-	<class name="android/test/ServiceTestCase" since="1" deprecated="24">
+	<class name="android/test/ServiceTestCase" since="1" deprecated="24" removed="28">
 		<extends name="android/test/AndroidTestCase"/>
 		<method name="&lt;init>(Ljava/lang/Class;)V"/>
 		<method name="bindService(Landroid/content/Intent;)Landroid/os/IBinder;"/>
@@ -66587,23 +66570,23 @@
 		<method name="startService(Landroid/content/Intent;)V"/>
 		<method name="testServiceTestCaseSetUpProperly()V"/>
 	</class>
-	<class name="android/test/SingleLaunchActivityTestCase" since="1" deprecated="24">
+	<class name="android/test/SingleLaunchActivityTestCase" since="1" deprecated="24" removed="28">
 		<extends name="android/test/InstrumentationTestCase"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/Class;)V"/>
 		<method name="getActivity()Landroid/app/Activity;"/>
 		<method name="testActivityTestCaseSetUpProperly()V"/>
 	</class>
-	<class name="android/test/SyncBaseInstrumentation" since="1" deprecated="24">
+	<class name="android/test/SyncBaseInstrumentation" since="1" deprecated="24" removed="28">
 		<extends name="android/test/InstrumentationTestCase"/>
 		<method name="&lt;init>()V"/>
 		<method name="cancelSyncsandDisableAutoSync()V"/>
 		<method name="syncProvider(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)V"/>
 	</class>
-	<class name="android/test/TestSuiteProvider" since="1" deprecated="24">
+	<class name="android/test/TestSuiteProvider" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="getTestSuite()Ljunit/framework/TestSuite;"/>
 	</class>
-	<class name="android/test/TouchUtils" since="1" deprecated="24">
+	<class name="android/test/TouchUtils" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>()V"/>
 		<method name="clickView(Landroid/test/InstrumentationTestCase;Landroid/view/View;)V"/>
@@ -66638,11 +66621,11 @@
 		<method name="tapView(Landroid/test/InstrumentationTestCase;Landroid/view/View;)V"/>
 		<method name="touchAndCancelView(Landroid/test/InstrumentationTestCase;Landroid/view/View;)V"/>
 	</class>
-	<class name="android/test/UiThreadTest" since="1" deprecated="24">
+	<class name="android/test/UiThreadTest" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
-	<class name="android/test/ViewAsserts" since="1" deprecated="24">
+	<class name="android/test/ViewAsserts" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="assertBaselineAligned(Landroid/view/View;Landroid/view/View;)V"/>
 		<method name="assertBottomAligned(Landroid/view/View;Landroid/view/View;)V"/>
@@ -66663,34 +66646,29 @@
 		<method name="assertTopAligned(Landroid/view/View;Landroid/view/View;I)V"/>
 		<method name="assertVerticalCenterAligned(Landroid/view/View;Landroid/view/View;)V"/>
 	</class>
-	<class name="android/test/mock/MockAccountManager" since="36" deprecated="36">
-		<extends name="java/lang/Object"/>
-		<method name="newMockAccountManager(Landroid/content/Context;)Landroid/accounts/AccountManager;"/>
-	</class>
-	<class name="android/test/mock/MockApplication" since="1" deprecated="24">
+	<class name="android/test/mock/MockApplication" since="1" deprecated="24" removed="28">
 		<extends name="android/app/Application"/>
 		<method name="&lt;init>()V"/>
 	</class>
-	<class name="android/test/mock/MockContentProvider" since="8">
+	<class name="android/test/mock/MockContentProvider" since="8" removed="28">
 		<extends name="android/content/ContentProvider"/>
 		<method name="&lt;init>()V"/>
 		<method name="&lt;init>(Landroid/content/Context;)V"/>
 		<method name="&lt;init>(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;[Landroid/content/pm/PathPermission;)V"/>
-		<method name="attachInfoForTesting(Landroid/content/ContentProvider;Landroid/content/Context;Landroid/content/pm/ProviderInfo;)V" since="36" deprecated="36"/>
 	</class>
-	<class name="android/test/mock/MockContentResolver" since="1">
+	<class name="android/test/mock/MockContentResolver" since="1" removed="28">
 		<extends name="android/content/ContentResolver"/>
 		<method name="&lt;init>()V"/>
 		<method name="&lt;init>(Landroid/content/Context;)V" since="18"/>
 		<method name="addProvider(Ljava/lang/String;Landroid/content/ContentProvider;)V"/>
 	</class>
-	<class name="android/test/mock/MockContext" since="1">
+	<class name="android/test/mock/MockContext" since="1" removed="28">
 		<extends name="android/content/Context"/>
 		<method name="&lt;init>()V"/>
 		<method name="getPackageCodePath()Ljava/lang/String;"/>
 		<method name="getPackageResourcePath()Ljava/lang/String;"/>
 	</class>
-	<class name="android/test/mock/MockCursor" since="8" deprecated="24">
+	<class name="android/test/mock/MockCursor" since="8" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="android/database/Cursor"/>
 		<method name="&lt;init>()V"/>
@@ -66709,30 +66687,24 @@
 		<method name="updateString(ILjava/lang/String;)Z" removed="11"/>
 		<method name="updateToNull(I)Z" removed="11"/>
 	</class>
-	<class name="android/test/mock/MockDialogInterface" since="1" deprecated="24">
+	<class name="android/test/mock/MockDialogInterface" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="android/content/DialogInterface"/>
 		<method name="&lt;init>()V"/>
 	</class>
-	<class name="android/test/mock/MockPackageManager" since="1" deprecated="24">
+	<class name="android/test/mock/MockPackageManager" since="1" deprecated="24" removed="28">
 		<extends name="android/content/pm/PackageManager"/>
 		<method name="&lt;init>()V"/>
 		<method name="getAllIntentFilters(Ljava/lang/String;)Ljava/util/List;" since="23"/>
 		<method name="getDefaultBrowserPackageName(I)Ljava/lang/String;" since="23" removed="24"/>
-		<method name="resolveServiceAsUser(Landroid/content/Intent;II)Landroid/content/pm/ResolveInfo;" since="36" deprecated="36"/>
 		<method name="setDefaultBrowserPackageName(Ljava/lang/String;I)Z" since="23" removed="24"/>
-		<method name="setInstantAppCookie([B)Z" since="36" deprecated="36"/>
 		<method name="setPackageObbPath(Ljava/lang/String;Ljava/lang/String;)V" since="9" removed="10"/>
 	</class>
-	<class name="android/test/mock/MockResources" since="1" deprecated="24">
+	<class name="android/test/mock/MockResources" since="1" deprecated="24" removed="28">
 		<extends name="android/content/res/Resources"/>
 		<method name="&lt;init>()V"/>
 	</class>
-	<class name="android/test/mock/MockService" since="36" deprecated="36">
-		<extends name="java/lang/Object"/>
-		<method name="attachForTesting(Landroid/app/Service;Landroid/content/Context;Ljava/lang/String;Landroid/app/Application;)V"/>
-	</class>
-	<class name="android/test/suitebuilder/TestMethod" since="1" deprecated="26">
+	<class name="android/test/suitebuilder/TestMethod" since="1" deprecated="26" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/Class;)V" since="3"/>
 		<method name="&lt;init>(Ljava/lang/reflect/Method;Ljava/lang/Class;)V"/>
@@ -66743,12 +66715,12 @@
 		<method name="getEnclosingClassname()Ljava/lang/String;"/>
 		<method name="getName()Ljava/lang/String;"/>
 	</class>
-	<class name="android/test/suitebuilder/TestSuiteBuilder" since="1" deprecated="26">
+	<class name="android/test/suitebuilder/TestSuiteBuilder" since="1" deprecated="26" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>(Ljava/lang/Class;)V"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/ClassLoader;)V"/>
-		<method name="addRequirements(Ljava/util/List;)Landroid/test/suitebuilder/TestSuiteBuilder;" removed="28"/>
-		<method name="addRequirements([Lcom/android/internal/util/Predicate;)Landroid/test/suitebuilder/TestSuiteBuilder;" removed="28"/>
+		<method name="addRequirements(Ljava/util/List;)Landroid/test/suitebuilder/TestSuiteBuilder;"/>
+		<method name="addRequirements([Lcom/android/internal/util/Predicate;)Landroid/test/suitebuilder/TestSuiteBuilder;"/>
 		<method name="build()Ljunit/framework/TestSuite;"/>
 		<method name="excludePackages([Ljava/lang/String;)Landroid/test/suitebuilder/TestSuiteBuilder;"/>
 		<method name="getSuiteName()Ljava/lang/String;"/>
@@ -66756,33 +66728,28 @@
 		<method name="includePackages([Ljava/lang/String;)Landroid/test/suitebuilder/TestSuiteBuilder;"/>
 		<method name="named(Ljava/lang/String;)Landroid/test/suitebuilder/TestSuiteBuilder;"/>
 	</class>
-	<class name="android/test/suitebuilder/TestSuiteBuilder$FailedToCreateTests" since="1" deprecated="26">
+	<class name="android/test/suitebuilder/TestSuiteBuilder$FailedToCreateTests" since="1" deprecated="26" removed="28">
 		<extends name="junit/framework/TestCase"/>
 		<method name="&lt;init>(Ljava/lang/Exception;)V"/>
 		<method name="testSuiteConstructionFailed()V"/>
 	</class>
-	<class name="android/test/suitebuilder/UnitTestSuiteBuilder" since="36" deprecated="36">
-		<extends name="android/test/suitebuilder/TestSuiteBuilder"/>
-		<method name="&lt;init>(Ljava/lang/Class;)V"/>
-		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/ClassLoader;)V"/>
-	</class>
-	<class name="android/test/suitebuilder/annotation/LargeTest" since="2" deprecated="24">
+	<class name="android/test/suitebuilder/annotation/LargeTest" since="2" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
-	<class name="android/test/suitebuilder/annotation/MediumTest" since="2" deprecated="24">
+	<class name="android/test/suitebuilder/annotation/MediumTest" since="2" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
-	<class name="android/test/suitebuilder/annotation/SmallTest" since="2" deprecated="24">
+	<class name="android/test/suitebuilder/annotation/SmallTest" since="2" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
-	<class name="android/test/suitebuilder/annotation/Smoke" since="1" deprecated="24">
+	<class name="android/test/suitebuilder/annotation/Smoke" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
-	<class name="android/test/suitebuilder/annotation/Suppress" since="1" deprecated="24">
+	<class name="android/test/suitebuilder/annotation/Suppress" since="1" deprecated="24" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="java/lang/annotation/Annotation"/>
 	</class>
@@ -80707,7 +80674,7 @@
 		<method name="getStabilityRequirementMillis()I"/>
 		<field name="CREATOR"/>
 	</class>
-	<class name="com/android/internal/util/Predicate" since="1" deprecated="26">
+	<class name="com/android/internal/util/Predicate" since="1" deprecated="26" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="apply(Ljava/lang/Object;)Z"/>
 	</class>
@@ -101047,7 +101014,7 @@
 		<extends name="java/lang/Object"/>
 		<method name="resolveVariable(Ljavax/xml/namespace/QName;)Ljava/lang/Object;"/>
 	</class>
-	<class name="junit/framework/Assert" since="1">
+	<class name="junit/framework/Assert" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>()V"/>
 		<method name="assertEquals(BB)V"/>
@@ -101089,28 +101056,28 @@
 		<method name="failSame(Ljava/lang/String;)V" since="16"/>
 		<method name="format(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/String;" since="16"/>
 	</class>
-	<class name="junit/framework/AssertionFailedError" since="1">
+	<class name="junit/framework/AssertionFailedError" since="1" removed="28">
 		<extends name="java/lang/AssertionError" since="16"/>
 		<extends name="java/lang/Error" removed="16"/>
 		<method name="&lt;init>()V"/>
 		<method name="&lt;init>(Ljava/lang/String;)V"/>
 	</class>
-	<class name="junit/framework/ComparisonFailure" since="1">
+	<class name="junit/framework/ComparisonFailure" since="1" removed="28">
 		<extends name="junit/framework/AssertionFailedError"/>
 		<method name="&lt;init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"/>
 		<method name="getActual()Ljava/lang/String;" since="16"/>
 		<method name="getExpected()Ljava/lang/String;" since="16"/>
 	</class>
-	<class name="junit/framework/Protectable" since="1">
+	<class name="junit/framework/Protectable" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="protect()V"/>
 	</class>
-	<class name="junit/framework/Test" since="1">
+	<class name="junit/framework/Test" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="countTestCases()I"/>
 		<method name="run(Ljunit/framework/TestResult;)V"/>
 	</class>
-	<class name="junit/framework/TestCase" since="1">
+	<class name="junit/framework/TestCase" since="1" removed="28">
 		<extends name="junit/framework/Assert"/>
 		<implements name="junit/framework/Test"/>
 		<method name="&lt;init>()V"/>
@@ -101124,7 +101091,7 @@
 		<method name="setUp()V"/>
 		<method name="tearDown()V"/>
 	</class>
-	<class name="junit/framework/TestFailure" since="1">
+	<class name="junit/framework/TestFailure" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>(Ljunit/framework/Test;Ljava/lang/Throwable;)V"/>
 		<method name="exceptionMessage()Ljava/lang/String;"/>
@@ -101135,14 +101102,14 @@
 		<field name="fFailedTest"/>
 		<field name="fThrownException"/>
 	</class>
-	<class name="junit/framework/TestListener" since="1">
+	<class name="junit/framework/TestListener" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="addError(Ljunit/framework/Test;Ljava/lang/Throwable;)V"/>
 		<method name="addFailure(Ljunit/framework/Test;Ljunit/framework/AssertionFailedError;)V"/>
 		<method name="endTest(Ljunit/framework/Test;)V"/>
 		<method name="startTest(Ljunit/framework/Test;)V"/>
 	</class>
-	<class name="junit/framework/TestResult" since="1">
+	<class name="junit/framework/TestResult" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="&lt;init>()V"/>
 		<method name="addError(Ljunit/framework/Test;Ljava/lang/Throwable;)V"/>
@@ -101166,7 +101133,7 @@
 		<field name="fListeners"/>
 		<field name="fRunTests"/>
 	</class>
-	<class name="junit/framework/TestSuite" since="1">
+	<class name="junit/framework/TestSuite" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="junit/framework/Test"/>
 		<method name="&lt;init>()V"/>
@@ -101187,7 +101154,7 @@
 		<method name="tests()Ljava/util/Enumeration;"/>
 		<method name="warning(Ljava/lang/String;)Ljunit/framework/Test;" since="16"/>
 	</class>
-	<class name="junit/runner/BaseTestRunner" since="1">
+	<class name="junit/runner/BaseTestRunner" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<implements name="junit/framework/TestListener"/>
 		<method name="&lt;init>()V"/>
@@ -101217,12 +101184,12 @@
 		<method name="useReloadingTestSuiteLoader()Z"/>
 		<field name="SUITE_METHODNAME"/>
 	</class>
-	<class name="junit/runner/TestSuiteLoader" since="1">
+	<class name="junit/runner/TestSuiteLoader" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="load(Ljava/lang/String;)Ljava/lang/Class;"/>
 		<method name="reload(Ljava/lang/Class;)Ljava/lang/Class;"/>
 	</class>
-	<class name="junit/runner/Version" since="1">
+	<class name="junit/runner/Version" since="1" removed="28">
 		<extends name="java/lang/Object"/>
 		<method name="id()Ljava/lang/String;"/>
 	</class>

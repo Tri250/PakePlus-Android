@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"Baq hesabatı"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"Sessiyanı sonlandırın"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"Skrinşot"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"Gözləmə rejimi"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"Baq hesabatı"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"Bu, sizin hazırkı cihaz durumu haqqında məlumat toplayacaq ki, elektron məktub şəklində göndərsin. Baq raportuna başlamaq üçün bir az vaxt lazım ola bilər, bir az səbr edin."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"İnteraktiv hesabat"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"Birəlli rejim"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"Əlavə tündləşmə"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"Eşitmə cihazları"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"Avtomatik klikləmə"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"Bağlantı kəsildi"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"Qoşuldu"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"Aktivdir"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"Səsli idarəetmə ilə zəng etmək üçün eşitmə aparatı mikrofonunuzdan istifadə edə bilərsiniz. Bu, yalnız zəng zamanı mikrofonu dəyişdirir."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"Dəyişin"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"Ayarlar"</string>
+    <string name="user_switched" msgid="7249833311585228097">"Cari istifadəçi <xliff:g id="NAME">%1$s</xliff:g>."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g> adına keçirilir…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g> çıxır..."</string>
     <string name="owner_name" msgid="8713560351570795743">"Sahib"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"Qrafik açar istənilsin"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"Ayırmadan öncə parol istənilsin"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"Admin quraşdırıb.\nVerilən icazələrə baxmaq üçün ayarlara keçin"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"Admin güncəlləyib.\nTəmin edilən icazələrə baxmaq üçün ayarlara keçin"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"Admin tərəfindən yeniləndi"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"Admin tərəfindən silindi"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"OK"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"Enerjiyə Qənaət rejimi Tünd temanı aktivləşdirir, habelə arxa fon fəaliyyətini, bəzi vizual effektləri, müəyyən xüsusiyyətləri və bəzi şəbəkə bağlantılarını məhdudlaşdırır, yaxud söndürür."</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"Sürüşdürün"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"Durdurun"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"Mövqe"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"Yuxarı sürüşdürün"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"Aşağı sürüşdürün"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"Sola sürüşdürün"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"Sağa sürüşdürün"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"Sürüşdürmə rejimindən çıxın"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"Sürüşdürmə paneli"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> MƏHDUDLAŞDIRILMIŞ səbətinə yerləşdirilib"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"şəkil göndərdi"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"İş 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"Test"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"Kommunal"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"Nəzarət edilir"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"İş profili"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"Məxfi sahə"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"Klon"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android kilidləndikdə USB cihazı qoşulu olur. Cihazdan istifadə etmək üçün əvvəlcə Android-i kiliddən çıxarın və sonra USB cihazını yenidən taxaraq ondan istifadə edin."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"Şübhəli USB fəaliyyəti"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB data siqnalı deaktiv edilib."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"Barmaqla Kiliddən Açma ilə bağlı problem var?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"Kiliddən çıxarma təcrübənizi təkmilləşdirmək üçün toxunaraq məsləhətləri nəzərdən keçirin"</string>
 </resources>

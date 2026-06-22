@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"දෝෂ වර්තාව"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"සැසිය අවසන් කරන්න"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"තිර රුව"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"පොරොත්තු"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"දෝෂ වර්තාව"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"ඊ-තැපැල් පණිවිඩයක් ලෙස යැවීමට මෙය ඔබගේ වත්මන් උපාංග තත්වය ගැන තොරතුරු එකතු කරනු ඇත. දෝෂ වාර්තාව ආරම්භ කර එය යැවීමට සූදානම් කරන තෙක් එයට කිසියම් කාලයක් ගතවනු ඇත; කරුණාකර ඉවසන්න."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"අන්තර්ක්‍රියා වාර්."</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"තනි අත් ප්‍රකාරය"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"තවත් අඳුරු"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"ශ්‍රවණ උපාංග"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"ස්වයං ක්ලික් කිරීම"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"විසන්ධි විය"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"සම්බන්ධිතයි"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"සක්‍රිය"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"දෑත් නොයොදන ඇමතුම් සඳහා ඔබට ඔබේ ශ්‍රවණාධාර මයික්‍රෆෝනය භාවිතා කළ හැක. මෙය ඇමතුම අතරතුර පමණක් ඔබේ මයික්‍රෆෝනය මාරු කරයි."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"මාරු කරන්න"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"සැකසීම්"</string>
+    <string name="user_switched" msgid="7249833311585228097">"දැනට සිටින පරිශීලකයා <xliff:g id="NAME">%1$s</xliff:g>."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g> වෙත මාරු කරමින්…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g> වරමින්…"</string>
     <string name="owner_name" msgid="8713560351570795743">"හිමිකරු"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"ගැලවීමට පෙර අගුළු අරින රටාව සඳහා අසන්න"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"ගැලවීමට පෙර මුරපදය විමසන්න"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"ඔබේ පරිපාලකයා විසින් ස්ථාපන කරනු ලබයි.\nදෙන ලද අවසර බැලීමට සැකසීම් වෙත යන්න"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"ඔබේ පරිපාලක විසින් යාවත්කාලීන කරන ලදි.\n ලබා දී ඇති අවසර බැලීමට සැකසීම් වෙත යන්න"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"ඔබගේ පරිපාලක මඟින් යාවත්කාලීන කර ඇත"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"ඔබගේ පරිපාලක මඟින් මකා දමා ඇත"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"හරි"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"බැටරි සුරැකුම අඳුරු තේමාව ක්‍රියාත්මක කර පසුබිම් ක්‍රියාකාරකම්, සමහර දෘශ්‍ය ප්‍රයෝග, යම් විශේෂාංග සහ සමහර ජාල සම්බන්ධතා සීමා හෝ ක්‍රියාවිරහිත කරයි."</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"අනුචලනය කරන්න"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"විරාම කරන්න"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"ස්ථානය"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"ඉහළට අනුචලනය කරන්න"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"පහළට අනුචලනය කරන්න"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"වමට අනුචලනය කරන්න"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"දකුණට අනුචලනය කරන්න"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"අනුචලන ප්‍රකාරයෙන් පිටවන්න"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"අනුචලන පැනලය"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> අවහිර කළ බාල්දියට දමා ඇත"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"රූපයක් එව්වා"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"කාර්යාලය 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"පරීක්ෂණය"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"වාර්ගික"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"අධීක්ෂණය කිරීම"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"කාර්යාල පැතිකඩ"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"රහසිගත අවකාශය"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"ක්ලෝන කරන්න"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android අගුළු දමා ඇති විට USB උපාංගය පේනුගත කර ඇත. උපාංගය භාවිතා කිරීමට, පළමුව Android අගුළු හැර, පසුව එය භාවිතා කිරීමට USB උපාංගය නැවත ඇතුළු කරන්න."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"සැක සහිත USB ක්‍රියාකාරකම"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB දත්ත සංඥාව අබල කර ඇත."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"ඇඟිලි සලකුණු අගුළු හැරීමේ ගැටලුවක් තිබේ ද?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"ඔබේ අගුළු හැරීමේ අත්දැකීම වැඩි දියුණු කිරීමට ඉඟි සමාලෝචනය කිරීමට තට්ටු කරන්න"</string>
 </resources>

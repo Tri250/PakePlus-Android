@@ -52,14 +52,26 @@ public class BatteryConsumptionAnalyzer {
         public final double systemEstimatedScreenOnHours; // 屏幕亮屏续航
         public final List<AppConsumption> topConsumers; // TOP 5 耗电应用
         public final boolean hasUsageAccessPermission;  // 是否拥有 USAGE_STATS 权限
+        public final double screenPowerPercent;         // 屏幕耗电占比（估算）
+        public final double systemPowerPercent;         // 系统耗电占比（估算）
+        public final double appsPowerPercent;           // 应用耗电占比（估算）
 
         public Result(long capacity, double hours, double screenHours, List<AppConsumption> list,
                       boolean hasUsageAccessPermission) {
+            this(capacity, hours, screenHours, list, hasUsageAccessPermission, 35.0, 25.0, 40.0);
+        }
+
+        public Result(long capacity, double hours, double screenHours, List<AppConsumption> list,
+                      boolean hasUsageAccessPermission,
+                      double screenPowerPercent, double systemPowerPercent, double appsPowerPercent) {
             this.batteryCapacityMah = capacity;
             this.systemEstimatedHours = hours;
             this.systemEstimatedScreenOnHours = screenHours;
             this.topConsumers = list;
             this.hasUsageAccessPermission = hasUsageAccessPermission;
+            this.screenPowerPercent = screenPowerPercent;
+            this.systemPowerPercent = systemPowerPercent;
+            this.appsPowerPercent = appsPowerPercent;
         }
     }
 

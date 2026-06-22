@@ -10,6 +10,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'com.batteryhealth.app'
     compileSdk 36
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId "com.batteryhealth.app"
@@ -98,7 +99,7 @@ android {
 
     // 禁用JDK镜像转换
     tasks.withType(JavaCompile) {
-        options.fork = false
+        // options.fork = false
     }
 
     buildFeatures {

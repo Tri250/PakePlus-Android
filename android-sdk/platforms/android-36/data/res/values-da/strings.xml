@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"Fejlrapport"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"Afslut sessionen"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"Screenshot"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"Standby"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"Fejlrapport"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"Der indsamles oplysninger om din enheds aktuelle status, der efterfølgende sendes i en mail. Der går lidt tid, fra fejlrapporten påbegyndes, til den er klar til at blive sendt. Tak for tålmodigheden."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"Interaktiv rapport"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"Enhåndstilstand"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"Ekstra dæmpet belysning"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"Høreapparater"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"Autoklik"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"Ikke forbundet"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"Forbundet"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"Aktiv"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"Du kan bruge mikrofonen i dit høreapparat til at foretage håndfrie opkald. Der skiftes kun mikrofon under opkaldet."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"Skift"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"Indstillinger"</string>
+    <string name="user_switched" msgid="7249833311585228097">"Nuværende bruger <xliff:g id="NAME">%1$s</xliff:g>."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"Skifter til <xliff:g id="NAME">%1$s</xliff:g>…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g> logges ud…"</string>
     <string name="owner_name" msgid="8713560351570795743">"Ejer"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"Bed om oplåsningsmønster ved deaktivering"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"Bed om adgangskode inden frigørelse"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"Installeret af din administrator.\nGå til Indstillinger for at se de tilladelser, der er blevet givet"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"Opdateret af din administrator.\nGå til Indstillinger for at se de tilladelser, der er blevet givet"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"Opdateret af din administrator"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"Slettet af din administrator"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"OK"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"Batterisparefunktionen aktiverer Mørkt tema og begrænser eller deaktiverer aktivitet i baggrunden og visse visuelle effekter, funktioner og netværksforbindelser."</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"Rul"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"Sæt på pause"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"Placering"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"Rul op"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"Rul ned"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"Rul til venstre"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"Rul til højre"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"Afslut rulletilstand"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"Rullepanel"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> er blevet placeret i samlingen BEGRÆNSET"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"sendte et billede"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"Arbejde 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"Test"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"Fælles"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"Forældrestyring"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"Arbejdsprofil"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"Privat område"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"Klon"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"USB-enheden er tilsluttet, når Android er låst. Hvis du vil bruge enheden, skal du først låse Android op og derefter tilslutte USB-enheden."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"Mistænkelig USB-aktivitet"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB-datasignalet er blevet deaktiveret."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"Har du problemer med fingeroplåsning?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"Tryk for at få tip til, hvordan du forbedrer oplåsningsoplevelsen"</string>
 </resources>
