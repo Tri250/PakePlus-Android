@@ -270,7 +270,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"Rapport de bug"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"Fermer la session"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"Capture d\'écran"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"Veille"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"Signaler un bug"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"Cela permet de recueillir des informations concernant l\'état actuel de votre appareil. Ces informations sont ensuite envoyées sous forme d\'e-mail. Merci de patienter pendant la préparation du rapport de bug. Cette opération peut prendre quelques instants."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"Rapport interactif"</string>
@@ -1805,7 +1804,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"Mode une main"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"Luminosité ultra-réduite"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"Appareils auditifs"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"Clic automatique"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"Déconnecté"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"Connecté"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"Actif"</string>
@@ -1822,10 +1820,11 @@
     <string name="accessibility_magnification_chooser_text" msgid="1502075582164931596">"Agrandissement"</string>
     <string name="hearing_device_switch_phone_mic_notification_title" msgid="6645178038359708836">"Passer au micro du téléphone ?"</string>
     <string name="hearing_device_switch_hearing_mic_notification_title" msgid="4612074852145289569">"Passer au micro de l\'appareil auditif ?"</string>
-    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"Pour un meilleur son ou si la batterie de votre appareil auditif est faible. Cette option ne change le micro que pendant l\'appel."</string>
-    <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"Vous pouvez utiliser le micro de votre appareil auditif pour passer des appels en mode mains-libres. Cette option ne change le micro que pendant l\'appel."</string>
+    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"Pour améliorer le son ou si la batterie de votre appareil auditif est faible. Cette option change uniquement le micro pendant l\'appel."</string>
+    <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"Vous pouvez utiliser le micro de votre appareil auditif pour passer des appels en mode mains-libres. Cette option change uniquement le micro pendant l\'appel."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"Changer"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"Paramètres"</string>
+    <string name="user_switched" msgid="7249833311585228097">"Utilisateur actuel : <xliff:g id="NAME">%1$s</xliff:g>"</string>
     <string name="user_switching_message" msgid="1912993630661332336">"Passage à <xliff:g id="NAME">%1$s</xliff:g>..."</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"Déconnexion de <xliff:g id="NAME">%1$s</xliff:g>…"</string>
     <string name="owner_name" msgid="8713560351570795743">"Propriétaire"</string>
@@ -1967,7 +1966,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"Demander le schéma de déverrouillage avant de retirer l\'épingle"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"Demander le mot de passe avant de retirer l\'épingle"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"Installé par votre administrateur.\nAllez dans les paramètres pour consulter les autorisations accordées."</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"Mis à jour par votre administrateur.\nAllez dans les paramètres pour consulter les autorisations accordées."</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"Mis à jour par votre administrateur"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"Supprimé par votre administrateur"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"OK"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"L\'économiseur de batterie active le thème sombre et limite ou désactive l\'activité en arrière-plan ainsi que certains effets visuels, fonctionnalités et connexions réseau."</string>
@@ -2275,12 +2274,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"Faire défiler"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"Pause"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"Position"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"Faire défiler vers le haut"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"Faire défiler vers le bas"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"Faire défiler vers la gauche"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"Faire défiler vers la droite"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"Quitter le mode défilement"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"Panneau de défilement"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> a été placé dans le bucket RESTRICTED"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g> :"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"a envoyé une image"</string>
@@ -2488,7 +2481,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"Professionnel 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"Test"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"Commun"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"Supervision"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"Profil professionnel"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"Espace privé"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"Clone"</string>
@@ -2560,6 +2552,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"L\'appareil USB est branché alors que l\'appareil Android est verrouillé. Pour utiliser l\'appareil, veuillez d\'abord déverrouiller Android, puis brancher à nouveau l\'appareil USB."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"Activité USB suspecte"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"Le signal de données USB a été désactivé."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"Vous rencontrez des problèmes avec le déverrouillage par empreinte digitale ?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"Appuyez pour consulter des conseils afin d\'améliorer votre expérience de déverrouillage"</string>
 </resources>

@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"รายงานข้อบกพร่อง"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"จบเซสชัน"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"ภาพหน้าจอ"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"สแตนด์บาย"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"รายงานข้อบกพร่อง"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"การดำเนินการนี้จะรวบรวมข้อมูลเกี่ยวกับสถานะปัจจุบันของอุปกรณ์ของคุณ โดยจะส่งไปในรูปแบบข้อความอีเมล อาจใช้เวลาสักครู่ตั้งแต่เริ่มการสร้างรายงานข้อบกพร่องจนกระทั่งเสร็จสมบูรณ์ โปรดอดทนรอ"</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"รายงานแบบอินเทอร์แอกทีฟ"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"โหมดมือเดียว"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"หรี่แสงเพิ่มเติม"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"เครื่องช่วยฟัง"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"การคลิกอัตโนมัติ"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"เลิกเชื่อมต่อแล้ว"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"เชื่อมต่อแล้ว"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"ใช้งานอยู่"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"คุณใช้ไมโครโฟนของเครื่องช่วยฟังเพื่อโทรแบบแฮนด์ฟรีได้ การดำเนินการนี้เพียงแค่เปลี่ยนไมโครโฟนระหว่างการโทรเท่านั้น"</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"เปลี่ยน"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"การตั้งค่า"</string>
+    <string name="user_switched" msgid="7249833311585228097">"ผู้ใช้ปัจจุบัน <xliff:g id="NAME">%1$s</xliff:g>"</string>
     <string name="user_switching_message" msgid="1912993630661332336">"กำลังเปลี่ยนเป็น<xliff:g id="NAME">%1$s</xliff:g>…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"กำลังออกจากระบบ <xliff:g id="NAME">%1$s</xliff:g>…"</string>
     <string name="owner_name" msgid="8713560351570795743">"เจ้าของ"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"ขอรูปแบบการปลดล็อกก่อนเลิกปักหมุด"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"ขอรหัสผ่านก่อนเลิกปักหมุด"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"ติดตั้งโดยผู้ดูแลระบบของคุณ\nไปที่การตั้งค่าเพื่อดูสิทธิ์ที่ได้รับอนุญาต"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"อัปเดตโดยผู้ดูแลระบบของคุณ\nไปที่การตั้งค่าเพื่อดูสิทธิ์ที่ได้รับอนุญาต"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"อัปเดตโดยผู้ดูแลระบบ"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"ลบโดยผู้ดูแลระบบ"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"ตกลง"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"โหมดประหยัดแบตเตอรี่จะเปิดธีมมืดและจำกัดหรือปิดกิจกรรมในเบื้องหลัง เอฟเฟกต์ภาพบางอย่าง ฟีเจอร์บางส่วน และการเชื่อมต่อบางเครือข่าย"</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"เลื่อน"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"หยุดชั่วคราว"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"วางตำแหน่ง"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"เลื่อนขึ้น"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"เลื่อนลง"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"เลื่อนไปทางซ้าย"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"เลื่อนไปทางขวา"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"ออกจากโหมดเลื่อน"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"เลื่อนแผง"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"ใส่ <xliff:g id="PACKAGE_NAME">%1$s</xliff:g> ในที่เก็บข้อมูลที่ถูกจำกัดแล้ว"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"ส่งรูปภาพ"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"งาน 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"ทดสอบ"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"ส่วนกลาง"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"ผู้ควบคุมดูแล"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"โปรไฟล์งาน"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"พื้นที่ส่วนตัว"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"โคลน"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"คุณเสียบอุปกรณ์ USB ขณะ Android ล็อกอยู่ หากต้องการใช้อุปกรณ์ โปรดปลดล็อก Android ก่อนแล้วจึงเสียบอุปกรณ์ USB อีกครั้งเพื่อใช้งาน"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"กิจกรรม USB ที่น่าสงสัย"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"สัญญาณข้อมูล USB ปิดอยู่"</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"หากพบปัญหาในการปลดล็อกด้วยลายนิ้วมือ"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"แตะเพื่อดูเคล็ดลับในการปรับปรุงประสบการณ์การปลดล็อก"</string>
 </resources>

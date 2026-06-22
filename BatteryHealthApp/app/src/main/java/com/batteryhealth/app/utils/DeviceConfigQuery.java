@@ -76,7 +76,7 @@ public class DeviceConfigQuery {
 
         try {
             String firstUseTimeStr = Settings.Secure.getString(context.getContentResolver(),
-                    Settings.Secure.USER_SETUP_COMPLETE);
+                    "user_setup_complete");
             if (firstUseTimeStr != null && !firstUseTimeStr.isEmpty()) {
                 try {
                     result = Long.parseLong(firstUseTimeStr);

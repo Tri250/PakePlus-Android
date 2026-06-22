@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"အမှားရှာပြင် မှတ်တမ်း"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"စက်ရှင် ပြီးဆုံးပြီ"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"ဖန်သားပြင်ဓာတ်ပုံ"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"အသင့်အနေအထား"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"ချွတ်ယွင်းချက်အစီရင်ခံစာ"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"သင့်ရဲ့ လက်ရှိ စက်အခြေအနေ အချက်အလက်များကို အီးမေးလ် အနေဖြင့် ပေးပို့ရန် စုဆောင်းပါမည်။ အမှားရှာဖွေပြင်ဆင်မှုမှတ်တမ်းမှ ပေးပို့ရန် အသင့်ဖြစ်သည်အထိ အချိန် အနည်းငယ်ကြာမြင့်မှာ ဖြစ်သဖြင့် သည်းခံပြီး စောင့်ပါရန်"</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"လက်ငင်းတုံ့ပြန်နိုင်သည့် အစီရင်ခံချက်"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"လက်တစ်ဖက်သုံးမုဒ်"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"ပိုမှိန်ခြင်း"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"နားကြားကိရိယာ"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"အော်တိုနှိပ်ခြင်း"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"ချိတ်ဆက်မထားပါ"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"ချိတ်ဆက်ထားသည်"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"သုံးနေသည်"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"လက်လွတ်ခေါ်ဆိုခြင်းအတွက် နားကြားကိရိယာ၏ မိုက်ခရိုဖုန်းကို သုံးနိုင်သည်။ ခေါ်ဆိုနေစဉ်သာ သင့်မိုက်ကို ပြောင်းပေးသည်။"</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"ပြောင်းရန်"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"ဆက်တင်များ"</string>
+    <string name="user_switched" msgid="7249833311585228097">"လက်ရှိအသုံးပြုနေသူ <xliff:g id="NAME">%1$s</xliff:g>."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g>သို့ ပြောင်းနေသည်…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g>ကို ထွက်ပစ်ပါတော့မည်..."</string>
     <string name="owner_name" msgid="8713560351570795743">"ပိုင်ရှင်"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"ပင်မဖြုတ်မီ လော့ခ်ဖွင့်ပုံစံကို မေးရန်"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"ပင်မဖြုတ်မီမှာ စကားဝှက်ကို မေးကြည့်ရန်"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"သင့်စီမံခန့်ခွဲသူက ထည့်သွင်းထားသည်။\nပေးထားသည့် ခွင့်ပြုချက်များကို ကြည့်ရန် ဆက်တင်များသို့ သွားပါ"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"သင့်စီမံခန့်ခွဲသူက အပ်ဒိတ်လုပ်ထားသည်။\nပေးထားသည့် ခွင့်ပြုချက်များကို ကြည့်ရန် ဆက်တင်များသို့ သွားပါ"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"သင်၏ စီမံခန့်ခွဲသူက အပ်ဒိတ်လုပ်ထားသည်"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"သင်၏ စီမံခန့်ခွဲသူက ဖျက်လိုက်ပါပြီ"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"OK"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"‘ဘက်ထရီ အားထိန်း’ က ‘အမှောင်နောက်ခံ’ ကို ဖွင့်ပြီး နောက်ခံလုပ်ဆောင်ချက်၊ ဖန်တီးပြသချက်အချို့၊ ဝန်ဆောင်မှုအချို့နှင့် ကွန်ရက်ချိတ်ဆက်မှုအချို့တို့ကို ကန့်သတ်သည် သို့မဟုတ် ပိတ်သည်။"</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"လှိမ့်ရန်"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"ခဏရပ်ရန်"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"နေရာ"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"အပေါ်သို့ လှိမ့်ရန်"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"အောက်သို့ လှိမ့်ရန်"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"ဘယ်ဘက်သို့ လှိမ့်ရန်"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"ညာဘက်သို့ လှိမ့်ရန်"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"လှိမ့်ရန်မုဒ်မှ ထွက်ရန်"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"အကန့်ကို လှိမ့်ခြင်း"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> ကို တားမြစ်ထားသော သိမ်းဆည်းမှုအတွင်းသို့ ထည့်ပြီးပါပြီ"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>-"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"ပုံပို့ထားသည်"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"အလုပ် ၃"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"စမ်းသပ်မှု"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"အများသုံး"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"ကြီးကြပ်နေသည်"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"အလုပ်ပရိုဖိုင်"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"သီးသန့်နေရာ"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"ပုံတူပွားရန်"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android လော့ခ်ချထားချိန်တွင် USB စက်ကို ပလတ်တပ်ထားသည်။ စက်သုံးရန်အတွက် Android ကို အရင်ဖွင့်ပြီး USB စက်ပြန်ထည့်ကာ သုံးပါ။"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"သံသယဖြစ်ဖွယ် USB လုပ်ဆောင်ချက်"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB ဒေတာအချက်ပြမှုကို ပိတ်လိုက်ပါပြီ။"</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"‘လက်ဗွေသုံး လော့ခ်ဖွင့်ခြင်း’ တွင် ပြဿနာရှိနေသလား။"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"လော့ခ်ဖွင့်ရာတွင် ပိုအဆင်ပြေစေရန်အတွက် အကြံပြုချက်များကြည့်ရန် တို့ပါ"</string>
 </resources>

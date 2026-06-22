@@ -160,9 +160,7 @@
 @JavaOnlyStableParcelable parcelable android.app.appsearch.RemoveByDocumentIdRequest;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.ReportUsageRequest;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.SchemaVisibilityConfig;
-@JavaOnlyStableParcelable parcelable android.app.appsearch.SearchResult.EmbeddingMatchInfo;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.SearchResult.MatchInfo;
-@JavaOnlyStableParcelable parcelable android.app.appsearch.SearchResult.TextMatchInfo;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.SearchResult;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.SearchSpec;
 @JavaOnlyStableParcelable parcelable android.app.appsearch.SearchSuggestionResult;
@@ -333,7 +331,6 @@
 @JavaOnlyStableParcelable parcelable android.companion.virtual.camera.VirtualCameraConfig;
 @JavaOnlyStableParcelable parcelable android.companion.virtual.camera.VirtualCameraStreamConfig;
 @JavaOnlyStableParcelable parcelable android.companion.virtual.sensor.VirtualSensor;
-@JavaOnlyStableParcelable parcelable android.companion.virtual.sensor.VirtualSensorAdditionalInfo;
 @JavaOnlyStableParcelable parcelable android.companion.virtual.sensor.VirtualSensorConfig;
 @JavaOnlyStableParcelable parcelable android.companion.virtual.sensor.VirtualSensorEvent;
 @JavaOnlyStableParcelable parcelable android.content.AttributionSource;
@@ -570,11 +567,6 @@
 @JavaOnlyStableParcelable parcelable android.health.connect.ReadMedicalResourcesResponse;
 @JavaOnlyStableParcelable parcelable android.health.connect.UpsertMedicalResourceRequest;
 @JavaOnlyStableParcelable parcelable android.health.connect.accesslog.AccessLog;
-@JavaOnlyStableParcelable parcelable android.health.connect.backuprestore.BackupChange;
-@JavaOnlyStableParcelable parcelable android.health.connect.backuprestore.BackupMetadata;
-@JavaOnlyStableParcelable parcelable android.health.connect.backuprestore.GetChangesForBackupResponse;
-@JavaOnlyStableParcelable parcelable android.health.connect.backuprestore.GetLatestMetadataForBackupResponse;
-@JavaOnlyStableParcelable parcelable android.health.connect.backuprestore.RestoreChange;
 @JavaOnlyStableParcelable parcelable android.health.connect.changelog.ChangeLogTokenRequest;
 @JavaOnlyStableParcelable parcelable android.health.connect.changelog.ChangeLogTokenResponse;
 @JavaOnlyStableParcelable parcelable android.health.connect.changelog.ChangeLogsRequest;
@@ -719,7 +711,6 @@
 @JavaOnlyStableParcelable parcelable android.media.midi.MidiDeviceInfo;
 @JavaOnlyStableParcelable parcelable android.media.midi.MidiDeviceStatus;
 @JavaOnlyStableParcelable parcelable android.media.musicrecognition.RecognitionRequest;
-@JavaOnlyStableParcelable parcelable android.media.projection.MediaProjectionAppContent;
 @JavaOnlyStableParcelable parcelable android.media.projection.MediaProjectionConfig;
 @JavaOnlyStableParcelable parcelable android.media.quality.ActiveProcessingPicture;
 @JavaOnlyStableParcelable parcelable android.media.quality.AmbientBacklightEvent;

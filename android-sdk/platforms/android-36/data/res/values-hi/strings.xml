@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"गड़बड़ी की रिपोर्ट"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"सत्र खत्म करें"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"स्क्रीनशॉट"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"स्टैंडबाय"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"गड़बड़ी की रिपोर्ट"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"इससे ईमेल भेजने के लिए, आपके डिवाइस की मौजूदा स्थिति से जुड़ी जानकारी इकट्ठा की जाएगी. गड़बड़ी की रिपोर्ट बनना शुरू होने से लेकर भेजने के लिए तैयार होने तक कुछ समय लगेगा; कृपया इंतज़ार करें."</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"सहभागी रिपोर्ट"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"वन-हैंडेड मोड"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"स्क्रीन की रोशनी को सामान्य लेवल से और कम करने की सुविधा"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"कान की मशीन"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"अपने-आप क्लिक होने की सुविधा"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"डिसकनेक्ट हो गया"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"कनेक्ट हो गया"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"चालू है"</string>
@@ -1821,10 +1819,11 @@
     <string name="accessibility_magnification_chooser_text" msgid="1502075582164931596">"ज़ूम करने की सुविधा"</string>
     <string name="hearing_device_switch_phone_mic_notification_title" msgid="6645178038359708836">"क्या आपको फ़ोन के माइक्रोफ़ोन पर स्विच करना है?"</string>
     <string name="hearing_device_switch_hearing_mic_notification_title" msgid="4612074852145289569">"क्या आपको कान की मशीन के माइक पर स्विच करना है?"</string>
-    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"बेहतर आवाज़ के लिए या कान की मशीन की बैटरी कम होने पर, इसका इस्तेमाल करें. इससे सिर्फ़ कॉल के दौरान आपका माइक चालू होता है."</string>
-    <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"बोलकर कॉल का जवाब देने के लिए, \'कान की मशीन का माइक्रोफ़ोन\' इस्तेमाल किया जा सकता है. इससे सिर्फ़ कॉल के दौरान आपका माइक चालू होता है."</string>
+    <string name="hearing_device_switch_phone_mic_notification_text" msgid="1332426273666077412">"बेहतर आवाज़ के लिए या कान की मशीन की बैटरी कम होने पर. यह सिर्फ़ कॉल के दौरान आपका माइक चालू करता है."</string>
+    <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"बोलकर कॉल का जवाब देने के लिए, \'कान की मशीन का माइक्रोफ़ोन\' इस्तेमाल किया जा सकता है. इससे, कॉल के दौरान सिर्फ़ आपका माइक चालू या बंद होता है."</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"स्विच करें"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"सेटिंग"</string>
+    <string name="user_switched" msgid="7249833311585228097">"मौजूदा उपयोगकर्ता <xliff:g id="NAME">%1$s</xliff:g>."</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g> पर स्विच किया जा रहा है…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g> द्वारा प्रस्‍थान किया जा रहा है…"</string>
     <string name="owner_name" msgid="8713560351570795743">"मालिक"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"अनपिन करने से पहले लॉक खोलने के पैटर्न के लिए पूछें"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"अनपिन करने से पहले पासवर्ड के लिए पूछें"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"इसे आपके एडमिन ने इंस्टॉल किया है.\nजिन अनुमतियों को मंज़ूरी मिली है उन्हें देखने के लिए, सेटिंग में जाएं"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"इसे आपके एडमिन ने अपडेट किया है.\nजिन अनुमतियों को मंज़ूरी मिली है उन्हें देखने के लिए, सेटिंग में जाएं"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"आपके व्यवस्थापक ने अपडेट किया है"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"आपके व्यवस्थापक ने हटा दिया है"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"ठीक है"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"बैटरी सेवर, गहरे रंग वाली थीम को चालू करता है. साथ ही, इस मोड में बैकग्राउंड की गतिविधि, कुछ विज़ुअल इफ़ेक्ट, और कुछ खास सुविधाएं कम या बंद हो जाती हैं. कुछ इंटरनेट कनेक्शन भी पूरी तरह काम नहीं करते."</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"स्क्रोल करें"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"रोकें"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"पोज़िशन"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"ऊपर की ओर स्क्रोल करें"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"नीचे की ओर स्क्रोल करें"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"बाईं ओर स्क्रोल करें"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"दाईं ओर स्क्रोल करें"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"स्क्रोल मोड को बंद करें"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"पैनल को स्क्रोल करें"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> को प्रतिबंधित बकेट में रखा गया है"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"एक इमेज भेजी गई"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"ऑफ़िस 3"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"टेस्ट"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"कम्यूनिटी"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"निगरानी की जा रही है"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"वर्क प्रोफ़ाइल"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"प्राइवेट स्पेस"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"क्लोन"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"यूएसबी डिवाइस को, Android डिवाइस के लॉक होने के दौरान प्लग इन किया गया. यूएसबी डिवाइस का इस्तेमाल करने के लिए, कृपया पहले Android डिवाइस को अनलॉक करें. इसके बाद, यूएसबी को फिर से इंसर्ट करें."</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"यूएसबी से कोई संदिग्ध गतिविधि की गई"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"यूएसबी से डेटा सिग्नल भेजने की प्रोसेस बंद कर दी गई है."</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"क्या आपको फ़िंगरप्रिंट अनलॉक की सुविधा का इस्तेमाल करने में समस्या आ रही है?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"डिवाइस को अनलॉक करने का अनुभव बेहतर बनाने की सलाह देखने के लिए टैप करें"</string>
 </resources>

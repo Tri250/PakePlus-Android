@@ -269,7 +269,6 @@
     <string name="global_action_bug_report" msgid="5127867163044170003">"ত্রুটির প্রতিবেদন"</string>
     <string name="global_action_logout" msgid="6093581310002476511">"সেশন শেষ করুন"</string>
     <string name="global_action_screenshot" msgid="2610053466156478564">"স্ক্রিনশট নিন"</string>
-    <string name="global_action_standby" msgid="6786920589970257642">"স্ট্যান্ডবাই"</string>
     <string name="bugreport_title" msgid="8549990811777373050">"সমস্যার রিপোর্ট"</string>
     <string name="bugreport_message" msgid="5212529146119624326">"এটি একটি ই-মেল মেসেজ পাঠানোর জন্য আপনার ডিভাইসের বর্তমান অবস্থা সম্পর্কে তথ্য সংগ্রহ করবে৷ ত্রুটির প্রতিবেদন শুরুর সময় থেকে এটি পাঠানোর জন্য প্রস্তুত হতে কিছুটা সময় নেবে; অনুগ্রহ করে ধৈর্য রাখুন৷"</string>
     <string name="bugreport_option_interactive_title" msgid="7968287837902871289">"ইন্টারেক্টিভ প্রতিবেদন"</string>
@@ -1804,7 +1803,6 @@
     <string name="one_handed_mode_feature_name" msgid="2334330034828094891">"এক হাতে ব্যবহার করার মোড"</string>
     <string name="reduce_bright_colors_feature_name" msgid="3222994553174604132">"অতিরিক্ত কম উজ্জ্বলতা"</string>
     <string name="hearing_aids_feature_name" msgid="1125892105105852542">"হিয়ারিং ডিভাইস"</string>
-    <string name="autoclick_feature_name" msgid="8149248738736949630">"অটোক্লিক"</string>
     <string name="hearing_device_status_disconnected" msgid="497547752953543832">"ডিসকানেক্ট হয়ে গেছে"</string>
     <string name="hearing_device_status_connected" msgid="2149385149669918764">"কানেক্ট করা হয়েছে"</string>
     <string name="hearing_device_status_active" msgid="4770378695482566032">"অ্যাক্টিভ"</string>
@@ -1825,6 +1823,7 @@
     <string name="hearing_device_switch_hearing_mic_notification_text" msgid="8288368365767284208">"হ্যান্ডস-ফ্রি কলিংয়ের জন্য আপনার হিয়ারিং এডের মাইক্রোফোন ব্যবহার করতে পারবেন। এটি শুধুমাত্র কল চলাকালীন আপনার মাইক পরিবর্তন করে।"</string>
     <string name="hearing_device_notification_switch_button" msgid="3619524619430941300">"পরিবর্তন করুন"</string>
     <string name="hearing_device_notification_settings_button" msgid="6673651052880279178">"সেটিংস"</string>
+    <string name="user_switched" msgid="7249833311585228097">"বর্তমান ব্যবহারকারী <xliff:g id="NAME">%1$s</xliff:g>৷"</string>
     <string name="user_switching_message" msgid="1912993630661332336">"<xliff:g id="NAME">%1$s</xliff:g> প্রোফাইলে পাল্টানো হচ্ছে…"</string>
     <string name="user_logging_out_message" msgid="7216437629179710359">"<xliff:g id="NAME">%1$s</xliff:g>কে লগ-আউট করা হচ্ছে..."</string>
     <string name="owner_name" msgid="8713560351570795743">"মালিক"</string>
@@ -1966,7 +1965,7 @@
     <string name="lock_to_app_unlock_pattern" msgid="2694204070499712503">"আনপিন করার আগে আনলক প্যাটার্ন চান"</string>
     <string name="lock_to_app_unlock_password" msgid="9126722403506560473">"আনপিন করার আগে পাসওয়ার্ড চান"</string>
     <string name="package_installed_device_owner" msgid="8684974629306529138">"আপনার অ্যাডমিন ইনস্টল করেছেন।\nঅনুমোদন করা অনুমতি দেখতে সেটিংসে যান"</string>
-    <string name="package_updated_device_owner" msgid="7770195449213776218">"আপনার অ্যাডমিন আপডেট করেছেন।\nঅনুমোদন করা অনুমতি দেখতে সেটিংসে যান"</string>
+    <string name="package_updated_device_owner" msgid="7560272363805506941">"আপনার প্রশাসক আপডেট করেছেন"</string>
     <string name="package_deleted_device_owner" msgid="2292335928930293023">"আপনার প্রশাসক মুছে দিয়েছেন"</string>
     <string name="confirm_battery_saver" msgid="5247976246208245754">"ঠিক আছে"</string>
     <string name="battery_saver_description_with_learn_more" msgid="5444908404021316250">"ব্যাটারি সেভার ডার্ক থিম চালু করে এবং ব্যাকগ্রাউন্ড অ্যাক্টিভিটি, কিছু ভিজ্যুয়াল এফেক্ট, নির্দিষ্ট ফিচার ও কয়েকটি নেটওয়ার্ক কানেকশনের ব্যবহার সীমিত করে বা বন্ধ করে দেয়।"</string>
@@ -2274,12 +2273,6 @@
     <string name="accessibility_autoclick_scroll" msgid="3499385943728726933">"স্ক্রল করুন"</string>
     <string name="accessibility_autoclick_pause" msgid="3272200156172573568">"পজ করুন"</string>
     <string name="accessibility_autoclick_position" msgid="2933660969907663545">"পজিশন"</string>
-    <string name="accessibility_autoclick_scroll_up" msgid="2044948780797117443">"উপর দিকে স্ক্রল করুন"</string>
-    <string name="accessibility_autoclick_scroll_down" msgid="3733401063292018116">"নিচে স্ক্রল করুন"</string>
-    <string name="accessibility_autoclick_scroll_left" msgid="8564421367992824198">"বাঁদিকে স্ক্রল করুন"</string>
-    <string name="accessibility_autoclick_scroll_right" msgid="8932417330753984265">"ডানদিকে স্ক্রল করুন"</string>
-    <string name="accessibility_autoclick_scroll_exit" msgid="3788610039146769696">"স্ক্রল মোড থেকে বেরিয়ে আসুন"</string>
-    <string name="accessibility_autoclick_scroll_panel_title" msgid="7120598166296447036">"স্ক্রল প্যানেল"</string>
     <string name="as_app_forced_to_restricted_bucket" msgid="8233871289353898964">"<xliff:g id="PACKAGE_NAME">%1$s</xliff:g> সীমাবদ্ধ গ্রুপে অন্তর্ভুক্ত করা হয়েছে"</string>
     <string name="conversation_single_line_name_display" msgid="8958948312915255999">"<xliff:g id="SENDER_NAME">%1$s</xliff:g>:"</string>
     <string name="conversation_single_line_image_placeholder" msgid="6983271082911936900">"একটি ছবি পাঠানো হয়েছে"</string>
@@ -2487,7 +2480,6 @@
     <string name="profile_label_work_3" msgid="4834572253956798917">"৩য় অফিস"</string>
     <string name="profile_label_test" msgid="9168641926186071947">"পরীক্ষা"</string>
     <string name="profile_label_communal" msgid="8743921499944800427">"কমিউনাল"</string>
-    <string name="profile_label_supervising" msgid="5649312778545745371">"তত্ত্বাবধান করা"</string>
     <string name="accessibility_label_managed_profile" msgid="3366526886209832641">"অফিস প্রোফাইল"</string>
     <string name="accessibility_label_private_profile" msgid="1436459319135548969">"প্রাইভেট স্পেস"</string>
     <string name="accessibility_label_clone_profile" msgid="7579118375042398784">"ক্লোন"</string>
@@ -2559,6 +2551,4 @@
     <string name="usb_apm_usb_plugged_in_when_locked_notification_text" msgid="6695268246267993166">"Android লক থাকাকালীন USB ডিভাইস প্লাগ-ইন করা হয়েছে। ডিভাইস ব্যবহার করতে, প্রথমে Android আনলক করুন এবং তারপর সেটি ব্যবহার করতে USB ডিভাইস আবার যোগ করুন।"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_title" msgid="3461195995882871461">"সন্দেহজনক USB অ্যাক্টিভিটি"</string>
     <string name="usb_apm_usb_suspicious_activity_notification_text" msgid="6537085605929303187">"USB ডেটা সিগন্যাল বন্ধ করা হয়েছে।"</string>
-    <string name="fingerprint_frr_notification_title" msgid="3668331918920659093">"\'ফিঙ্গারপ্রিন্ট আনলক\' ফিচারে সমস্যা হচ্ছে?"</string>
-    <string name="fingerprint_frr_notification_msg" msgid="2162966846624639252">"আপনার আনলক করার অভিজ্ঞতা উন্নত করতে রিভিউ সংক্রান্ত পরামর্শে ট্যাপ করুন"</string>
 </resources>
