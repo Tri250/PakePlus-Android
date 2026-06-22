@@ -13,8 +13,6 @@ import com.batteryhealth.app.data.model.HealthCheckResult;
  */
 public class EnduranceChecker implements IHealthChecker {
 
-    private static final float DEFAULT_DISCHARGE_PER_HOUR = 10f; // 默认每小时消耗 10%
-
     @Override
     public String getName() { return "续航预测"; }
 
@@ -54,7 +52,24 @@ public class EnduranceChecker implements IHealthChecker {
             boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
 
-            // 简化估算：每小时消耗 DEFAULT_DISCHARGE_PER_HOUR%，充电状态按 1%/分钟 反向估算
+            BatteryManager bm = (BatteryManager) appCtx.getSystemService(Context.BATTERY_SERVICE);
+            int currentMa = readCurrentMa(bm);
+            int fullCapacityMah = readFullCapacityMah(bm);
+            int chargeCounterMah = readChargeCounterMah(bm);
+
+            // 无真实电流或容量数据时不使用固定放电速率模拟
+            if (currentMa <= 0 || fullCapacityMah <= 0) {
+                return builder
+                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                        .setStatus("计算中")
+                        .setValue("--")
+                        .setUnit("小时")
+                        .setDescription("暂无法获取实时电流或容量数据，无法估算续航。")
+                        .setAdvice("请确保设备支持 BatteryManager 电流/容量读取，或稍后重试。")
+                        .setItemScore(50)
+                        .build();
+            }
+
             float hours;
             int severity;
             String statusText;
@@ -62,9 +77,11 @@ public class EnduranceChecker implements IHealthChecker {
             int score;
 
             if (isCharging) {
-                int remainingToFull = 100 - pct;
-                float minutesToFull = remainingToFull * 2.0f; // 粗略估算 每 2 分钟充 1%
-                hours = minutesToFull / 60f;
+                int remainingMah = fullCapacityMah - chargeCounterMah;
+                if (remainingMah <= 0) {
+                    remainingMah = (int) (fullCapacityMah * (100 - pct) / 100f);
+                }
+                hours = remainingMah / (float) currentMa;
 
                 if (pct >= 90) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
@@ -83,7 +100,11 @@ public class EnduranceChecker implements IHealthChecker {
                     score = 65;
                 }
             } else {
-                hours = pct / DEFAULT_DISCHARGE_PER_HOUR;
+                int remainingMah = chargeCounterMah > 0
+                        ? chargeCounterMah
+                        : (int) (fullCapacityMah * pct / 100f);
+                hours = remainingMah / (float) currentMa;
+
                 if (hours >= 6f) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
                     statusText = "充裕";
@@ -107,7 +128,7 @@ public class EnduranceChecker implements IHealthChecker {
                 }
             }
 
-            String desc = String.format("当前电量：%1$d%%。%2$s状态下预计可用约 %3$.1f 小时",
+            String desc = String.format("当前电量：%1$d%%，%2$s状态下基于实时电流/容量估算约 %3$.1f 小时",
                     pct, isCharging ? "充电" : "放电", hours);
 
             return builder
@@ -133,5 +154,47 @@ public class EnduranceChecker implements IHealthChecker {
                     .setItemScore(55)
                     .build();
         }
+    }
+
+    /**
+     * 读取当前电流绝对值（mA）。优先 CURRENT_AVERAGE，回退 CURRENT_NOW。
+     */
+    private int readCurrentMa(BatteryManager bm) {
+        if (bm == null) return 0;
+        int current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
+        if (current == 0 || current == Integer.MIN_VALUE) {
+            current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        }
+        if (current == Integer.MIN_VALUE) return 0;
+        int abs = Math.abs(current);
+        // BatteryManager 通常返回 µA，需转换为 mA
+        if (abs > 100000) return abs / 1000;
+        return abs;
+    }
+
+    /**
+     * 读取满充容量（mAh）。优先 CHARGE_FULL，回退 CHARGE_FULL_DESIGN。
+     */
+    private int readFullCapacityMah(BatteryManager bm) {
+        if (bm == null) return -1;
+        int full = bm.getIntProperty(24); // BATTERY_PROPERTY_CHARGE_FULL
+        if (full <= 0 || full == Integer.MIN_VALUE) {
+            full = bm.getIntProperty(9); // BATTERY_PROPERTY_CHARGE_FULL_DESIGN
+        }
+        if (full <= 0 || full == Integer.MIN_VALUE) return -1;
+        if (full > 100000) return full / 1000;
+        return full;
+    }
+
+    /**
+     * 读取当前电荷计数容量（mAh），即剩余可用容量。
+     */
+    private int readChargeCounterMah(BatteryManager bm) {
+        if (bm == null) return -1;
+        int counter = bm.getIntProperty(6); // BATTERY_PROPERTY_CHARGE_COUNTER
+        if (counter == Integer.MIN_VALUE || counter == 0) return -1;
+        int abs = Math.abs(counter);
+        if (abs > 100000) return abs / 1000;
+        return abs;
     }
 }

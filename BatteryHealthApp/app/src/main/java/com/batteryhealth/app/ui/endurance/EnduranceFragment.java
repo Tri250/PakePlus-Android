@@ -26,7 +26,9 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.WearableDetector;
 
+import java.util.List;
 import java.util.Locale;
 
 public class EnduranceFragment extends Fragment {
@@ -40,6 +42,9 @@ public class EnduranceFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+
+    private WearableDetector wearableDetector;
+    private WearableDetector.WearableDevice lastWearable;
 
     private float dischargeRate = 0f;
 
@@ -72,6 +77,8 @@ public class EnduranceFragment extends Fragment {
         tvWearableStatus = view.findViewById(R.id.tv_wearable_status);
         tvWearableBattery = view.findViewById(R.id.tv_wearable_battery);
         tvWearableEndurance = view.findViewById(R.id.tv_wearable_endurance);
+
+        wearableDetector = new WearableDetector(requireContext());
     }
 
     private void animateEntry(View view) {
@@ -261,24 +268,78 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void updatePowerRanking() {
-        if (lastAnalysisResult != null) {
-            tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.screenPowerPercent));
-            tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.systemPowerPercent));
-            tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.appsPowerPercent));
-        } else {
-            tvScreenPower.setText("35%");
-            tvSystemPower.setText("25%");
-            tvAppsPower.setText("40%");
+        if (lastAnalysisResult == null) {
+            // 尚未完成真实数据分析，不展示模拟默认值
+            tvScreenPower.setText("--");
+            tvSystemPower.setText("--");
+            tvAppsPower.setText("--");
+            return;
         }
+
+        if (!lastAnalysisResult.hasUsageAccessPermission) {
+            // 无 PACKAGE_USAGE_STATS 权限时明确提示，而非展示假数据
+            String noPerm = getString(R.string.status_permission_needed);
+            tvScreenPower.setText(noPerm);
+            tvSystemPower.setText(noPerm);
+            tvAppsPower.setText(noPerm);
+            return;
+        }
+
+        tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                lastAnalysisResult.screenPowerPercent));
+        tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                lastAnalysisResult.systemPowerPercent));
+        tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                lastAnalysisResult.appsPowerPercent));
     }
 
     private void updateWearableData() {
-        tvWearableStatus.setText(getString(R.string.status_not_connected));
-        tvWearableBattery.setText("--");
-        tvWearableEndurance.setText("--");
+        if (wearableDetector == null) {
+            tvWearableStatus.setText(getString(R.string.status_not_connected));
+            tvWearableBattery.setText("--");
+            tvWearableEndurance.setText("--");
+            return;
+        }
+
+        // 在后台线程真实检测已配对可穿戴设备，避免阻塞 UI
+        new Thread(() -> {
+            try {
+                List<WearableDetector.WearableDevice> devices = wearableDetector.detectPairedWearables();
+                WearableDetector.WearableDevice device = devices.isEmpty() ? null : devices.get(0);
+                lastWearable = device;
+
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    if (device == null) {
+                        tvWearableStatus.setText(getString(R.string.status_not_connected));
+                        tvWearableBattery.setText("--");
+                        tvWearableEndurance.setText("--");
+                        return;
+                    }
+
+                    tvWearableStatus.setText(device.name);
+                    if (device.hasBatteryData()) {
+                        tvWearableBattery.setText(String.format(Locale.getDefault(), "%d%%", device.batteryPercent));
+                        float hours = WearableDetector.estimateEnduranceHours(device.name, device.batteryPercent);
+                        if (hours > 0) {
+                            int d = (int) (hours / 24);
+                            int h = (int) (hours % 24);
+                            if (d > 0) {
+                                tvWearableEndurance.setText(String.format(Locale.getDefault(), "%d天%d小时", d, h));
+                            } else {
+                                tvWearableEndurance.setText(String.format(Locale.getDefault(), "%d小时", h));
+                            }
+                        } else {
+                            tvWearableEndurance.setText("--");
+                        }
+                    } else {
+                        tvWearableBattery.setText("--");
+                        tvWearableEndurance.setText("--");
+                    }
+                });
+            } catch (Exception ignored) {
+            }
+        }).start();
     }
 
     /**

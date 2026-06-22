@@ -3,12 +3,9 @@ package com.batteryhealth.app.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.provider.Settings;
 import android.util.Log;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -72,62 +69,14 @@ public class DeviceConfigQuery {
     }
 
     private long detectActivationDate() {
-        long result = -1;
-
-        try {
-            String firstUseTimeStr = Settings.Secure.getString(context.getContentResolver(),
-                    Settings.Secure.USER_SETUP_COMPLETE);
-            if (firstUseTimeStr != null && !firstUseTimeStr.isEmpty()) {
-                try {
-                    result = Long.parseLong(firstUseTimeStr);
-                } catch (NumberFormatException e) {
-                    Log.w(TAG, "Failed to parse USER_SETUP_COMPLETE: " + firstUseTimeStr);
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Error reading USER_SETUP_COMPLETE: " + e.getMessage());
+        // 优先使用 ActivationDateHelper 的多源真实检测（电子保卡、first_boot_time、
+        // DevicePolicyManager、GMS/系统框架安装时间等），不再把 USER_SETUP_COMPLETE
+        // 误解析为时间戳，也不再依赖 Display ID 中的日期猜测。
+        ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
+        if (result != null && result.isValid()) {
+            return result.timestamp;
         }
-
-        if (result <= 0) {
-            File buildProp = new File("/system/build.prop");
-            if (buildProp.exists()) {
-                try {
-                    String buildDate = Build.DISPLAY;
-                    if (buildDate.contains("20") || buildDate.contains("202")) {
-                        result = parseDateFromBuild(buildDate);
-                    }
-                } catch (Exception e) {
-                    Log.w(TAG, "Error parsing build date: " + e.getMessage());
-                }
-            }
-        }
-
-        if (result <= 0) {
-            result = getFirstInstallTime();
-        }
-
-        return result;
-    }
-
-    private long parseDateFromBuild(String buildDate) {
-        SimpleDateFormat[] formats = {
-                new SimpleDateFormat("yyyyMMdd", Locale.getDefault()),
-                new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
-                new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault())
-        };
-
-        for (SimpleDateFormat format : formats) {
-            try {
-                String dateStr = buildDate.replaceAll("[^0-9.]", "");
-                if (dateStr.length() >= 8) {
-                    dateStr = dateStr.substring(0, 8);
-                    Date date = format.parse(dateStr);
-                    if (date != null) return date.getTime();
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return -1;
+        return getFirstInstallTime();
     }
 
     public long getDaysUsed() {
@@ -163,11 +112,11 @@ public class DeviceConfigQuery {
     }
 
     private String assessAndroidVersion(int sdkVersion) {
-        if (sdkVersion >= 34) return "当前系统版本为 Android 14，功能完整，安全更新及时";
-        if (sdkVersion >= 33) return "当前系统版本为 Android 13，建议升级到最新版本";
-        if (sdkVersion >= 31) return "当前系统版本为 Android 12，仍在安全支持范围内";
-        if (sdkVersion >= 29) return "当前系统版本为 Android 10，建议考虑升级";
-        return "当前系统版本较旧，建议及时更新系统以获取更好的安全保障";
+        String release = Build.VERSION.RELEASE;
+        if (sdkVersion >= 34) return "当前系统版本为 Android " + release + "，功能完整，安全更新及时";
+        if (sdkVersion >= 31) return "当前系统版本为 Android " + release + "，仍在安全支持范围内";
+        if (sdkVersion >= 29) return "当前系统版本为 Android " + release + "，建议升级到最新版本";
+        return "当前系统版本较旧（Android " + release + "），建议及时更新系统以获取更好的安全保障";
     }
 
     private String assessHardware(DeviceInfo info) {

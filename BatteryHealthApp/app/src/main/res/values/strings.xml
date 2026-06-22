@@ -61,6 +61,12 @@
     <string name="label_anr_count">ANR 次数</string>
     <string name="label_anr_severity">严重程度</string>
     <string name="label_anr_message">分析结果</string>
+    <string name="section_gpu_info">GPU 信息</string>
+    <string name="desc_performance_tips">基于当前系统资源占用给出的优化建议</string>
+    <string name="label_share">分享</string>
+    <string name="section_alert_settings">提醒设置</string>
+    <string name="section_history_data">历史数据</string>
+    <string name="label_serial_number">序列号</string>
     <string name="section_power_ranking">耗电排行</string>
     <string name="section_wearable">智能穿戴</string>
     <string name="label_screen_power">屏幕耗电</string>
@@ -74,9 +80,8 @@
     <string name="section_detection_info">检测信息</string>
     <string name="section_detection_methods">检测方法</string>
     <string name="label_manufacture_date">生产日期</string>
-    <string name="label_serial_number">序列号</string>
-    <string name="label_health_status">健康状态</string>
     <string name="label_cycle_count">循环次数</string>
+    <string name="label_health_status">健康状态</string>
     <string name="label_tap_to_detect">点击检测按钮开始分析</string>
     <string name="label_detect_battery">检测电池</string>
     <string name="result_original">原装电池</string>
@@ -92,7 +97,6 @@
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
     <string name="label_battery_capacity">电池容量</string>
-    <string name="label_cycle_count">循环次数</string>
     <string name="label_battery_temperature">电池温度</string>
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
@@ -189,6 +193,7 @@
     <string name="gpu_mali_hisilicon">Mali (海思)</string>
     <string name="gpu_mali_samsung">Mali (三星)</string>
     <string name="status_not_recognized">未识别</string>
+    <string name="status_not_connected">未连接</string>
     <string name="dialog_permission_message">需要权限才能正常运行</string>
     <string name="dialog_permission_notification_message">需要通知权限</string>
     <string name="dialog_permission_title">权限申请</string>

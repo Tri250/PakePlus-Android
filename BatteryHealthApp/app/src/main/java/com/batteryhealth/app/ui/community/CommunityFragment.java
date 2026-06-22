@@ -84,7 +84,7 @@ public class CommunityFragment extends Fragment {
                 batteryDataManager = new BatteryDataManager(requireContext());
             }
 
-            loadCommunityPosts();
+            loadCommunityPosts(null);
             loadBatteryDataAndPopulate();
             UiAnimationHelper.animateCardsEntry(view);
         } catch (Exception e) {
@@ -106,11 +106,11 @@ public class CommunityFragment extends Fragment {
         }).start();
     }
 
-    private void loadCommunityPosts() {
+    private void loadCommunityPosts(BatteryInfo info) {
         if (containerPosts == null) return;
         containerPosts.removeAllViews();
 
-        List<CommunityPost> posts = buildCommunityPosts();
+        List<CommunityPost> posts = buildCommunityPosts(info);
         for (int i = 0; i < posts.size(); i++) {
             CommunityPost post = posts.get(i);
             if (i > 0) {
@@ -173,12 +173,62 @@ public class CommunityFragment extends Fragment {
         }
     }
 
-    private List<CommunityPost> buildCommunityPosts() {
+    /**
+     * 基于真实电池数据生成个性化社区动态，不再使用硬编码假帖子。
+     */
+    private List<CommunityPost> buildCommunityPosts(BatteryInfo info) {
         List<CommunityPost> posts = new ArrayList<>();
-        posts.add(new CommunityPost("电池达人小王", "分享一个保养电池的小技巧：每次充电不要等到完全没电再充，保持在20%-80%之间最好！", "2小时前", 128));
-        posts.add(new CommunityPost("数码爱好者", "实测快充对电池寿命影响不大，主要是充电时温度控制很重要！", "5小时前", 256));
-        posts.add(new CommunityPost("手机维修师傅", "换电池一定要去官方售后，第三方电池质量参差不齐，安全第一！", "昨天", 512));
-        posts.add(new CommunityPost("科技博主", "iOS的优化电池充电功能真的很实用，Android用户可以试试电池健康类APP", "2天前", 89));
+        if (info == null) return posts;
+
+        String author = "电池健康助手";
+        String time = "刚刚";
+        float healthPct = info.getHealthPercentage();
+        float temperature = info.getTemperature();
+        int level = info.getLevel();
+        int cycleCount = info.getCycleCount();
+        boolean isCharging = info.isCharging();
+
+        if (healthPct >= 0) {
+            String content;
+            if (healthPct >= 90) {
+                content = String.format(Locale.getDefault(),
+                        "当前电池健康度为 %.0f%%，状态极佳。继续保持 20%%-80%% 的充电习惯。", healthPct);
+            } else if (healthPct >= 80) {
+                content = String.format(Locale.getDefault(),
+                        "当前电池健康度为 %.0f%%，状态良好。建议避免长时间满充，以减缓老化。", healthPct);
+            } else if (healthPct >= 60) {
+                content = String.format(Locale.getDefault(),
+                        "当前电池健康度为 %.0f%%，损耗明显。建议减少边充边玩并控制充电温度。", healthPct);
+            } else {
+                content = String.format(Locale.getDefault(),
+                        "当前电池健康度为 %.0f%%，容量衰减严重。建议前往官方售后检测或更换电池。", healthPct);
+            }
+            posts.add(new CommunityPost(author, content, time, 0));
+        }
+
+        String tempAdvice;
+        if (temperature > 40) {
+            tempAdvice = "温度偏高，建议暂停高负载使用并取下保护壳散热。";
+        } else if (temperature < 0) {
+            tempAdvice = "温度过低，低温会暂时降低电池可用容量。";
+        } else {
+            tempAdvice = "温度处于正常范围，日常使用无压力。";
+        }
+        posts.add(new CommunityPost(author, String.format(Locale.getDefault(),
+                "电池温度 %.1f°C，%s", temperature, tempAdvice), time, 0));
+
+        String chargeTip = isCharging
+                ? "正在充电，建议充至 80% 后拔掉。"
+                : "当前未充电，避免电量低于 20% 再充电。";
+        posts.add(new CommunityPost(author, String.format(Locale.getDefault(),
+                "当前电量 %d%%，%s", level, chargeTip), time, 0));
+
+        if (cycleCount > 0) {
+            posts.add(new CommunityPost(author, String.format(Locale.getDefault(),
+                    "检测到电池循环次数约 %d 次。锂离子电池通常 500 次循环后容量会降至 80%% 左右。",
+                    cycleCount), time, 0));
+        }
+
         return posts;
     }
 
@@ -225,6 +275,9 @@ public class CommunityFragment extends Fragment {
             List<QaItem> qaList = buildPersonalizedQa(healthPct, temperature, cycleCount);
             populateQaContainer(containerQa, qaList);
         }
+
+        // === 基于真实数据的社区动态 ===
+        loadCommunityPosts(info);
     }
 
     private void populateTipContainer(LinearLayout container, List<TipItem> tips) {
