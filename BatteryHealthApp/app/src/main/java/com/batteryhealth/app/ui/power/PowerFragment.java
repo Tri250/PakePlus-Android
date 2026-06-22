@@ -20,10 +20,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.database.AppDatabase;
+import com.batteryhealth.app.data.database.PowerHistoryDao;
+import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
+import java.util.concurrent.Executors;
 
 public class PowerFragment extends Fragment {
 
@@ -162,11 +170,82 @@ public class PowerFragment extends Fragment {
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
 
-        // Today stats (placeholders)
-        tvChargeCount.setText("2");
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
-        tvTotalChargeTime.setText("45分");
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        // 今日充电统计：从数据库读取真实历史数据
+        loadTodayStats();
+    }
+
+    /**
+     * 异步加载今日充电统计（充电次数、平均功率、累计时长、累计充入电量）。
+     */
+    private void loadTodayStats() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                AppDatabase db = BatteryHealthApplication.getInstance() != null
+                        ? BatteryHealthApplication.getInstance().getDatabase() : null;
+                if (db == null) return;
+                PowerHistoryDao dao = db.powerHistoryDao();
+
+                long[] todayRange = getTodayRange();
+                List<PowerHistory> todayList = dao.getBetween(todayRange[0], todayRange[1]);
+
+                int sessionCount = 0;
+                float totalPower = 0f;
+                long totalDurationMs = 0;
+                int totalChargedPercent = 0;
+                String lastSessionId = null;
+                long sessionStartMs = 0;
+                int sessionStartLevel = -1;
+
+                for (PowerHistory h : todayList) {
+                    totalPower += h.getPower();
+                    if (lastSessionId == null || !lastSessionId.equals(h.getSessionId())) {
+                        if (lastSessionId != null) {
+                            totalDurationMs += Math.max(0, h.getTimestamp() - sessionStartMs);
+                            totalChargedPercent += Math.max(0, h.getBatteryLevel() - sessionStartLevel);
+                        }
+                        lastSessionId = h.getSessionId();
+                        sessionStartMs = h.getTimestamp();
+                        sessionStartLevel = h.getBatteryLevel();
+                        sessionCount++;
+                    }
+                }
+                // 结束最后一个会话估算
+                if (lastSessionId != null && !todayList.isEmpty()) {
+                    PowerHistory last = todayList.get(todayList.size() - 1);
+                    totalDurationMs += Math.max(0, last.getTimestamp() - sessionStartMs);
+                    totalChargedPercent += Math.max(0, last.getBatteryLevel() - sessionStartLevel);
+                }
+
+                float avgPower = todayList.isEmpty() ? 0f : totalPower / todayList.size();
+                long totalMinutes = totalDurationMs / 60000L;
+
+                final int finalSessionCount = Math.max(0, sessionCount);
+                final float finalAvgPower = avgPower;
+                final long finalTotalMinutes = totalMinutes;
+                final int finalTotalCharged = Math.max(0, totalChargedPercent);
+
+                handler.post(() -> {
+                    tvChargeCount.setText(String.format(Locale.getDefault(), "%d", finalSessionCount));
+                    tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", finalAvgPower));
+                    tvTotalChargeTime.setText(String.format(Locale.getDefault(), "%d分", finalTotalMinutes));
+                    tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", finalTotalCharged));
+                });
+            } catch (Exception e) {
+                // 数据库不可用时不阻塞 UI，保持默认显示
+            }
+        });
+    }
+
+    private long[] getTodayRange() {
+        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        long start = cal.getTimeInMillis();
+        cal.add(Calendar.DAY_OF_YEAR, 1);
+        long end = cal.getTimeInMillis();
+        return new long[]{start, end};
     }
 
     private String calculateTimeToFull(int batteryPct, float currentA) {

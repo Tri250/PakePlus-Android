@@ -305,10 +305,10 @@ public class PerformanceBenchmark {
 
     /**
      * GPU 性能代理：通过 CPU 矩阵运算的浮点能力估算 GPU 性能。
-     * 真正的 GPU 跑分需通过 EGL 离屏渲染实现，本工具用代理指标。
+     * 真正的 GPU 跑分需通过 EGL 离屏渲染实现，本工具用真实 CPU 矩阵乘法作为代理指标。
      */
     private static long benchmarkGpuViaCpuProxy() {
-        // 模拟"每秒可执行浮点运算次数"，用作 GPU 算力代理
+        // 真实执行 128x128 矩阵乘法，测量浮点吞吐，作为 GPU 算力代理
         int size = 128;
         float[] a = new float[size * size];
         float[] b = new float[size * size];

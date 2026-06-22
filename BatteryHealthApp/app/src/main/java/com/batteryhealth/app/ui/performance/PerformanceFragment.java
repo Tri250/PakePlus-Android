@@ -172,8 +172,53 @@ public class PerformanceFragment extends Fragment {
         return Math.max(0, Math.min(100, baseScore));
     }
 
+    private long lastAppCpuTime = -1;
+    private long lastAppCpuSampleTime = -1;
+
+    /**
+     * 计算本应用 CPU 使用率（0-100%）。
+     * 通过读取 /proc/self/stat 中 utime+stime 的增量与 wall clock 增量的比值计算，
+     * 并按 CPU 核心数归一化，结果真实反映应用进程占用的 CPU 百分比。
+     */
     private float getAppCpuUsage() {
-        return 0.5f; // Placeholder
+        try {
+            long cpuTime = readSelfCpuTime();
+            long now = SystemClock.elapsedRealtime();
+            if (lastAppCpuTime < 0 || lastAppCpuSampleTime < 0) {
+                lastAppCpuTime = cpuTime;
+                lastAppCpuSampleTime = now;
+                return 0f;
+            }
+            long cpuDelta = cpuTime - lastAppCpuTime;
+            long timeDelta = now - lastAppCpuSampleTime;
+            lastAppCpuTime = cpuTime;
+            lastAppCpuSampleTime = now;
+            if (timeDelta <= 0) return 0f;
+            int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
+            // /proc/self/stat 时间为 clock ticks（通常 100Hz = 100 ticks/秒）
+            // 毫秒数 = ticks * 1000 / CLK_TCK；按 100Hz 估算，1 tick ≈ 10ms
+            long clkTck = 100L;
+            long cpuDeltaMs = cpuDelta * 1000L / clkTck;
+            float usage = (cpuDeltaMs / (float) timeDelta) * 100f / cores;
+            return Math.max(0f, Math.min(100f, usage));
+        } catch (Exception ignored) {
+            return 0f;
+        }
+    }
+
+    private long readSelfCpuTime() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/stat"))) {
+            String line = reader.readLine();
+            if (line != null) {
+                // 第 14、15 个字段分别为 utime、stime
+                String[] parts = line.split(" ");
+                if (parts.length >= 15) {
+                    return Long.parseLong(parts[13]) + Long.parseLong(parts[14]);
+                }
+            }
+        } catch (IOException | NumberFormatException ignored) {
+        }
+        return 0;
     }
 
     private long getAppMemoryUsage() {

@@ -10,6 +10,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'com.batteryhealth.app'
     compileSdk 36
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId "com.batteryhealth.app"
@@ -39,6 +40,8 @@ android {
     // 仅用于本地编译验证，正式发版前必须提供真实的 keystore.properties
     signingConfigs {
         release {
+            // 默认先继承 debug 签名，避免直接读取 debug 配置 Provider 导致配置阶段报错
+            initWith(signingConfigs.debug)
             def storeFilePath = keystoreProperties['storeFile'] ?: 'release-keystore.jks'
             def releaseStoreFile = rootProject.file(storeFilePath)
             if (keystorePropertiesFile.exists() && releaseStoreFile.exists()) {
@@ -46,16 +49,10 @@ android {
                 storePassword keystoreProperties['storePassword'] ?: ''
                 keyAlias keystoreProperties['keyAlias'] ?: ''
                 keyPassword keystoreProperties['keyPassword'] ?: ''
-            } else {
-                if (!keystorePropertiesFile.exists()) {
-                    println "Warning: keystore.properties not found, release signing falls back to debug keystore."
-                } else if (!releaseStoreFile.exists()) {
-                    println "Warning: release keystore file not found at ${releaseStoreFile.absolutePath}, release signing falls back to debug keystore."
-                }
-                storeFile android.signingConfigs.debug.storeFile
-                storePassword android.signingConfigs.debug.storePassword
-                keyAlias android.signingConfigs.debug.keyAlias
-                keyPassword android.signingConfigs.debug.keyPassword
+            } else if (!keystorePropertiesFile.exists()) {
+                println "Warning: keystore.properties not found, release signing falls back to debug keystore."
+            } else if (!releaseStoreFile.exists()) {
+                println "Warning: release keystore file not found at ${releaseStoreFile.absolutePath}, release signing falls back to debug keystore."
             }
         }
         debug {
@@ -94,11 +91,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }
-    
-    // 禁用JDK镜像转换
-    tasks.withType(JavaCompile) {
-        options.fork = false
     }
     
     buildFeatures {

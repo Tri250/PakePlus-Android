@@ -1,31 +1,19 @@
 pluginManagement {
     repositories {
-        // 官方源优先，确保最新依赖可解析
+        // 仅使用官方源，避免国内镜像节点偶发连接挂起
         google()
         mavenCentral()
         gradlePluginPortal()
-        // 阿里云镜像备用
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        // 腾讯云镜像备用
-        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        // 官方源优先，确保最新依赖可解析
+        // 仅使用官方源与 JitPack，避免国内镜像节点偶发连接挂起
         google()
         mavenCentral()
         // JitPack (用于MPAndroidChart等第三方库)
         maven { url 'https://jitpack.io' }
-        // 阿里云镜像备用
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        // 腾讯云镜像备用
-        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
     }
 }
 

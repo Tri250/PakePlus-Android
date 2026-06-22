@@ -6,7 +6,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StatFs;
-import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,11 +18,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 public class DeviceConfigFragment extends Fragment {
@@ -75,31 +74,63 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void loadData() {
+        DeviceInfoManager manager = getDeviceInfoManager();
+        if (manager != null) {
+            manager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
+                @Override
+                public void onConfigLoaded(DeviceConfig config) {
+                    renderConfig(config);
+                }
+
+                @Override
+                public void onConfigLoadFailed(Exception e) {
+                    renderFallback();
+                }
+            });
+        } else {
+            renderFallback();
+        }
+    }
+
+    private DeviceInfoManager getDeviceInfoManager() {
+        if (getActivity() instanceof MainActivity) {
+            return ((MainActivity) getActivity()).getDeviceInfoManager();
+        }
+        return null;
+    }
+
+    private void renderConfig(DeviceConfig config) {
+        if (!isAdded()) return;
+        tvDeviceName.setText(config.getBrand() + " " + config.getModel());
+        tvDeviceModel.setText(config.getModel());
+        tvAndroidVersion.setText(config.getAndroidVersion() + " (API " + config.getSdkVersion() + ")");
+        tvProcessor.setText(config.getCpuInfo());
+        tvRam.setText(formatSize(config.getTotalMemory()));
+        tvStorage.setText(formatSize(config.getTotalStorage()));
+        tvScreen.setText(config.getScreenWidth() + " x " + config.getScreenHeight());
+        tvActivationDate.setText(config.getActivationDateStr());
+        tvUsageDays.setText(config.getUsageDays() + " 天");
+        tvActivationSource.setText(config.getActivationSource());
+        tvAvailableRam.setText(formatSize(config.getAvailableMemory()));
+        tvAvailableStorage.setText(formatSize(config.getAvailableStorage()));
+        tvNetworkType.setText(config.getNetworkType());
+    }
+
+    private void renderFallback() {
+        if (!isAdded()) return;
         tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
         tvDeviceModel.setText(Build.MODEL);
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
         tvProcessor.setText(Build.HARDWARE);
-
-        long totalRam = getTotalRam();
-        tvRam.setText(formatSize(totalRam));
-
-        long totalStorage = getTotalStorage();
-        tvStorage.setText(formatSize(totalStorage));
-
+        tvRam.setText(formatSize(getTotalRam()));
+        tvStorage.setText(formatSize(getTotalStorage()));
         tvScreen.setText(getScreenResolution());
-
-        long activationTime = getActivationTime();
-        tvActivationDate.setText(formatDate(activationTime));
-        tvUsageDays.setText(getUsageDays(activationTime) + " 天");
+        tvActivationDate.setText("--");
+        tvUsageDays.setText("--");
         tvActivationSource.setText(getString(R.string.source_internal));
-
-        long availableRam = getAvailableRam();
-        tvAvailableRam.setText(formatSize(availableRam));
-
-        long availableStorage = getAvailableStorage();
-        tvAvailableStorage.setText(formatSize(availableStorage));
-
-        tvNetworkType.setText(getNetworkType());
+        tvAvailableRam.setText(formatSize(getAvailableRam()));
+        tvAvailableStorage.setText(formatSize(getAvailableStorage()));
+        tvNetworkType.setText("Unknown");
     }
 
     private long getTotalRam() {
@@ -137,63 +168,11 @@ public class DeviceConfigFragment extends Fragment {
         return dm.widthPixels + " x " + dm.heightPixels;
     }
 
-    private long getActivationTime() {
-        File file = new File(Environment.getRootDirectory(), "build.prop");
-        long time = file.lastModified();
-        if (time == 0) {
-            time = System.currentTimeMillis() - 86400000L * 365;
-        }
-        return time;
-    }
-
-    private String formatDate(long time) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(new Date(time));
-    }
-
-    private long getUsageDays(long activationTime) {
-        return (System.currentTimeMillis() - activationTime) / (1000 * 60 * 60 * 24);
-    }
-
     private String formatSize(long bytes) {
         if (bytes <= 0) return "0 B";
         String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
         digitGroups = Math.min(digitGroups, units.length - 1);
         return String.format(Locale.getDefault(), "%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
-    }
-
-    private String getNetworkType() {
-        try {
-            TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm == null) return "Unknown";
-            int networkType = tm.getNetworkType();
-            switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "2G";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "3G";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "4G";
-            case TelephonyManager.NETWORK_TYPE_NR:
-                return "5G";
-            default:
-                return "Unknown";
-            }
-        } catch (Exception e) {
-            return "Unknown";
-        }
     }
 }
