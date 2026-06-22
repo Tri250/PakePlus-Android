@@ -34,9 +34,9 @@
         android:gravity="center"
         android:clickable="true"
         android:focusable="true"
+        android:contentDescription="设置"
         android:background="@drawable/bg_card"
         android:elevation="4dp"
-        android:importantForAccessibility="yes"
-        android:contentDescription="设置" />
+        android:importantForAccessibility="yes" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

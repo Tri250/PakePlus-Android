@@ -274,6 +274,30 @@
 
                 </LinearLayout>
 
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="放电速率"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_discharge_rate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
@@ -320,6 +344,30 @@
 
                     <TextView
                         android:id="@+id/tv_capacity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="设计容量"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_design_capacity"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"

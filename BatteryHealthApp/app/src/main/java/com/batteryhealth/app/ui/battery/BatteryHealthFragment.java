@@ -43,6 +43,7 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvChargingStatus;
     private TextView tvCurrentNow;
     private TextView tvCapacity;
+    private TextView tvDesignCapacity;
     private TextView tvCycleCount;
     private TextView tvTemperature;
     private TextView tvVoltage;
@@ -51,11 +52,16 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvPredictedLife;
     private TextView tvBatteryStatus;
     private TextView tvAdvice;
+    private TextView tvDischargeRate;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
     private BatteryDataManager batteryDataManager;
+
+    // 放电速率跟踪
+    private int lastDischargeLevel = -1;
+    private long lastDischargeTime = 0;
 
     @Nullable
     @Override
@@ -83,7 +89,9 @@ public class BatteryHealthFragment extends Fragment {
         tvChargingStatus = view.findViewById(R.id.tv_charging_status);
         tvCurrentNow = view.findViewById(R.id.tv_current_now);
         tvCapacity = view.findViewById(R.id.tv_capacity);
+        tvDesignCapacity = view.findViewById(R.id.tv_design_capacity);
         tvCycleCount = view.findViewById(R.id.tv_cycle_count);
+        tvDischargeRate = view.findViewById(R.id.tv_discharge_rate);
         tvTemperature = view.findViewById(R.id.tv_temperature);
         tvVoltage = view.findViewById(R.id.tv_voltage);
         tvBatterySource = view.findViewById(R.id.tv_battery_source);
@@ -235,6 +243,28 @@ public class BatteryHealthFragment extends Fragment {
         boolean isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
                 || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
         if (level < 0 && info != null) level = info.getLevel();
+
+        // 放电速率计算
+        if (!isCharging && level >= 0) {
+            long now = System.currentTimeMillis();
+            if (lastDischargeLevel >= 0 && lastDischargeTime > 0) {
+                long timeDelta = now - lastDischargeTime;
+                int levelDelta = lastDischargeLevel - level;
+                if (timeDelta > 30000 && levelDelta > 0) {
+                    double dischargeRate = (double) levelDelta / timeDelta * 3600000;
+                    double remainingHours = level / dischargeRate;
+                    int hours = (int) remainingHours;
+                    int mins = (int) ((remainingHours - hours) * 60);
+                    tvDischargeRate.setText(String.format(Locale.getDefault(), "%.1f%%/h (约%dh%dm)", dischargeRate, hours, mins));
+                }
+            }
+            lastDischargeLevel = level;
+            lastDischargeTime = now;
+        } else if (isCharging) {
+            lastDischargeLevel = -1;
+            lastDischargeTime = 0;
+            tvDischargeRate.setText("充电中");
+        }
         if (info != null && info.getTemperature() > 0 && tempRaw < 0) {
             tempRaw = Math.round(info.getTemperature() * 10f);
         }
@@ -260,7 +290,10 @@ public class BatteryHealthFragment extends Fragment {
         int fcc = info != null ? info.getCurrentCapacity() : 0;
         if (design <= 0) design = 3000; // 兜底显示，避免负值
         if (fcc <= 0) fcc = (int) (design * (info != null ? Math.max(0f, info.getHealthPercentage()) / 100f : 0.85f));
-        tvCapacity.setText(String.format(Locale.getDefault(), "%d / %d mAh", fcc, design));
+        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", fcc));
+        if (tvDesignCapacity != null) {
+            tvDesignCapacity.setText(String.format(Locale.getDefault(), "%d mAh", design));
+        }
 
         // 3. 循环次数：使用 BatteryDataManager 的真实读取结果
         if (info != null && info.hasValidCycleCount()) {

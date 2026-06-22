@@ -24,7 +24,8 @@
             android:background="@android:color/transparent"
             android:minWidth="0dp"
             android:paddingStart="12dp"
-            android:paddingEnd="12dp" />
+            android:paddingEnd="12dp"
+            android:contentDescription="跳过引导" />
     </FrameLayout>
 
     <!-- ViewPager -->

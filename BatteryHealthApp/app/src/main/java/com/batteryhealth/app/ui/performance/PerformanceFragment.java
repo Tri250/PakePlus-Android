@@ -2,6 +2,7 @@ package com.batteryhealth.app.ui.performance;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Environment;
@@ -22,6 +23,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.service.BatteryMonitorService;
+import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -96,10 +99,17 @@ public class PerformanceFragment extends Fragment {
             @Override
             public void run() {
                 loadData();
-                handler.postDelayed(this, 2000);
+                int interval = getRefreshInterval();
+                handler.postDelayed(this, interval);
             }
         };
         handler.post(updateRunnable);
+    }
+
+    private int getRefreshInterval() {
+        SharedPreferences prefs = requireContext().getSharedPreferences(
+                BatteryMonitorService.PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getInt("refresh_rate_seconds", 2) * 1000;
     }
 
     private void stopPeriodicUpdate() {
@@ -142,7 +152,7 @@ public class PerformanceFragment extends Fragment {
         tvAppMemory.setText(formatSize(getAppMemoryUsage()));
         long runtimeMs = SystemClock.elapsedRealtime();
         tvRuntime.setText(formatDuration(runtimeMs));
-        tvForegroundService.setText(getString(R.string.status_running));
+        tvForegroundService.setText(isServiceRunning() ? getString(R.string.status_running) : getString(R.string.status_not_charging));
 
         // GPU
         loadGpuInfo();
@@ -357,5 +367,22 @@ public class PerformanceFragment extends Fragment {
         } catch (Throwable t) {
             return null;
         }
+    }
+
+    private boolean isServiceRunning() {
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager) requireContext()
+                    .getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                for (android.app.ActivityManager.RunningServiceInfo service : am.getRunningServices(Integer.MAX_VALUE)) {
+                    String className = service.service.getClassName();
+                    if (className.equals(BatteryMonitorService.class.getName())
+                            || className.equals(ChargingMonitorService.class.getName())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 }

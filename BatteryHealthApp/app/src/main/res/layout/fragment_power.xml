@@ -289,7 +289,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/label_current_battery"
+                        android:text="@string/label_battery_level"
                         android:textAppearance="@style/WebListLabel" />
 
                     <TextView
@@ -330,14 +330,35 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Section eyebrow: 今日充电 -->
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/section_today_charge"
-            android:textAppearance="@style/WebSectionEyebrow"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginTop="18dp"
             android:layout_marginBottom="10dp"
-            android:layout_marginStart="4dp" />
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/section_today_charge"
+                android:textAppearance="@style/WebSectionEyebrow" />
+
+            <TextView
+                android:id="@+id/tv_charge_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="充电记录 →"
+                android:textSize="13sp"
+                android:textColor="@color/ios_blue"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+        </LinearLayout>
 
         <!-- Today charge card -->
         <com.google.android.material.card.MaterialCardView

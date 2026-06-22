@@ -32,7 +32,64 @@
             android:layout_height="wrap_content"
             android:text="@string/subtitle_trend"
             android:textAppearance="@style/WebPageSubtitle"
-            android:layout_marginBottom="22dp" />
+            android:layout_marginBottom="14dp" />
+
+        <!-- 维度切换标签 -->
+        <LinearLayout
+            android:id="@+id/trend_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:id="@+id/tab_health_trend"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="健康度"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/ios_blue"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+            <TextView
+                android:id="@+id/tab_temp_trend"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="温度"
+                android:textSize="14sp"
+                android:textColor="@color/label_2"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+            <TextView
+                android:id="@+id/tab_charge_trend"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="充电次数"
+                android:textSize="14sp"
+                android:textColor="@color/label_2"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+        </LinearLayout>
 
         <!-- Chart card -->
         <com.google.android.material.card.MaterialCardView

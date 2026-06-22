@@ -234,38 +234,81 @@ public class HealthCheckFragment extends Fragment {
             Context ctx = getContext();
             if (ctx == null) return;
 
-            // 构建分享文本
-            StringBuilder sb = new StringBuilder();
-            sb.append("📊 电池健康报告\n");
-            sb.append("═══════════════\n");
-            sb.append("应用版本：电池健康 v4.9.5\n");
-            sb.append("品牌：").append(Build.BRAND).append("\n");
-            sb.append("型号：").append(Build.MODEL).append("\n");
-            sb.append("系统：Android ").append(Build.VERSION.RELEASE).append("\n");
-            sb.append("═══════════════\n\n");
+            // 生成HTML格式报告
+            StringBuilder html = new StringBuilder();
+            html.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\">");
+            html.append("<title>电池健康报告 v4.9.5</title>");
+            html.append("<style>body{font-family:-apple-system,sans-serif;padding:20px;max-width:600px;margin:auto;color:#333}");
+            html.append("h1{text-align:center;color:#007AFF}.score{text-align:center;font-size:48px;font-weight:bold;margin:20px 0}");
+            html.append(".item{padding:12px;margin:8px 0;border-radius:8px;background:#f5f5f7}");
+            html.append(".pass{color:#34C759}.warn{color:#FF9500}.fail{color:#FF3B30}");
+            html.append(".time{text-align:center;color:#8E8E93;font-size:12px;margin-top:20px}</style></head><body>");
+            html.append("<h1>电池健康报告</h1>");
+
+            int passedCount = 0;
+            for (HealthCheckResult result : lastResults) {
+                boolean passed = result.getSeverity() == HealthCheckResult.SEVERITY_GOOD;
+                if (passed) passedCount++;
+            }
+            int totalScore = lastResults.isEmpty() ? 0 : 100 * passedCount / lastResults.size();
+            String scoreColor = totalScore >= 80 ? "#34C759" : totalScore >= 60 ? "#FF9500" : "#FF3B30";
+            html.append(String.format(Locale.getDefault(), "<div class=\"score\" style=\"color:%s\">%d分</div>", scoreColor, totalScore));
+            html.append(String.format("<p style=\"text-align:center;color:#8E8E93\">通过 %d/%d 项</p>", passedCount, lastResults.size()));
 
             for (HealthCheckResult result : lastResults) {
-                sb.append("▸ ").append(result.getTitle()).append("\n");
                 boolean passed = result.getSeverity() == HealthCheckResult.SEVERITY_GOOD;
-                sb.append("  状态：").append(passed ? "✓ 通过" : "✗ 异常").append("\n");
+                String color = passed ? "#34C759" : "#FF3B30";
+                html.append(String.format("<div class=\"item\"><strong style=\"color:%s\">%s</strong>", color, result.getTitle()));
                 if (result.getDescription() != null && !result.getDescription().isEmpty()) {
-                    sb.append("  详情：").append(result.getDescription()).append("\n");
+                    html.append(String.format("<p>%s</p>", result.getDescription()));
                 }
                 if (result.getAdvice() != null && !result.getAdvice().isEmpty()) {
-                    sb.append("  建议：").append(result.getAdvice()).append("\n");
+                    html.append(String.format("<p style=\"color:#8E8E93;font-size:13px\">建议：%s</p></div>", result.getAdvice()));
+                }
+            }
+
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            html.append(String.format("<p class=\"time\">生成时间：%s | 电池健康 App v4.9.5</p>", sdf.format(new java.util.Date())));
+            html.append("</body></html>");
+
+            // 保存HTML到缓存目录并分享
+            java.io.File reportDir = new java.io.File(ctx.getCacheDir(), "reports");
+            if (!reportDir.exists()) reportDir.mkdirs();
+            java.io.File reportFile = new java.io.File(reportDir, "battery_health_report.html");
+            java.io.FileWriter writer = new java.io.FileWriter(reportFile);
+            writer.write(html.toString());
+            writer.close();
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/html");
+            shareIntent.putExtra(Intent.EXTRA_STREAM,
+                    androidx.core.content.FileProvider.getUriForFile(ctx,
+                            ctx.getPackageName() + ".fileprovider", reportFile));
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "电池健康报告");
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(shareIntent, "分享报告"));
+
+        } catch (Exception e) {
+            // 兜底：纯文本分享
+            StringBuilder sb = new StringBuilder();
+            sb.append("电池健康报告 v4.9.5\n\n");
+            for (HealthCheckResult result : lastResults) {
+                boolean passed = result.getSeverity() == HealthCheckResult.SEVERITY_GOOD;
+                sb.append(passed ? "✅ " : "❌ ").append(result.getTitle()).append("\n");
+                if (result.getDescription() != null && !result.getDescription().isEmpty()) {
+                    sb.append("   详情：").append(result.getDescription()).append("\n");
+                }
+                if (result.getAdvice() != null && !result.getAdvice().isEmpty()) {
+                    sb.append("   建议：").append(result.getAdvice()).append("\n");
                 }
                 sb.append("\n");
             }
             sb.append("通过 电池健康 App 生成");
-
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("text/plain");
             shareIntent.putExtra(Intent.EXTRA_SUBJECT, "电池健康报告");
             shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
             startActivity(Intent.createChooser(shareIntent, "分享报告"));
-
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "分享失败", Toast.LENGTH_SHORT).show();
         }
     }
 

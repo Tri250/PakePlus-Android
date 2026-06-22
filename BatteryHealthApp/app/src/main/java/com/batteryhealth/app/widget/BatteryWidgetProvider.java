@@ -1,5 +1,6 @@
 package com.batteryhealth.app.widget;
 
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
@@ -20,14 +21,63 @@ import java.util.Locale;
 
 /**
  * 电池健康桌面小组件：2x2 显示电量、健康度、温度
+ * 通过 AlarmManager 每15分钟自动刷新
  */
 public class BatteryWidgetProvider extends AppWidgetProvider {
+
+    private static final String ACTION_WIDGET_UPDATE = "com.batteryhealth.app.WIDGET_UPDATE";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = buildWidgetViews(context);
             appWidgetManager.updateAppWidget(appWidgetId, views);
+        }
+        // 启动定时刷新
+        schedulePeriodicUpdate(context);
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        super.onReceive(context, intent);
+        if (ACTION_WIDGET_UPDATE.equals(intent.getAction())) {
+            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+            ComponentName componentName = new ComponentName(context, BatteryWidgetProvider.class);
+            int[] appWidgetIds = appWidgetManager.getAppWidgetIds(componentName);
+            if (appWidgetIds != null && appWidgetIds.length > 0) {
+                onUpdate(context, appWidgetManager, appWidgetIds);
+            }
+        }
+    }
+
+    /**
+     * 使用 AlarmManager 定时刷新小组件（每15分钟）
+     */
+    private void schedulePeriodicUpdate(Context context) {
+        try {
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager == null) return;
+
+            Intent intent = new Intent(context, BatteryWidgetProvider.class);
+            intent.setAction(ACTION_WIDGET_UPDATE);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    context, 0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            // 取消已有定时任务，避免重复
+            alarmManager.cancel(pendingIntent);
+
+            long interval = 15 * 60 * 1000L; // 15分钟
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Android 12+ 不能使用精确重复闹钟，使用 setInexactRepeating
+                alarmManager.setInexactRepeating(
+                        AlarmManager.RTC, System.currentTimeMillis() + interval, interval, pendingIntent);
+            } else {
+                alarmManager.setInexactRepeating(
+                        AlarmManager.RTC, System.currentTimeMillis() + interval, interval, pendingIntent);
+            }
+        } catch (Exception e) {
+            // 忽略，非关键功能
         }
     }
 

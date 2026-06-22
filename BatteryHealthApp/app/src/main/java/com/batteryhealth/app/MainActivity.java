@@ -34,7 +34,6 @@ import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
-import com.batteryhealth.app.ui.endurance.EnduranceFragment;
 import com.batteryhealth.app.ui.healthcheck.HealthCheckFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
@@ -171,6 +170,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        int tab = intent.getIntExtra("navigate_to_tab", -1);
+        if (tab >= 0 && viewPager != null) {
+            viewPager.setCurrentItem(tab, true);
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

@@ -103,7 +103,9 @@ public class SettingsActivity extends AppCompatActivity {
                 mode = ThemeManager.MODE_SYSTEM;
             }
             ThemeManager.setThemeMode(this, mode);
-            Toast.makeText(this, "主题已切换，重启应用生效", Toast.LENGTH_SHORT).show();
+            // 即时切换主题，无需重启
+            ThemeManager.applyTheme(mode);
+            recreate();
         });
 
         // 目标充电电量

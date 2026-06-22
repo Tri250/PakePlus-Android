@@ -407,8 +407,10 @@ public class ChargingMonitorService extends Service {
             }
 
             Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("navigate_to_tab", 1); // 跳转到充电功率Tab
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(
-                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
             );
 
             String content = String.format(Locale.getDefault(),
@@ -791,6 +793,8 @@ public class ChargingMonitorService extends Service {
             if (manager == null) return;
 
             Intent intent = new Intent(this, com.batteryhealth.app.MainActivity.class);
+            intent.putExtra("navigate_to_tab", 1); // 跳转到充电功率Tab
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
             );
@@ -820,8 +824,10 @@ public class ChargingMonitorService extends Service {
      */
     private Notification buildNotification(PowerHistory history) {
         Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("navigate_to_tab", 1); // 跳转到充电功率Tab
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+                this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
         );
 
         String content;

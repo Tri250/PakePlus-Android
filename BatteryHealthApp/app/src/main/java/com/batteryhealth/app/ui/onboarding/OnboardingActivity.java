@@ -1,17 +1,26 @@
 package com.batteryhealth.app.ui.onboarding;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.text.util.Linkify;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.batteryhealth.app.MainActivity;
@@ -75,7 +84,25 @@ public class OnboardingActivity extends AppCompatActivity {
 
         btnSkip.setOnClickListener(v -> finishOnboarding());
 
-        btnStart.setOnClickListener(v -> finishOnboarding());
+        btnStart.setOnClickListener(v -> {
+            // 在最后一页请求通知权限
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1001);
+                }
+            }
+            finishOnboarding();
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // 无论权限是否授予，都继续进入主页面
+        finishOnboarding();
     }
 
     private void finishOnboarding() {
@@ -83,6 +110,38 @@ public class OnboardingActivity extends AppCompatActivity {
                 .edit()
                 .putBoolean("onboarding_completed", true)
                 .apply();
+        showPrivacyConsent();
+    }
+
+    private void showPrivacyConsent() {
+        SharedPreferences prefs = getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE);
+        if (prefs.getBoolean("privacy_consented", false)) {
+            goToMain();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("隐私政策与用户协议")
+                .setMessage("欢迎使用电池健康！\n\n" +
+                        "我们重视您的隐私：\n" +
+                        "• 本应用仅在本地设备上分析电池数据\n" +
+                        "• 所有数据存储在您的设备上，不会上传到任何服务器\n" +
+                        "• 我们不会收集您的个人信息、位置或使用习惯\n" +
+                        "• 您可以随时在设置中管理通知权限\n\n" +
+                        "点击「同意」表示您已阅读并理解以上内容。")
+                .setPositiveButton("同意", (d, which) -> {
+                    prefs.edit().putBoolean("privacy_consented", true).apply();
+                    d.dismiss();
+                    goToMain();
+                })
+                .setNegativeButton("退出", (d, which) -> {
+                    Toast.makeText(this, "需要同意隐私政策才能使用", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private void goToMain() {
         startActivity(new Intent(this, MainActivity.class));
         finish();
     }

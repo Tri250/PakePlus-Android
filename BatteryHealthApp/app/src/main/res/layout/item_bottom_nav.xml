@@ -19,6 +19,7 @@
         android:layout_width="26dp"
         android:layout_height="26dp"
         android:scaleType="fitCenter"
+        android:contentDescription="导航图标"
         android:importantForAccessibility="no" />
 
     <TextView

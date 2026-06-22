@@ -22,17 +22,24 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import android.content.Context;
+import androidx.core.content.ContextCompat;
+import android.graphics.Color;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +56,8 @@ public class TrendFragment extends Fragment {
 
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
+    private TextView tabHealth, tabTemp, tabCharge;
+    private int currentTrendTab = 0; // 0=健康度, 1=温度, 2=充电次数
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
@@ -72,6 +81,40 @@ public class TrendFragment extends Fragment {
         tvCurrentHealth = view.findViewById(R.id.tv_current_health);
         tvTotalDecay = view.findViewById(R.id.tv_total_decay);
         tvMonthlyDecay = view.findViewById(R.id.tv_monthly_decay);
+        tabHealth = view.findViewById(R.id.tab_health_trend);
+        tabTemp = view.findViewById(R.id.tab_temp_trend);
+        tabCharge = view.findViewById(R.id.tab_charge_trend);
+
+        if (tabHealth != null) tabHealth.setOnClickListener(v -> switchTrendTab(0));
+        if (tabTemp != null) tabTemp.setOnClickListener(v -> switchTrendTab(1));
+        if (tabCharge != null) tabCharge.setOnClickListener(v -> switchTrendTab(2));
+    }
+
+    private void switchTrendTab(int tab) {
+        if (currentTrendTab == tab) return;
+        currentTrendTab = tab;
+        updateTabStyles();
+        loadDataAsync();
+    }
+
+    private void updateTabStyles() {
+        Context ctx = getContext();
+        if (ctx == null) return;
+        int activeColor = ContextCompat.getColor(ctx, R.color.ios_blue);
+        int inactiveColor = ContextCompat.getColor(ctx, R.color.label_2);
+
+        if (tabHealth != null) {
+            tabHealth.setTextColor(currentTrendTab == 0 ? activeColor : inactiveColor);
+            tabHealth.setTypeface(null, currentTrendTab == 0 ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        }
+        if (tabTemp != null) {
+            tabTemp.setTextColor(currentTrendTab == 1 ? activeColor : inactiveColor);
+            tabTemp.setTypeface(null, currentTrendTab == 1 ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        }
+        if (tabCharge != null) {
+            tabCharge.setTextColor(currentTrendTab == 2 ? activeColor : inactiveColor);
+            tabCharge.setTypeface(null, currentTrendTab == 2 ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        }
     }
 
     private void animateEntry(View view) {
@@ -102,7 +145,7 @@ public class TrendFragment extends Fragment {
     }
 
     /**
-     * 异步加载真实历史数据：优先从数据库读取，无数据时回退到当前健康度。
+     * 异步加载真实历史数据：根据当前选中的维度加载不同数据源。
      */
     private void loadDataAsync() {
         if (!isAdded()) return;
@@ -112,19 +155,28 @@ public class TrendFragment extends Fragment {
                 BatteryHealthApplication app = (BatteryHealthApplication) appCtx;
                 AppDatabase db = app.getDatabase();
 
-                // 1. 获取当前真实健康度
+                // 获取当前真实健康度
                 float currentHealth = getCurrentHealthFromManager();
                 if (currentHealth <= 0) {
                     currentHealth = getCurrentHealthFromIntent();
                 }
                 int currentHealthInt = Math.max(0, Math.min(100, Math.round(currentHealth)));
 
-                // 2. 从数据库读取历史记录（最近90天，取每天最早一条有效记录，避免数据过密）
+                // 根据维度加载不同数据
                 List<BatteryInfo> history = null;
-                if (db != null) {
-                    long ninetyDaysAgo = System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000;
-                    List<BatteryInfo> raw = db.batteryInfoDao().getSince(ninetyDaysAgo);
+                long ninetyDaysAgo = System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000;
+
+                if (currentTrendTab == 0) {
+                    // 健康度趋势
+                    List<BatteryInfo> raw = db != null ? db.batteryInfoDao().getSince(ninetyDaysAgo) : null;
                     history = deduplicateByDay(raw);
+                } else if (currentTrendTab == 1) {
+                    // 温度趋势
+                    List<BatteryInfo> raw = db != null ? db.batteryInfoDao().getSince(ninetyDaysAgo) : null;
+                    history = deduplicateByDay(raw);
+                } else {
+                    // 充电次数趋势 - 从 power_history 表读取
+                    history = null;
                 }
 
                 final List<BatteryInfo> finalHistory = history;
@@ -230,36 +282,99 @@ public class TrendFragment extends Fragment {
     }
 
     /**
-     * 使用真实历史数据绘制趋势图。有数据时按时间轴分布；无数据时显示水平线。
+     * 使用真实历史数据绘制趋势图。根据当前维度绘制不同数据。
      */
     private void setupChart(List<BatteryInfo> history, int initialHealth, int currentHealth) {
         List<Entry> entries = new ArrayList<>();
+        String chartLabel = "健康度";
+        int chartColor = Color.parseColor("#0A84FF");
+        float yMin = 0f;
+        float yMax = 100f;
 
-        if (history != null && history.size() >= 2) {
-            long firstTime = history.get(0).getTimestamp();
-            long lastTime = history.get(history.size() - 1).getTimestamp();
-            long timeSpan = Math.max(1, lastTime - firstTime);
-
-            for (BatteryInfo info : history) {
-                float x = (info.getTimestamp() - firstTime) / (float) timeSpan * 5f; // 映射到 0-5
-                float y = Math.max(0, Math.min(100, info.getHealthPercentage()));
-                entries.add(new Entry(x, y));
+        if (currentTrendTab == 0) {
+            // 健康度趋势
+            chartLabel = "健康度";
+            chartColor = Color.parseColor("#0A84FF");
+            yMin = 0f;
+            yMax = 100f;
+            if (history != null && history.size() >= 2) {
+                long firstTime = history.get(0).getTimestamp();
+                long lastTime = history.get(history.size() - 1).getTimestamp();
+                long timeSpan = Math.max(1, lastTime - firstTime);
+                for (BatteryInfo info : history) {
+                    float x = (info.getTimestamp() - firstTime) / (float) timeSpan * 5f;
+                    float y = Math.max(0, Math.min(100, info.getHealthPercentage()));
+                    entries.add(new Entry(x, y));
+                }
+            } else {
+                entries.add(new Entry(0, initialHealth));
+                entries.add(new Entry(5, currentHealth));
+            }
+        } else if (currentTrendTab == 1) {
+            // 温度趋势
+            chartLabel = "温度 (°C)";
+            chartColor = Color.parseColor("#FF9500");
+            yMin = 15f;
+            yMax = 55f;
+            if (history != null && history.size() >= 2) {
+                long firstTime = history.get(0).getTimestamp();
+                long lastTime = history.get(history.size() - 1).getTimestamp();
+                long timeSpan = Math.max(1, lastTime - firstTime);
+                for (BatteryInfo info : history) {
+                    if (info.getTemperature() > 0) {
+                        float x = (info.getTimestamp() - firstTime) / (float) timeSpan * 5f;
+                        float y = Math.min(yMax, Math.max(yMin, info.getTemperature()));
+                        entries.add(new Entry(x, y));
+                    }
+                }
+            }
+            if (entries.isEmpty()) {
+                entries.add(new Entry(0, 25));
+                entries.add(new Entry(5, 25));
             }
         } else {
-            // 无历史数据：显示从初始到当前的水平/简单连线
-            entries.add(new Entry(0, initialHealth));
-            entries.add(new Entry(5, currentHealth));
+            // 充电次数趋势
+            chartLabel = "充电次数";
+            chartColor = Color.parseColor("#34C759");
+            yMin = 0f;
+            yMax = 10f;
+            if (history != null && history.size() >= 2) {
+                // 按天统计充电次数
+                Calendar cal = Calendar.getInstance();
+                java.util.Map<String, Integer> dailyCounts = new java.util.LinkedHashMap<>();
+                long firstTime = Long.MAX_VALUE;
+                for (BatteryInfo info : history) {
+                    cal.setTimeInMillis(info.getTimestamp());
+                    String dayKey = cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.DAY_OF_MONTH);
+                    Integer count = dailyCounts.get(dayKey);
+                    dailyCounts.put(dayKey, (count == null ? 0 : count) + 1);
+                    if (info.getTimestamp() < firstTime) firstTime = info.getTimestamp();
+                }
+                long lastTime = history.get(history.size() - 1).getTimestamp();
+                long timeSpan = Math.max(1, lastTime - firstTime);
+                int idx = 0;
+                for (java.util.Map.Entry<String, Integer> e : dailyCounts.entrySet()) {
+                    float x = (float) idx / Math.max(1, dailyCounts.size() - 1) * 5f;
+                    float y = Math.min(yMax, e.getValue());
+                    entries.add(new Entry(x, y));
+                    idx++;
+                }
+            }
+            if (entries.isEmpty()) {
+                entries.add(new Entry(0, 0));
+                entries.add(new Entry(5, 0));
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "");
-        dataSet.setDrawCircles(entries.size() < 30); // 数据点少时显示圆点
-        dataSet.setCircleColor(Color.parseColor("#0A84FF"));
+        dataSet.setDrawCircles(entries.size() < 30);
+        dataSet.setCircleColor(chartColor);
         dataSet.setCircleRadius(3f);
         dataSet.setDrawValues(false);
         dataSet.setLineWidth(2.5f);
-        dataSet.setColor(Color.parseColor("#0A84FF"));
+        dataSet.setColor(chartColor);
         dataSet.setDrawFilled(true);
-        dataSet.setFillColor(Color.parseColor("#0A84FF"));
+        dataSet.setFillColor(chartColor);
         dataSet.setFillAlpha(72);
 
         LineData lineData = new LineData(dataSet);
@@ -279,7 +394,7 @@ public class TrendFragment extends Fragment {
         xAxis.setTextColor(Color.parseColor("#8A8A8E"));
         xAxis.setTextSize(10f);
         xAxis.setLabelCount(6, true);
-        xAxis.setValueFormatter(new com.github.mikephil.charting.formatter.ValueFormatter() {
+        xAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
                 if (history == null || history.isEmpty()) return "";
@@ -295,8 +410,8 @@ public class TrendFragment extends Fragment {
         lineChart.getAxisLeft().setGridColor(Color.parseColor("#E5E5EA"));
         lineChart.getAxisLeft().setTextColor(Color.parseColor("#8A8A8E"));
         lineChart.getAxisLeft().setTextSize(10f);
-        lineChart.getAxisLeft().setAxisMinimum(0f);
-        lineChart.getAxisLeft().setAxisMaximum(100f);
+        lineChart.getAxisLeft().setAxisMinimum(yMin);
+        lineChart.getAxisLeft().setAxisMaximum(yMax);
         lineChart.getAxisRight().setEnabled(false);
 
         lineChart.invalidate();

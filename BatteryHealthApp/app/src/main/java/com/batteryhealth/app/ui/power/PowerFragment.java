@@ -1,9 +1,11 @@
 package com.batteryhealth.app.ui.power;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,19 +15,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +54,10 @@ public class PowerFragment extends Fragment {
     private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
     private long lastTodayStatsLoad = 0;
     private static final long TODAY_STATS_REFRESH_INTERVAL = 30_000L; // 30 秒刷新一次今日统计
+
+    // 用于预计充满时间计算：跟踪最近两次采样的电量变化
+    private int lastBatteryPct = -1;
+    private long lastBatteryPctTime = 0;
 
     @Nullable
     @Override
@@ -70,11 +82,52 @@ public class PowerFragment extends Fragment {
         tvAvgPower = view.findViewById(R.id.tv_avg_power);
         tvTotalChargeTime = view.findViewById(R.id.tv_total_charge_time);
         tvTotalCharged = view.findViewById(R.id.tv_total_charged);
+
+        // 充电记录入口
+        TextView tvChargeHistory = view.findViewById(R.id.tv_charge_history);
+        if (tvChargeHistory != null) {
+            tvChargeHistory.setOnClickListener(v -> showChargeHistoryDialog());
+        }
     }
 
     private void animateEntry(View view) {
         Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
         view.startAnimation(fadeUp);
+    }
+
+    private static final String[] CHARGER_TYPE_PATHS = {
+            "/sys/class/power_supply/battery/charger_type",
+            "/sys/class/power_supply/usb/type",
+            "/sys/class/power_supply/main/charger_type",
+            "/sys/class/power_supply/charger/charger_type"
+    };
+
+    /**
+     * 从 sysfs 读取充电协议类型
+     */
+    private String readChargingProtocol() {
+        for (String path : CHARGER_TYPE_PATHS) {
+            try {
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(path));
+                String line = reader.readLine();
+                reader.close();
+                if (line != null && !line.isEmpty()) {
+                    line = line.trim();
+                    if (line.contains("USB_PD") || line.contains("PD")) return "PD";
+                    if (line.contains("QC") || line.contains("Quick_Charge")) return "QC";
+                    if (line.contains("PPS")) return "PPS";
+                    if (line.contains("VOOC")) return "VOOC";
+                    if (line.contains("SCP") || line.contains("SuperCharge")) return "SCP";
+                    if (line.contains("FCP") || line.contains("FastCharge")) return "FCP";
+                    if (line.contains("PE") || line.contains("PumpExpress")) return "PE";
+                    if (line.contains("DCP")) return "DCP";
+                    if (line.contains("CDP")) return "CDP";
+                    if (line.contains("SDP") || line.contains("USB")) return "SDP";
+                    return line.length() > 20 ? line.substring(0, 20) : line;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 
     @Override
@@ -111,10 +164,17 @@ public class PowerFragment extends Fragment {
             @Override
             public void run() {
                 updateBatteryData();
-                handler.postDelayed(this, 2000);
+                int interval = getRefreshInterval();
+                handler.postDelayed(this, interval);
             }
         };
         handler.post(updateRunnable);
+    }
+
+    private int getRefreshInterval() {
+        SharedPreferences prefs = requireContext().getSharedPreferences(
+                BatteryMonitorService.PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getInt("refresh_rate_seconds", 2) * 1000;
     }
 
     private void stopPeriodicUpdate() {
@@ -183,6 +243,12 @@ public class PowerFragment extends Fragment {
                 : watt > 10 ? getString(R.string.status_fast_charge)
                 : isCharging ? getString(R.string.status_normal_charge) : getString(R.string.status_not_charging);
         tvPowerType.setText(powerType);
+        if (isCharging) {
+            String protocol = readChargingProtocol();
+            if (protocol != null && !protocol.isEmpty()) {
+                tvPowerType.setText(powerType + " (" + protocol + ")");
+            }
+        }
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
         // Details
@@ -192,6 +258,22 @@ public class PowerFragment extends Fragment {
         tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
+
+        // 跟踪电量变化用于预计充满计算
+        long batteryPctTime = System.currentTimeMillis();
+        if (lastBatteryPct >= 0 && lastBatteryPctTime > 0) {
+            long timeDelta = batteryPctTime - lastBatteryPctTime;
+            int pctDelta = batteryPct - lastBatteryPct;
+            if (timeDelta > 0 && pctDelta > 0) {
+                // 基于实际充电速率重新估算
+                double ratePerMs = (double) pctDelta / timeDelta;
+                double remainingMs = (100.0 - batteryPct) / ratePerMs;
+                int remainingMins = (int) (remainingMs / 60000);
+                tvEstimatedFull.setText(String.format(Locale.getDefault(), "%d分", remainingMins));
+            }
+        }
+        lastBatteryPct = batteryPct;
+        lastBatteryPctTime = batteryPctTime;
 
         // 今日充电统计：异步从数据库读取真实数据，每 30 秒刷新一次
         long now = System.currentTimeMillis();
@@ -304,5 +386,118 @@ public class PowerFragment extends Fragment {
         float hours = remaining / (currentA * 100 / 3f); // rough estimate
         int mins = (int) (hours * 60);
         return String.format(Locale.getDefault(), "%d分", mins);
+    }
+
+    /**
+     * 显示充电历史记录对话框，从数据库读取最近7天的充电会话
+     */
+    private void showChargeHistoryDialog() {
+        if (!isAdded()) return;
+        Context ctx = getContext();
+        if (ctx == null) return;
+
+        ScrollView scrollView = new ScrollView(ctx);
+        LinearLayout layout = new LinearLayout(ctx);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 24, 32, 24);
+
+        TextView tvTitle = new TextView(ctx);
+        tvTitle.setText("充电历史记录");
+        tvTitle.setTextSize(18);
+        tvTitle.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+        tvTitle.setPadding(0, 0, 0, 16);
+        layout.addView(tvTitle);
+
+        TextView tvLoading = new TextView(ctx);
+        tvLoading.setText("加载中…");
+        tvLoading.setTextSize(14);
+        tvLoading.setTextColor(ContextCompat.getColor(ctx, R.color.ios_secondary_label));
+        layout.addView(tvLoading);
+
+        scrollView.addView(layout);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(scrollView)
+                .setNegativeButton("关闭", null)
+                .create();
+
+        try {
+            dialog.show();
+        } catch (Exception ignored) {
+            return;
+        }
+
+        // 异步加载充电历史
+        final AlertDialog finalDialog = dialog;
+        final LinearLayout finalLayout = layout;
+        final Context appCtx = requireContext().getApplicationContext();
+        dbExecutor.submit(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) appCtx;
+                AppDatabase db = app.getDatabase();
+                if (db == null) {
+                    handler.post(() -> tvLoading.setText("暂无数据"));
+                    return;
+                }
+                long sevenDaysAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
+                List<PowerHistory> records = db.powerHistoryDao().getSince(sevenDaysAgo);
+                if (records == null || records.isEmpty()) {
+                    handler.post(() -> tvLoading.setText("暂无充电记录"));
+                    return;
+                }
+
+                // 按 session_id 分组
+                java.util.Map<String, List<PowerHistory>> sessions = new java.util.LinkedHashMap<>();
+                for (PowerHistory h : records) {
+                    String sid = h.getSessionId();
+                    if (sid == null) continue;
+                    sessions.computeIfAbsent(sid, k -> new java.util.ArrayList<>()).add(h);
+                }
+
+                SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
+                handler.post(() -> {
+                    tvLoading.setVisibility(View.GONE);
+                    if (sessions.isEmpty()) {
+                        TextView tv = new TextView(ctx);
+                        tv.setText("暂无充电记录");
+                        tv.setTextSize(14);
+                        tv.setTextColor(ContextCompat.getColor(ctx, R.color.ios_secondary_label));
+                        finalLayout.addView(tv);
+                        return;
+                    }
+
+                    int count = 0;
+                    for (java.util.Map.Entry<String, List<PowerHistory>> entry : sessions.entrySet()) {
+                        if (count++ >= 20) break; // 最多显示20条
+                        List<PowerHistory> sessionRecords = entry.getValue();
+                        if (sessionRecords.isEmpty()) continue;
+
+                        PowerHistory first = sessionRecords.get(0);
+                        PowerHistory last = sessionRecords.get(sessionRecords.size() - 1);
+                        long duration = last.getTimestamp() - first.getTimestamp();
+                        float maxPower = 0;
+                        int startLevel = first.getBatteryLevel();
+                        int endLevel = last.getBatteryLevel();
+                        for (PowerHistory h : sessionRecords) {
+                            if (h.getPower() > maxPower) maxPower = h.getPower();
+                        }
+
+                        String date = sdf.format(new Date(first.getTimestamp()));
+                        String info = String.format(Locale.getDefault(),
+                                "%s | %d%%→%d%% | 峰值%.1fW | %d分",
+                                date, startLevel, endLevel, maxPower, duration / 60000);
+
+                        TextView tv = new TextView(ctx);
+                        tv.setText(info);
+                        tv.setTextSize(13);
+                        tv.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
+                        tv.setPadding(0, 0, 0, 12);
+                        finalLayout.addView(tv);
+                    }
+                });
+            } catch (Exception e) {
+                handler.post(() -> tvLoading.setText("加载失败"));
+            }
+        });
     }
 }

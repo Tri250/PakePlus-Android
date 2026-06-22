@@ -370,12 +370,11 @@ public class DeviceConfigFragment extends Fragment {
         AlertDialog dialog = new AlertDialog.Builder(ctx)
                 .setView(scrollView)
                 .setPositiveButton(getString(R.string.bugreport_guide_action_config), (d, which) -> {
-                    // 跳转到电池健康页面（Tab 0）
+                    // 跳转到设备参数页面（Tab 5）
                     if (getActivity() instanceof MainActivity) {
-                        // 切换到健康 Tab
                         try {
                             ViewPager2 vp = getActivity().findViewById(R.id.view_pager);
-                            if (vp != null) vp.setCurrentItem(0, true);
+                            if (vp != null) vp.setCurrentItem(5, true);
                         } catch (Exception ignored) {}
                     }
                 })
