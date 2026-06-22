@@ -1,13 +1,16 @@
 // Top-level build file - 仓库配置已迁移到 settings.gradle 统一管理
 buildscript {
     repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+        // 国内镜像优先
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        // 官方源兜底
+        google()
+        mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
         // 升级到 AGP 8.8.2 以支持 Android 16 (SDK 36)
@@ -17,12 +20,15 @@ buildscript {
 
 allprojects {
     repositories {
-        google()
-        mavenCentral()
+        // 国内镜像优先
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        // 官方源兜底
+        google()
+        mavenCentral()
     }
 }
 
