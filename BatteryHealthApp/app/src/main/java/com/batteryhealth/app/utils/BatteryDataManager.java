@@ -260,7 +260,7 @@ public class BatteryDataManager {
         // 8. 当前满充容量（FCC）
         int fullCapacity = getFullCapacity(batteryManager);
         info.setCurrentCapacity(fullCapacity);
-        info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
+        info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs_or_database" : "unknown");
 
         // 9. 充电计数
         int chargeCounterMah = getChargeCounterMah(batteryManager);
@@ -419,6 +419,9 @@ public class BatteryDataManager {
         }, -1);
         if (learned > 100000) return learned / 1000;
         if (learned > 100) return learned;
+        // 机型数据库兜底：当 sysfs 和 BatteryManager 都不可用时，使用数据库设计容量作为当前容量估算
+        int dbCapacity = deviceDb.getDesignCapacity();
+        if (dbCapacity > 0) return dbCapacity;
         return -1;
     }
 

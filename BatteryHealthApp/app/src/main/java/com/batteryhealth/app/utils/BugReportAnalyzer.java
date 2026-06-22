@@ -62,35 +62,136 @@ public class BugReportAnalyzer {
     }
 
     private void parseZipBugReport(File zipFile, BugReportGuide.AnalysisResult result) throws IOException {
+        StringBuilder mainBugreport = null;
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                String entryName = entry.getName().toLowerCase();
+                String entryName = entry.getName();
                 
-                if (entryName.contains("battery") || entryName.contains("power") || 
-                    entryName.contains("dumpsys") || entryName.endsWith(".txt")) {
-                    
+                // 优先查找主 bugreport 文件（通常是 bugreport-*.txt 格式）
+                if (entryName.toLowerCase().contains("bugreport") && entryName.endsWith(".txt")) {
                     StringBuilder content = new StringBuilder();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
                     String line;
                     while ((line = reader.readLine()) != null) {
                         content.append(line).append("\n");
-                        parseLine(line, result);
                     }
                     reader.close();
+                    mainBugreport = content;
+                    break;
                 }
-                
-                zis.closeEntry();
+            }
+            zis.closeEntry();
+        }
+        
+        if (mainBugreport != null) {
+            parseTextContent(mainBugreport.toString(), result);
+        } else {
+            // 回退：逐行解析所有 ZIP 条目
+            try (ZipInputStream zis2 = new ZipInputStream(new FileInputStream(zipFile))) {
+                ZipEntry entry;
+                while ((entry = zis2.getNextEntry()) != null) {
+                    String entryName = entry.getName().toLowerCase();
+                    if (entryName.contains("battery") || entryName.contains("power") ||
+                        entryName.contains("dumpsys") || entryName.endsWith(".txt")) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(zis2));
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            parseLine(line, result);
+                        }
+                        reader.close();
+                    }
+                    zis2.closeEntry();
+                }
             }
         }
     }
 
     private void parseTextBugReport(File textFile, BugReportGuide.AnalysisResult result) throws IOException {
+        StringBuilder fullText = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(textFile)))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                parseLine(line, result);
+                fullText.append(line).append("\n");
             }
+        }
+        parseTextContent(fullText.toString(), result);
+    }
+
+    /**
+     * 按标准 Android bugreport 格式解析：识别 DUMP OF SERVICE 段落，提取电池相关数据。
+     */
+    private void parseTextContent(String content, BugReportGuide.AnalysisResult result) {
+        String[] lines = content.split("\n");
+        String currentSection = "";
+
+        for (String line : lines) {
+            // 识别 DUMP OF SERVICE 段落
+            if (line.contains("------") && line.contains("DUMP OF SERVICE")) {
+                currentSection = line.trim();
+                continue;
+            }
+            if (line.contains("------") && !line.contains("DUMP OF SERVICE")) {
+                currentSection = "";
+            }
+
+            parseLine(line, result);
+
+            // 按段落解析电池统计
+            if (currentSection.contains("batterystats") || currentSection.contains("battery")) {
+                parseBatteryStatsLine(line, result);
+            }
+        }
+    }
+
+    /**
+     * 解析 batterystats/battery 段落中的关键字段。
+     */
+    private void parseBatteryStatsLine(String line, BugReportGuide.AnalysisResult result) {
+        // 提取设计容量: "Estimated battery capacity:" 或 "Capacity:"
+        if (line.contains("apacity:") && line.contains("mAh")) {
+            try {
+                String[] parts = line.split(":\\s*");
+                if (parts.length >= 2) {
+                    String val = parts[1].replaceAll("[^0-9]", "");
+                    if (!val.isEmpty()) {
+                        int mah = Integer.parseInt(val);
+                        if (result.deviceInfo == null) {
+                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                                    Build.MODEL, Build.BRAND, Build.VERSION.RELEASE,
+                                    Build.DISPLAY, mah, 0, 0f);
+                        } else {
+                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                                    result.deviceInfo.model, result.deviceInfo.brand,
+                                    result.deviceInfo.androidVersion, result.deviceInfo.buildNumber,
+                                    mah, result.deviceInfo.cycleCount, result.deviceInfo.healthPercentage);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 提取循环次数: "charge cycles:"
+        if (line.toLowerCase().contains("charge cycle") && line.contains(":")) {
+            try {
+                String[] parts = line.split(":\\s*");
+                if (parts.length >= 2) {
+                    String val = parts[1].replaceAll("[^0-9]", "");
+                    if (!val.isEmpty()) {
+                        int cycles = Integer.parseInt(val);
+                        if (result.deviceInfo == null) {
+                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                                    Build.MODEL, Build.BRAND, Build.VERSION.RELEASE,
+                                    Build.DISPLAY, 0, cycles, 0f);
+                        } else {
+                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                                    result.deviceInfo.model, result.deviceInfo.brand,
+                                    result.deviceInfo.androidVersion, result.deviceInfo.buildNumber,
+                                    result.deviceInfo.batteryCapacity, cycles, result.deviceInfo.healthPercentage);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
         }
     }
 

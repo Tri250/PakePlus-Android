@@ -394,18 +394,68 @@ public class DeviceConfig {
     }
 
     /**
-     * 获取格式化的品牌名
+     * 获取格式化的品牌名（国内品牌返回中文营销名）。
      */
     public String getFormattedBrand() {
         if (brand == null) return "Unknown";
+        String lower = brand.toLowerCase(Locale.ROOT);
+        // 国内品牌中文映射
+        if (lower.contains("xiaomi") || lower.contains("小米")) return "小米";
+        if (lower.contains("redmi") || lower.contains("红米")) return "Redmi";
+        if (lower.contains("huawei") || lower.contains("华为")) return "华为";
+        if (lower.contains("honor") || lower.contains("荣耀")) return "荣耀";
+        if (lower.contains("oppo")) return "OPPO";
+        if (lower.contains("realme") || lower.contains("真我")) return "realme";
+        if (lower.contains("vivo")) return "vivo";
+        if (lower.contains("iqoo")) return "iQOO";
+        if (lower.contains("oneplus") || lower.contains("一加")) return "一加";
+        if (lower.contains("meizu") || lower.contains("魅族")) return "魅族";
+        if (lower.contains("nubia") || lower.contains("努比亚")) return "努比亚";
+        if (lower.contains("redmagic") || lower.contains("红魔")) return "红魔";
+        if (lower.contains("zte") || lower.contains("中兴")) return "中兴";
+        if (lower.contains("lenovo") || lower.contains("联想")) return "联想";
+        if (lower.contains("samsung") || lower.contains("三星")) return "三星";
+        // 国际品牌保持原样
         return brand.substring(0, 1).toUpperCase(Locale.ROOT) + brand.substring(1).toLowerCase(Locale.ROOT);
     }
     
     /**
-     * 获取完整型号名
+     * 获取完整型号名。
+     * 当 model 已经是中文营销名称时直接返回，避免 "Xiaomi 小米 15 Pro" 这种冗余格式。
      */
     public String getFullModelName() {
+        if (model == null) return "Unknown";
+        // 检测 model 是否已包含中文营销名称（如 "小米 15 Pro"）
+        if (containsCJK(model)) {
+            return model;
+        }
+        // 检测 model 是否已包含品牌前缀（如 "Xiaomi 15 Pro"）
+        String formattedBrand = getFormattedBrand();
+        if (formattedBrand != null && !formattedBrand.equals("Unknown")) {
+            String lowerModel = model.toLowerCase(Locale.ROOT);
+            String lowerBrand = formattedBrand.toLowerCase(Locale.ROOT);
+            if (lowerModel.startsWith(lowerBrand)) {
+                return model;
+            }
+        }
         return String.format("%s %s", getFormattedBrand(), model);
+    }
+
+    /**
+     * 检测字符串是否包含中日韩文字。
+     */
+    private static boolean containsCJK(String s) {
+        if (s == null) return false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

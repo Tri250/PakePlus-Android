@@ -188,7 +188,7 @@ public class DeviceConfigFragment extends Fragment {
      * DeviceInfoManager 不可用时的回退数据
      */
     private void loadFallbackData() {
-        tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
+        tvDeviceName.setText(getLocalizedBrandName(Build.BRAND) + " " + Build.MODEL);
         tvDeviceModel.setText(Build.MODEL);
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
         tvProcessor.setText(Build.HARDWARE);
@@ -217,5 +217,29 @@ public class DeviceConfigFragment extends Fragment {
             return String.format(Locale.getDefault(), "%d GB", storageGb);
         }
         return String.format(Locale.getDefault(), "%.1f GB", storageGb / 1.0);
+    }
+
+    /**
+     * 本地化品牌名（国内品牌返回中文营销名）。
+     */
+    private String getLocalizedBrandName(String brand) {
+        if (brand == null) return "Unknown";
+        String lower = brand.toLowerCase(Locale.ROOT);
+        if (lower.contains("xiaomi") || lower.contains("小米")) return "小米";
+        if (lower.contains("redmi") || lower.contains("红米")) return "Redmi";
+        if (lower.contains("huawei") || lower.contains("华为")) return "华为";
+        if (lower.contains("honor") || lower.contains("荣耀")) return "荣耀";
+        if (lower.contains("oppo")) return "OPPO";
+        if (lower.contains("realme") || lower.contains("真我")) return "realme";
+        if (lower.contains("vivo")) return "vivo";
+        if (lower.contains("iqoo")) return "iQOO";
+        if (lower.contains("oneplus") || lower.contains("一加")) return "一加";
+        if (lower.contains("meizu") || lower.contains("魅族")) return "魅族";
+        if (lower.contains("nubia") || lower.contains("努比亚")) return "努比亚";
+        if (lower.contains("redmagic") || lower.contains("红魔")) return "红魔";
+        if (lower.contains("zte") || lower.contains("中兴")) return "中兴";
+        if (lower.contains("lenovo") || lower.contains("联想")) return "联想";
+        if (lower.contains("samsung") || lower.contains("三星")) return "三星";
+        return brand.substring(0, 1).toUpperCase(Locale.ROOT) + brand.substring(1).toLowerCase(Locale.ROOT);
     }
 }

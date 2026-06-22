@@ -37,11 +37,28 @@ public class BatteryOriginFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_battery_origin, container, false);
-        initViews(view);
-        animateEntry(view);
-        originDetector = new BatteryOriginDetector(requireContext());
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_battery_origin, container, false);
+            initViews(view);
+            animateEntry(view);
+            originDetector = new BatteryOriginDetector(requireContext());
+            performDetection();
+            return view;
+        } catch (Exception e) {
+            return fallbackView();
+        }
+    }
+
+    private View fallbackView() {
+        TextView tv = new TextView(requireContext());
+        tv.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        tv.setText("页面加载失败，请重启应用");
+        tv.setTextSize(16f);
+        tv.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
+        tv.setGravity(android.view.Gravity.CENTER);
+        tv.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.bg_canvas));
+        return tv;
     }
 
     private void initViews(View view) {
