@@ -28,19 +28,16 @@ import com.batteryhealth.app.service.BatteryMonitorService;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.io.FileReader;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 充电监测服务
@@ -80,8 +77,9 @@ public class ChargingMonitorService extends Service {
     private volatile String cachedChargeType = "none";
 
     // 用于智能充电阶段判断的滑动窗口（最近 30 个采样点，约 90 秒）
+    // 使用 Collections.synchronizedList 保证线程安全，避免 ConcurrentModificationException
     private static final int MAX_SAMPLES = 30;
-    private final LinkedList<PowerSample> powerSamples = new LinkedList<>();
+    private final List<PowerSample> powerSamples = Collections.synchronizedList(new LinkedList<>());
 
     private OnChargingDataListener dataListener;
 
@@ -286,11 +284,17 @@ public class ChargingMonitorService extends Service {
         Intent batteryStatus = getBatteryIntent();
         if (batteryStatus != null) {
             int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+            boolean nowCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                         status == BatteryManager.BATTERY_STATUS_FULL;
 
-            if (isCharging) {
+            if (nowCharging) {
+                // 注意：isCharging 由 startChargingSession() 内部设置，
+                // 不要在外层先设置 isCharging，否则 startChargingSession() 会因
+                // 入口检查 "if (isCharging) return;" 而直接返回（死代码问题）
                 startChargingSession();
+            } else if (isCharging) {
+                // 之前在充电，现在拔掉
+                endChargingSession();
             }
         }
     }

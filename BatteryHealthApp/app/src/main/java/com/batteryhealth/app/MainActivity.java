@@ -64,6 +64,10 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
     private CustomBottomNavigationView bottomNavigation;
 
+    // PendingIntent 请求码使用固定值，避免进程重启后 hashCode 变化导致 PendingIntent 无法取消
+    private static final int PENDING_INTENT_REQUEST_BATTERY_MONITOR = 0xB4A7_0001;
+    private static final int PENDING_INTENT_REQUEST_CHARGING_MONITOR = 0xB4A7_0002;
+
     private BatteryDataManager batteryDataManager;
     private DeviceInfoManager deviceInfoManager;
     
@@ -98,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
             // 初始化管理器（带异常处理）
             try {
                 deviceInfoManager = new DeviceInfoManager(this);
+                // 注入到 Application，以便 onTerminate 时关闭 executor
+                ((BatteryHealthApplication) getApplication()).setDeviceInfoManager(deviceInfoManager);
                 Log.d(TAG, "DeviceInfoManager created");
             } catch (Exception e) {
                 Log.e(TAG, "Error creating DeviceInfoManager: " + e.getMessage(), e);
@@ -381,6 +387,10 @@ public class MainActivity extends AppCompatActivity {
     private void startServiceSafely(Class<?> serviceClass) {
         Intent intent = new Intent(this, serviceClass);
         boolean isAppInForeground = isAppInForeground();
+        // 根据服务类型选择固定请求码，避免进程重启后 hashCode 变化
+        int requestCode = (serviceClass == BatteryMonitorService.class)
+                ? PENDING_INTENT_REQUEST_BATTERY_MONITOR
+                : PENDING_INTENT_REQUEST_CHARGING_MONITOR;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (isAppInForeground || Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForegroundService(intent);
@@ -389,7 +399,7 @@ public class MainActivity extends AppCompatActivity {
                 AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                 if (alarmManager != null) {
                     PendingIntent pendingIntent = PendingIntent.getForegroundService(
-                            this, serviceClass.hashCode(), intent,
+                            this, requestCode, intent,
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
                     long triggerAt = System.currentTimeMillis() + 5000;
@@ -473,15 +483,11 @@ public class MainActivity extends AppCompatActivity {
      * 加载初始数据
      */
     private void loadInitialData() {
-        new Thread(() -> {
-            try {
-                if (batteryDataManager != null) {
-                    batteryDataManager.refreshAllDataAsync();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading initial data: " + e.getMessage());
-            }
-        }).start();
+        // 直接调用 refreshAllDataAsync()，BatteryDataManager 内部已创建后台线程，
+        // 不需要外层再包裹 Thread，避免嵌套线程和生命周期失控
+        if (batteryDataManager != null) {
+            batteryDataManager.refreshAllDataAsync();
+        }
     }
     
     /**

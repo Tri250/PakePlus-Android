@@ -229,18 +229,24 @@ public class BatteryHealthApplication extends Application {
     
     /**
      * 获取数据库实例。
-     * 若初始化尚未完成，会阻塞调用线程最多 60 秒；Application.onCreate 本身不会阻塞。
+     * 若初始化尚未完成，会阻塞调用线程最多 30 秒（而非之前的 60 秒，减少 ANR 风险）。
+     * Application.onCreate 本身不会阻塞，在后台线程完成初始化。
+     *
+     * 警告：不要在主线程调用此方法！应在后台线程（ExecutorService/Thread）中使用。
+     * 若必须在主线程获取数据库，请使用 getDatabaseAsync() 异步版本。
      */
     public AppDatabase getDatabase() {
         startDatabaseInitAsync();
         CountDownLatch latch = dbInitLatch;
         if (latch != null) {
             try {
-                if (!latch.await(60, TimeUnit.SECONDS)) {
-                    Log.w(TAG, "Wait for database initialization timed out");
+                // 缩短超时到 30 秒，减少主线程阻塞时间
+                if (!latch.await(30, TimeUnit.SECONDS)) {
+                    Log.w(TAG, "Wait for database initialization timed out after 30s");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                Log.w(TAG, "Database initialization wait interrupted");
             }
         }
         return database;
@@ -276,5 +282,24 @@ public class BatteryHealthApplication extends Application {
         if (mainHandler != null) {
             mainHandler.postDelayed(runnable, delayMillis);
         }
+    }
+
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        // 关闭 DeviceInfoManager 的 ExecutorService（仅在模拟器中生效）
+        if (deviceInfoManager != null) {
+            deviceInfoManager.shutdown();
+        }
+    }
+
+    // 由 MainActivity 注入 DeviceInfoManager 引用，用于 onTerminate 时关闭
+    private com.batteryhealth.app.utils.DeviceInfoManager deviceInfoManager;
+
+    /**
+     * 供 MainActivity 注入 DeviceInfoManager 引用，以便在 onTerminate 时关闭资源
+     */
+    public void setDeviceInfoManager(com.batteryhealth.app.utils.DeviceInfoManager manager) {
+        this.deviceInfoManager = manager;
     }
 }

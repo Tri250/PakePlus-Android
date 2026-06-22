@@ -8,6 +8,8 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.annotation.WorkerThread;
+
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 
@@ -199,7 +201,9 @@ public class BatteryDataManager {
 
     /**
      * 主入口：构造完整电池信息。
+     * 包含大量 sysfs 文件读取，应始终在后台线程调用！
      */
+    @androidx.annotation.WorkerThread
     public BatteryInfo getBatteryInfo() {
         BatteryInfo info = new BatteryInfo();
         info.setTimestamp(System.currentTimeMillis());

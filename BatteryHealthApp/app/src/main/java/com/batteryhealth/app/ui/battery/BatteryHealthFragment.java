@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -103,9 +104,20 @@ public class BatteryHealthFragment extends Fragment {
         stopPeriodicUpdate();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 在 onDestroyView 中也停止更新，防止 onPause 因异常跳过导致 Handler 继续持有引用
+        stopPeriodicUpdate();
+    }
+
     private void registerBatteryReceiver() {
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            requireContext().registerReceiver(batteryReceiver, filter);
+        }
     }
 
     private void unregisterBatteryReceiver() {

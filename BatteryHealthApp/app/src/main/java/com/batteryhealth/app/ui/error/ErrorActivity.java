@@ -25,14 +25,26 @@ public class ErrorActivity extends AppCompatActivity {
 
     public static final String EXTRA_TITLE = "error_title";
     public static final String EXTRA_MESSAGE = "error_message";
-    public static final String EXTRA_THROWABLE = "error_throwable";
+    public static final String EXTRA_STACK_TRACE = "error_stack_trace";
+    // Throwable 序列化可能超限（Binder 事务限制 1MB），改用字符串传递堆栈信息
+    public static final String EXTRA_THROWABLE_CLASS = "error_throwable_class";
 
     public static Intent createIntent(Context context, String title, String message, Throwable throwable) {
         Intent intent = new Intent(context, ErrorActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         if (title != null) intent.putExtra(EXTRA_TITLE, title);
         if (message != null) intent.putExtra(EXTRA_MESSAGE, message);
-        if (throwable != null) intent.putExtra(EXTRA_THROWABLE, throwable);
+        if (throwable != null) {
+            intent.putExtra(EXTRA_THROWABLE_CLASS, throwable.getClass().getName());
+            // 截断堆栈到 4KB，避免 TransactionTooLargeException
+            StringWriter sw = new StringWriter();
+            throwable.printStackTrace(new PrintWriter(sw));
+            String stackTrace = sw.toString();
+            if (stackTrace.length() > 4096) {
+                stackTrace = stackTrace.substring(0, 4096) + "\n... (truncated)";
+            }
+            intent.putExtra(EXTRA_STACK_TRACE, stackTrace);
+        }
         return intent;
     }
 
@@ -43,7 +55,8 @@ public class ErrorActivity extends AppCompatActivity {
 
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String message = getIntent().getStringExtra(EXTRA_MESSAGE);
-        Throwable throwable = (Throwable) getIntent().getSerializableExtra(EXTRA_THROWABLE);
+        String throwableClass = getIntent().getStringExtra(EXTRA_THROWABLE_CLASS);
+        String stackTrace = getIntent().getStringExtra(EXTRA_STACK_TRACE);
 
         TextView tvTitle = findViewById(R.id.tv_error_title);
         TextView tvMessage = findViewById(R.id.tv_error_message);
@@ -55,7 +68,7 @@ public class ErrorActivity extends AppCompatActivity {
         tvTitle.setText(title != null ? title : getString(R.string.error_title));
         tvMessage.setText(message != null ? message : getString(R.string.error_unknown));
 
-        String details = buildDetails(throwable);
+        String details = buildDetails(throwableClass, stackTrace);
         tvDetails.setText(details);
 
         btnDetails.setOnClickListener(v -> {
@@ -76,7 +89,7 @@ public class ErrorActivity extends AppCompatActivity {
         });
     }
 
-    private String buildDetails(Throwable throwable) {
+    private String buildDetails(String throwableClass, String stackTrace) {
         StringBuilder sb = new StringBuilder();
         sb.append("App Version: ").append(BuildConfig.VERSION_NAME).append("\n");
         sb.append("Version Code: ").append(BuildConfig.VERSION_CODE).append("\n");
@@ -85,11 +98,11 @@ public class ErrorActivity extends AppCompatActivity {
         sb.append("Board: ").append(Build.BOARD).append("\n");
         sb.append("\n");
 
-        if (throwable != null) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
-            sb.append(sw.toString());
+        if (throwableClass != null) {
+            sb.append("Exception: ").append(throwableClass).append("\n");
+        }
+        if (stackTrace != null && !stackTrace.isEmpty()) {
+            sb.append("\n").append(stackTrace);
         } else {
             sb.append("No stack trace available.");
         }

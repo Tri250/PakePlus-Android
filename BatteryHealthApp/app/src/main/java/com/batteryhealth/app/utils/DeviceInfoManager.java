@@ -685,6 +685,17 @@ public class DeviceInfoManager {
     }
 
     /**
+     * 关闭 ExecutorService，释放资源。
+     * 在 Application.onTerminate() 中调用（仅在模拟器中生效，真机上 Application
+     * 不保证调用 onTerminate，因此线程池会在进程退出时由系统自动回收）。
+     */
+    public void shutdown() {
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
+    }
+
+    /**
      * 读取手机系统电子保卡激活日期。各品牌实现不同，这里按品牌依次尝试常见 Setting/Property。
      * 兼容保留：实际逻辑已迁到 ActivationDateHelper。
      */

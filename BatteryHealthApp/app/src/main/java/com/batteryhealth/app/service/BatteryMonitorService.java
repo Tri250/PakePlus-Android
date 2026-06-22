@@ -67,9 +67,10 @@ public class BatteryMonitorService extends Service {
     public static final String PREF_ALERT_ENABLED = "health_alert_enabled";
     public static final String PREF_LAST_ALERT_TIME = "last_health_alert_time";
     public static final String PREF_DEGRADATION_THRESHOLD = "degradation_threshold";
+    public static final String PREF_USER_STOPPED_SERVICE = "user_stopped_service";
 
     private Handler handler;
-    private BatteryInfo currentBatteryInfo;
+    private volatile BatteryInfo currentBatteryInfo;
     private OnBatteryDataListener dataListener;
     private boolean isRunning = false;
     private long lastSaveTime = 0;
@@ -187,6 +188,10 @@ public class BatteryMonitorService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
+            // 用户主动停止服务后，再次通过闹钟重启时清除标志
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(PREF_USER_STOPPED_SERVICE, false).apply();
+
             if (!isRunning) {
                 isRunning = true;
                 try {
@@ -224,7 +229,13 @@ public class BatteryMonitorService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
         try {
-            // 使用 AlarmManager 在 5 秒后尝试重启服务（仅当用户未手动关闭服务时）
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            // 若用户主动停止了服务（stopForeground + stopSelf），不再通过闹钟重启
+            if (prefs.getBoolean(PREF_USER_STOPPED_SERVICE, false)) {
+                Log.d(TAG, "Service was explicitly stopped by user, skipping restart");
+                return;
+            }
+            // 使用 AlarmManager 在 5 秒后尝试重启服务
             android.app.AlarmManager alarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null) {
                 Intent restartIntent = new Intent(this, BatteryMonitorService.class);
@@ -252,13 +263,7 @@ public class BatteryMonitorService extends Service {
             Log.e(TAG, "Error scheduling restart on task removed: " + e.getMessage());
         }
     }
-    
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-    
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -276,6 +281,18 @@ public class BatteryMonitorService extends Service {
             ioExecutor.shutdown();
             ioExecutor = null;
         }
+        // 标记用户主动停止了服务，下次闹钟触发时不自动重启
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(PREF_USER_STOPPED_SERVICE, true).apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
     /**
@@ -568,25 +585,28 @@ public class BatteryMonitorService extends Service {
 
         lastSavedBatteryInfo = snapshot.copy();
 
-        new Thread(() -> {
-            try {
-                com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
-                com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
-                if (db != null) {
-                    db.batteryInfoDao().insert(snapshot);
-                    if (BuildConfigHelper.isDebugMode()) {
-                        Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
-                    }
+        // 复用 ioExecutor 而非创建新线程，避免多线程并发写入 Room 数据库
+        if (ioExecutor != null) {
+            ioExecutor.submit(() -> {
+                try {
+                    com.batteryhealth.app.BatteryHealthApplication app =
+                        (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                    com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                    if (db != null) {
+                        db.batteryInfoDao().insert(snapshot);
+                        if (BuildConfigHelper.isDebugMode()) {
+                            Log.d(TAG, "Battery data saved: level=" + snapshot.getLevel() + "% health=" + snapshot.getHealthPercentage() + "%");
+                        }
 
-                    // 清理45天前的旧数据（保留余量给趋势图30天视图）
-                    long fortyFiveDaysAgo = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
-                    db.batteryInfoDao().deleteOlderThan(fortyFiveDaysAgo);
+                        // 清理45天前的旧数据（保留余量给趋势图30天视图）
+                        long fortyFiveDaysAgo = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
+                        db.batteryInfoDao().deleteOlderThan(fortyFiveDaysAgo);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error saving battery data: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving battery data: " + e.getMessage());
-            }
-        }).start();
+            });
+        }
     }
 
     /**

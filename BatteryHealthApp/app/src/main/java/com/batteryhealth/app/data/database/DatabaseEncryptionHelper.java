@@ -59,6 +59,22 @@ public class DatabaseEncryptionHelper {
                 Log.w(TAG, "EncryptedSharedPreferences unavailable, falling back to plain prefs");
             }
         }
+        // 每次启动时都尝试重新初始化 EncryptedSharedPreferences，
+        // 如果 Keystore 已恢复可用，则迁移密钥到加密存储并清除降级标志
+        if (forcePlain) {
+            SharedPreferences tryEncryptedPrefs = getEncryptedSharedPreferences(appContext);
+            if (tryEncryptedPrefs != null) {
+                // EncryptedSharedPreferences 现在可用，迁移密钥
+                SharedPreferences plainPrefs = appContext.getSharedPreferences(PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
+                String encoded = plainPrefs.getString(KEY_PASSPHRASE, null);
+                if (encoded != null) {
+                    tryEncryptedPrefs.edit().putString(KEY_PASSPHRASE, encoded).apply();
+                    fallbackFlagPrefs.edit().putBoolean(KEY_USE_PLAIN_PREFS, false).apply();
+                    prefs = tryEncryptedPrefs;
+                    Log.i(TAG, "Migrated encryption key from plain to encrypted storage");
+                }
+            }
+        }
         if (prefs == null) {
             prefs = appContext.getSharedPreferences(PREFS_FILE_PLAIN, Context.MODE_PRIVATE);
         }
