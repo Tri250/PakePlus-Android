@@ -532,8 +532,15 @@ public class DeviceInfoManager {
                 android.graphics.Rect bounds = windowMetrics.getBounds();
                 config.setScreenWidth(bounds.width());
                 config.setScreenHeight(bounds.height());
-                // 从 WindowMetrics 获取密度
-                float density = windowMetrics.getDensity();
+                // 从 WindowMetrics 获取密度（API 34+）
+                float density;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    density = windowMetrics.getDensity();
+                } else {
+                    DisplayMetrics metrics = new DisplayMetrics();
+                    wm.getDefaultDisplay().getRealMetrics(metrics);
+                    density = metrics.density;
+                }
                 config.setScreenDensity(density);
                 config.setScreenDpi((int) (density * 160f));
             } catch (Exception e) {

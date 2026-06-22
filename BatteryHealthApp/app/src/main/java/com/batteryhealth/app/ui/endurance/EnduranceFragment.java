@@ -9,6 +9,7 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -187,7 +188,7 @@ public class EnduranceFragment extends Fragment {
         float remainingHours;
         if (analysis != null && analysis.systemEstimatedHours > 0) {
             // 使用系统预估续航（基于当前电量比例）
-            remainingHours = analysis.systemEstimatedHours;
+            remainingHours = (float) analysis.systemEstimatedHours;
         } else if (dischargeRate > 0) {
             remainingHours = batteryPct / dischargeRate;
         } else {

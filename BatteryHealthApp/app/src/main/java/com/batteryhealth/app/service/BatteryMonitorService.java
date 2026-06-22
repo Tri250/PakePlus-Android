@@ -228,10 +228,18 @@ public class BatteryMonitorService extends Service {
             android.app.AlarmManager alarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null) {
                 Intent restartIntent = new Intent(this, BatteryMonitorService.class);
-                PendingIntent pendingIntent = PendingIntent.getForegroundService(
-                        this, 1, restartIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
+                PendingIntent pendingIntent;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    pendingIntent = PendingIntent.getForegroundService(
+                            this, 1, restartIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                } else {
+                    pendingIntent = PendingIntent.getService(
+                            this, 1, restartIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                }
                 long triggerAt = System.currentTimeMillis() + 5000;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);

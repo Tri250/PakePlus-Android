@@ -85,7 +85,7 @@ public class ChargeProtocolDetector {
             fast = true;
         }
         // 高通 QC
-        else if ("Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER)
+        else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && "Qualcomm".equalsIgnoreCase(Build.SOC_MANUFACTURER))
                 || "qc".equalsIgnoreCase(quickCharge) || "qc3".equalsIgnoreCase(quickCharge)
                 || "qc4".equalsIgnoreCase(quickCharge) || "qcb".equalsIgnoreCase(quickCharge)
                 || (quickChargeType != null && quickChargeType.toLowerCase().contains("qc"))) {
