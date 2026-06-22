@@ -24,9 +24,7 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
-import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.utils.DeviceInfoManager;
-import com.batteryhealth.app.utils.PerformanceBenchmark;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -38,8 +36,7 @@ import java.util.Locale;
 /**
  * 性能监控 Fragment。
  * 使用 DeviceInfoManager 获取真实 GPU/CPU 信息，
- * 使用 /proc/self/stat 读取真实应用 CPU 使用率，
- * 使用 PerformanceBenchmark 执行真实基准测试。
+ * 使用 /proc/self.stat 读取真实应用 CPU 使用率。
  */
 public class PerformanceFragment extends Fragment {
 

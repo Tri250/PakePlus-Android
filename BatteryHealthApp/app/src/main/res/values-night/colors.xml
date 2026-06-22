@@ -78,17 +78,6 @@
     <color name="health_d">#FF9F0A</color>
     <color name="health_e">#FF453A</color>
 
-    <!-- Badge / Pill backgrounds (dark) -->
-    <color name="badge_original_bg">#2430D158</color>
-    <color name="badge_third_bg">#29FF9F0A</color>
-    <color name="badge_unknown_bg">#2E969AA5</color>
-    <color name="badge_charge_bg">#240A84FF</color>
-
-    <!-- Charge status pills -->
-    <color name="charge_status_discharging_bg">#2E969AA5</color>
-    <color name="charge_status_charging_bg">#240A84FF</color>
-    <color name="charge_status_full_bg">#2430D158</color>
-
     <!-- Bottom nav tint -->
     <!-- defined in res/color/bottom_nav_color.xml as selector -->
 </resources>

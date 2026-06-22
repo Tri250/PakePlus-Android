@@ -7,7 +7,6 @@
     <dimen name="radius_inner">14dp</dimen>
     <dimen name="radius_pill">999dp</dimen>
     <dimen name="radius_progress">6dp</dimen>
-    <dimen name="radius_dot">8dp</dimen>
     <dimen name="radius_button">12dp</dimen>
 
     <!-- ============================== -->
@@ -22,16 +21,11 @@
     <dimen name="list_item_padding_horizontal">18dp</dimen>
     <dimen name="list_item_padding_vertical">13dp</dimen>
     <dimen name="list_item_min_height">48dp</dimen>
-    <dimen name="separator_height">1dp</dimen>
-    <dimen name="separator_margin_start">18dp</dimen>
-    <dimen name="cluster_gap">10dp</dimen>
-    <dimen name="stats_grid_gap">1dp</dimen>
 
     <!-- ============================== -->
     <!-- Elevation -->
     <!-- ============================== -->
     <dimen name="elevation_card">4dp</dimen>
-    <dimen name="elevation_button">2dp</dimen>
 
     <!-- ============================== -->
     <!-- Typography -->
@@ -53,12 +47,6 @@
     <dimen name="text_badge">12.5sp</dimen>
     <dimen name="text_tab_label">10.5sp</dimen>
     <dimen name="text_section_eyebrow">12sp</dimen>
-    <dimen name="text_caption">12sp</dimen>
-    <dimen name="text_body">16sp</dimen>
-    <dimen name="text_subtitle">20sp</dimen>
-    <dimen name="text_large_number">56sp</dimen>
-    <dimen name="text_medium_number">32sp</dimen>
-    <dimen name="text_small_number">24sp</dimen>
 
     <!-- ============================== -->
     <!-- Animation durations -->

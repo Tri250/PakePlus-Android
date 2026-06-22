@@ -1,6 +1,5 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.animation.ObjectAnimator;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,7 +23,6 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
-import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;

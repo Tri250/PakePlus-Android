@@ -70,11 +70,6 @@
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
 
-        <activity
-            android:name=".ui.trend.TrendActivity"
-            android:exported="false"
-            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
-
         <!-- 电池监测服务 -->
         <service
             android:name=".service.BatteryMonitorService"

@@ -18,14 +18,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -38,10 +37,10 @@ import com.batteryhealth.app.ui.endurance.EnduranceFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.ui.trend.TrendFragment;
+import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PermissionManager;
-import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
@@ -157,11 +156,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // 不再需要注销广播接收器，因为已经移除了
-    }
+    // 电池广播由 BatteryMonitorService 统一处理，MainActivity 无需在 onDestroy 中注销
     
     /**
      * Android 15+ 强制 edge-to-edge：
@@ -478,18 +473,11 @@ public class MainActivity extends AppCompatActivity {
      * 加载初始数据
      */
     private void loadInitialData() {
-        // 在后台线程加载数据
         new Thread(() -> {
             try {
-                // 获取电池信息
                 if (batteryDataManager != null) {
                     batteryDataManager.refreshAllDataAsync();
                 }
-                
-                // 在主线程更新UI
-                mainHandler.post(() -> {
-                    // 数据已加载，Fragment会自行获取
-                });
             } catch (Exception e) {
                 Log.e(TAG, "Error loading initial data: " + e.getMessage());
             }
