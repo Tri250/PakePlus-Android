@@ -14,7 +14,8 @@ public class DeviceConfig {
     // 基本信息
     private String brand; // 品牌
     private String manufacturer; // 制造商
-    private String model; // 型号
+    private String model; // 型号（可能是数据库营销名）
+    private String originalModel; // 原始型号（Build.MODEL，未被数据库覆盖）
     private String device; // 设备代号
     private String product; // 产品名
     private String board; // 主板
@@ -112,7 +113,15 @@ public class DeviceConfig {
     public void setModel(String model) {
         this.model = model;
     }
-    
+
+    public String getOriginalModel() {
+        return originalModel != null ? originalModel : model;
+    }
+
+    public void setOriginalModel(String originalModel) {
+        this.originalModel = originalModel;
+    }
+
     public String getDevice() {
         return device;
     }
@@ -421,23 +430,24 @@ public class DeviceConfig {
     
     /**
      * 获取完整型号名。
-     * 当 model 已经是中文营销名称时直接返回，避免 "Xiaomi 小米 15 Pro" 这种冗余格式。
+     * 当 model 已含中文营销名或英文品牌前缀时直接返回，避免冗余格式。
      */
     public String getFullModelName() {
         if (model == null) return "Unknown";
-        // 检测 model 是否已包含中文营销名称（如 "小米 15 Pro"）
+        // 1. model 已包含中文营销名称（如 "小米 15 Pro"），直接返回
         if (containsCJK(model)) {
             return model;
         }
-        // 检测 model 是否已包含品牌前缀（如 "Xiaomi 15 Pro"）
-        String formattedBrand = getFormattedBrand();
-        if (formattedBrand != null && !formattedBrand.equals("Unknown")) {
+        // 2. model 已包含英文品牌前缀（如 "Xiaomi 15 Pro"），直接返回
+        //    使用原始 brand（英文）检测，而非 getFormattedBrand()（中文）
+        if (brand != null && !brand.isEmpty()) {
             String lowerModel = model.toLowerCase(Locale.ROOT);
-            String lowerBrand = formattedBrand.toLowerCase(Locale.ROOT);
+            String lowerBrand = brand.toLowerCase(Locale.ROOT);
             if (lowerModel.startsWith(lowerBrand)) {
                 return model;
             }
         }
+        // 3. 拼接中文品牌名 + model
         return String.format("%s %s", getFormattedBrand(), model);
     }
 

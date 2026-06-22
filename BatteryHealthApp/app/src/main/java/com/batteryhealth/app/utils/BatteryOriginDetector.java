@@ -4,6 +4,8 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
+import com.batteryhealth.app.data.model.BatteryInfo;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -31,34 +33,47 @@ public class BatteryOriginDetector {
 
         List<DetectionMethod> methods = new ArrayList<>();
 
-        String batteryInfo = readBatteryInfo();
-        if (batteryInfo != null) {
-            methods.add(new DetectionMethod("电池信息", batteryInfo));
-            result.batteryInfo = batteryInfo;
+        try {
+            String batteryInfo = readBatteryInfo();
+            if (batteryInfo != null) {
+                methods.add(new DetectionMethod("电池信息", batteryInfo));
+                result.batteryInfo = batteryInfo;
+            }
+
+            String manufactureDate = detectManufactureDate(batteryInfo);
+            if (manufactureDate != null) {
+                result.manufactureDate = manufactureDate;
+                methods.add(new DetectionMethod("生产日期", manufactureDate));
+            }
+
+            String serialNumber = detectSerialNumber(batteryInfo);
+            if (serialNumber != null) {
+                result.serialNumber = serialNumber;
+                methods.add(new DetectionMethod("序列号", serialNumber));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error in basic detection: " + e.getMessage());
         }
 
-        String manufactureDate = detectManufactureDate(batteryInfo);
-        if (manufactureDate != null) {
-            result.manufactureDate = manufactureDate;
-            methods.add(new DetectionMethod("生产日期", manufactureDate));
+        // 健康状态和循环次数涉及 BatteryDataManager，需独立 try-catch
+        try {
+            String healthStatus = detectHealthStatus();
+            if (healthStatus != null) {
+                result.healthStatus = healthStatus;
+                methods.add(new DetectionMethod("健康状态", healthStatus));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting health status: " + e.getMessage());
         }
 
-        String serialNumber = detectSerialNumber(batteryInfo);
-        if (serialNumber != null) {
-            result.serialNumber = serialNumber;
-            methods.add(new DetectionMethod("序列号", serialNumber));
-        }
-
-        String healthStatus = detectHealthStatus();
-        if (healthStatus != null) {
-            result.healthStatus = healthStatus;
-            methods.add(new DetectionMethod("健康状态", healthStatus));
-        }
-
-        String cycleCount = detectCycleCount();
-        if (cycleCount != null) {
-            result.cycleCount = cycleCount;
-            methods.add(new DetectionMethod("循环次数", cycleCount));
+        try {
+            String cycleCount = detectCycleCount();
+            if (cycleCount != null) {
+                result.cycleCount = cycleCount;
+                methods.add(new DetectionMethod("循环次数", cycleCount));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting cycle count: " + e.getMessage());
         }
 
         boolean isOriginal = analyzeOriginal(result);
@@ -184,9 +199,14 @@ public class BatteryOriginDetector {
         } catch (IOException ignored) {
         }
 
-        BatteryDataManager bdm = new BatteryDataManager(context);
-        return bdm.getCurrentBatteryInfo() != null ? 
-                bdm.getCurrentBatteryInfo().getHealthStatus() : null;
+        try {
+            BatteryDataManager bdm = new BatteryDataManager(context);
+            BatteryInfo info = bdm.getCurrentBatteryInfo();
+            return info != null ? info.getHealthStatus() : null;
+        } catch (Exception e) {
+            Log.w(TAG, "Error getting health status from BatteryDataManager: " + e.getMessage());
+            return null;
+        }
     }
 
     private String detectCycleCount() {
@@ -206,10 +226,15 @@ public class BatteryOriginDetector {
         } catch (IOException ignored) {
         }
 
-        BatteryDataManager bdm = new BatteryDataManager(context);
-        int cycles = bdm.getCurrentBatteryInfo() != null ? 
-                bdm.getCurrentBatteryInfo().getCycleCount() : 0;
-        return cycles > 0 ? String.valueOf(cycles) : null;
+        try {
+            BatteryDataManager bdm = new BatteryDataManager(context);
+            BatteryInfo info = bdm.getCurrentBatteryInfo();
+            int cycles = info != null ? info.getCycleCount() : 0;
+            return cycles > 0 ? String.valueOf(cycles) : null;
+        } catch (Exception e) {
+            Log.w(TAG, "Error getting cycle count from BatteryDataManager: " + e.getMessage());
+            return null;
+        }
     }
 
     private boolean analyzeOriginal(OriginResult result) {

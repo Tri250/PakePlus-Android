@@ -131,11 +131,18 @@ public class DeviceInfoManager {
         // 8. GPU 信息（保留主板字段原始值）
         String gpuInfo = collectGpuInfo();
 
+        // 8.5 保存原始 Build 信息（在数据库覆盖之前）
+        config.setBrand(Build.BRAND);
+        config.setOriginalModel(Build.MODEL);
+        if (config.getModel() == null) {
+            config.setModel(Build.MODEL);
+        }
+
         // 9. 使用机型数据库覆盖营销名称/处理器/屏幕规格
         DeviceDatabaseManager.DeviceEntry entry = deviceDb.findDevice();
         if (entry != null) {
             if (entry.marketName != null && !entry.marketName.isEmpty()) {
-                config.setModel(entry.marketName);
+                config.setModel(entry.marketName); // 营销名覆盖 model，originalModel 保留 Build.MODEL
             }
             if (entry.processor != null && !entry.processor.isEmpty()) {
                 config.setCpuInfo(entry.processor);

@@ -123,9 +123,10 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void applyConfig(DeviceConfig config) {
-        // 设备名称：使用 DeviceConfig 的营销型号名
+        // 设备名称：使用营销型号名（中文品牌 + 营销名）
         tvDeviceName.setText(config.getFullModelName());
-        tvDeviceModel.setText(config.getModel());
+        // 设备型号：显示原始 Build.MODEL（未被数据库覆盖）
+        tvDeviceModel.setText(config.getOriginalModel());
 
         // Android 版本
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");

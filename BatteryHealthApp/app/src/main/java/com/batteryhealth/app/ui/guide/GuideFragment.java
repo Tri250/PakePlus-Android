@@ -3,6 +3,8 @@ package com.batteryhealth.app.ui.guide;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -37,6 +39,7 @@ public class GuideFragment extends Fragment {
     private TextView tvAnalysisSummary;
 
     private BugReportAnalyzer analyzer;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -163,23 +166,29 @@ public class GuideFragment extends Fragment {
             btnUpload.setEnabled(false);
 
             new Thread(() -> {
-                File tempFile = copyUriToTempFile(uri);
+                File tempFile = copyUriToTempFile(uri, fileName);
                 if (tempFile != null) {
                     BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        showAnalysisResult(result);
-                        btnUpload.setText("上传分析报告");
-                        btnUpload.setEnabled(true);
-                    });
+
+                    if (isAdded()) {
+                        mainHandler.post(() -> {
+                            if (!isAdded()) return;
+                            showAnalysisResult(result);
+                            btnUpload.setText("上传分析报告");
+                            btnUpload.setEnabled(true);
+                        });
+                    }
 
                     tempFile.delete();
                 } else {
-                    requireActivity().runOnUiThread(() -> {
-                        tvAnalysisSummary.setText("文件读取失败");
-                        btnUpload.setText("上传分析报告");
-                        btnUpload.setEnabled(true);
-                    });
+                    if (isAdded()) {
+                        mainHandler.post(() -> {
+                            if (!isAdded()) return;
+                            tvAnalysisSummary.setText("文件读取失败");
+                            btnUpload.setText("上传分析报告");
+                            btnUpload.setEnabled(true);
+                        });
+                    }
                 }
             }).start();
 
@@ -208,24 +217,31 @@ public class GuideFragment extends Fragment {
         return result;
     }
 
-    private File copyUriToTempFile(Uri uri) {
-        try {
-            File tempFile = new File(requireContext().getCacheDir(), "bugreport_temp.zip");
-            java.io.InputStream is = requireContext().getContentResolver().openInputStream(uri);
-            java.io.OutputStream os = new java.io.FileOutputStream(tempFile);
-            
+    private File copyUriToTempFile(Uri uri, String fileName) {
+        // 保留原始文件扩展名，避免 .txt bugreport 被当作 .zip 解析
+        String ext = ".txt";
+        if (fileName != null) {
+            int dotIdx = fileName.lastIndexOf('.');
+            if (dotIdx >= 0) {
+                ext = fileName.substring(dotIdx).toLowerCase();
+            }
+        }
+        File tempFile = new File(requireContext().getCacheDir(), "bugreport_temp" + ext);
+        try (java.io.InputStream is = requireContext().getContentResolver().openInputStream(uri);
+             java.io.OutputStream os = new java.io.FileOutputStream(tempFile)) {
+            if (is == null) {
+                Log.e(TAG, "InputStream is null for uri: " + uri);
+                return null;
+            }
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = is.read(buffer)) != -1) {
                 os.write(buffer, 0, bytesRead);
             }
-            
-            is.close();
-            os.close();
-            
             return tempFile;
         } catch (Exception e) {
             Log.e(TAG, "Error copying file: " + e.getMessage());
+            tempFile.delete();
             return null;
         }
     }

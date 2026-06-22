@@ -202,7 +202,11 @@ public class BatteryHealthFragment extends Fragment {
 
         // 4. 容量（设计容量 + 当前满充容量）
         int displayCapacity = info.getCurrentCapacity() > 0 ? info.getCurrentCapacity() : info.getDesignCapacity();
-        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity > 0 ? displayCapacity : 0));
+        if (displayCapacity > 0) {
+            tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity));
+        } else {
+            tvCapacity.setText("--");
+        }
 
         // 5. 循环次数（使用 BatteryDataManager 的真实循环次数）
         tvCycleCount.setText(batteryDataManager.formatCycleCount(info));

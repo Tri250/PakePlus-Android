@@ -7,16 +7,20 @@ import android.util.Log;
 import com.batteryhealth.app.data.model.BugReportGuide;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -24,12 +28,16 @@ public class BugReportAnalyzer {
 
     private static final String TAG = "BugReportAnalyzer";
 
-    private Context context;
-    private BatteryDataManager batteryDataManager;
+    /** 限制列表大小，防止大文件 OOM */
+    private static final int MAX_BATTERY_EVENTS = 500;
+    private static final int MAX_ANOMALIES = 100;
+    private static final int MAX_CHARGE_SESSIONS = 200;
+    private static final int MAX_WAKELOCKS = 50;
+
+    private final Context context;
 
     public BugReportAnalyzer(Context context) {
         this.context = context;
-        this.batteryDataManager = new BatteryDataManager(context);
     }
 
     public BugReportGuide.AnalysisResult analyze(File bugReportFile) {
@@ -40,7 +48,8 @@ public class BugReportAnalyzer {
         result.batteryEvents = new ArrayList<>();
 
         try {
-            if (bugReportFile.getName().endsWith(".zip")) {
+            String fileName = bugReportFile.getName().toLowerCase();
+            if (fileName.endsWith(".zip")) {
                 parseZipBugReport(bugReportFile, result);
             } else {
                 parseTextBugReport(bugReportFile, result);
@@ -49,6 +58,14 @@ public class BugReportAnalyzer {
             analyzeBatteryEvents(result);
             generateSummary(result);
 
+        } catch (OutOfMemoryError e) {
+            Log.e(TAG, "OOM analyzing bug report", e);
+            result.anomalies.clear();
+            result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
+                    System.currentTimeMillis(), "HIGH", "内存不足",
+                    "bugreport 文件过大，无法完整解析",
+                    "请尝试使用更小的 bugreport 文件"
+            ));
         } catch (Exception e) {
             Log.e(TAG, "Error analyzing bug report: " + e.getMessage(), e);
             result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
@@ -61,83 +78,91 @@ public class BugReportAnalyzer {
         return result;
     }
 
+    /**
+     * 解析 ZIP 格式 bugreport。
+     * 关键修复：不调用 reader.close()（会关闭底层 ZipInputStream），改用不关闭底层流的读取方式。
+     */
     private void parseZipBugReport(File zipFile, BugReportGuide.AnalysisResult result) throws IOException {
-        StringBuilder mainBugreport = null;
+        boolean parsed = false;
+
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String entryName = entry.getName();
-                
-                // 优先查找主 bugreport 文件（通常是 bugreport-*.txt 格式）
-                if (entryName.toLowerCase().contains("bugreport") && entryName.endsWith(".txt")) {
-                    StringBuilder content = new StringBuilder();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        content.append(line).append("\n");
-                    }
-                    reader.close();
-                    mainBugreport = content;
+                if (entryName == null) continue;
+                String lowerName = entryName.toLowerCase();
+
+                // 优先查找主 bugreport 文件（bugreport-*.txt）
+                if (lowerName.contains("bugreport") && lowerName.endsWith(".txt")) {
+                    // 流式逐行解析，不全部读入内存
+                    parseStream(zis, result);
+                    parsed = true;
                     break;
                 }
+                zis.closeEntry();
             }
-            zis.closeEntry();
         }
-        
-        if (mainBugreport != null) {
-            parseTextContent(mainBugreport.toString(), result);
-        } else {
-            // 回退：逐行解析所有 ZIP 条目
-            try (ZipInputStream zis2 = new ZipInputStream(new FileInputStream(zipFile))) {
+
+        // 回退：如果没找到 bugreport*.txt，尝试解析所有 .txt 条目
+        if (!parsed) {
+            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
                 ZipEntry entry;
-                while ((entry = zis2.getNextEntry()) != null) {
-                    String entryName = entry.getName().toLowerCase();
-                    if (entryName.contains("battery") || entryName.contains("power") ||
-                        entryName.contains("dumpsys") || entryName.endsWith(".txt")) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(zis2));
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            parseLine(line, result);
-                        }
-                        reader.close();
+                while ((entry = zis.getNextEntry()) != null) {
+                    String entryName = entry.getName();
+                    if (entryName == null) continue;
+                    String lowerName = entryName.toLowerCase();
+                    if (lowerName.endsWith(".txt") || lowerName.contains("battery")
+                            || lowerName.contains("dumpsys") || lowerName.contains("power")) {
+                        parseStream(zis, result);
+                        parsed = true;
+                        break;
                     }
-                    zis2.closeEntry();
+                    zis.closeEntry();
                 }
             }
         }
-    }
 
-    private void parseTextBugReport(File textFile, BugReportGuide.AnalysisResult result) throws IOException {
-        StringBuilder fullText = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(textFile)))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                fullText.append(line).append("\n");
-            }
+        if (!parsed) {
+            throw new IOException("ZIP 中未找到可解析的 bugreport 文本文件");
         }
-        parseTextContent(fullText.toString(), result);
     }
 
     /**
-     * 按标准 Android bugreport 格式解析：识别 DUMP OF SERVICE 段落，提取电池相关数据。
+     * 解析纯文本 bugreport。流式逐行读取，避免 OOM。
      */
-    private void parseTextContent(String content, BugReportGuide.AnalysisResult result) {
-        String[] lines = content.split("\n");
+    private void parseTextBugReport(File textFile, BugReportGuide.AnalysisResult result) throws IOException {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(textFile), StandardCharsets.UTF_8))) {
+            parseStream(reader, result);
+        }
+    }
+
+    /**
+     * 流式逐行解析 bugreport 内容。
+     * 从 InputStream（ZIP 条目）或 BufferedReader（纯文本）读取。
+     */
+    private void parseStream(InputStream is, BugReportGuide.AnalysisResult result) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        parseStream(reader, result);
+        // 不关闭 reader，因为可能包装着 ZipInputStream（由外层 try-with-resources 管理）
+    }
+
+    private void parseStream(BufferedReader reader, BugReportGuide.AnalysisResult result) throws IOException {
+        String line;
         String currentSection = "";
 
-        for (String line : lines) {
-            // 识别 DUMP OF SERVICE 段落
-            if (line.contains("------") && line.contains("DUMP OF SERVICE")) {
-                currentSection = line.trim();
+        while ((line = reader.readLine()) != null) {
+            // 识别 DUMP OF SERVICE 段落起始
+            if (line.contains("DUMP OF SERVICE")) {
+                currentSection = line;
                 continue;
             }
-            if (line.contains("------") && !line.contains("DUMP OF SERVICE")) {
-                currentSection = "";
-            }
+            // 仅当遇到下一个 DUMP OF SERVICE 时才切换段落，分隔线不清空段落
+            // （bugreport 中大量含 ------ 的行会误清空段落）
 
-            parseLine(line, result);
+            parseLine(line, result, currentSection);
 
-            // 按段落解析电池统计
+            // 在 batterystats / battery 段落中提取电池统计
             if (currentSection.contains("batterystats") || currentSection.contains("battery")) {
                 parseBatteryStatsLine(line, result);
             }
@@ -146,67 +171,90 @@ public class BugReportAnalyzer {
 
     /**
      * 解析 batterystats/battery 段落中的关键字段。
+     * 修复：使用正则提取第一个数字，避免 replaceAll 拼接多个数字。
      */
     private void parseBatteryStatsLine(String line, BugReportGuide.AnalysisResult result) {
-        // 提取设计容量: "Estimated battery capacity:" 或 "Capacity:"
-        if (line.contains("apacity:") && line.contains("mAh")) {
+        // 提取设计容量: "Estimated battery capacity: 4000 mAh" 或 "Capacity: 4000"
+        if (line.contains("apacity:") && (line.contains("mAh") || line.contains("mah"))) {
             try {
-                String[] parts = line.split(":\\s*");
-                if (parts.length >= 2) {
-                    String val = parts[1].replaceAll("[^0-9]", "");
-                    if (!val.isEmpty()) {
-                        int mah = Integer.parseInt(val);
-                        if (result.deviceInfo == null) {
-                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
-                                    Build.MODEL, Build.BRAND, Build.VERSION.RELEASE,
-                                    Build.DISPLAY, mah, 0, 0f);
-                        } else {
-                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
-                                    result.deviceInfo.model, result.deviceInfo.brand,
-                                    result.deviceInfo.androidVersion, result.deviceInfo.buildNumber,
-                                    mah, result.deviceInfo.cycleCount, result.deviceInfo.healthPercentage);
-                        }
+                Matcher m = Pattern.compile("(\\d+)\\s*mAh", Pattern.CASE_INSENSITIVE).matcher(line);
+                if (m.find()) {
+                    int mah = Integer.parseInt(m.group(1));
+                    if (mah > 100 && mah < 20000) {
+                        updateDeviceInfo(result, mah, -1);
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
-        // 提取循环次数: "charge cycles:"
-        if (line.toLowerCase().contains("charge cycle") && line.contains(":")) {
+        // 提取循环次数: "charge cycles: 42" 或 "Charge full cycles: 42"
+        String lowerLine = line.toLowerCase();
+        if (lowerLine.contains("cycle") && lowerLine.contains(":")) {
             try {
-                String[] parts = line.split(":\\s*");
-                if (parts.length >= 2) {
-                    String val = parts[1].replaceAll("[^0-9]", "");
-                    if (!val.isEmpty()) {
-                        int cycles = Integer.parseInt(val);
-                        if (result.deviceInfo == null) {
-                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
-                                    Build.MODEL, Build.BRAND, Build.VERSION.RELEASE,
-                                    Build.DISPLAY, 0, cycles, 0f);
-                        } else {
-                            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
-                                    result.deviceInfo.model, result.deviceInfo.brand,
-                                    result.deviceInfo.androidVersion, result.deviceInfo.buildNumber,
-                                    result.deviceInfo.batteryCapacity, cycles, result.deviceInfo.healthPercentage);
-                        }
+                Matcher m = Pattern.compile("(\\d+)").matcher(line.substring(line.indexOf(':') + 1));
+                if (m.find()) {
+                    int cycles = Integer.parseInt(m.group(1));
+                    if (cycles >= 0 && cycles < 100000) {
+                        updateDeviceInfo(result, -1, cycles);
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
+        }
+
+        // 提取 charge_full（当前满充容量）: "Charge full: 3800 mAh"
+        if (line.contains("harge") && line.contains("full") && line.contains("mAh")) {
+            try {
+                Matcher m = Pattern.compile("(\\d+)\\s*mAh", Pattern.CASE_INSENSITIVE).matcher(line);
+                if (m.find()) {
+                    int mah = Integer.parseInt(m.group(1));
+                    if (mah > 100 && mah < 20000 && result.deviceInfo != null && result.deviceInfo.batteryCapacity > 0) {
+                        // 计算健康度
+                        float health = (mah * 100f) / result.deviceInfo.batteryCapacity;
+                        result.deviceInfo.healthPercentage = Math.max(0f, Math.min(100f, health));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 
-    private void parseLine(String line, BugReportGuide.AnalysisResult result) {
+    /**
+     * 更新 DeviceInfo，保留已有字段。
+     */
+    private void updateDeviceInfo(BugReportGuide.AnalysisResult result, int batteryMah, int cycleCount) {
+        String model = result.deviceInfo != null ? result.deviceInfo.model : Build.MODEL;
+        String brand = result.deviceInfo != null ? result.deviceInfo.brand : Build.BRAND;
+        String androidVer = result.deviceInfo != null ? result.deviceInfo.androidVersion : Build.VERSION.RELEASE;
+        String buildNum = result.deviceInfo != null ? result.deviceInfo.buildNumber : Build.DISPLAY;
+        int mah = batteryMah > 0 ? batteryMah : (result.deviceInfo != null ? result.deviceInfo.batteryCapacity : 0);
+        int cycles = cycleCount >= 0 ? cycleCount : (result.deviceInfo != null ? result.deviceInfo.cycleCount : 0);
+        float health = result.deviceInfo != null ? result.deviceInfo.healthPercentage : 0f;
+
+        result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                model, brand, androidVer, buildNum, mah, cycles, health
+        );
+    }
+
+    private void parseLine(String line, BugReportGuide.AnalysisResult result, String currentSection) {
         if (line == null) return;
 
-        parseBatteryEvent(line, result);
-        parseChargingSession(line, result);
-        parseAnomaly(line, result);
-        parseWakelock(line, result);
+        // 从 bugreport 头部解析设备信息
         parseDeviceInfo(line, result);
+
+        // 仅在非 batterystats 段落解析事件/会话/异常（避免 batterystats 段落海量匹配）
+        if (!currentSection.contains("batterystats")) {
+            parseBatteryEvent(line, result);
+            parseChargingSession(line, result);
+            parseAnomaly(line, result);
+            parseWakelock(line, result);
+        }
     }
 
     private void parseBatteryEvent(String line, BugReportGuide.AnalysisResult result) {
-        if (line.contains("BatteryManager") || line.contains("battery")) {
+        if (result.batteryEvents.size() >= MAX_BATTERY_EVENTS) return;
+        if (line.contains("BatteryManager") || (line.contains("battery") && line.contains("level"))) {
             String eventType = extractEventType(line);
             String detail = extractDetail(line);
             if (eventType != null && !eventType.isEmpty()) {
@@ -218,11 +266,12 @@ public class BugReportAnalyzer {
     }
 
     private void parseChargingSession(String line, BugReportGuide.AnalysisResult result) {
+        if (result.chargeSessions.size() >= MAX_CHARGE_SESSIONS) return;
         if (line.contains("charging") || line.contains("Charging")) {
             int level = extractLevel(line);
             float power = extractPower(line);
             String type = extractChargeType(line);
-            
+
             if (level >= 0 && !result.chargeSessions.isEmpty()) {
                 BugReportGuide.AnalysisResult.ChargeSession lastSession = result.chargeSessions.get(result.chargeSessions.size() - 1);
                 if (lastSession.endLevel == -1) {
@@ -232,7 +281,7 @@ public class BugReportAnalyzer {
                         lastSession.maxPower = power;
                     }
                 }
-            } else if (level >= 0 && line.contains("start") || line.contains("START")) {
+            } else if (level >= 0 && (line.contains("start") || line.contains("START"))) {
                 result.chargeSessions.add(new BugReportGuide.AnalysisResult.ChargeSession(
                         System.currentTimeMillis(), System.currentTimeMillis(),
                         level, -1, type, power, power
@@ -242,53 +291,40 @@ public class BugReportAnalyzer {
     }
 
     private void parseAnomaly(String line, BugReportGuide.AnalysisResult result) {
-        if (line.contains("ANR") || line.contains("anr")) {
+        if (result.anomalies.size() >= MAX_ANOMALIES) return;
+        if (line.contains("ANR ") || line.contains(" ANR ")) {
             result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
                     System.currentTimeMillis(), "CRITICAL", "ANR",
-                    "检测到应用无响应: " + line,
+                    "检测到应用无响应: " + line.trim(),
                     "建议检查后台运行的应用，可能存在内存泄漏或CPU占用过高"
-            ));
-        }
-        
-        if (line.contains("Wakelock") || line.contains("wakelock")) {
-            result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
-                    System.currentTimeMillis(), "MEDIUM", "异常唤醒",
-                    "检测到异常唤醒锁: " + line,
-                    "建议检查耗电应用，可能存在过度唤醒问题"
             ));
         }
 
         if (line.contains("temperature") && line.contains("high")) {
             result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
                     System.currentTimeMillis(), "HIGH", "电池过热",
-                    "检测到电池温度过高: " + line,
+                    "检测到电池温度过高: " + line.trim(),
                     "建议停止使用手机，让电池冷却后再使用"
-            ));
-        }
-
-        if (line.contains("battery") && line.contains("low") && line.contains("capacity")) {
-            result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
-                    System.currentTimeMillis(), "HIGH", "电池容量低",
-                    "检测到电池容量偏低: " + line,
-                    "建议考虑更换电池"
             ));
         }
     }
 
     private void parseWakelock(String line, BugReportGuide.AnalysisResult result) {
-        if (line.contains("WakeLock") || line.contains("wakelock")) {
+        if (result.wakelocks.size() >= MAX_WAKELOCKS) return;
+        if ((line.contains("WakeLock") || line.contains("wakelock")) && line.contains("partial")) {
             String packageName = extractPackageName(line);
             String appName = extractAppName(line, packageName);
-            
-            Map<String, BugReportGuide.AnalysisResult.AppWakelock> wakelockMap = new HashMap<>();
+
+            BugReportGuide.AnalysisResult.AppWakelock existing = null;
             for (BugReportGuide.AnalysisResult.AppWakelock w : result.wakelocks) {
-                wakelockMap.put(w.packageName, w);
+                if (w.packageName.equals(packageName)) {
+                    existing = w;
+                    break;
+                }
             }
-            
-            BugReportGuide.AnalysisResult.AppWakelock existing = wakelockMap.get(packageName);
+
             if (existing != null) {
                 existing.count++;
-                existing.durationMs += 60000;
             } else {
                 result.wakelocks.add(new BugReportGuide.AnalysisResult.AppWakelock(
                         packageName, appName, 60000, 1
@@ -297,12 +333,24 @@ public class BugReportAnalyzer {
         }
     }
 
+    /**
+     * 从 bugreport 头部解析设备信息（Build: brand/model/device）。
+     */
     private void parseDeviceInfo(String line, BugReportGuide.AnalysisResult result) {
-        if (result.deviceInfo == null) {
-            result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
-                    Build.MODEL, Build.BRAND, Build.VERSION.RELEASE,
-                    Build.DISPLAY, 0, 0, 0
-            );
+        if (result.deviceInfo != null) return; // 已设置
+        if (line.startsWith("Build: ") || line.contains("Build: ")) {
+            try {
+                // bugreport 头部格式: "Build: brand/model/device: ..."
+                Matcher m = Pattern.compile("Build:\\s*(\\S+)/(\\S+)/(\\S+)").matcher(line);
+                if (m.find()) {
+                    String brand = m.group(1);
+                    String model = m.group(2);
+                    result.deviceInfo = new BugReportGuide.AnalysisResult.DeviceInfo(
+                            model, brand, Build.VERSION.RELEASE, Build.DISPLAY, 0, 0, 0f
+                    );
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -373,16 +421,16 @@ public class BugReportAnalyzer {
 
     private String calculateOverallHealth(float avgPower, int anomalyCount, int criticalCount) {
         float score = 100;
-        
+
         if (avgPower < 5) {
             score -= 15;
         } else if (avgPower < 15) {
             score -= 5;
         }
-        
+
         score -= anomalyCount * 5;
         score -= criticalCount * 10;
-        
+
         if (score >= 85) return "优秀";
         if (score >= 70) return "良好";
         if (score >= 50) return "一般";
@@ -409,14 +457,10 @@ public class BugReportAnalyzer {
 
     private int extractLevel(String line) {
         try {
-            String[] parts = line.split("[^0-9]");
-            for (String part : parts) {
-                if (!part.isEmpty()) {
-                    int value = Integer.parseInt(part);
-                    if (value >= 0 && value <= 100) {
-                        return value;
-                    }
-                }
+            Matcher m = Pattern.compile("level[:\\s]+(\\d+)").matcher(line);
+            if (m.find()) {
+                int value = Integer.parseInt(m.group(1));
+                if (value >= 0 && value <= 100) return value;
             }
         } catch (NumberFormatException e) {
             // ignore
@@ -426,14 +470,10 @@ public class BugReportAnalyzer {
 
     private float extractPower(String line) {
         try {
-            String[] parts = line.split("[^0-9.]");
-            for (String part : parts) {
-                if (!part.isEmpty() && part.contains(".")) {
-                    float value = Float.parseFloat(part);
-                    if (value > 0 && value < 200) {
-                        return value;
-                    }
-                }
+            Matcher m = Pattern.compile("power[:\\s]+([\\d.]+)").matcher(line);
+            if (m.find()) {
+                float value = Float.parseFloat(m.group(1));
+                if (value > 0 && value < 200) return value;
             }
         } catch (NumberFormatException e) {
             // ignore
@@ -457,7 +497,7 @@ public class BugReportAnalyzer {
             }
             return line.substring(start + 8);
         }
-        
+
         start = line.indexOf("/");
         if (start >= 0) {
             int end = line.indexOf(" ", start);
@@ -466,7 +506,7 @@ public class BugReportAnalyzer {
             }
             return line.substring(0, Math.min(start + 50, line.length()));
         }
-        
+
         return "未知应用";
     }
 
@@ -478,13 +518,13 @@ public class BugReportAnalyzer {
         if (packageName.contains("douyin") || packageName.contains("bytedance")) return "抖音";
         if (packageName.contains("baidu")) return "百度";
         if (packageName.contains("jd")) return "京东";
-        
+
         int lastDot = packageName.lastIndexOf(".");
         if (lastDot >= 0) {
             String name = packageName.substring(lastDot + 1);
             return name.substring(0, 1).toUpperCase() + name.substring(1);
         }
-        
+
         return packageName;
     }
 }
