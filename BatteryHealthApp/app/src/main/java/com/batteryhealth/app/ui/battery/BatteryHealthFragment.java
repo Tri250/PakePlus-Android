@@ -24,6 +24,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.BatteryReportGenerator;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
@@ -48,10 +49,14 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvVoltage;
     private TextView tvBatterySource;
     private TextView tvTechnology;
+    private Button btnWeeklyReport;
+    private Button btnMonthlyReport;
+    private TextView tvReportSummary;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
     private BatteryDataManager batteryDataManager;
+    private BatteryReportGenerator reportGenerator;
 
     @Nullable
     @Override
@@ -76,6 +81,12 @@ public class BatteryHealthFragment extends Fragment {
         tvVoltage = view.findViewById(R.id.tv_voltage);
         tvBatterySource = view.findViewById(R.id.tv_battery_source);
         tvTechnology = view.findViewById(R.id.tv_technology);
+        btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
+        btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
+        tvReportSummary = view.findViewById(R.id.tv_report_summary);
+
+        btnWeeklyReport.setOnClickListener(v -> generateReport(true));
+        btnMonthlyReport.setOnClickListener(v -> generateReport(false));
     }
 
     private void animateEntry(View view) {
@@ -93,6 +104,7 @@ public class BatteryHealthFragment extends Fragment {
         if (batteryDataManager == null) {
             batteryDataManager = new BatteryDataManager(requireContext());
         }
+        reportGenerator = new BatteryReportGenerator(requireContext());
         registerBatteryReceiver();
         startPeriodicUpdate();
     }
@@ -246,5 +258,41 @@ public class BatteryHealthFragment extends Fragment {
         if (health >= 70) return "B-";
         if (health >= 60) return "C";
         return "D";
+    }
+
+    private void generateReport(boolean weekly) {
+        tvReportSummary.setText(getString(R.string.status_calculating));
+        btnWeeklyReport.setEnabled(false);
+        btnMonthlyReport.setEnabled(false);
+
+        new Thread(() -> {
+            BatteryReportGenerator.Report report = weekly 
+                    ? reportGenerator.generateWeeklyReport() 
+                    : reportGenerator.generateMonthlyReport();
+
+            String summary = formatReportSummary(report);
+            requireActivity().runOnUiThread(() -> {
+                tvReportSummary.setText(summary);
+                btnWeeklyReport.setEnabled(true);
+                btnMonthlyReport.setEnabled(true);
+            });
+        }).start();
+    }
+
+    private String formatReportSummary(BatteryReportGenerator.Report report) {
+        if (report.startHealth < 0) {
+            return getString(R.string.health_check_no_data);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format(Locale.getDefault(), "健康度：%.1f%% → %.1f%%（%.2f%%变化）\n",
+                report.startHealth, report.endHealth, report.healthDecay));
+        sb.append(String.format(Locale.getDefault(), "平均温度：%.1f°C（最高：%.1f°C）\n",
+                report.avgTemperature, report.maxTemperature));
+        sb.append(String.format("充电次数：%d 次\n", report.chargeCount));
+        sb.append(String.format("趋势：%s\n\n", report.healthTrend));
+        sb.append(report.recommendation);
+
+        return sb.toString();
     }
 }

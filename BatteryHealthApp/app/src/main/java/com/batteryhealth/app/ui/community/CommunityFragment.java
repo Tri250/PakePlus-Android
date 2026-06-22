@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.community;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -7,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -35,6 +37,8 @@ public class CommunityFragment extends Fragment {
     private LinearLayout containerTemp;
     private LinearLayout containerLifespan;
     private LinearLayout containerQa;
+    private LinearLayout containerPosts;
+    private Button btnShareTip;
 
     @Nullable
     @Override
@@ -67,6 +71,10 @@ public class CommunityFragment extends Fragment {
             containerTemp = view.findViewById(R.id.community_temp_container);
             containerLifespan = view.findViewById(R.id.community_lifespan_container);
             containerQa = view.findViewById(R.id.community_qa_container);
+            containerPosts = view.findViewById(R.id.community_posts_container);
+            btnShareTip = view.findViewById(R.id.btn_share_tip);
+
+            btnShareTip.setOnClickListener(v -> shareTip());
 
             // 从 MainActivity 获取共享的 BatteryDataManager
             if (getActivity() instanceof MainActivity) {
@@ -76,6 +84,7 @@ public class CommunityFragment extends Fragment {
                 batteryDataManager = new BatteryDataManager(requireContext());
             }
 
+            loadCommunityPosts();
             loadBatteryDataAndPopulate();
             UiAnimationHelper.animateCardsEntry(view);
         } catch (Exception e) {
@@ -95,6 +104,89 @@ public class CommunityFragment extends Fragment {
                 Log.e(TAG, "Error loading battery data: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void loadCommunityPosts() {
+        if (containerPosts == null) return;
+        containerPosts.removeAllViews();
+
+        List<CommunityPost> posts = buildCommunityPosts();
+        for (int i = 0; i < posts.size(); i++) {
+            CommunityPost post = posts.get(i);
+            if (i > 0) {
+                View separator = new View(requireContext());
+                separator.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
+                containerPosts.addView(separator);
+            }
+
+            LinearLayout postRow = new LinearLayout(requireContext());
+            postRow.setOrientation(LinearLayout.VERTICAL);
+            int padH = dpToPx(22);
+            int padTop = dpToPx(14);
+            int padBottom = dpToPx(14);
+            postRow.setPadding(padH, padTop, padH, padBottom);
+
+            TextView tvAuthor = new TextView(requireContext());
+            tvAuthor.setText(post.author);
+            tvAuthor.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+            tvAuthor.setTextSize(12);
+
+            TextView tvContent = new TextView(requireContext());
+            tvContent.setText(post.content);
+            tvContent.setTextAppearance(requireContext(), R.style.iOSBody);
+            tvContent.setLineSpacing(dpToPx(3), 1f);
+            LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            contentParams.topMargin = dpToPx(6);
+            tvContent.setLayoutParams(contentParams);
+
+            LinearLayout footer = new LinearLayout(requireContext());
+            footer.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            footerParams.topMargin = dpToPx(8);
+            footer.setLayoutParams(footerParams);
+
+            TextView tvTime = new TextView(requireContext());
+            tvTime.setText(post.time);
+            tvTime.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+            tvTime.setTextSize(11);
+
+            TextView tvLikes = new TextView(requireContext());
+            tvLikes.setText(post.likes + " 赞");
+            tvLikes.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+            tvLikes.setTextSize(11);
+            LinearLayout.LayoutParams likesParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            likesParams.setMarginStart(dpToPx(16));
+            tvLikes.setLayoutParams(likesParams);
+
+            footer.addView(tvTime);
+            footer.addView(tvLikes);
+
+            postRow.addView(tvAuthor);
+            postRow.addView(tvContent);
+            postRow.addView(footer);
+            containerPosts.addView(postRow);
+        }
+    }
+
+    private List<CommunityPost> buildCommunityPosts() {
+        List<CommunityPost> posts = new ArrayList<>();
+        posts.add(new CommunityPost("电池达人小王", "分享一个保养电池的小技巧：每次充电不要等到完全没电再充，保持在20%-80%之间最好！", "2小时前", 128));
+        posts.add(new CommunityPost("数码爱好者", "实测快充对电池寿命影响不大，主要是充电时温度控制很重要！", "5小时前", 256));
+        posts.add(new CommunityPost("手机维修师傅", "换电池一定要去官方售后，第三方电池质量参差不齐，安全第一！", "昨天", 512));
+        posts.add(new CommunityPost("科技博主", "iOS的优化电池充电功能真的很实用，Android用户可以试试电池健康类APP", "2天前", 89));
+        return posts;
+    }
+
+    private void shareTip() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "我在电池健康APP学到了很多保养电池的技巧，推荐大家也来试试！");
+        startActivity(Intent.createChooser(shareIntent, "分享给好友"));
     }
 
     private void populateContent(BatteryInfo info) {
@@ -387,6 +479,20 @@ public class CommunityFragment extends Fragment {
         QaItem(String question, String answer) {
             this.question = question;
             this.answer = answer;
+        }
+    }
+
+    private static class CommunityPost {
+        final String author;
+        final String content;
+        final String time;
+        final int likes;
+
+        CommunityPost(String author, String content, String time, int likes) {
+            this.author = author;
+            this.content = content;
+            this.time = time;
+            this.likes = likes;
         }
     }
 }

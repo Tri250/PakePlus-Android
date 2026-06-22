@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.DeviceConfigQuery;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 
 import java.util.Locale;
@@ -32,8 +33,10 @@ public class DeviceConfigFragment extends Fragment {
 
     private TextView tvDeviceName, tvDeviceModel, tvAndroidVersion, tvProcessor, tvRam, tvStorage,
             tvScreen, tvActivationDate, tvUsageDays, tvActivationSource, tvAvailableRam,
-            tvAvailableStorage, tvNetworkType;
+            tvAvailableStorage, tvNetworkType, tvVersionAssessment, tvSecurityAssessment,
+            tvPerformanceAssessment, tvSuggestions;
     private Switch switchHealthAlert;
+    private DeviceConfigQuery configQuery;
 
     @Nullable
     @Override
@@ -59,7 +62,13 @@ public class DeviceConfigFragment extends Fragment {
         tvAvailableRam = view.findViewById(R.id.tv_available_ram);
         tvAvailableStorage = view.findViewById(R.id.tv_available_storage);
         tvNetworkType = view.findViewById(R.id.tv_network_type);
+        tvVersionAssessment = view.findViewById(R.id.tv_version_assessment);
+        tvSecurityAssessment = view.findViewById(R.id.tv_security_assessment);
+        tvPerformanceAssessment = view.findViewById(R.id.tv_performance_assessment);
+        tvSuggestions = view.findViewById(R.id.tv_suggestions);
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
+
+        configQuery = new DeviceConfigQuery(requireContext());
 
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE);
         switchHealthAlert.setChecked(prefs.getBoolean(PREF_HEALTH_ALERT, true));
@@ -87,16 +96,30 @@ public class DeviceConfigFragment extends Fragment {
             @Override
             public void onConfigLoaded(DeviceConfig config) {
                 if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> applyConfig(config));
+                requireActivity().runOnUiThread(() -> {
+                    applyConfig(config);
+                    loadSystemAnalysis();
+                });
             }
 
             @Override
             public void onConfigLoadFailed(Exception e) {
                 Log.e(TAG, "Failed to load device config", e);
                 if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> loadFallbackData());
+                requireActivity().runOnUiThread(() -> {
+                    loadFallbackData();
+                    loadSystemAnalysis();
+                });
             }
         });
+    }
+
+    private void loadSystemAnalysis() {
+        DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
+        tvVersionAssessment.setText(result.versionAssessment);
+        tvSecurityAssessment.setText(result.securityAssessment);
+        tvPerformanceAssessment.setText(result.performanceAssessment);
+        tvSuggestions.setText(result.suggestions);
     }
 
     private void applyConfig(DeviceConfig config) {

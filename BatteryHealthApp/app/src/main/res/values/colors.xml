@@ -1,34 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ============================== -->
-    <!-- Web Design Tokens - Colors (Light) -->
+    <!-- ColorOS 16 Design System - Colors (Light) -->
     <!-- ============================== -->
-    <color name="bg_canvas">#ECEEF2</color>
-    <color name="bg_canvas_2">#DDE1E8</color>
+    
+    <!-- Background layers -->
+    <color name="bg_canvas">#F5F5F7</color>
+    <color name="bg_canvas_2">#E8EAED</color>
     <color name="bg_frame">#1B1D22</color>
-    <color name="surface">#F8F9FB</color>
+    
+    <!-- Surface layers -->
+    <color name="surface">#FFFFFF</color>
     <color name="surface_solid">#FFFFFF</color>
-    <color name="surface_2">#F5F6F9</color>
-    <color name="label">#0A0B0F</color>
-    <color name="label_2">#5A5F6B</color>
-    <color name="label_3">#969AA5</color>
-    <color name="separator">#120A0B0F</color>
-    <color name="separator_strong">#1F0A0B0F</color>
+    <color name="surface_2">#F8F9FA</color>
+    <color name="surface_elevated">#FFFFFF</color>
+    
+    <!-- Label hierarchy -->
+    <color name="label">#0D0D0D</color>
+    <color name="label_2">#636366</color>
+    <color name="label_3">#9B9B9F</color>
+    <color name="label_4">#C7C7CC</color>
+    
+    <!-- Separators -->
+    <color name="separator">#0D000000</color>
+    <color name="separator_strong">#1A000000</color>
 
-    <!-- Accent palette -->
-    <color name="blue">#0A84FF</color>
-    <color name="green">#30D158</color>
-    <color name="teal">#40C8E0</color>
-    <color name="orange">#FF9F0A</color>
-    <color name="red">#FF453A</color>
-    <color name="purple">#BF5AF2</color>
-    <color name="yellow">#FFD60A</color>
-    <color name="indigo">#5E5CE6</color>
-    <color name="mint">#66D4CF</color>
+    <!-- Accent palette (ColorOS 16 vibrant) -->
+    <color name="blue">#007AFF</color>
+    <color name="green">#34C759</color>
+    <color name="teal">#5AC8FA</color>
+    <color name="orange">#FF9500</color>
+    <color name="red">#FF3B30</color>
+    <color name="purple">#AF52DE</color>
+    <color name="yellow">#FFCC00</color>
+    <color name="indigo">#5856D6</color>
+    <color name="mint">#30D158</color>
+    
+    <!-- Battery health specific -->
+    <color name="battery_good">#34C759</color>
+    <color name="battery_warning">#FF9500</color>
+    <color name="battery_critical">#FF3B30</color>
+    <color name="battery_charging">#007AFF</color>
 
     <!-- Health gradients -->
-    <color name="health_1">#30D158</color>
-    <color name="health_2">#40C8E0</color>
+    <color name="health_1">#34C759</color>
+    <color name="health_2">#5AC8FA</color>
 
     <!-- ============================== -->
     <!-- Legacy iOS / Liquid Glass aliases (keep for compatibility) -->
@@ -72,11 +88,11 @@
     <color name="black">#000000</color>
 
     <!-- Health grades -->
-    <color name="health_a_plus">#32D74B</color>
-    <color name="health_a">#32D74B</color>
-    <color name="health_c">#FFD60A</color>
-    <color name="health_d">#FF9F0A</color>
-    <color name="health_e">#FF453A</color>
+    <color name="health_a_plus">#34C759</color>
+    <color name="health_a">#34C759</color>
+    <color name="health_c">#FFCC00</color>
+    <color name="health_d">#FF9500</color>
+    <color name="health_e">#FF3B30</color>
 
     <!-- Bottom nav tint (referenced in themes) -->
     <!-- defined in res/color/bottom_nav_color.xml as selector -->

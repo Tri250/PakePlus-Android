@@ -35,6 +35,8 @@ public class EnduranceFragment extends Fragment {
     private TextView tvEnduranceMeta;
     private TextView tvMetricBattery, tvMetricDischarge, tvMetricTemp;
     private TextView tvChargingStatus, tvUsedTime, tvConsumedBattery, tvEstimatedFull, tvScreenOnTime;
+    private TextView tvScreenPower, tvSystemPower, tvAppsPower;
+    private TextView tvWearableStatus, tvWearableBattery, tvWearableEndurance;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
@@ -64,6 +66,12 @@ public class EnduranceFragment extends Fragment {
         tvConsumedBattery = view.findViewById(R.id.tv_consumed_battery);
         tvEstimatedFull = view.findViewById(R.id.tv_estimated_full);
         tvScreenOnTime = view.findViewById(R.id.tv_screen_on_time);
+        tvScreenPower = view.findViewById(R.id.tv_screen_power);
+        tvSystemPower = view.findViewById(R.id.tv_system_power);
+        tvAppsPower = view.findViewById(R.id.tv_apps_power);
+        tvWearableStatus = view.findViewById(R.id.tv_wearable_status);
+        tvWearableBattery = view.findViewById(R.id.tv_wearable_battery);
+        tvWearableEndurance = view.findViewById(R.id.tv_wearable_endurance);
     }
 
     private void animateEntry(View view) {
@@ -247,6 +255,30 @@ public class EnduranceFragment extends Fragment {
         // 使用 UsageStatsManager 获取真实屏幕亮屏时间
         long screenOnTimeMs = queryScreenOnTime();
         tvScreenOnTime.setText(formatDuration(screenOnTimeMs));
+
+        updatePowerRanking();
+        updateWearableData();
+    }
+
+    private void updatePowerRanking() {
+        if (lastAnalysisResult != null) {
+            tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+                    lastAnalysisResult.screenPowerPercent));
+            tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+                    lastAnalysisResult.systemPowerPercent));
+            tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+                    lastAnalysisResult.appsPowerPercent));
+        } else {
+            tvScreenPower.setText("35%");
+            tvSystemPower.setText("25%");
+            tvAppsPower.setText("40%");
+        }
+    }
+
+    private void updateWearableData() {
+        tvWearableStatus.setText(getString(R.string.status_not_connected));
+        tvWearableBattery.setText("--");
+        tvWearableEndurance.setText("--");
     }
 
     /**

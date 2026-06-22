@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.PerformanceAnalyzer;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -44,11 +45,13 @@ public class PerformanceFragment extends Fragment {
     private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
     private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService;
     private TextView tvGpuRenderer, tvOpenglVersion, tvVulkanVersion;
+    private TextView tvAnrCount, tvAnrSeverity, tvAnrMessage, tvPerformanceTips;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
 
     private DeviceInfoManager deviceInfoManager;
+    private PerformanceAnalyzer performanceAnalyzer;
 
     // 用于计算应用 CPU 使用率的前次采样值
     private long lastCpuTime = 0;
@@ -81,6 +84,11 @@ public class PerformanceFragment extends Fragment {
         tvGpuRenderer = view.findViewById(R.id.tv_gpu_renderer);
         tvOpenglVersion = view.findViewById(R.id.tv_opengl_version);
         tvVulkanVersion = view.findViewById(R.id.tv_vulkan_version);
+
+        tvAnrCount = view.findViewById(R.id.tv_anr_count);
+        tvAnrSeverity = view.findViewById(R.id.tv_anr_severity);
+        tvAnrMessage = view.findViewById(R.id.tv_anr_message);
+        tvPerformanceTips = view.findViewById(R.id.tv_performance_tips);
     }
 
     private void animateEntry(View view) {
@@ -98,7 +106,9 @@ public class PerformanceFragment extends Fragment {
         if (deviceInfoManager == null) {
             deviceInfoManager = new DeviceInfoManager(requireContext());
         }
+        performanceAnalyzer = new PerformanceAnalyzer(requireContext());
         startPeriodicUpdate();
+        loadAnrAnalysis();
     }
 
     @Override
@@ -362,5 +372,24 @@ public class PerformanceFragment extends Fragment {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private void loadAnrAnalysis() {
+        new Thread(() -> {
+            PerformanceAnalyzer.AnrAnalysisResult anrResult = performanceAnalyzer.analyzeAnrLogs();
+            PerformanceAnalyzer.PerformanceInsights insights = performanceAnalyzer.getPerformanceInsights();
+
+            requireActivity().runOnUiThread(() -> {
+                tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
+                tvAnrSeverity.setText(anrResult.severity);
+                tvAnrMessage.setText(anrResult.message);
+
+                StringBuilder tipsBuilder = new StringBuilder();
+                for (String tip : insights.suggestions) {
+                    tipsBuilder.append(tip).append("\n");
+                }
+                tvPerformanceTips.setText(tipsBuilder.toString().trim());
+            });
+        }).start();
     }
 }

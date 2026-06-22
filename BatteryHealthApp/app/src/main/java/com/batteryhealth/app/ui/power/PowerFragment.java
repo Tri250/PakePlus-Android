@@ -26,7 +26,15 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.UiAnimationHelper;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -37,10 +45,13 @@ public class PowerFragment extends Fragment {
     private ProgressBar progressCharge;
     private TextView tvVoltage, tvCurrent, tvChargeStage, tvTemperature, tvBatteryLevel, tvEstimatedFull;
     private TextView tvChargeCount, tvAvgPower, tvTotalChargeTime, tvTotalCharged;
+    private LineChart chartPower;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
     private BatteryDataManager batteryDataManager;
+    private List<Float> powerHistory = new ArrayList<>();
+    private static final int MAX_HISTORY_SIZE = 30;
 
     @Nullable
     @Override
@@ -65,6 +76,41 @@ public class PowerFragment extends Fragment {
         tvAvgPower = view.findViewById(R.id.tv_avg_power);
         tvTotalChargeTime = view.findViewById(R.id.tv_total_charge_time);
         tvTotalCharged = view.findViewById(R.id.tv_total_charged);
+        chartPower = view.findViewById(R.id.chart_power);
+        initChart();
+    }
+
+    private void initChart() {
+        chartPower.setDrawGridBackground(false);
+        chartPower.getDescription().setEnabled(false);
+        chartPower.setTouchEnabled(true);
+        chartPower.setDragEnabled(true);
+        chartPower.setScaleEnabled(false);
+        chartPower.setPinchZoom(false);
+
+        XAxis xAxis = chartPower.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setDrawAxisLine(false);
+        xAxis.setLabelCount(5);
+        xAxis.setTextColor(getResources().getColor(R.color.label_3));
+        xAxis.setTextSize(10f);
+
+        YAxis leftAxis = chartPower.getAxisLeft();
+        leftAxis.setDrawGridLines(true);
+        leftAxis.setGridColor(getResources().getColor(R.color.separator));
+        leftAxis.setTextColor(getResources().getColor(R.color.label_3));
+        leftAxis.setTextSize(10f);
+        leftAxis.setAxisMinimum(0f);
+
+        YAxis rightAxis = chartPower.getAxisRight();
+        rightAxis.setEnabled(false);
+
+        chartPower.getLegend().setEnabled(false);
+
+        LineData data = new LineData();
+        data.setValueTextColor(getResources().getColor(R.color.label_3));
+        chartPower.setData(data);
     }
 
     private void animateEntry(View view) {
@@ -197,6 +243,8 @@ public class PowerFragment extends Fragment {
         tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
         tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
         tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
+
+        updatePowerChart(watt);
     }
 
     /**
@@ -333,5 +381,33 @@ public class PowerFragment extends Fragment {
         int sessionCount = 0;
         int totalChargeMinutes = 0;
         int totalChargedMah = 0;
+    }
+
+    private void updatePowerChart(float watt) {
+        powerHistory.add(watt);
+        if (powerHistory.size() > MAX_HISTORY_SIZE) {
+            powerHistory.remove(0);
+        }
+
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < powerHistory.size(); i++) {
+            entries.add(new Entry(i, powerHistory.get(i)));
+        }
+
+        LineDataSet dataSet = new LineDataSet(entries, "功率");
+        dataSet.setColor(getResources().getColor(R.color.primary));
+        dataSet.setLineWidth(2f);
+        dataSet.setDrawCircles(false);
+        dataSet.setDrawValues(false);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setCubicIntensity(0.2f);
+
+        List<ILineDataSet> dataSets = new ArrayList<>();
+        dataSets.add(dataSet);
+
+        LineData data = new LineData(dataSets);
+        chartPower.setData(data);
+        chartPower.notifyDataSetChanged();
+        chartPower.invalidate();
     }
 }

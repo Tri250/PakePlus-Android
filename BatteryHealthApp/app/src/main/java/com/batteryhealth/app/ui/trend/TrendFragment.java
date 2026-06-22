@@ -38,6 +38,7 @@ public class TrendFragment extends Fragment {
 
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
+    private TextView tvAvgTemperature, tvMaxTemperature, tvRecordCount, tvDataSpan;
 
     @Nullable
     @Override
@@ -55,6 +56,10 @@ public class TrendFragment extends Fragment {
         tvCurrentHealth = view.findViewById(R.id.tv_current_health);
         tvTotalDecay = view.findViewById(R.id.tv_total_decay);
         tvMonthlyDecay = view.findViewById(R.id.tv_monthly_decay);
+        tvAvgTemperature = view.findViewById(R.id.tv_avg_temperature);
+        tvMaxTemperature = view.findViewById(R.id.tv_max_temperature);
+        tvRecordCount = view.findViewById(R.id.tv_record_count);
+        tvDataSpan = view.findViewById(R.id.tv_data_span);
     }
 
     private void animateEntry(View view) {
@@ -152,7 +157,54 @@ public class TrendFragment extends Fragment {
         tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", totalDecay));
         tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.2f%%", monthlyDecay));
 
+        // 计算历史数据统计
+        calculateHistoryStats(validHistory);
+
         setupChart(validHistory);
+    }
+
+    private void calculateHistoryStats(List<BatteryInfo> history) {
+        if (history == null || history.isEmpty()) {
+            tvAvgTemperature.setText("--");
+            tvMaxTemperature.setText("--");
+            tvRecordCount.setText("--");
+            tvDataSpan.setText("--");
+            return;
+        }
+
+        float sumTemp = 0f;
+        float maxTemp = Float.MIN_VALUE;
+        int validTempCount = 0;
+
+        for (BatteryInfo info : history) {
+            float temp = info.getTemperature();
+            if (temp > 0) {
+                sumTemp += temp;
+                if (temp > maxTemp) {
+                    maxTemp = temp;
+                }
+                validTempCount++;
+            }
+        }
+
+        if (validTempCount > 0) {
+            tvAvgTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", sumTemp / validTempCount));
+            tvMaxTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", maxTemp));
+        } else {
+            tvAvgTemperature.setText("--");
+            tvMaxTemperature.setText("--");
+        }
+
+        tvRecordCount.setText(String.valueOf(history.size()));
+
+        long earliestTs = history.get(0).getTimestamp();
+        long latestTs = history.get(history.size() - 1).getTimestamp();
+        long daysSpan = (latestTs - earliestTs) / (1000L * 60 * 60 * 24);
+        if (daysSpan <= 0) {
+            tvDataSpan.setText("1天");
+        } else {
+            tvDataSpan.setText(String.format("%d天", daysSpan));
+        }
     }
 
     private void showNoDataState() {
