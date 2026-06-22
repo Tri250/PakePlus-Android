@@ -20,9 +20,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.BatteryHealthApplication;
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
+import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class PowerFragment extends Fragment {
@@ -34,6 +41,7 @@ public class PowerFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+    private BatteryDataManager batteryDataManager;
 
     @Nullable
     @Override
@@ -68,6 +76,13 @@ public class PowerFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // 从 MainActivity 获取共享的 BatteryDataManager
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        if (batteryDataManager == null) {
+            batteryDataManager = new BatteryDataManager(requireContext());
+        }
         registerBatteryReceiver();
         startPeriodicUpdate();
     }
@@ -111,69 +126,213 @@ public class PowerFragment extends Fragment {
     private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateFromIntent(intent);
+            updateBatteryData();
         }
     };
 
     private void updateBatteryData() {
-        Intent intent = requireContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent != null) {
-            updateFromIntent(intent);
-        }
+        if (batteryDataManager == null) return;
+
+        // 在后台线程获取完整电池信息（含 sysfs 读取）
+        new Thread(() -> {
+            try {
+                batteryDataManager.refreshFromStickyIntent();
+                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                if (info != null && isAdded()) {
+                    // 同时查询今日充电统计
+                    TodayChargeStats stats = queryTodayChargeStats();
+                    handler.post(() -> updateUI(info, stats));
+                }
+            } catch (Exception e) {
+                // 静默处理
+            }
+        }).start();
     }
 
-    private void updateFromIntent(Intent intent) {
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
+    private void updateUI(BatteryInfo info, TodayChargeStats stats) {
+        if (info == null || !isAdded()) return;
 
-        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
-                || status == BatteryManager.BATTERY_STATUS_FULL;
+        int batteryPct = info.getLevel();
+        boolean isCharging = info.isCharging();
 
-        int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
-        float voltageV = voltage / 1000f;
+        // 电压
+        float voltageV = info.getVoltage() / 1000f;
+        // 电流（info.getCurrentNow() 单位 uA）
+        float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
+        float currentA = currentMa / 1000f;
 
-        int current = 0;
-        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-        if (bm != null) {
-            current = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        }
-        float currentA = Math.abs(current) / 1000000f;
+        // 功率
+        float watt = info.getChargingPower();
 
-        int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
+        // 温度
+        float tempC = info.getTemperature();
 
-        float watt = voltageV * currentA;
+        // 使用 ChargeProtocolDetector 识别充电协议
+        ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
 
         // Update hero
         tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
-        String powerType = watt > 20 ? getString(R.string.status_super_fast_charge)
-                : watt > 10 ? getString(R.string.status_fast_charge)
-                : isCharging ? getString(R.string.status_normal_charge) : getString(R.string.status_not_charging);
+
+        // 使用 BatteryDataManager.getPowerLevelLabel() 进行功率类型分类
+        String powerType;
+        if (!isCharging) {
+            powerType = getString(R.string.status_not_charging);
+        } else if (batteryDataManager.isNearOfficialFastCharge(watt)) {
+            powerType = protocolResult.primary;
+        } else {
+            powerType = batteryDataManager.getPowerLevelLabel(watt);
+        }
         tvPowerType.setText(powerType);
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
         // Update details
         tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(current) / 1000f));
+        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
         tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
         tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA) : "--");
+        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
 
-        // Today stats (placeholders)
-        tvChargeCount.setText("2");
+        // Today stats (from database)
+        tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
         tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
-        tvTotalChargeTime.setText("45分");
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+        tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
+        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
     }
 
-    private String calculateTimeToFull(int batteryPct, float currentA) {
+    /**
+     * 查询今日充电统计：充电会话数、总充电时间、总充电量。
+     */
+    private TodayChargeStats queryTodayChargeStats() {
+        TodayChargeStats stats = new TodayChargeStats();
+        try {
+            BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
+            if (app == null) return stats;
+            var db = app.getDatabase();
+            if (db == null) return stats;
+
+            // 今日零点时间戳
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            long todayStart = cal.getTimeInMillis();
+
+            // 查询今日所有电池记录
+            List<BatteryInfo> records = db.batteryInfoDao().getSince(todayStart);
+            if (records == null || records.isEmpty()) return stats;
+
+            // 统计充电会话数：连续充电记录为一段，中间出现非充电状态则分段
+            int sessionCount = 0;
+            boolean inChargingSession = false;
+            long sessionStartTime = 0;
+            long totalChargeMs = 0;
+            int startLevel = -1;
+            int endLevel = -1;
+            int designCapacity = -1;
+
+            // 获取设计容量用于计算充电量
+            BatteryInfo latestInfo = batteryDataManager.getCurrentBatteryInfo();
+            if (latestInfo != null) {
+                designCapacity = latestInfo.getDesignCapacity();
+            }
+
+            for (BatteryInfo record : records) {
+                boolean charging = record.isCharging();
+                if (charging && !inChargingSession) {
+                    // 新充电会话开始
+                    sessionCount++;
+                    inChargingSession = true;
+                    sessionStartTime = record.getTimestamp();
+                    startLevel = record.getLevel();
+                } else if (!charging && inChargingSession) {
+                    // 充电会话结束
+                    totalChargeMs += record.getTimestamp() - sessionStartTime;
+                    endLevel = record.getLevel();
+                    inChargingSession = false;
+                }
+            }
+            // 如果当前仍在充电，计入当前会话
+            if (inChargingSession) {
+                totalChargeMs += System.currentTimeMillis() - sessionStartTime;
+                endLevel = records.get(records.size() - 1).getLevel();
+            }
+
+            stats.sessionCount = sessionCount;
+            stats.totalChargeMinutes = (int) (totalChargeMs / 60000);
+
+            // 计算总充电量：使用电量差值 × 设计容量估算
+            if (startLevel >= 0 && endLevel >= 0 && designCapacity > 0) {
+                int levelDiff = endLevel - startLevel;
+                if (levelDiff < 0) levelDiff = 0;
+                stats.totalChargedMah = (int) (levelDiff / 100f * designCapacity);
+            }
+        } catch (Exception e) {
+            // 静默处理
+        }
+        return stats;
+    }
+
+    /**
+     * 基于实际电流和剩余容量计算充满所需时间。
+     * 使用设计容量（或当前满充容量）计算剩余需要的电量，再除以当前充电电流。
+     */
+    private String calculateTimeToFull(int batteryPct, float currentA, BatteryInfo info) {
         if (currentA <= 0) return "--";
-        int remaining = 100 - batteryPct;
-        float hours = remaining / (currentA * 100 / 3f); // rough estimate
-        int mins = (int) (hours * 60);
-        return String.format(Locale.getDefault(), "%d分", mins);
+
+        // 获取电池容量（mAh）
+        int capacityMah = info.getCurrentCapacity();
+        if (capacityMah <= 0) {
+            capacityMah = info.getDesignCapacity();
+        }
+        if (capacityMah <= 0) return "--";
+
+        // 考虑充电限制百分比
+        int limitPct = batteryDataManager.getChargingLimitPercent();
+        int remainingPct = limitPct - batteryPct;
+        if (remainingPct <= 0) return "--";
+
+        // 剩余需要充入的电量（mAh）
+        float remainingMah = capacityMah * (remainingPct / 100f);
+
+        // 考虑充电效率（通常 85%-95%，取 90%）
+        float efficiency = 0.9f;
+        // 充电效率在涓流阶段更低
+        if (batteryPct >= 80) {
+            efficiency = 0.6f;
+        } else if (batteryPct >= 60) {
+            efficiency = 0.8f;
+        }
+
+        // 充满所需时间（小时）= 剩余电量 / (电流 × 效率)
+        float hours = remainingMah / (currentA * 1000f * efficiency);
+        int mins = Math.max(1, (int) (hours * 60));
+        return formatMinutes(mins);
+    }
+
+    /**
+     * 格式化分钟数为可读字符串。
+     */
+    private String formatMinutes(int totalMinutes) {
+        if (totalMinutes <= 0) return "--";
+        int hours = totalMinutes / 60;
+        int mins = totalMinutes % 60;
+        if (hours > 0 && mins > 0) {
+            return String.format(Locale.getDefault(), "%d小时%d分", hours, mins);
+        } else if (hours > 0) {
+            return String.format(Locale.getDefault(), "%d小时", hours);
+        } else {
+            return String.format(Locale.getDefault(), "%d分", mins);
+        }
+    }
+
+    /**
+     * 今日充电统计数据结构。
+     */
+    private static class TodayChargeStats {
+        int sessionCount = 0;
+        int totalChargeMinutes = 0;
+        int totalChargedMah = 0;
     }
 }

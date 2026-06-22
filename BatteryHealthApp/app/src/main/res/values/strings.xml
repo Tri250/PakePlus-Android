@@ -176,6 +176,7 @@
     <string name="health_poor">较差</string>
     <string name="health_very_poor">极差</string>
     <string name="health_unknown">未知</string>
+    <string name="status_not_supported">不支持</string>
     <string name="battery_source_original">原装</string>
     <string name="battery_source_third_party">第三方</string>
     <string name="cycle_count_unreadable">无法读取</string>

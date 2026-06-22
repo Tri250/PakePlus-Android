@@ -40,35 +40,25 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="32dp"
-                android:gravity="center">
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电池社区"
+                    android:text="充电建议"
                     android:textAppearance="@style/iOSSubtitle"
-                    android:layout_marginBottom="16dp" />
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <View style="@style/iOSSeparator" />
+
+                <LinearLayout
+                    android:id="@+id/community_tips_container"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="分享电池使用心得，交流保养技巧\n加入电池社区，发现更多同好"
-                    android:textAppearance="@style/iOSBody.Secondary"
-                    android:gravity="center"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_marginBottom="24dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="即将开放"
-                    android:textAppearance="@style/iOSBody"
-                    app:cornerRadius="24dp"
-                    app:backgroundTint="@color/ios_green"
-                    android:textColor="@color/white"
-                    android:enabled="false" />
+                    android:orientation="vertical" />
 
             </LinearLayout>
 
@@ -92,7 +82,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="电池养护小贴士"
+                    android:text="温度管理"
                     android:textAppearance="@style/iOSSubtitle"
                     android:paddingTop="22dp"
                     android:paddingBottom="10dp"
@@ -101,55 +91,85 @@
 
                 <View style="@style/iOSSeparator" />
 
-                <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
-                    <TextView
-                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免过度充电"
-                        android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="充至80%即可"
-                        android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
-                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/community_temp_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="延长寿命"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
 
                 <View style="@style/iOSSeparator" />
 
-                <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
-                    <TextView
-                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免深度放电"
-                        android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="低于20%请充电"
-                        android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
-                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/community_lifespan_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/liquid_glass_surface"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="@color/liquid_glass_border">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="常见问题"
+                    android:textAppearance="@style/iOSSubtitle"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="10dp"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp" />
 
                 <View style="@style/iOSSeparator" />
 
-                <LinearLayout style="@style/iOSListItem" android:minHeight="48dp">
-                    <TextView
-                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="避免高温环境"
-                        android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="保持0-35°C"
-                        android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
-                </LinearLayout>
-
-                <View style="@style/iOSSeparator" />
-
-                <LinearLayout style="@style/iOSListItem" android:minHeight="48dp" android:paddingBottom="22dp">
-                    <TextView
-                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="使用原装充电器"
-                        android:textAppearance="@style/iOSBody" android:lineSpacingExtra="3dp" />
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="安全可靠"
-                        android:textAppearance="@style/iOSBody.Secondary" android:lineSpacingExtra="2dp" />
-                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/community_qa_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
 
             </LinearLayout>
 

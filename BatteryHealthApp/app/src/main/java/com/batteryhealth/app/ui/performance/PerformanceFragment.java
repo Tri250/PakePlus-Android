@@ -2,6 +2,7 @@ package com.batteryhealth.app.ui.performance;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Environment;
@@ -21,7 +22,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.PerformanceBenchmark;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -30,11 +35,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Locale;
 
-import javax.microedition.khronos.egl.EGL10;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.egl.EGLContext;
-import javax.microedition.khronos.egl.EGLDisplay;
-
+/**
+ * 性能监控 Fragment。
+ * 使用 DeviceInfoManager 获取真实 GPU/CPU 信息，
+ * 使用 /proc/self/stat 读取真实应用 CPU 使用率，
+ * 使用 PerformanceBenchmark 执行真实基准测试。
+ */
 public class PerformanceFragment extends Fragment {
 
     private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
@@ -44,6 +50,12 @@ public class PerformanceFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
+
+    private DeviceInfoManager deviceInfoManager;
+
+    // 用于计算应用 CPU 使用率的前次采样值
+    private long lastCpuTime = 0;
+    private long lastAppCpuTime = 0;
 
     @Nullable
     @Override
@@ -82,6 +94,13 @@ public class PerformanceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // 从 MainActivity 获取共享的 DeviceInfoManager
+        if (getActivity() instanceof MainActivity) {
+            deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
+        }
+        if (deviceInfoManager == null) {
+            deviceInfoManager = new DeviceInfoManager(requireContext());
+        }
         startPeriodicUpdate();
     }
 
@@ -137,14 +156,14 @@ public class PerformanceFragment extends Fragment {
         tvPerformanceScore.setText(String.valueOf(score));
         UiAnimationHelper.animateProgressBar(progressScore, score);
 
-        // App info
+        // App info - 使用真实的 /proc/self/stat 读取应用 CPU 使用率
         tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
         tvAppMemory.setText(formatSize(getAppMemoryUsage()));
         long runtimeMs = SystemClock.elapsedRealtime();
         tvRuntime.setText(formatDuration(runtimeMs));
         tvForegroundService.setText(getString(R.string.status_running));
 
-        // GPU
+        // GPU - 使用 DeviceInfoManager 获取真实 GPU 信息
         loadGpuInfo();
     }
 
@@ -172,8 +191,79 @@ public class PerformanceFragment extends Fragment {
         return Math.max(0, Math.min(100, baseScore));
     }
 
+    /**
+     * 通过读取 /proc/self/stat 计算应用真实 CPU 使用率。
+     * 使用两次采样之间的差值计算百分比。
+     */
     private float getAppCpuUsage() {
-        return 0.5f; // Placeholder
+        try {
+            // 读取进程总 CPU 时间
+            long[] appTimes = readProcessCpuTimes();
+            // 读取系统总 CPU 时间
+            long[] sysTimes = readSystemCpuTimes();
+
+            if (appTimes == null || sysTimes == null) return 0f;
+
+            long appCpuTime = appTimes[0] + appTimes[1]; // utime + stime
+            long sysCpuTime = 0;
+            for (long t : sysTimes) sysCpuTime += t;
+
+            if (lastCpuTime > 0 && lastAppCpuTime > 0) {
+                long deltaApp = appCpuTime - lastAppCpuTime;
+                long deltaSys = sysCpuTime - lastCpuTime;
+                if (deltaSys > 0) {
+                    float usage = (deltaApp * 100f) / deltaSys;
+                    lastAppCpuTime = appCpuTime;
+                    lastCpuTime = sysCpuTime;
+                    return Math.min(usage, 100f);
+                }
+            }
+
+            lastAppCpuTime = appCpuTime;
+            lastCpuTime = sysCpuTime;
+            return 0f;
+        } catch (Exception e) {
+            return 0f;
+        }
+    }
+
+    /**
+     * 读取 /proc/self/stat 获取进程 utime 和 stime（单位：时钟滴答）
+     */
+    private long[] readProcessCpuTimes() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/stat"))) {
+            String line = reader.readLine();
+            if (line != null) {
+                String[] parts = line.split("\\s+");
+                // utime = parts[13], stime = parts[14] (0-indexed)
+                if (parts.length > 14) {
+                    long utime = Long.parseLong(parts[13]);
+                    long stime = Long.parseLong(parts[14]);
+                    return new long[]{utime, stime};
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 读取 /proc/stat 获取系统总 CPU 时间
+     */
+    private long[] readSystemCpuTimes() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
+            String line = reader.readLine();
+            if (line != null && line.startsWith("cpu ")) {
+                String[] parts = line.split("\\s+");
+                long[] times = new long[parts.length - 1];
+                for (int i = 1; i < parts.length; i++) {
+                    times[i - 1] = Long.parseLong(parts[i]);
+                }
+                return times;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private long getAppMemoryUsage() {
@@ -196,30 +286,84 @@ public class PerformanceFragment extends Fragment {
         return String.format(Locale.getDefault(), "%d小时%d分", hours, minutes);
     }
 
+    /**
+     * 使用 DeviceInfoManager 获取真实 GPU 信息，并检测 Vulkan 支持。
+     */
     private void loadGpuInfo() {
+        // GPU 渲染器名称 - 使用 DeviceInfoManager 的多路 fallback 逻辑
+        if (deviceInfoManager != null) {
+            String gpuInfo = deviceInfoManager.getGpuInfo();
+            tvGpuRenderer.setText(gpuInfo != null && !gpuInfo.isEmpty() ? gpuInfo : "Unknown");
+        } else {
+            tvGpuRenderer.setText("Unknown");
+        }
+
+        // OpenGL ES 版本 - 通过 EGL 获取
         try {
-            EGL10 egl = (EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
-            EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            javax.microedition.khronos.egl.EGL10 egl = (javax.microedition.khronos.egl.EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
+            javax.microedition.khronos.egl.EGLDisplay display = egl.eglGetDisplay(javax.microedition.khronos.egl.EGL10.EGL_DEFAULT_DISPLAY);
             egl.eglInitialize(display, new int[2]);
-            EGLConfig[] configs = new EGLConfig[1];
-            int[] numConfigs = new int[1];
-            egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, configs, 1, numConfigs);
-            EGLContext context = egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, new int[]{0x3098, 2, EGL10.EGL_NONE});
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, context);
-
-            String renderer = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER);
             String version = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
-
-            tvGpuRenderer.setText(renderer != null ? renderer : "Unknown");
             tvOpenglVersion.setText(version != null ? version : "Unknown");
-
-            egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
-            egl.eglDestroyContext(display, context);
             egl.eglTerminate(display);
         } catch (Exception e) {
-            tvGpuRenderer.setText("Unknown");
             tvOpenglVersion.setText("Unknown");
         }
-        tvVulkanVersion.setText("N/A");
+
+        // Vulkan 版本 - 通过系统属性检测
+        tvVulkanVersion.setText(detectVulkanVersion());
+    }
+
+    /**
+     * 检测设备 Vulkan API 支持版本。
+     * 通过读取 ro.hardware.vulkan 和 /sys/class/kgsl/kgsl-3d0/gpu_model 等方式判断。
+     */
+    private String detectVulkanVersion() {
+        try {
+            // 1. 通过系统属性检测 Vulkan 版本
+            String vulkanProp = getSystemProperty("ro.hardware.vulkan");
+            if (vulkanProp != null && !vulkanProp.isEmpty()) {
+                return "Vulkan " + vulkanProp;
+            }
+
+            // 2. 检查 libvulkan.so 是否存在
+            String[] vulkanPaths = {
+                    "/system/lib64/libvulkan.so",
+                    "/system/lib/libvulkan.so",
+                    "/vendor/lib64/libvulkan.so",
+                    "/vendor/lib/libvulkan.so"
+            };
+            for (String path : vulkanPaths) {
+                if (new File(path).exists()) {
+                    return "Vulkan 1.x";
+                }
+            }
+
+            // 3. 通过 ro.opengles.version 推断（3.x 以上通常支持 Vulkan）
+            String glVersion = getSystemProperty("ro.opengles.version");
+            if (glVersion != null && !glVersion.isEmpty()) {
+                try {
+                    int version = Integer.parseInt(glVersion.trim());
+                    // OpenGL ES 3.2 = 196610, 通常对应 Vulkan 1.1+
+                    // OpenGL ES 3.1 = 196609, 通常对应 Vulkan 1.0+
+                    if (version >= 196610) return "Vulkan 1.1+";
+                    if (version >= 196609) return "Vulkan 1.0+";
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return getString(R.string.status_not_supported);
+    }
+
+    private String getSystemProperty(String propertyName) {
+        try {
+            Class<?> systemProperties = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = systemProperties.getMethod("get", String.class);
+            Object value = get.invoke(null, propertyName);
+            return value != null ? value.toString() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

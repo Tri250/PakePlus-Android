@@ -4,9 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.StatFs;
-import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,15 +17,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 public class DeviceConfigFragment extends Fragment {
 
+    private static final String TAG = "DeviceConfigFragment";
     private static final String PREFS_CONFIG = "config_prefs";
     private static final String PREF_HEALTH_ALERT = "health_decay_alert";
 
@@ -75,125 +74,125 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void loadData() {
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity == null) return;
+
+        DeviceInfoManager deviceInfoManager = activity.getDeviceInfoManager();
+        if (deviceInfoManager == null) {
+            loadFallbackData();
+            return;
+        }
+
+        deviceInfoManager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
+            @Override
+            public void onConfigLoaded(DeviceConfig config) {
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> applyConfig(config));
+            }
+
+            @Override
+            public void onConfigLoadFailed(Exception e) {
+                Log.e(TAG, "Failed to load device config", e);
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> loadFallbackData());
+            }
+        });
+    }
+
+    private void applyConfig(DeviceConfig config) {
+        // 设备名称：使用 DeviceConfig 的营销型号名
+        tvDeviceName.setText(config.getFullModelName());
+        tvDeviceModel.setText(config.getModel());
+
+        // Android 版本
+        tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+
+        // 处理器：使用 DeviceConfig 的 cpuInfo（含营销名称）
+        String cpuInfo = config.getCpuInfo();
+        tvProcessor.setText(cpuInfo != null && !cpuInfo.isEmpty() ? cpuInfo : Build.HARDWARE);
+
+        // 内存：使用 DeviceConfig 的格式化内存（按营销规格取整）
+        tvRam.setText(config.getFormattedMemory());
+
+        // 存储：使用 DeviceConfig 的格式化存储
+        tvStorage.setText(config.getFormattedStorage());
+
+        // 屏幕：使用 DeviceConfig 的屏幕信息（WindowMetrics API，含尺寸）
+        StringBuilder screenInfo = new StringBuilder();
+        screenInfo.append(config.getScreenResolution());
+        if (config.getScreenSize() > 0) {
+            screenInfo.append("  ").append(config.getFormattedScreenSize());
+        }
+        tvScreen.setText(screenInfo.toString());
+
+        // 激活日期：使用 DeviceConfig 的激活日期（ActivationDateHelper 内部实现）
+        String activationDateStr = config.getActivationDateStr();
+        tvActivationDate.setText(activationDateStr != null && !activationDateStr.isEmpty()
+                ? activationDateStr : "--");
+
+        // 使用天数
+        int usageDays = config.getUsageDays();
+        tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
+
+        // 激活来源：使用 DeviceConfig 的激活来源（非硬编码）
+        String activationSource = config.getActivationSource();
+        tvActivationSource.setText(activationSource != null && !activationSource.isEmpty()
+                ? activationSource : getString(R.string.source_internal));
+
+        // 可用内存
+        long availableMemoryMb = config.getAvailableMemory();
+        if (availableMemoryMb > 0) {
+            tvAvailableRam.setText(formatMemory(availableMemoryMb));
+        } else {
+            tvAvailableRam.setText("--");
+        }
+
+        // 可用存储
+        long availableStorageGb = config.getAvailableStorage();
+        if (availableStorageGb > 0) {
+            tvAvailableStorage.setText(formatStorage(availableStorageGb));
+        } else {
+            tvAvailableStorage.setText("--");
+        }
+
+        // 网络类型：使用 DeviceConfig 的网络类型（ConnectivityManager 内部实现）
+        String networkType = config.getNetworkType();
+        tvNetworkType.setText(networkType != null && !networkType.isEmpty()
+                ? networkType : getString(R.string.status_unknown));
+    }
+
+    /**
+     * DeviceInfoManager 不可用时的回退数据
+     */
+    private void loadFallbackData() {
         tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
         tvDeviceModel.setText(Build.MODEL);
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
         tvProcessor.setText(Build.HARDWARE);
-
-        long totalRam = getTotalRam();
-        tvRam.setText(formatSize(totalRam));
-
-        long totalStorage = getTotalStorage();
-        tvStorage.setText(formatSize(totalStorage));
-
-        tvScreen.setText(getScreenResolution());
-
-        long activationTime = getActivationTime();
-        tvActivationDate.setText(formatDate(activationTime));
-        tvUsageDays.setText(getUsageDays(activationTime) + " 天");
+        tvRam.setText("--");
+        tvStorage.setText("--");
+        tvScreen.setText("--");
+        tvActivationDate.setText("--");
+        tvUsageDays.setText("--");
         tvActivationSource.setText(getString(R.string.source_internal));
-
-        long availableRam = getAvailableRam();
-        tvAvailableRam.setText(formatSize(availableRam));
-
-        long availableStorage = getAvailableStorage();
-        tvAvailableStorage.setText(formatSize(availableStorage));
-
-        tvNetworkType.setText(getNetworkType());
+        tvAvailableRam.setText("--");
+        tvAvailableStorage.setText("--");
+        tvNetworkType.setText(getString(R.string.status_unknown));
     }
 
-    private long getTotalRam() {
-        android.app.ActivityManager am = (android.app.ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
-        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
-        if (am != null) {
-            am.getMemoryInfo(mi);
-            return mi.totalMem;
+    private String formatMemory(long memoryMb) {
+        if (memoryMb <= 0) return "--";
+        if (memoryMb >= 1024) {
+            return String.format(Locale.getDefault(), "%.1f GB", memoryMb / 1024.0);
         }
-        return 0;
+        return String.format(Locale.getDefault(), "%d MB", memoryMb);
     }
 
-    private long getAvailableRam() {
-        android.app.ActivityManager am = (android.app.ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
-        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
-        if (am != null) {
-            am.getMemoryInfo(mi);
-            return mi.availMem;
+    private String formatStorage(long storageGb) {
+        if (storageGb <= 0) return "--";
+        if (storageGb >= 100) {
+            return String.format(Locale.getDefault(), "%d GB", storageGb);
         }
-        return 0;
-    }
-
-    private long getTotalStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        return stat.getTotalBytes();
-    }
-
-    private long getAvailableStorage() {
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        return stat.getAvailableBytes();
-    }
-
-    private String getScreenResolution() {
-        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
-        return dm.widthPixels + " x " + dm.heightPixels;
-    }
-
-    private long getActivationTime() {
-        File file = new File(Environment.getRootDirectory(), "build.prop");
-        long time = file.lastModified();
-        if (time == 0) {
-            time = System.currentTimeMillis() - 86400000L * 365;
-        }
-        return time;
-    }
-
-    private String formatDate(long time) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(new Date(time));
-    }
-
-    private long getUsageDays(long activationTime) {
-        return (System.currentTimeMillis() - activationTime) / (1000 * 60 * 60 * 24);
-    }
-
-    private String formatSize(long bytes) {
-        if (bytes <= 0) return "0 B";
-        String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
-        int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
-        digitGroups = Math.min(digitGroups, units.length - 1);
-        return String.format(Locale.getDefault(), "%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
-    }
-
-    private String getNetworkType() {
-        try {
-            TelephonyManager tm = (TelephonyManager) requireContext().getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm == null) return "Unknown";
-            int networkType = tm.getNetworkType();
-            switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "2G";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "3G";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "4G";
-            case TelephonyManager.NETWORK_TYPE_NR:
-                return "5G";
-            default:
-                return "Unknown";
-            }
-        } catch (Exception e) {
-            return "Unknown";
-        }
+        return String.format(Locale.getDefault(), "%.1f GB", storageGb / 1.0);
     }
 }
