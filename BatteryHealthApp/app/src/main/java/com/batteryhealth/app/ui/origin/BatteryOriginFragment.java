@@ -91,11 +91,14 @@ public class BatteryOriginFragment extends Fragment {
             }
             BatteryOriginDetector.OriginResult result = originDetector.detect();
 
-            requireActivity().runOnUiThread(() -> {
-                updateUI(result);
-                btnDetect.setEnabled(true);
-                btnDetect.setText(getString(R.string.label_detect_battery));
-            });
+            if (isAdded() && getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    updateUI(result);
+                    btnDetect.setEnabled(true);
+                    btnDetect.setText(getString(R.string.label_detect_battery));
+                });
+            }
         }).start();
     }
 
@@ -128,7 +131,7 @@ public class BatteryOriginFragment extends Fragment {
         if (methods == null || methods.isEmpty()) {
             TextView emptyView = new TextView(requireContext());
             emptyView.setText(getString(R.string.status_no_data));
-            emptyView.setTextSize(14f);
+            emptyView.setTextSize(14sp);
             emptyView.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
             emptyView.setPadding(16, 16, 16, 16);
             containerMethods.addView(emptyView);
@@ -151,13 +154,13 @@ public class BatteryOriginFragment extends Fragment {
 
             TextView tvName = new TextView(requireContext());
             tvName.setText(method.name);
-            tvName.setTextSize(14f);
+            tvName.setTextSize(14sp);
             tvName.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
             tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
             TextView tvValue = new TextView(requireContext());
             tvValue.setText(method.value);
-            tvValue.setTextSize(14f);
+            tvValue.setTextSize(14sp);
             tvValue.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
 
             row.addView(tvName);

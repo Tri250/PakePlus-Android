@@ -39,17 +39,6 @@ public class DeviceInfoManager {
 
     private static final String TAG = "DeviceInfoManager";
 
-    /**
-     * 激活信息检测完成回调接口。
-     * 当 {@link #getActivationInfo()} 或 {@link #getDeviceConfig()} 触发激活日期检测时，
-     * 回调将被同步调用，使调用方（如 ViewModel）能及时获取使用天数。
-     */
-    public interface ActivationInfoListener {
-        void onActivationInfoDetected(ActivationDateHelper.Result result);
-    }
-
-    private ActivationInfoListener activationInfoListener;
-
     // Map common SoC identifiers to Chinese marketing names
     private static final Map<String, String> PROCESSOR_CN_NAMES = new HashMap<>();
     static {
@@ -130,23 +119,6 @@ public class DeviceInfoManager {
     public DeviceInfoManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
-    }
-
-    /**
-     * 返回应用级 Context，供外部模块（如 DeviceRepositoryImpl）获取 DeviceDatabaseManager 实例。
-     */
-    public Context getContext() {
-        return context;
-    }
-
-    /**
-     * 注册激活信息检测回调。当 {@link #getActivationInfo()} 或 {@link #getDeviceConfig()}
-     * 内部执行激活日期检测时，回调将被同步触发。
-     *
-     * @param listener 回调实例，传入 null 可取消注册
-     */
-    public void setActivationInfoListener(ActivationInfoListener listener) {
-        this.activationInfoListener = listener;
     }
 
     /**
@@ -834,9 +806,6 @@ public class DeviceInfoManager {
     private ActivationInfo collectActivationInfo() {
         ActivationInfo info = new ActivationInfo();
         ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
-        if (activationInfoListener != null && result != null) {
-            activationInfoListener.onActivationInfoDetected(result);
-        }
         if (result.isValid()) {
             info.set(result.timestamp, result.source, result.confidence);
         } else {
@@ -849,11 +818,7 @@ public class DeviceInfoManager {
      * 公开接口：获取激活时间检测结果（含使用天数）。供其他模块（如 BatteryDataManager）使用。
      */
     public ActivationDateHelper.Result getActivationInfo() {
-        ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
-        if (activationInfoListener != null && result != null) {
-            activationInfoListener.onActivationInfoDetected(result);
-        }
-        return result;
+        return ActivationDateHelper.detect(context);
     }
 
     /**

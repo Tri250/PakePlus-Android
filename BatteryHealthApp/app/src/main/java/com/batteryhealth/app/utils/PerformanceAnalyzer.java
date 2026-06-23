@@ -1,6 +1,5 @@
 package com.batteryhealth.app.utils;
 
-import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
@@ -188,68 +187,6 @@ public class PerformanceAnalyzer {
 
         return suggestions;
     }
-
-    /**
-     * 读取当前系统 CPU 使用率（百分比，0-100）。
-     * 通过 /proc/stat 差值计算，首次调用返回 0。
-     */
-    public int getCpuUsage() {
-        try {
-            try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
-                String line = reader.readLine();
-                if (line != null && line.startsWith("cpu ")) {
-                    String[] parts = line.split("\\s+");
-                    long user = Long.parseLong(parts[1]);
-                    long nice = Long.parseLong(parts[2]);
-                    long system = Long.parseLong(parts[3]);
-                    long idle = Long.parseLong(parts[4]);
-                    long iowait = parts.length > 5 ? Long.parseLong(parts[5]) : 0;
-                    long irq = parts.length > 6 ? Long.parseLong(parts[6]) : 0;
-                    long softirq = parts.length > 7 ? Long.parseLong(parts[7]) : 0;
-                    long total = user + nice + system + idle + iowait + irq + softirq;
-
-                    if (lastSysTotal > 0) {
-                        long deltaTotal = total - lastSysTotal;
-                        long deltaIdle = idle - lastSysIdle;
-                        lastSysIdle = idle;
-                        lastSysTotal = total;
-                        if (deltaTotal > 0) {
-                            return (int) ((deltaTotal - deltaIdle) * 100 / deltaTotal);
-                        }
-                    }
-                    lastSysIdle = idle;
-                    lastSysTotal = total;
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Failed to read CPU usage: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    /**
-     * 读取当前系统内存使用率（百分比，0-100）。
-     * 通过 {@link ActivityManager.MemoryInfo} 获取。
-     */
-    public int getMemoryUsage() {
-        try {
-            ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                if (mi.totalMem > 0) {
-                    return (int) ((mi.totalMem - mi.availMem) * 100 / mi.totalMem);
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Failed to read memory usage: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    // 缓存上一次 CPU 统计值用于差值计算
-    private long lastSysTotal = 0;
-    private long lastSysIdle = 0;
 
     public static class AnrAnalysisResult {
         public boolean hasAnr;

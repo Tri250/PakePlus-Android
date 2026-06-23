@@ -371,17 +371,20 @@ public class PerformanceFragment extends Fragment {
             PerformanceAnalyzer.AnrAnalysisResult anrResult = performanceAnalyzer.analyzeAnrLogs();
             PerformanceAnalyzer.PerformanceInsights insights = performanceAnalyzer.getPerformanceInsights();
 
-            requireActivity().runOnUiThread(() -> {
-                tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
-                tvAnrSeverity.setText(anrResult.severity);
-                tvAnrMessage.setText(anrResult.message);
+            if (isAdded() && getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
+                    tvAnrSeverity.setText(anrResult.severity);
+                    tvAnrMessage.setText(anrResult.message);
 
-                StringBuilder tipsBuilder = new StringBuilder();
-                for (String tip : insights.suggestions) {
-                    tipsBuilder.append(tip).append("\n");
-                }
-                tvPerformanceTips.setText(tipsBuilder.toString().trim());
-            });
+                    StringBuilder tipsBuilder = new StringBuilder();
+                    for (String tip : insights.suggestions) {
+                        tipsBuilder.append(tip).append("\n");
+                    }
+                    tvPerformanceTips.setText(tipsBuilder.toString().trim());
+                });
+            }
         }).start();
     }
 }

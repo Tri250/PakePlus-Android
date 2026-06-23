@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.TooltipCompat;
 
 import com.batteryhealth.app.R;
 
@@ -89,8 +90,12 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 6 Tab，默认平均分配
-        boolean average = forceAverageWidth && items.size() > 0;
+        // 根据总宽度与子项数量决定是否平均分布
+        // 屏幕宽度 >= 360dp 且项数 <= 6 时强制平均；否则允许横向滚动
+        int screenWidthDp = getResources().getConfiguration().screenWidthDp;
+        boolean average = forceAverageWidth && items.size() > 0
+                && (items.size() <= 6 || screenWidthDp >= 360);
+
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
@@ -101,6 +106,13 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
                 view.setLayoutParams(lp);
+            } else {
+                // 窄屏 + 多 Tab：固定最小宽度，允许横向滚动
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT);
+                lp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
+                view.setLayoutParams(lp);
             }
 
             ImageView icon = view.findViewById(R.id.nav_icon);
@@ -108,6 +120,8 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
             icon.setImageResource(item.iconRes);
             label.setText(item.label);
+            // 长按显示 Tooltip，提升可访问性
+            TooltipCompat.setTooltipText(view, item.label);
 
             view.setOnClickListener(v -> {
                 if (listener != null && position != selectedPosition) {

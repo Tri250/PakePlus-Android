@@ -10,19 +10,10 @@ import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class BatteryRepositoryImpl implements BatteryRepository {
 
     private static final String TAG = "BatteryRepositoryImpl";
-
-    /** 单一后台线程，避免散乱 new Thread() 造成资源浪费 */
-    private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "BatteryRepo-IO");
-        t.setDaemon(true);
-        return t;
-    });
 
     private final BatteryDataManager batteryDataManager;
     private final AppDatabase database;
@@ -48,16 +39,17 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public void saveBatteryInfo(BatteryInfo info) {
-        if (database == null || info == null) return;
-        IO_EXECUTOR.execute(() -> {
-            try {
-                info.setId(0);
-                info.setTimestamp(System.currentTimeMillis());
-                database.batteryInfoDao().insert(info);
-            } catch (Exception e) {
-                android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
-            }
-        });
+        if (database != null) {
+            new Thread(() -> {
+                try {
+                    info.setId(0);
+                    info.setTimestamp(System.currentTimeMillis());
+                    database.batteryInfoDao().insert(info);
+                } catch (Exception e) {
+                    android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
+                }
+            }).start();
+        }
     }
 
     @Override
@@ -99,13 +91,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     @Override
     public void deleteOlderThan(long timestamp) {
         if (database != null) {
-            IO_EXECUTOR.execute(() -> {
+            new Thread(() -> {
                 try {
                     database.batteryInfoDao().deleteOlderThan(timestamp);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error deleting old data: " + e.getMessage());
                 }
-            });
+            }).start();
         }
     }
 

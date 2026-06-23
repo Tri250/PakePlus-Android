@@ -52,29 +52,14 @@ public class BatteryConsumptionAnalyzer {
         public final double systemEstimatedScreenOnHours; // 屏幕亮屏续航
         public final List<AppConsumption> topConsumers; // TOP 5 耗电应用
         public final boolean hasUsageAccessPermission;  // 是否拥有 USAGE_STATS 权限
-        /** 屏幕耗电占比（百分比），-1 表示无数据 */
-        public final double screenPowerPercent;
-        /** 系统耗电占比（百分比），-1 表示无数据 */
-        public final double systemPowerPercent;
-        /** 应用耗电占比（百分比），-1 表示无数据 */
-        public final double appsPowerPercent;
 
         public Result(long capacity, double hours, double screenHours, List<AppConsumption> list,
                       boolean hasUsageAccessPermission) {
-            this(capacity, hours, screenHours, list, hasUsageAccessPermission, -1, -1, -1);
-        }
-
-        public Result(long capacity, double hours, double screenHours, List<AppConsumption> list,
-                      boolean hasUsageAccessPermission,
-                      double screenPowerPercent, double systemPowerPercent, double appsPowerPercent) {
             this.batteryCapacityMah = capacity;
             this.systemEstimatedHours = hours;
             this.systemEstimatedScreenOnHours = screenHours;
             this.topConsumers = list;
             this.hasUsageAccessPermission = hasUsageAccessPermission;
-            this.screenPowerPercent = screenPowerPercent;
-            this.systemPowerPercent = systemPowerPercent;
-            this.appsPowerPercent = appsPowerPercent;
         }
     }
 
@@ -223,32 +208,12 @@ public class BatteryConsumptionAnalyzer {
                     } catch (Throwable ignored) {}
 
                     if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && level >= 0) {
-                        // 真实读取电压：优先 BATTERY_PROPERTY_VOLTAGE=2；回退 sysfs voltage_now
-                        double voltageV = -1;
-                        if (voltageMicroV > 0) {
-                            voltageV = voltageMicroV / 1_000_000.0;
-                        } else {
-                            try {
-                                java.io.File vf = new java.io.File("/sys/class/power_supply/battery/voltage_now");
-                                if (vf.exists() && vf.canRead()) {
-                                    try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(vf))) {
-                                        String line = r.readLine();
-                                        if (line != null && !line.trim().isEmpty()) {
-                                            long raw = Long.parseLong(line.trim());
-                                            if (raw > 1000000) voltageV = raw / 1_000_000.0;
-                                            else if (raw > 2500) voltageV = raw / 1000.0;
-                                        }
-                                    }
-                                }
-                            } catch (Throwable ignored) {}
-                        }
-                        if (voltageV > 0) {
-                            double currentMa = Math.abs(currentAvg / 1000.0); // µA → mA
-                            double powerMw = currentMa * voltageV; // mW
-                            double energyMwh = capacity * voltageV * (level / 100.0); // mWh
-                            if (powerMw > 0) {
-                                hours = energyMwh / powerMw;
-                            }
+                        double voltageV = voltageMicroV > 0 ? voltageMicroV / 1_000_000.0 : 3.8; // 默认 3.8V
+                        double currentMa = Math.abs(currentAvg / 1000.0); // µA → mA
+                        double powerMw = currentMa * voltageV; // mW
+                        double energyMwh = capacity * voltageV * (level / 100.0); // mWh
+                        if (powerMw > 0) {
+                            hours = energyMwh / powerMw;
                         }
                     }
                 }

@@ -137,11 +137,14 @@ public class BatteryHealthFragment extends Fragment {
                     : reportGenerator.generateMonthlyReport();
 
             String summary = formatReportSummary(report);
-            requireActivity().runOnUiThread(() -> {
-                tvReportSummary.setText(summary);
-                btnWeeklyReport.setEnabled(true);
-                btnMonthlyReport.setEnabled(true);
-            });
+            if (isAdded() && getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    tvReportSummary.setText(summary);
+                    btnWeeklyReport.setEnabled(true);
+                    btnMonthlyReport.setEnabled(true);
+                });
+            }
         }).start();
     }
 
