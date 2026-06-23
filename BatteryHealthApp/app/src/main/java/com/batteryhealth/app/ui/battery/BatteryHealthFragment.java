@@ -1,13 +1,6 @@
 package com.batteryhealth.app.ui.battery;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,25 +12,17 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
-import com.batteryhealth.app.utils.BatteryDataManager;
-import com.batteryhealth.app.utils.DeviceDatabaseManager;
+import com.batteryhealth.app.ui.viewmodel.BatteryHealthViewModel;
 import com.batteryhealth.app.utils.BatteryReportGenerator;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-/**
- * 电池健康主页面 Fragment。
- * 使用 BatteryDataManager 获取真实健康度、循环次数、电池来源等数据，
- * 不使用模拟数据或空实现。
- */
 public class BatteryHealthFragment extends Fragment {
 
     private HealthRingView healthRing;
@@ -57,10 +42,7 @@ public class BatteryHealthFragment extends Fragment {
     private Button btnMonthlyReport;
     private TextView tvReportSummary;
 
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final ExecutorService dataExecutor = Executors.newSingleThreadExecutor();
-    private Runnable updateRunnable;
-    private BatteryDataManager batteryDataManager;
+    private BatteryHealthViewModel viewModel;
     private BatteryReportGenerator reportGenerator;
 
     @Nullable
@@ -68,6 +50,7 @@ public class BatteryHealthFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
         initViews(view);
+        initViewModel();
         animateEntry(view);
         return view;
     }
@@ -94,6 +77,16 @@ public class BatteryHealthFragment extends Fragment {
         btnMonthlyReport.setOnClickListener(v -> generateReport(false));
     }
 
+    private void initViewModel() {
+        viewModel = new ViewModelProvider(this).get(BatteryHealthViewModel.class);
+        
+        viewModel.getBatteryInfo().observe(getViewLifecycleOwner(), this::updateUI);
+        viewModel.getHealthGrade().observe(getViewLifecycleOwner(), grade -> 
+                tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade)));
+        viewModel.getHealthStatus().observe(getViewLifecycleOwner(), tvHealthStatus::setText);
+        viewModel.getBatterySource().observe(getViewLifecycleOwner(), tvBatterySource::setText);
+    }
+
     private void animateEntry(View view) {
         Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
         view.startAnimation(fadeUp);
@@ -102,180 +95,35 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // 从 MainActivity 获取共享的 BatteryDataManager
-        if (getActivity() instanceof MainActivity) {
-            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
-        }
-        if (batteryDataManager == null) {
-            batteryDataManager = new BatteryDataManager(requireContext());
-        }
         reportGenerator = new BatteryReportGenerator(requireContext());
-        registerBatteryReceiver();
-        startPeriodicUpdate();
+        viewModel.refreshData();
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        unregisterBatteryReceiver();
-        stopPeriodicUpdate();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        stopPeriodicUpdate();
-        dataExecutor.shutdownNow();
-    }
-
-    private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            requireContext().registerReceiver(batteryReceiver, filter);
-        }
-    }
-
-    private void unregisterBatteryReceiver() {
-        try {
-            requireContext().unregisterReceiver(batteryReceiver);
-        } catch (IllegalArgumentException ignored) {
-        }
-    }
-
-    private void startPeriodicUpdate() {
-        updateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                updateBatteryData();
-                handler.postDelayed(this, 2000);
-            }
-        };
-        handler.post(updateRunnable);
-    }
-
-    private void stopPeriodicUpdate() {
-        if (updateRunnable != null) {
-            handler.removeCallbacks(updateRunnable);
-        }
-    }
-
-    private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            updateBatteryData();
-        }
-    };
-
-    /**
-     * 使用 BatteryDataManager 获取真实电池数据并更新 UI。
-     */
-    private void updateBatteryData() {
-        if (batteryDataManager == null) return;
-
-        dataExecutor.execute(() -> {
-            try {
-                batteryDataManager.refreshFromStickyIntent();
-                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                if (info != null && isAdded()) {
-                    handler.post(() -> updateUI(info));
-                }
-            } catch (Exception e) {
-                // 静默处理
-            }
-        });
-    }
-
-    /**
-     * 根据真实 BatteryInfo 更新所有 UI 元素。
-     */
     private void updateUI(BatteryInfo info) {
         if (info == null || !isAdded()) return;
 
-        // 1. 电量
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));
+        tvChargingStatus.setText(viewModel.getBatterySource().getValue() != null ? 
+                viewModel.getBatterySource().getValue() : "--");
 
-        // 2. 充电状态
-        tvChargingStatus.setText(batteryDataManager.getChargingStatusText());
-
-        // 3. 电流
         float currentMa = info.getCurrentNow() / 1000f;
         tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
 
-        // 4. 容量（设计容量 + 当前满充容量）
-        int designCap = info.getDesignCapacity();
-        int currentCap = info.getCurrentCapacity();
-        boolean hasDesign = designCap > 0;
-        boolean hasCurrent = currentCap > 0;
-        String capacityText;
-        if (hasDesign && hasCurrent) {
-            capacityText = String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap);
-        } else if (hasDesign) {
-            capacityText = String.format(Locale.getDefault(), "%d mAh（设计）", designCap);
-        } else if (hasCurrent) {
-            capacityText = String.format(Locale.getDefault(), "%d mAh（当前）", currentCap);
-        } else {
-            int dbDesignCap = DeviceDatabaseManager.getInstance(requireContext()).getDesignCapacity();
-            if (dbDesignCap > 0) {
-                capacityText = String.format(Locale.getDefault(), "%d mAh（设计）", dbDesignCap);
-            } else {
-                capacityText = "--";
-            }
-        }
-        tvCapacity.setText(capacityText);
-
-        // 5. 循环次数（使用 BatteryDataManager 的真实循环次数）
-        tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
-
-        // 6. 温度
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
-
-        // 7. 电压
-        float voltageV = info.getVoltage() / 1000f;
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-
-        // 8. 电池技术
+        tvCapacity.setText(viewModel.formatCapacity(info));
+        tvCycleCount.setText(viewModel.formatCycleCount(info));
+        tvTemperature.setText(viewModel.formatTemperature(info.getTemperature()));
+        tvVoltage.setText(viewModel.formatVoltage(info.getVoltage()));
         tvTechnology.setText(info.getTechnology());
 
-        // 9. 电池来源（使用真实的多维验证结果）
-        tvBatterySource.setText(batteryDataManager.getBatterySourceText());
-
-        // 10. 健康度（使用真实的三段损耗计算结果）
         float healthPct = info.getHealthPercentage();
         if (healthPct >= 0) {
             tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.0f%%", healthPct));
-            String grade = calculateGrade(healthPct);
-            tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
-
-            String statusText;
-            if (healthPct >= 90) {
-                statusText = getString(R.string.status_excellent);
-            } else if (healthPct >= 80) {
-                statusText = getString(R.string.status_good);
-            } else if (healthPct >= 60) {
-                statusText = getString(R.string.status_fair);
-            } else {
-                statusText = getString(R.string.status_poor);
-            }
-            tvHealthStatus.setText(statusText);
             UiAnimationHelper.animateRingProgress(healthRing, (int) healthPct);
         } else {
             tvHealthPercentage.setText("--");
             tvHealthGrade.setText("--");
             tvHealthStatus.setText(getString(R.string.health_unknown));
         }
-    }
-
-    private String calculateGrade(float health) {
-        if (health >= 95) return "A+";
-        if (health >= 90) return "A";
-        if (health >= 85) return "A-";
-        if (health >= 80) return "B+";
-        if (health >= 75) return "B";
-        if (health >= 70) return "B-";
-        if (health >= 60) return "C";
-        return "D";
     }
 
     private void generateReport(boolean weekly) {

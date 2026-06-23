@@ -1,6 +1,8 @@
 package com.batteryhealth.app;
 
 import android.app.Application;
+
+import dagger.hilt.android.HiltAndroidApp;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
  * 2. 管理数据库实例
  * 3. 提供全局Context访问
  */
+@HiltAndroidApp
 public class BatteryHealthApplication extends Application {
     
     private static final String TAG = "BatteryHealthApp";

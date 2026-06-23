@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,18 +15,17 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.ui.viewmodel.DeviceConfigViewModel;
 import com.batteryhealth.app.utils.DeviceConfigQuery;
-import com.batteryhealth.app.utils.DeviceInfoManager;
 
 import java.util.Locale;
 
 public class DeviceConfigFragment extends Fragment {
 
-    private static final String TAG = "DeviceConfigFragment";
     private static final String PREFS_CONFIG = "config_prefs";
     private static final String PREF_HEALTH_ALERT = "health_decay_alert";
 
@@ -38,13 +36,15 @@ public class DeviceConfigFragment extends Fragment {
     private Switch switchHealthAlert;
     private DeviceConfigQuery configQuery;
 
+    private DeviceConfigViewModel viewModel;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_device_config, container, false);
         initViews(view);
+        initViewModel();
         animateEntry(view);
-        loadData();
         return view;
     }
 
@@ -77,41 +77,23 @@ public class DeviceConfigFragment extends Fragment {
         });
     }
 
+    private void initViewModel() {
+        viewModel = new ViewModelProvider(this).get(DeviceConfigViewModel.class);
+        viewModel.getDeviceConfig().observe(getViewLifecycleOwner(), this::applyConfig);
+        viewModel.getUsageDays().observe(getViewLifecycleOwner(), days -> 
+                tvUsageDays.setText(days >= 0 ? days + " 天" : "--"));
+    }
+
     private void animateEntry(View view) {
         Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
         view.startAnimation(fadeUp);
     }
 
-    private void loadData() {
-        MainActivity activity = (MainActivity) getActivity();
-        if (activity == null) return;
-
-        DeviceInfoManager deviceInfoManager = activity.getDeviceInfoManager();
-        if (deviceInfoManager == null) {
-            loadFallbackData();
-            return;
-        }
-
-        deviceInfoManager.getDeviceConfigAsync(new DeviceInfoManager.DeviceConfigCallback() {
-            @Override
-            public void onConfigLoaded(DeviceConfig config) {
-                if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> {
-                    applyConfig(config);
-                    loadSystemAnalysis();
-                });
-            }
-
-            @Override
-            public void onConfigLoadFailed(Exception e) {
-                Log.e(TAG, "Failed to load device config", e);
-                if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> {
-                    loadFallbackData();
-                    loadSystemAnalysis();
-                });
-            }
-        });
+    @Override
+    public void onResume() {
+        super.onResume();
+        viewModel.loadDeviceConfig();
+        loadSystemAnalysis();
     }
 
     private void loadSystemAnalysis() {
@@ -123,24 +105,21 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void applyConfig(DeviceConfig config) {
-        // 设备名称：使用 DeviceConfig 的营销型号名
+        if (config == null) {
+            loadFallbackData();
+            return;
+        }
+
         tvDeviceName.setText(config.getFullModelName());
         tvDeviceModel.setText(config.getModel());
-
-        // Android 版本
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
 
-        // 处理器：使用 DeviceConfig 的 cpuInfo（含营销名称）
         String cpuInfo = config.getCpuInfo();
         tvProcessor.setText(cpuInfo != null && !cpuInfo.isEmpty() ? cpuInfo : Build.HARDWARE);
 
-        // 内存：使用 DeviceConfig 的格式化内存（按营销规格取整）
         tvRam.setText(config.getFormattedMemory());
-
-        // 存储：使用 DeviceConfig 的格式化存储
         tvStorage.setText(config.getFormattedStorage());
 
-        // 屏幕：使用 DeviceConfig 的屏幕信息（WindowMetrics API，含尺寸）
         StringBuilder screenInfo = new StringBuilder();
         screenInfo.append(config.getScreenResolution());
         if (config.getScreenSize() > 0) {
@@ -148,21 +127,14 @@ public class DeviceConfigFragment extends Fragment {
         }
         tvScreen.setText(screenInfo.toString());
 
-        // 激活日期：使用 DeviceConfig 的激活日期（ActivationDateHelper 内部实现）
         String activationDateStr = config.getActivationDateStr();
         tvActivationDate.setText(activationDateStr != null && !activationDateStr.isEmpty()
                 ? activationDateStr : "--");
 
-        // 使用天数
-        int usageDays = config.getUsageDays();
-        tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
-
-        // 激活来源：使用 DeviceConfig 的激活来源（非硬编码）
         String activationSource = config.getActivationSource();
         tvActivationSource.setText(activationSource != null && !activationSource.isEmpty()
                 ? activationSource : getString(R.string.source_internal));
 
-        // 可用内存
         long availableMemoryMb = config.getAvailableMemory();
         if (availableMemoryMb > 0) {
             tvAvailableRam.setText(formatMemory(availableMemoryMb));
@@ -170,7 +142,6 @@ public class DeviceConfigFragment extends Fragment {
             tvAvailableRam.setText("--");
         }
 
-        // 可用存储
         long availableStorageGb = config.getAvailableStorage();
         if (availableStorageGb > 0) {
             tvAvailableStorage.setText(formatStorage(availableStorageGb));
@@ -178,15 +149,11 @@ public class DeviceConfigFragment extends Fragment {
             tvAvailableStorage.setText("--");
         }
 
-        // 网络类型：使用 DeviceConfig 的网络类型（ConnectivityManager 内部实现）
         String networkType = config.getNetworkType();
         tvNetworkType.setText(networkType != null && !networkType.isEmpty()
                 ? networkType : getString(R.string.status_unknown));
     }
 
-    /**
-     * DeviceInfoManager 不可用时的回退数据
-     */
     private void loadFallbackData() {
         tvDeviceName.setText(Build.BRAND + " " + Build.MODEL);
         tvDeviceModel.setText(Build.MODEL);

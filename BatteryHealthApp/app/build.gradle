@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'dagger.hilt.android.plugin'
 
 // 从 keystore.properties 读取签名配置（安全做法）
 def keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -169,6 +170,13 @@ dependencies {
 
     // 权限管理
     implementation 'com.guolindev.permissionx:permissionx:1.8.0'
+
+    // Hilt依赖注入
+    implementation 'com.google.dagger:hilt-android:2.51.1'
+    annotationProcessor 'com.google.dagger:hilt-compiler:2.51.1'
+    
+    // WorkManager
+    implementation 'androidx.work:work-runtime:2.9.1'
 
     // 测试依赖
     testImplementation 'junit:junit:4.13.2'
