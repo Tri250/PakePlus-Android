@@ -4,28 +4,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
-import android.os.SystemClock;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
-import com.batteryhealth.app.utils.BatteryDataManager;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 
 /**
- * 续航预测检测：基于真实电池参数（电流瞬时值/容量）计算放电速率，
- * 避免任何"硬编码 + 简化估算"。
+ * 续航预测检测：基于真实电池参数（容量 + 电流瞬时值）计算放电速率，
+ * 杜绝任何"硬编码 + 简化估算"。
  *
  * <p>数据来源优先级：
  * <ol>
- *   <li>BatteryManager 提供的 BATTERY_PROPERTY_CURRENT_NOW（µA）</li>
- *   <li>sysfs /sys/class/power_supply/battery/current_now</li>
- *   <li>回退：仅给出数据不足提示，不做"每小时 10%"的伪估算</li>
+ *   <li>BatteryManager.BATTERY_PROPERTY_CHARGE_FULL_DESIGN / BATTERY_PROPERTY_CHARGE_FULL</li>
+ *   <li>BatteryManager.BATTERY_PROPERTY_CURRENT_NOW（µA）</li>
+ *   <li>sysfs /sys/class/power_supply/battery/charge_full / current_now</li>
+ *   <li>以上均失败时，诚实告知"数据不足"，不做伪估算</li>
  * </ol>
  */
 public class EnduranceChecker implements IHealthChecker {
-
-    /** 兜底用：典型手机平均放电电流 800mA（仅在所有数据源均失败时使用） */
-    private static final float FALLBACK_DISCHARGE_MA = 800f;
 
     @Override
     public String getName() { return "续航预测"; }
@@ -51,24 +49,22 @@ public class EnduranceChecker implements IHealthChecker {
                     .setCategory(getCategory());
 
             if (level <= 0 || scale <= 0) {
-                return builder
-                        .setSeverity(HealthCheckResult.SEVERITY_INFO)
+                return builder.setSeverity(HealthCheckResult.SEVERITY_INFO)
                         .setStatus("无数据")
                         .setValue("--")
                         .setUnit("小时")
                         .setDescription("无法读取当前电量数据。")
                         .setAdvice("请稍后重试。")
-                        .setItemScore(50)
-                        .build();
+                        .setItemScore(50).build();
             }
 
             int pct = level * 100 / scale;
             boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
 
-            // 真实获取电池容量（mAh）
+            // 真实读取电池容量（mAh）
             int capacityMah = readCapacityMah(appCtx);
-            // 真实获取当前电流绝对值（mA）
+            // 真实读取当前电流绝对值（mA）
             float currentMa = Math.abs(readCurrentMa(appCtx));
 
             float hours;
@@ -79,7 +75,6 @@ public class EnduranceChecker implements IHealthChecker {
             String detail;
 
             if (isCharging) {
-                // 充电时：通过实际充电电流计算充满时间
                 if (currentMa > 0 && capacityMah > 0) {
                     int remainingToFullPct = 100 - pct;
                     float remainingMah = capacityMah * remainingToFullPct / 100f;
@@ -108,7 +103,6 @@ public class EnduranceChecker implements IHealthChecker {
                     score = 65;
                 }
             } else {
-                // 放电时：通过真实电流 + 真实容量计算剩余可用时间
                 if (currentMa > 0 && capacityMah > 0) {
                     float remainingMah = capacityMah * pct / 100f;
                     hours = remainingMah / currentMa;
@@ -140,40 +134,26 @@ public class EnduranceChecker implements IHealthChecker {
                     advice = "电池即将耗尽，请立即接入充电器。";
                     score = 25;
                 } else {
-                    // 真实数据缺失：诚实告知用户
                     severity = HealthCheckResult.SEVERITY_INFO;
                     statusText = "数据不足";
                     advice = "暂无法估算续航。请保持应用前台运行 1-2 分钟以采集电流数据。";
                     score = 40;
-                    hours = 0;
                 }
             }
 
             String desc = String.format("当前电量：%1$d%%。%2$s。%3$s",
                     pct, isCharging ? "充电中" : "放电中", detail);
 
-            return builder
-                    .setSeverity(severity)
-                    .setStatus(statusText)
+            return builder.setSeverity(severity).setStatus(statusText)
                     .setValue(hours > 0 ? String.format("%.1f", hours) : "--")
-                    .setUnit("小时")
-                    .setDescription(desc)
-                    .setAdvice(advice)
-                    .setItemScore(score)
-                    .build();
+                    .setUnit("小时").setDescription(desc).setAdvice(advice).setItemScore(score).build();
         } catch (Exception e) {
             return new HealthCheckResult.Builder()
-                    .setId("endurance_prediction")
-                    .setTitle(getName())
-                    .setCategory(getCategory())
-                    .setSeverity(HealthCheckResult.SEVERITY_INFO)
-                    .setStatus("读取失败")
-                    .setValue("--")
-                    .setUnit("")
+                    .setId("endurance_prediction").setTitle(getName()).setCategory(getCategory())
+                    .setSeverity(HealthCheckResult.SEVERITY_WARNING).setStatus("检测异常")
+                    .setValue("--").setUnit("")
                     .setDescription("读取电量数据失败：" + e.getMessage())
-                    .setAdvice("请稍后重试。")
-                    .setItemScore(55)
-                    .build();
+                    .setAdvice("请稍后重试。").setItemScore(30).build();
         }
     }
 
@@ -182,21 +162,19 @@ public class EnduranceChecker implements IHealthChecker {
         try {
             BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
             if (bm != null) {
-                // BATTERY_PROPERTY_CHARGE_FULL = 25
-                int micro = bm.getIntProperty(25);
+                int micro = bm.getIntProperty(25); // BATTERY_PROPERTY_CHARGE_FULL
                 if (micro > 1000) return micro / 1000;
             }
         } catch (Throwable ignored) {}
-        // 退路：sysfs charge_full
         try {
             File f = new File("/sys/class/power_supply/battery/charge_full");
             if (f.exists() && f.canRead()) {
-                try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(f))) {
+                try (BufferedReader r = new BufferedReader(new FileReader(f))) {
                     String line = r.readLine();
                     if (line != null && !line.trim().isEmpty()) {
                         long raw = Long.parseLong(line.trim());
-                        if (raw > 1000) return (int) (raw / 1000); // µAh → mAh
-                        return (int) raw; // mAh
+                        if (raw > 1000) return (int) (raw / 1000);
+                        return (int) raw;
                     }
                 }
             }
@@ -212,21 +190,20 @@ public class EnduranceChecker implements IHealthChecker {
                 int currentUa = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                 if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
                     int abs = Math.abs(currentUa);
-                    if (abs > 100000) return abs / 1000f; // µA → mA
+                    if (abs > 100000) return abs / 1000f;
                     return abs;
                 }
             }
         } catch (Throwable ignored) {}
-        // 退路：sysfs current_now
         try {
             File f = new File("/sys/class/power_supply/battery/current_now");
             if (f.exists() && f.canRead()) {
-                try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(f))) {
+                try (BufferedReader r = new BufferedReader(new FileReader(f))) {
                     String line = r.readLine();
                     if (line != null && !line.trim().isEmpty()) {
                         long raw = Math.abs(Long.parseLong(line.trim()));
-                        if (raw > 100000) return raw / 1000f; // µA → mA
-                        if (raw > 0) return raw; // mA
+                        if (raw > 100000) return raw / 1000f;
+                        if (raw > 0) return raw;
                     }
                 }
             }

@@ -264,8 +264,6 @@ public class MainActivity extends AppCompatActivity {
                         return new BatteryHealthFragment();
                 }
 
-            }
-
             @Override
             public int getItemCount() {
                 return 9;

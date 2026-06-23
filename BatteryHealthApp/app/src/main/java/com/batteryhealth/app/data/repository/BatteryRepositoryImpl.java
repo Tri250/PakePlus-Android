@@ -17,7 +17,7 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     private static final String TAG = "BatteryRepositoryImpl";
 
-    /** 单一后台线程，避免阻塞主线程执行数据库 IO */
+    /** 单一后台线程，避免散乱 new Thread() 造成资源浪费 */
     private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "BatteryRepo-IO");
         t.setDaemon(true);
@@ -40,8 +40,6 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public BatteryInfo getCurrentBatteryInfo() {
-        // BatteryDataManager 仅做 sysfs + BatteryManager 内存读取，可在调用方已切换线程时直接执行；
-        // 此处仅 refresh，不做数据库 IO
         batteryDataManager.refreshFromStickyIntent();
         BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
         batteryInfoLiveData.postValue(info);
@@ -64,9 +62,6 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public List<BatteryInfo> getHistorySince(long timestamp) {
-        // 该方法由 ViewModel 通过 RxJava / 协程风格的 LiveData 调用；
-        // 直接执行 Room 同步查询仅在 ViewModel 内 IO 线程上合法；
-        // 兼容旧调用：仍可同步执行，但调用方需在子线程调用
         if (database != null) {
             try {
                 return database.batteryInfoDao().getSince(timestamp);

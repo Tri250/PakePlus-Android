@@ -305,7 +305,6 @@ public class HealthCheckEngine {
     }
 
     private static HealthCheckResult buildFallbackResult(String title, String category) {
-        // 异常 fallback 应当显著低于正常检测结果，确保用户能看到该项"未通过"
         return new HealthCheckResult.Builder()
                 .setId("fallback_" + (title == null ? "unknown" : title))
                 .setTitle(title == null ? "未知项" : title)

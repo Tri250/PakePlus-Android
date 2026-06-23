@@ -272,7 +272,7 @@ public class EnduranceFragment extends Fragment {
             tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%",
                     lastAnalysisResult.appsPowerPercent));
         } else {
-            // 真实数据尚未就绪：诚实展示"--"，禁止硬编码假数据
+            // 真实数据未就绪，诚实展示"--"而非硬编码假数据
             tvScreenPower.setText("--");
             tvSystemPower.setText("--");
             tvAppsPower.setText("--");
