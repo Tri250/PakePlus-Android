@@ -310,21 +310,72 @@ std::optional<int> BatteryHealthCalculator::estimateRemainingLifespan(
         return std::nullopt;
     }
 
-    // 基于健康度估算剩余寿命
-    float health = factors.getAverageScore();
+    // Base monthly degradation rate: 0.5% per month
+    float base_monthly_decay = 0.005f;
 
-    // 假设健康度每月下降约0.5%
-    // 当健康度低于60%时建议更换
-    float remaining_health = health - 0.6f;
-    if (remaining_health <= 0) {
-        return 0;  // 已需要更换
+    // Adjust decay rate based on computed factors
+    float adjusted_monthly_decay = base_monthly_decay;
+
+    // Factor 1: Capacity retention — lower retention means faster future degradation
+    if (factors.capacity_retention.has_value()) {
+        float retention = factors.capacity_retention.value();
+        if (retention < 0.7f) {
+            // Below 70% retention, degradation accelerates (non-linear aging)
+            adjusted_monthly_decay *= 1.0f + (0.7f - retention) * 3.0f;
+        } else if (retention > 0.9f) {
+            // Above 90% retention, degradation is slower
+            adjusted_monthly_decay *= 0.7f;
+        }
     }
 
-    int months = static_cast<int>(remaining_health / 0.005f);
+    // Factor 2: Cycle decay — high cycle count means faster future degradation
+    if (factors.cycle_decay.has_value()) {
+        float cycle_score = factors.cycle_decay.value();
+        if (cycle_score < 0.6f) {
+            adjusted_monthly_decay *= 1.0f + (0.6f - cycle_score) * 1.5f;
+        }
+    }
 
-    // 限制在合理范围（0-36个月）
+    // Factor 3: Resistance growth — higher resistance means faster degradation
+    if (factors.resistance_growth.has_value()) {
+        float resistance_score = factors.resistance_growth.value();
+        if (resistance_score < 0.5f) {
+            adjusted_monthly_decay *= 1.0f + (0.5f - resistance_score) * 2.0f;
+        }
+    }
+
+    // Factor 4: Temperature aging — chronic heat exposure accelerates degradation
+    if (factors.temperature_aging.has_value()) {
+        float temp_score = factors.temperature_aging.value();
+        if (temp_score < 0.6f) {
+            adjusted_monthly_decay *= 1.0f + (0.6f - temp_score) * 1.0f;
+        }
+    }
+
+    // Factor 5: Charging damage — poor charging habits accelerate degradation
+    if (factors.charging_damage.has_value()) {
+        float charge_score = factors.charging_damage.value();
+        if (charge_score < 0.6f) {
+            adjusted_monthly_decay *= 1.0f + (0.6f - charge_score) * 0.8f;
+        }
+    }
+
+    // Cap adjusted rate to reasonable bounds (0.2% - 3% per month)
+    if (adjusted_monthly_decay < 0.002f) adjusted_monthly_decay = 0.002f;
+    if (adjusted_monthly_decay > 0.03f) adjusted_monthly_decay = 0.03f;
+
+    // Calculate remaining lifespan based on current health
+    float health = factors.getAverageScore();
+    float remaining_health = health - 0.6f; // 60% threshold for replacement
+    if (remaining_health <= 0) {
+        return 0;  // Already needs replacement
+    }
+
+    int months = static_cast<int>(remaining_health / adjusted_monthly_decay);
+
+    // Limit to reasonable range (0-48 months)
     if (months < 0) months = 0;
-    if (months > 36) months = 36;
+    if (months > 48) months = 48;
 
     return months;
 }

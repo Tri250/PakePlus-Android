@@ -163,23 +163,35 @@ public class GuideFragment extends Fragment {
             btnUpload.setEnabled(false);
 
             new Thread(() -> {
-                File tempFile = copyUriToTempFile(uri);
-                if (tempFile != null) {
-                    BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        showAnalysisResult(result);
-                        btnUpload.setText("上传分析报告");
-                        btnUpload.setEnabled(true);
-                    });
+                File tempFile = null;
+                try {
+                    tempFile = copyUriToTempFile(uri);
+                    if (tempFile != null) {
+                        BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
 
-                    tempFile.delete();
-                } else {
+                        requireActivity().runOnUiThread(() -> {
+                            showAnalysisResult(result);
+                            btnUpload.setText("上传分析报告");
+                            btnUpload.setEnabled(true);
+                        });
+                    } else {
+                        requireActivity().runOnUiThread(() -> {
+                            tvAnalysisSummary.setText("文件读取失败");
+                            btnUpload.setText("上传分析报告");
+                            btnUpload.setEnabled(true);
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error analyzing bug report: " + e.getMessage());
                     requireActivity().runOnUiThread(() -> {
-                        tvAnalysisSummary.setText("文件读取失败");
+                        tvAnalysisSummary.setText("分析异常: " + e.getMessage());
                         btnUpload.setText("上传分析报告");
                         btnUpload.setEnabled(true);
                     });
+                } finally {
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
                 }
             }).start();
 
@@ -210,19 +222,21 @@ public class GuideFragment extends Fragment {
 
     private File copyUriToTempFile(Uri uri) {
         try {
-            File tempFile = new File(requireContext().getCacheDir(), "bugreport_temp.zip");
-            java.io.InputStream is = requireContext().getContentResolver().openInputStream(uri);
-            java.io.OutputStream os = new java.io.FileOutputStream(tempFile);
-            
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
+            String fileName = getFileName(uri);
+            if (fileName == null || fileName.isEmpty()) {
+                fileName = "bugreport_temp.dat";
             }
-            
-            is.close();
-            os.close();
-            
+            // Sanitize filename
+            fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+            File tempFile = new File(requireContext().getCacheDir(), fileName);
+            try (java.io.InputStream is = requireContext().getContentResolver().openInputStream(uri);
+                 java.io.OutputStream os = new java.io.FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, bytesRead);
+                }
+            }
             return tempFile;
         } catch (Exception e) {
             Log.e(TAG, "Error copying file: " + e.getMessage());

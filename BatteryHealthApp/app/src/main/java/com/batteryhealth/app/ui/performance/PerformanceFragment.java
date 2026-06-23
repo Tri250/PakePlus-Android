@@ -174,6 +174,10 @@ public class PerformanceFragment extends Fragment {
         loadGpuInfo();
     }
 
+    // 用于计算系统 CPU 使用率的前次采样值
+    private long lastSysIdle = 0;
+    private long lastSysTotal = 0;
+
     private int readCpuUsage() {
         try {
             BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
@@ -186,7 +190,19 @@ public class PerformanceFragment extends Fragment {
                 long system = Long.parseLong(parts[3]);
                 long idle = Long.parseLong(parts[4]);
                 long total = user + nice + system + idle;
-                return (int) ((user + nice + system) * 100 / total);
+
+                if (lastSysTotal > 0) {
+                    long deltaTotal = total - lastSysTotal;
+                    long deltaIdle = idle - lastSysIdle;
+                    lastSysIdle = idle;
+                    lastSysTotal = total;
+                    if (deltaTotal > 0) {
+                        return (int) ((deltaTotal - deltaIdle) * 100 / deltaTotal);
+                    }
+                }
+                lastSysIdle = idle;
+                lastSysTotal = total;
+                return 0;
             }
         } catch (IOException | NumberFormatException ignored) {
         }

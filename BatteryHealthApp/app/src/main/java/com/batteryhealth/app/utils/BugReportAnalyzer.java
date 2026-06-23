@@ -302,24 +302,33 @@ public class BugReportAnalyzer {
             ));
         }
 
-        // Low capacity anomaly
-        if ((line.contains("capacity") || line.contains("health")) && line.matches(".*\\b[0-5]\\d\\b.*")) {
-            // Only flag if capacity/health is below 60
-            try {
-                Pattern numPattern = Pattern.compile("\\b(\\d+)\\b");
-                Matcher m = numPattern.matcher(line);
-                while (m.find()) {
-                    int val = Integer.parseInt(m.group(1));
-                    if (val >= 0 && val < 60 && val <= 100) {
-                        result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
-                                extractTimestamp(line), "HIGH", "电池容量低",
-                                "检测到电池容量/健康度偏低: " + val,
-                                "建议考虑更换电池"
-                        ));
-                        break;
+        // Low capacity anomaly — only when line explicitly mentions battery capacity/health percentage
+        if ((line.contains("capacity") || line.contains("health")) && line.contains("%")) {
+            // Extract percentage values and check if they represent a low battery health
+            Pattern pctPattern = Pattern.compile("(\\d+)%");
+            Matcher pctMatcher = pctPattern.matcher(line);
+            while (pctMatcher.find()) {
+                try {
+                    int val = Integer.parseInt(pctMatcher.group(1));
+                    // Only flag values 0-59 that are clearly battery health/capacity percentages
+                    // Skip common false positives: version numbers, API levels, charge levels
+                    if (val >= 0 && val < 60) {
+                        String lowerLine = line.toLowerCase();
+                        // Confirm this is about battery health/capacity, not charge level or version
+                        boolean isHealthOrCapacity = (lowerLine.contains("health") && !lowerLine.contains("charge level"))
+                                || (lowerLine.contains("capacity") && !lowerLine.contains("charge level")
+                                    && !lowerLine.contains("level") && !lowerLine.contains("version"));
+                        if (isHealthOrCapacity) {
+                            result.anomalies.add(new BugReportGuide.AnalysisResult.Anomaly(
+                                    extractTimestamp(line), "HIGH", "电池容量低",
+                                    "检测到电池容量/健康度偏低: " + val + "%",
+                                    "建议考虑更换电池"
+                            ));
+                            break;
+                        }
                     }
-                }
-            } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {}
+            }
         }
 
         // Crash detection
@@ -339,19 +348,26 @@ public class BugReportAnalyzer {
         String appName = extractAppName(line, packageName);
         long duration = extractDuration(line);
 
-        Map<String, BugReportGuide.AnalysisResult.AppWakelock> wakelockMap = new HashMap<>();
+        // Find existing entry efficiently
+        BugReportGuide.AnalysisResult.AppWakelock existing = null;
         for (BugReportGuide.AnalysisResult.AppWakelock w : result.wakelocks) {
-            wakelockMap.put(w.packageName, w);
+            if (w.packageName.equals(packageName)) {
+                existing = w;
+                break;
+            }
         }
 
-        BugReportGuide.AnalysisResult.AppWakelock existing = wakelockMap.get(packageName);
         if (existing != null) {
             existing.count++;
-            existing.durationMs += duration > 0 ? duration : 60000;
+            if (duration > 0) {
+                existing.durationMs += duration;
+            }
         } else {
-            result.wakelocks.add(new BugReportGuide.AnalysisResult.AppWakelock(
-                    packageName, appName, duration > 0 ? duration : 60000, 1
-            ));
+            BugReportGuide.AnalysisResult.AppWakelock newLock =
+                    new BugReportGuide.AnalysisResult.AppWakelock(
+                            packageName, appName, duration > 0 ? duration : 0, 1
+                    );
+            result.wakelocks.add(newLock);
         }
     }
 
@@ -717,7 +733,7 @@ public class BugReportAnalyzer {
                 return value > 100000 ? value : value * 1000;
             } catch (NumberFormatException ignored) {}
         }
-        return 60000; // Default 1 minute
+        return 0; // Unknown duration — do not fabricate a value
     }
 
     private String extractPackageName(String line) {

@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -29,6 +30,8 @@ import com.batteryhealth.app.utils.BatteryReportGenerator;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 电池健康主页面 Fragment。
@@ -55,6 +58,7 @@ public class BatteryHealthFragment extends Fragment {
     private TextView tvReportSummary;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService dataExecutor = Executors.newSingleThreadExecutor();
     private Runnable updateRunnable;
     private BatteryDataManager batteryDataManager;
     private BatteryReportGenerator reportGenerator;
@@ -120,8 +124,8 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // 在 onDestroyView 中也停止更新，防止 onPause 因异常跳过导致 Handler 继续持有引用
         stopPeriodicUpdate();
+        dataExecutor.shutdownNow();
     }
 
     private void registerBatteryReceiver() {
@@ -170,8 +174,7 @@ public class BatteryHealthFragment extends Fragment {
     private void updateBatteryData() {
         if (batteryDataManager == null) return;
 
-        // 在后台线程获取完整电池信息（含 sysfs 读取）
-        new Thread(() -> {
+        dataExecutor.execute(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
@@ -181,7 +184,7 @@ public class BatteryHealthFragment extends Fragment {
             } catch (Exception e) {
                 // 静默处理
             }
-        }).start();
+        });
     }
 
     /**
@@ -256,10 +259,6 @@ public class BatteryHealthFragment extends Fragment {
                 statusText = getString(R.string.status_poor);
             }
             tvHealthStatus.setText(statusText);
-
-            // 健康度来源信息
-            String healthSource = batteryDataManager.getHealthSourceText();
-
             UiAnimationHelper.animateRingProgress(healthRing, (int) healthPct);
         } else {
             tvHealthPercentage.setText("--");

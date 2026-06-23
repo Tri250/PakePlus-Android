@@ -158,6 +158,8 @@ public class DeviceConfigQuery {
     }
 
     private String assessAndroidVersion(int sdkVersion) {
+        if (sdkVersion >= 36) return "当前系统版本为 Android 16，功能完整，安全更新及时";
+        if (sdkVersion >= 35) return "当前系统版本为 Android 15，功能完整，安全更新及时";
         if (sdkVersion >= 34) return "当前系统版本为 Android 14，功能完整，安全更新及时";
         if (sdkVersion >= 33) return "当前系统版本为 Android 13，建议升级到最新版本";
         if (sdkVersion >= 31) return "当前系统版本为 Android 12，仍在安全支持范围内";
@@ -196,15 +198,47 @@ public class DeviceConfigQuery {
     }
 
     private String assessPerformance(DeviceInfo info) {
-        if (info.hardware.toLowerCase().contains("sdm8") || 
-            info.hardware.toLowerCase().contains("sm8")) {
-            return "高端处理器，性能强劲";
+        if (info == null || info.hardware == null) return "无法评估处理器性能";
+
+        String p = info.hardware.toLowerCase(Locale.ROOT);
+
+        // Flagship tier
+        if (p.contains("sdm8") || p.contains("sm8") || p.contains("snapdragon 8")
+                || p.contains("dimensity 9") || p.contains("mt699") || p.contains("mt698")
+                || p.contains("kirin 9") || p.contains("tensor g4") || p.contains("tensor g5")
+                || p.contains("exynos 2400") || p.contains("exynos 2500")) {
+            return "旗舰级处理器，性能强劲，可流畅运行各类应用";
         }
-        if (info.hardware.toLowerCase().contains("sdm7") || 
-            info.hardware.toLowerCase().contains("sm7")) {
-            return "中端处理器，性能均衡";
+
+        // High-end tier
+        if (p.contains("sdm7") || p.contains("sm7") || p.contains("snapdragon 7")
+                || p.contains("dimensity 7") || p.contains("dimensity 8")
+                || p.contains("mt689") || p.contains("mt688")
+                || p.contains("kirin 8") || p.contains("tensor g3")
+                || p.contains("exynos 2200") || p.contains("exynos 2300")
+                || p.contains("unisoc t8")) {
+            return "中高端处理器，日常使用流畅，大型游戏可能略有压力";
         }
-        return "基础处理器，日常使用足够";
+
+        // Mid-range tier
+        if (p.contains("sdm6") || p.contains("sm6") || p.contains("snapdragon 6")
+                || p.contains("dimensity 6") || p.contains("mt685") || p.contains("mt687")
+                || p.contains("kirin 7") || p.contains("kirin 6")
+                || p.contains("exynos 1280") || p.contains("exynos 1380")
+                || p.contains("unisoc t7") || p.contains("unisoc t6")) {
+            return "中端处理器，日常使用基本流畅，重度应用可能卡顿";
+        }
+
+        // Entry-level tier
+        if (p.contains("sdm4") || p.contains("sm4") || p.contains("snapdragon 4")
+                || p.contains("dimensity 3") || p.contains("mt676") || p.contains("mt681")
+                || p.contains("kirin 5") || p.contains("kirin 4")
+                || p.contains("unisoc t5") || p.contains("unisoc t4")
+                || p.contains("unisoc t3") || p.contains("sc9863")) {
+            return "入门级处理器，基本功能可用，多任务和大型应用体验较差";
+        }
+
+        return "处理器性能未知，无法准确评估";
     }
 
     private String generateSuggestions(ConfigAnalysisResult result) {

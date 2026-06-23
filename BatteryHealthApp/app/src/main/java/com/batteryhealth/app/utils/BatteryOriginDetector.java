@@ -99,9 +99,12 @@ public class BatteryOriginDetector {
             methods.add(new DetectionMethod("循环次数", cycleCount));
         }
 
-        // 7. Detect design capacity vs actual
-        String capacityInfo = detectCapacityInfo();
-        if (capacityInfo != null) {
+        // 7. Detect design capacity vs actual (also store for analysis)
+        CapacityData capacityData = detectCapacityData();
+        if (capacityData != null) {
+            result.designCapacity = capacityData.designCapacity;
+            result.currentCapacity = capacityData.currentCapacity;
+            String capacityInfo = capacityData.getDisplayText();
             methods.add(new DetectionMethod("容量信息", capacityInfo));
         }
 
@@ -172,11 +175,11 @@ public class BatteryOriginDetector {
             try {
                 File f = new File(batteryDir, file);
                 if (!f.canRead()) continue;
-                BufferedReader reader = new BufferedReader(new FileReader(f));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null && !line.isEmpty()) {
-                    info.append(file).append(": ").append(line).append("\n");
+                try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.isEmpty()) {
+                        info.append(file).append(": ").append(line).append("\n");
+                    }
                 }
             } catch (IOException ignored) {
             }
@@ -312,7 +315,7 @@ public class BatteryOriginDetector {
         return null;
     }
 
-    private String detectCapacityInfo() {
+    private CapacityData detectCapacityData() {
         int designCapacity = 0;
         int currentCapacity = 0;
 
@@ -378,14 +381,8 @@ public class BatteryOriginDetector {
             designCapacity = db.getDesignCapacity();
         }
 
-        if (designCapacity > 0 && currentCapacity > 0) {
-            float ratio = (currentCapacity * 100f) / designCapacity;
-            return String.format(Locale.getDefault(), "设计 %d mAh / 当前 %d mAh（%.0f%%）",
-                    designCapacity, currentCapacity, ratio);
-        } else if (designCapacity > 0) {
-            return String.format(Locale.getDefault(), "设计 %d mAh", designCapacity);
-        } else if (currentCapacity > 0) {
-            return String.format(Locale.getDefault(), "当前 %d mAh", currentCapacity);
+        if (designCapacity > 0 || currentCapacity > 0) {
+            return new CapacityData(designCapacity, currentCapacity);
         }
 
         return null;
@@ -505,11 +502,42 @@ public class BatteryOriginDetector {
             }
         }
 
-        // Signal 8: Design capacity matches device database
+        // Signal 8: Capacity ratio — design vs current FCC (strong indicator of battery replacement)
+        if (result.designCapacity > 0 && result.currentCapacity > 0) {
+            float ratio = (result.currentCapacity * 100f) / result.designCapacity;
+            if (ratio >= 85f && ratio <= 105f) {
+                // Normal range: battery health consistent with original
+                positiveSigns += 3; // Very strong signal
+            } else if (ratio >= 70f && ratio < 85f) {
+                // Moderate degradation: could be aged original
+                positiveSigns += 1;
+            } else if (ratio > 105f && ratio <= 115f) {
+                // Slightly above design: some batteries exceed spec, still likely original
+                positiveSigns += 2;
+            } else if (ratio > 115f) {
+                // Significantly above design: likely a different (larger) battery
+                negativeSigns += 3; // Strong replacement signal
+            } else if (ratio < 70f && ratio >= 50f) {
+                // Significant degradation: uncertain
+                negativeSigns += 1;
+            } else if (ratio < 50f) {
+                // Severe degradation or wrong battery
+                negativeSigns += 2;
+            }
+        } else if (result.designCapacity > 0) {
+            // Only have design capacity — check if device database matches
+            DeviceDatabaseManager db = DeviceDatabaseManager.getInstance(context);
+            int dbCapacity = db.getDesignCapacity();
+            if (dbCapacity > 0 && result.designCapacity != dbCapacity) {
+                // Design capacity doesn't match expected for this device model
+                negativeSigns += 2;
+            }
+        }
+
+        // Signal 9: Design capacity matches device database
         DeviceDatabaseManager db = DeviceDatabaseManager.getInstance(context);
         int dbCapacity = db.getDesignCapacity();
         if (dbCapacity > 0) {
-            // If device database has this model, it's more likely original
             positiveSigns += 1;
         }
 
@@ -555,6 +583,16 @@ public class BatteryOriginDetector {
             }
         }
 
+        // Capacity ratio confidence
+        if (result.designCapacity > 0 && result.currentCapacity > 0) {
+            float ratio = (result.currentCapacity * 100f) / result.designCapacity;
+            if (ratio >= 85f && ratio <= 105f) {
+                confidence += 15; // Strong confirmation
+            } else if (ratio > 115f || ratio < 50f) {
+                confidence -= 15; // Strong disconfirmation
+            }
+        }
+
         // Device database match
         DeviceDatabaseManager db = DeviceDatabaseManager.getInstance(context);
         if (db.findDevice() != null) confidence += 5;
@@ -580,10 +618,9 @@ public class BatteryOriginDetector {
         try {
             File f = new File(path);
             if (!f.exists() || !f.canRead()) return null;
-            BufferedReader reader = new BufferedReader(new FileReader(f));
-            String line = reader.readLine();
-            reader.close();
-            return line;
+            try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+                return reader.readLine();
+            }
         } catch (IOException e) {
             return null;
         }
@@ -598,6 +635,8 @@ public class BatteryOriginDetector {
         public String serialNumber;
         public String healthStatus;
         public String cycleCount;
+        public int designCapacity;
+        public int currentCapacity;
         public String oemInfo;
         public String technology;
         public boolean isOriginal;
@@ -613,6 +652,32 @@ public class BatteryOriginDetector {
         public DetectionMethod(String name, String value) {
             this.name = name;
             this.value = value;
+        }
+    }
+
+    /**
+     * 容量数据辅助类，存储设计容量和当前满充容量。
+     */
+    private static class CapacityData {
+        final int designCapacity;
+        final int currentCapacity;
+
+        CapacityData(int designCapacity, int currentCapacity) {
+            this.designCapacity = designCapacity;
+            this.currentCapacity = currentCapacity;
+        }
+
+        String getDisplayText() {
+            if (designCapacity > 0 && currentCapacity > 0) {
+                float ratio = (currentCapacity * 100f) / designCapacity;
+                return String.format(Locale.getDefault(), "设计 %d mAh / 当前 %d mAh（%.0f%%）",
+                        designCapacity, currentCapacity, ratio);
+            } else if (designCapacity > 0) {
+                return String.format(Locale.getDefault(), "设计 %d mAh", designCapacity);
+            } else if (currentCapacity > 0) {
+                return String.format(Locale.getDefault(), "当前 %d mAh", currentCapacity);
+            }
+            return "--";
         }
     }
 }

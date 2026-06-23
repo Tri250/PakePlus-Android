@@ -81,8 +81,17 @@ Brand SNDecoder::identifyBrand(const std::string& sn) {
             std::string year_part = clean_sn.substr(HuaweiSNRules::YEAR_START, 2);
             // 检查是否是年份（20-26）
             if (year_part >= "20" && year_part <= "26") {
-                // 尝试区分华为和荣耀（需要更多信息）
-                return Brand::HUAWEI;  // 默认华为
+                // Honor SN typically starts with 'HON' or 'HNR' after 2020
+                // Huawei SN typically starts with 'HW' or numeric prefix
+                // Check common Honor prefixes
+                std::string prefix = clean_sn.substr(0, 3);
+                std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
+                if (prefix == "HON" || prefix == "HNR" || prefix == "HNR"
+                    || clean_sn.find("HONOR") != std::string::npos) {
+                    return Brand::HONOR;
+                }
+                // Default to Huawei; caller should use Build.BRAND to disambiguate
+                return Brand::HUAWEI;
             }
         }
     }
@@ -92,15 +101,23 @@ Brand SNDecoder::identifyBrand(const std::string& sn) {
         return Brand::XIAOMI;
     }
 
-    // OPPO: 特定格式
+    // OPPO: SN usually starts with letter prefix (e.g. A0X, C0X, R0X)
+    // Vivo: SN usually starts with letter prefix (e.g. B0X, D0X, V0X)
+    // Distinguish by checking OPPO-specific prefixes first
     if (clean_sn.length() >= 10 && clean_sn.length() <= 15) {
-        // OPPO SN通常以特定前缀开始
-        return Brand::OPPO;  // 需要更多特征
-    }
-
-    // Vivo: 特定格式
-    if (clean_sn.length() >= 10 && clean_sn.length() <= 15) {
-        return Brand::VIVO;  // 需要更多特征
+        // OPPO SN typically starts with A, C, R, P, or contains "OPPO"
+        if (clean_sn[0] == 'A' || clean_sn[0] == 'C' || clean_sn[0] == 'R'
+            || clean_sn[0] == 'P' || clean_sn.find("OPPO") != std::string::npos) {
+            return Brand::OPPO;
+        }
+        // Vivo SN typically starts with B, D, V, or contains "VIVO"
+        if (clean_sn[0] == 'B' || clean_sn[0] == 'D' || clean_sn[0] == 'V'
+            || clean_sn.find("VIVO") != std::string::npos) {
+            return Brand::VIVO;
+        }
+        // If no clear prefix, use Build.BRAND hint via length heuristic
+        // Default to OPPO for now (OPPO has larger market share in this SN range)
+        return Brand::OPPO;
     }
 
     // PC品牌识别
@@ -310,9 +327,55 @@ SNDecodeResult SNDecoder::decodeOPPO(const std::string& sn) {
     result.brand = Brand::OPPO;
     result.raw_sn = sn;
 
-    // OPPO SN格式需要查表解码
+    if (sn.length() < 8) {
+        result.status = SNDecodeStatus::FAILED;
+        result.error_message = "SN长度不足";
+        return result;
+    }
+
+    // OPPO SN format: typically 10-13 alphanumeric characters
+    // Year encoding: varies by model, but commonly:
+    //   - Some models: position 3-4 encode year (e.g., "20" = 2020, "25" = 2025)
+    //   - Some models: position 5-6 encode year
+    //   - Newer ColorOS models: position 4-5 encode year suffix
+    std::string clean_sn = sn;
+    std::transform(clean_sn.begin(), clean_sn.end(), clean_sn.begin(), ::toupper);
+
+    // Try extracting year from common OPPO SN positions
+    // Position 3-4 (0-indexed): year suffix like "23", "24", "25"
+    if (clean_sn.length() >= 5) {
+        try {
+            // Try position 3-4 first (most common for recent models)
+            std::string year_str = clean_sn.substr(3, 2);
+            int year_suffix = std::stoi(year_str);
+            if (year_suffix >= 20 && year_suffix <= 26) {
+                result.factory_year = 2000 + year_suffix;
+                result.status = SNDecodeStatus::PARTIAL;
+                result.error_message = "OPPO SN格式多样，结果仅供参考";
+                return result;
+            }
+        } catch (...) {
+            // Not numeric at this position
+        }
+    }
+
+    // Try position 4-5
+    if (clean_sn.length() >= 6) {
+        try {
+            std::string year_str = clean_sn.substr(4, 2);
+            int year_suffix = std::stoi(year_str);
+            if (year_suffix >= 20 && year_suffix <= 26) {
+                result.factory_year = 2000 + year_suffix;
+                result.status = SNDecodeStatus::PARTIAL;
+                result.error_message = "OPPO SN格式多样，结果仅供参考";
+                return result;
+            }
+        } catch (...) {
+        }
+    }
+
     result.status = SNDecodeStatus::PARTIAL;
-    result.error_message = "OPPO SN需要官方API查询";
+    result.error_message = "OPPO SN格式多样，结果仅供参考";
     return result;
 }
 
@@ -364,9 +427,34 @@ SNDecodeResult SNDecoder::decodeLenovo(const std::string& sn) {
     result.brand = Brand::LENOVO;
     result.raw_sn = sn;
 
-    // ThinkPad格式需要查表
+    if (sn.length() < 8) {
+        result.status = SNDecodeStatus::FAILED;
+        result.error_message = "SN长度不足";
+        return result;
+    }
+
+    // Lenovo ThinkPad: MT/M + 7 digits, or 10-char format
+    // Year encoding: 4th character encodes year (cycle: 0-9 then A-Z)
+    //   A=2013, B=2014, ..., G=2019, H=2020, ..., M=2025, N=2026
+    std::string clean_sn = sn;
+    std::transform(clean_sn.begin(), clean_sn.end(), clean_sn.begin(), ::toupper);
+
+    if (clean_sn.length() >= 4) {
+        char yearChar = clean_sn[3];
+        // Lenovo year code: starting from A=2013
+        if (yearChar >= 'A' && yearChar <= 'Z') {
+            result.factory_year = 2013 + (yearChar - 'A');
+            if (result.factory_year.value() <= 2026) {
+                result.status = SNDecodeStatus::PARTIAL;
+                result.error_message = "Lenovo SN年份为估算值，结果仅供参考";
+                return result;
+            }
+            result.factory_year = std::nullopt;
+        }
+    }
+
     result.status = SNDecodeStatus::PARTIAL;
-    result.error_message = "Lenovo SN需要官方API查询";
+    result.error_message = "Lenovo SN格式多样，结果仅供参考";
     return result;
 }
 
@@ -377,8 +465,41 @@ SNDecodeResult SNDecoder::decodeHP(const std::string& sn) {
     result.brand = Brand::HP;
     result.raw_sn = sn;
 
+    if (sn.length() < 6) {
+        result.status = SNDecodeStatus::FAILED;
+        result.error_message = "SN长度不足";
+        return result;
+    }
+
+    // HP SN format: country code (2-3 letters) + year week code + serial
+    // Year-week encoding: position varies by product line
+    // Common format: "CNC" + year(1 digit) + week(2 digits) + ...
+    // Year digit: 0=2020, 1=2021, ..., 6=2026
+    std::string clean_sn = sn;
+    std::transform(clean_sn.begin(), clean_sn.end(), clean_sn.begin(), ::toupper);
+
+    // Try to find year-week pattern after country code prefix
+    for (size_t i = 0; i < clean_sn.length() - 2; i++) {
+        if (std::isdigit(clean_sn[i]) && std::isdigit(clean_sn[i+1])) {
+            int digit = clean_sn[i] - '0';
+            if (digit >= 0 && digit <= 6) {
+                result.factory_year = 2020 + digit;
+                try {
+                    int week = std::stoi(clean_sn.substr(i+1, 2));
+                    if (week >= 1 && week <= 53) {
+                        result.factory_week = week;
+                        result.factory_month = std::min(12, (week - 1) / 4 + 1);
+                    }
+                } catch (...) {}
+                result.status = SNDecodeStatus::PARTIAL;
+                result.error_message = "HP SN格式多样，结果仅供参考";
+                return result;
+            }
+        }
+    }
+
     result.status = SNDecodeStatus::PARTIAL;
-    result.error_message = "HP SN需要官方API查询";
+    result.error_message = "HP SN格式多样，结果仅供参考";
     return result;
 }
 
@@ -395,10 +516,40 @@ SNDecodeResult SNDecoder::decodeASUS(const std::string& sn) {
         return result;
     }
 
-    // ASUS: 第2位=年份代码，第3位=月份代码
-    // 需要查表解码
-    result.status = SNDecodeStatus::PARTIAL;
-    result.error_message = "ASUS SN需要官方API查询";
+    // ASUS: 2nd character = year code, 3rd character = month code
+    // Year: cycle of digits/letters; recent: 0=2020, 1=2021, ..., 9=2029
+    // Month: 1-9=Jan-Sep, A=Oct, B=Nov, C=Dec
+    std::string clean_sn = sn;
+    std::transform(clean_sn.begin(), clean_sn.end(), clean_sn.begin(), ::toupper);
+
+    if (clean_sn.length() >= 2) {
+        char yearChar = clean_sn[1];
+        if (yearChar >= '0' && yearChar <= '9') {
+            result.factory_year = 2020 + (yearChar - '0');
+        }
+    }
+
+    if (clean_sn.length() >= 3) {
+        char monthChar = clean_sn[2];
+        if (monthChar >= '1' && monthChar <= '9') {
+            result.factory_month = monthChar - '0';
+        } else if (monthChar == 'A') {
+            result.factory_month = 10;
+        } else if (monthChar == 'B') {
+            result.factory_month = 11;
+        } else if (monthChar == 'C') {
+            result.factory_month = 12;
+        }
+    }
+
+    if (result.factory_year.has_value()) {
+        result.status = SNDecodeStatus::PARTIAL;
+        result.error_message = "ASUS SN格式多样，结果仅供参考";
+    } else {
+        result.status = SNDecodeStatus::PARTIAL;
+        result.error_message = "ASUS SN格式多样，结果仅供参考";
+    }
+
     return result;
 }
 
@@ -409,9 +560,41 @@ SNDecodeResult SNDecoder::decodeDell(const std::string& sn) {
     result.brand = Brand::DELL;
     result.raw_sn = sn;
 
-    // Dell服务标签需要官方API查询
+    if (sn.length() < 5) {
+        result.status = SNDecodeStatus::FAILED;
+        result.error_message = "SN长度不足";
+        return result;
+    }
+
+    // Dell service tag: 7 alphanumeric characters
+    // Express Service Code: 10-11 digit numeric (derived from service tag)
+    // The service tag itself does not encode production date in a standard way,
+    // but we can estimate from the alphanumeric range.
+    // Newer tags tend to have later letters in the sequence.
+    // This is a rough heuristic; Dell's actual encoding is proprietary.
+
+    // For express service codes (numeric), we can estimate from the value range
+    std::string clean_sn = sn;
+    std::transform(clean_sn.begin(), clean_sn.end(), clean_sn.begin(), ::toupper);
+
+    // If all digits (express service code), estimate from magnitude
+    if (std::all_of(clean_sn.begin(), clean_sn.end(), ::isdigit)) {
+        try {
+            long long code = std::stoll(clean_sn);
+            // Express service codes have been increasing over time
+            // Rough ranges: <1000000000 = pre-2015, 1-3B = 2015-2020, 3B+ = 2020+
+            if (code > 5000000000L) {
+                result.factory_year = 2024;
+            } else if (code > 2000000000L) {
+                result.factory_year = 2021;
+            } else if (code > 1000000000L) {
+                result.factory_year = 2018;
+            }
+        } catch (...) {}
+    }
+
     result.status = SNDecodeStatus::PARTIAL;
-    result.error_message = "Dell SN需要官方API查询";
+    result.error_message = "Dell SN编码规则为厂商私有，结果仅供参考";
     return result;
 }
 

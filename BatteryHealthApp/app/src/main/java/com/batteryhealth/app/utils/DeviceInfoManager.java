@@ -605,13 +605,12 @@ public class DeviceInfoManager {
                 StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
                 if (sm != null) {
                     android.os.storage.StorageVolume primaryVolume = sm.getPrimaryStorageVolume();
-                    // 通过反射调用 isDirectoryEncrypted()（Android 16 新增 API）
                     try {
                         java.lang.reflect.Method isEncryptedMethod = primaryVolume.getClass()
                                 .getMethod("isDirectoryEncrypted");
-                        Object result = isEncryptedMethod.invoke(primaryVolume);
-                        if (result instanceof Boolean) {
-                            Log.d(TAG, "Primary storage encrypted: " + result);
+                        Object encResult = isEncryptedMethod.invoke(primaryVolume);
+                        if (encResult instanceof Boolean && (Boolean) encResult) {
+                            info.storageEncryption = "文件级加密（FBE）";
                         }
                     } catch (NoSuchMethodException nsme) {
                         Log.d(TAG, "isDirectoryEncrypted() not available on this device");
@@ -1108,14 +1107,7 @@ public class DeviceInfoManager {
 
     @android.annotation.SuppressLint("PrivateApi")
     private String getSystemProperty(String propertyName) {
-        try {
-            Class<?> systemProperties = Class.forName("android.os.SystemProperties");
-            Method get = systemProperties.getMethod("get", String.class);
-            Object value = get.invoke(null, propertyName);
-            return value != null ? value.toString() : null;
-        } catch (Exception e) {
-            return null;
-        }
+        return SystemPropertiesCompat.get(context, propertyName);
     }
 
     // endregion
