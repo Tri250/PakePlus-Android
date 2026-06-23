@@ -169,25 +169,34 @@ public class GuideFragment extends Fragment {
                     if (tempFile != null) {
                         BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
 
-                        requireActivity().runOnUiThread(() -> {
-                            showAnalysisResult(result);
-                            btnUpload.setText("上传分析报告");
-                            btnUpload.setEnabled(true);
-                        });
+                        if (isAdded() && getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                if (!isAdded()) return;
+                                showAnalysisResult(result);
+                                btnUpload.setText("上传分析报告");
+                                btnUpload.setEnabled(true);
+                            });
+                        }
                     } else {
-                        requireActivity().runOnUiThread(() -> {
-                            tvAnalysisSummary.setText("文件读取失败");
+                        if (isAdded() && getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                if (!isAdded()) return;
+                                tvAnalysisSummary.setText("文件读取失败");
+                                btnUpload.setText("上传分析报告");
+                                btnUpload.setEnabled(true);
+                            });
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error analyzing bug report: " + e.getMessage());
+                    if (isAdded() && getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            if (!isAdded()) return;
+                            tvAnalysisSummary.setText("分析异常: " + e.getMessage());
                             btnUpload.setText("上传分析报告");
                             btnUpload.setEnabled(true);
                         });
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error analyzing bug report: " + e.getMessage());
-                    requireActivity().runOnUiThread(() -> {
-                        tvAnalysisSummary.setText("分析异常: " + e.getMessage());
-                        btnUpload.setText("上传分析报告");
-                        btnUpload.setEnabled(true);
-                    });
                 } finally {
                     if (tempFile != null && tempFile.exists()) {
                         tempFile.delete();

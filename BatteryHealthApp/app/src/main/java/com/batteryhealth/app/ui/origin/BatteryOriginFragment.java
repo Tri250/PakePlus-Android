@@ -91,11 +91,14 @@ public class BatteryOriginFragment extends Fragment {
             }
             BatteryOriginDetector.OriginResult result = originDetector.detect();
 
-            requireActivity().runOnUiThread(() -> {
-                updateUI(result);
-                btnDetect.setEnabled(true);
-                btnDetect.setText(getString(R.string.label_detect_battery));
-            });
+            if (isAdded() && getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    updateUI(result);
+                    btnDetect.setEnabled(true);
+                    btnDetect.setText(getString(R.string.label_detect_battery));
+                });
+            }
         }).start();
     }
 
