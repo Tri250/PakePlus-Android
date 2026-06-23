@@ -18,6 +18,8 @@ public class DeviceConfigQuery {
     private static final String PREFS_NAME = "DeviceConfigPrefs";
     private static final String KEY_FIRST_INSTALL_TIME = "first_install_time";
     private static final String KEY_DEVICE_ACTIVATION_DATE = "device_activation_date";
+    private static final String KEY_DEVICE_ACTIVATION_SOURCE = "device_activation_source";
+    private static final String KEY_DEVICE_ACTIVATION_CONFIDENCE = "device_activation_confidence";
     private static final String KEY_ANALYSIS_CACHE = "analysis_cache";
 
     private final Context context;
@@ -75,6 +77,11 @@ public class DeviceConfigQuery {
         // Use ActivationDateHelper as the single source of truth
         ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
         if (result.isValid()) {
+            // 缓存 source 和 confidence 以便后续直接复用
+            prefs.edit()
+                    .putString(KEY_DEVICE_ACTIVATION_SOURCE, result.source)
+                    .putFloat(KEY_DEVICE_ACTIVATION_CONFIDENCE, result.confidence)
+                    .apply();
             return result.timestamp;
         }
 
@@ -113,20 +120,22 @@ public class DeviceConfigQuery {
     public String getFormattedActivationDate() {
         long date = getDeviceActivationDate();
         if (date <= 0) return "未知";
-        ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
-        String sourceLabel = "";
-        if (result.isValid()) {
-            switch (result.source) {
-                case "electronic_warranty_card": sourceLabel = "（电子保卡）"; break;
-                case "system_first_boot_time": sourceLabel = "（首次开机）"; break;
-                case "first_unlock_time": sourceLabel = "（首次解锁）"; break;
-                case "gms_first_install": sourceLabel = "（GMS安装）"; break;
-                case "system_framework_install": sourceLabel = "（系统安装）"; break;
-                case "app_first_install": sourceLabel = "（应用安装）"; break;
-                default: sourceLabel = ""; break;
-            }
-        }
+        // 优先从缓存读取 source，避免再次执行 detect()
+        String source = prefs.getString(KEY_DEVICE_ACTIVATION_SOURCE, "unknown");
+        String sourceLabel = sourceLabelFor(source);
         return new SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(new Date(date)) + sourceLabel;
+    }
+
+    private String sourceLabelFor(String source) {
+        switch (source != null ? source : "") {
+            case "electronic_warranty_card": return "（电子保卡）";
+            case "system_first_boot_time": return "（首次开机）";
+            case "first_unlock_time": return "（首次解锁）";
+            case "gms_first_install": return "（GMS安装）";
+            case "system_framework_install": return "（系统安装）";
+            case "app_first_install": return "（应用安装）";
+            default: return "";
+        }
     }
 
     public ConfigAnalysisResult analyzeConfiguration() {

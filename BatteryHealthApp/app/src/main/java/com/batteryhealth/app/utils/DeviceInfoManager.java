@@ -101,6 +101,7 @@ public class DeviceInfoManager {
     private final DeviceDatabaseManager deviceDb;
 
     private DeviceConfig cachedConfig;
+    private volatile String cachedGpuInfo;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -212,7 +213,17 @@ public class DeviceInfoManager {
      * 获取 GPU 信息。
      */
     public String getGpuInfo() {
-        return collectGpuInfo();
+        if (cachedGpuInfo == null) {
+            cachedGpuInfo = collectGpuInfo();
+        }
+        return cachedGpuInfo;
+    }
+
+    /**
+     * 强制刷新 GPU 信息缓存（用于 UI 主动重新检测的场景）。
+     */
+    public void refreshGpuInfo() {
+        cachedGpuInfo = collectGpuInfo();
     }
 
     /**
@@ -1033,16 +1044,21 @@ public class DeviceInfoManager {
 
     private String getGlRendererViaReflection() {
         try {
+            // GLES20.glGetString 要求当前线程已绑定 EGL Context
+            // 在主线程没有 EGL Context 时直接返回 null，让流程继续走 SoC 推断
             Class<?> gles20Class = Class.forName("android.opengl.GLES20");
             java.lang.reflect.Method glGetStringMethod = gles20Class.getMethod("glGetString", int.class);
             // GL_RENDERER = 0x1F01
             Object result = glGetStringMethod.invoke(null, 0x1F01);
             if (result != null) {
                 String renderer = result.toString();
-                if (!renderer.isEmpty() && !renderer.contains("Emulator")) {
+                if (renderer != null && !renderer.isEmpty() && !renderer.contains("Emulator")) {
                     return renderer;
                 }
             }
+        } catch (java.lang.reflect.InvocationTargetException ite) {
+            // glGetString 在没有 EGL Context 时会抛异常——这在主线程调用时是预期情况
+            // 静默忽略，让后续 fallback 路径接管
         } catch (Exception ignored) {
         }
         return null;

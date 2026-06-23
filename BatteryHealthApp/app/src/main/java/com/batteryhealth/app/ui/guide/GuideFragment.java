@@ -240,6 +240,9 @@ public class GuideFragment extends Fragment {
             summary.append("充电次数: ").append(result.summary.totalChargeSessions).append(" 次\n");
             summary.append("平均充电功率: ").append(String.format("%.1f", result.summary.avgChargePower)).append(" W\n");
             summary.append("异常数量: ").append(result.summary.anomalyCount).append(" (严重: ").append(result.summary.criticalAnomalyCount).append(")\n");
+            if (result.batteryEvents != null) {
+                summary.append("Bugreport 事件数: ").append(result.batteryEvents.size()).append("\n");
+            }
             
             tvAnalysisSummary.setText(summary.toString());
             tvAnalysisSummary.setVisibility(View.VISIBLE);
@@ -264,6 +267,25 @@ public class GuideFragment extends Fragment {
                 tvSuggestion.setText("建议: " + anomaly.suggestion);
                 
                 analysisResultContainer.addView(itemView);
+            }
+        }
+
+        if (result.batteryEvents != null && !result.batteryEvents.isEmpty()) {
+            addAnalysisSection("Bugreport 关键指标", "从 bugreport 解析出的电池/性能指标");
+
+            for (BugReportGuide.AnalysisResult.BatteryEvent event : result.batteryEvents) {
+                String time = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                        .format(new java.util.Date(event.timestamp));
+                String info = String.format("[%s] %s - %s",
+                        time, event.type != null ? event.type : "未知",
+                        event.detail != null ? event.detail : "");
+
+                TextView tv = new TextView(requireContext());
+                tv.setText(info);
+                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
+                tv.setTextIsSelectable(true);
+                analysisResultContainer.addView(tv);
             }
         }
 

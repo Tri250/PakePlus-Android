@@ -28,6 +28,9 @@ public class BatteryOriginFragment extends Fragment {
     private TextView tvOriginConclusion;
     private TextView tvManufactureDate;
     private TextView tvSerialNumber;
+    private TextView tvManufacturer;
+    private TextView tvOemInfo;
+    private TextView tvTechnology;
     private TextView tvHealthStatus;
     private TextView tvCycleCount;
     private LinearLayout containerMethods;
@@ -51,6 +54,9 @@ public class BatteryOriginFragment extends Fragment {
         tvOriginConclusion = view.findViewById(R.id.tv_origin_conclusion);
         tvManufactureDate = view.findViewById(R.id.tv_manufacture_date);
         tvSerialNumber = view.findViewById(R.id.tv_serial_number);
+        tvManufacturer = view.findViewById(R.id.tv_manufacturer);
+        tvOemInfo = view.findViewById(R.id.tv_oem_info);
+        tvTechnology = view.findViewById(R.id.tv_technology);
         tvHealthStatus = view.findViewById(R.id.tv_health_status);
         tvCycleCount = view.findViewById(R.id.tv_cycle_count);
         containerMethods = view.findViewById(R.id.container_methods);
@@ -74,6 +80,13 @@ public class BatteryOriginFragment extends Fragment {
                 BatteryDataManager bdm = ((com.batteryhealth.app.MainActivity) getActivity()).getBatteryDataManager();
                 if (bdm != null) {
                     originDetector.setBatteryDataManager(bdm);
+                }
+            }
+            // Refresh BatteryDataManager data before passing to detector
+            if (originDetector != null) {
+                BatteryDataManager bdm = originDetector.getBatteryDataManager();
+                if (bdm != null) {
+                    bdm.refreshFromStickyIntent();
                 }
             }
             BatteryOriginDetector.OriginResult result = originDetector.detect();
@@ -102,6 +115,9 @@ public class BatteryOriginFragment extends Fragment {
         tvSerialNumber.setText(result.serialNumber != null ? result.serialNumber : "--");
         tvHealthStatus.setText(result.healthStatus != null ? result.healthStatus : "--");
         tvCycleCount.setText(result.cycleCount != null ? result.cycleCount : "--");
+        tvManufacturer.setText(result.manufacturer != null ? result.manufacturer : "--");
+        tvOemInfo.setText(result.oemInfo != null ? result.oemInfo : "--");
+        tvTechnology.setText(result.technology != null ? result.technology : "--");
 
         updateDetectionMethods(result.detectionMethods);
     }

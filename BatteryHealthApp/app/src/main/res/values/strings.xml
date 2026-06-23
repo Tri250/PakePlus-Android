@@ -75,6 +75,8 @@
     <string name="section_detection_methods">检测方法</string>
     <string name="label_manufacture_date">生产日期</string>
     <string name="label_serial_number">序列号</string>
+    <string name="label_battery_manufacturer">电池厂商</string>
+    <string name="label_oem_info">出厂标识</string>
     <string name="label_health_status">健康状态</string>
     <string name="label_cycle_count">循环次数</string>
     <string name="label_tap_to_detect">点击检测按钮开始分析</string>

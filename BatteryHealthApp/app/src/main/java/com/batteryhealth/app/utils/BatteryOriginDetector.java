@@ -45,6 +45,10 @@ public class BatteryOriginDetector {
         this.batteryDataManager = manager;
     }
 
+    public BatteryDataManager getBatteryDataManager() {
+        return batteryDataManager;
+    }
+
     public OriginResult detect() {
         OriginResult result = new OriginResult();
         result.brand = Build.BRAND;
