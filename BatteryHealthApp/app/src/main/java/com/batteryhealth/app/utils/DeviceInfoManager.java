@@ -104,6 +104,8 @@ public class DeviceInfoManager {
     private volatile String cachedGpuInfo;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ActivationInfoListener activationInfoListener;
+    private volatile ActivationDateHelper.Result cachedActivationResult;
 
     // GPU 渲染器 sysfs / 属性候选路径（仅包含型号名称路径，不包含频率路径）
     private static final String[] GPU_RENDERER_PATHS = {
@@ -119,6 +121,13 @@ public class DeviceInfoManager {
     public DeviceInfoManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
+    }
+
+    /**
+     * 获取 Application Context。
+     */
+    public Context getContext() {
+        return context;
     }
 
     /**
@@ -431,6 +440,23 @@ public class DeviceInfoManager {
     }
 
     /**
+     * 设置激活信息监听器。当激活信息加载完成时会回调此监听器。
+     */
+    public void setActivationInfoListener(ActivationInfoListener listener) {
+        this.activationInfoListener = listener;
+        if (cachedActivationResult != null && listener != null) {
+            mainHandler.post(() -> listener.onActivationInfoLoaded(cachedActivationResult));
+        }
+    }
+
+    /**
+     * 激活信息加载回调接口。
+     */
+    public interface ActivationInfoListener {
+        void onActivationInfoLoaded(ActivationDateHelper.Result result);
+    }
+
+    /**
      * 获取激活日期可信度。
      */
     public float getActivationConfidence() {
@@ -610,7 +636,7 @@ public class DeviceInfoManager {
                                 .getMethod("isDirectoryEncrypted");
                         Object encResult = isEncryptedMethod.invoke(primaryVolume);
                         if (encResult instanceof Boolean && (Boolean) encResult) {
-                            info.storageEncryption = "文件级加密（FBE）";
+                            config.setStorageEncryption("文件级加密（FBE）");
                         }
                     } catch (NoSuchMethodException nsme) {
                         Log.d(TAG, "isDirectoryEncrypted() not available on this device");
@@ -806,10 +832,18 @@ public class DeviceInfoManager {
     private ActivationInfo collectActivationInfo() {
         ActivationInfo info = new ActivationInfo();
         ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
+        cachedActivationResult = result;
         if (result.isValid()) {
             info.set(result.timestamp, result.source, result.confidence);
         } else {
             info.setUnknown();
+        }
+        if (activationInfoListener != null && result != null) {
+            mainHandler.post(() -> {
+                if (activationInfoListener != null) {
+                    activationInfoListener.onActivationInfoLoaded(result);
+                }
+            });
         }
         return info;
     }
