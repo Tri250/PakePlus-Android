@@ -36,6 +36,8 @@ public class BugReportAnalyzer {
 
     private final Context context;
 
+    private BugReportGuide.AnalysisResult lastResult;
+
     public BugReportAnalyzer(Context context) {
         this.context = context;
     }
@@ -75,7 +77,16 @@ public class BugReportAnalyzer {
             ));
         }
 
+        this.lastResult = result;
         return result;
+    }
+
+    /**
+     * 获取解析出的电池数据，供其他模块（BatteryDataManager等）使用。
+     * 必须在 analyze() 之后调用。
+     */
+    public BugReportGuide.AnalysisResult getAnalysisResult() {
+        return lastResult;
     }
 
     /**
@@ -174,8 +185,12 @@ public class BugReportAnalyzer {
      * 修复：使用正则提取第一个数字，避免 replaceAll 拼接多个数字。
      */
     private void parseBatteryStatsLine(String line, BugReportGuide.AnalysisResult result) {
-        // 提取设计容量: "Estimated battery capacity: 4000 mAh" 或 "Capacity: 4000"
-        if (line.contains("apacity:") && (line.contains("mAh") || line.contains("mah"))) {
+        if (line == null) return;
+        String lowerLine = line.toLowerCase();
+
+        // 1. 设计容量 (Design Capacity)
+        if ((lowerLine.contains("capacity") || lowerLine.contains("apacity"))
+                && (lowerLine.contains("mah") || lowerLine.contains("design"))) {
             try {
                 Matcher m = Pattern.compile("(\\d+)\\s*mAh", Pattern.CASE_INSENSITIVE).matcher(line);
                 if (m.find()) {
@@ -184,12 +199,28 @@ public class BugReportAnalyzer {
                         updateDeviceInfo(result, mah, -1);
                     }
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         }
 
-        // 提取循环次数: "charge cycles: 42" 或 "Charge full cycles: 42"
-        String lowerLine = line.toLowerCase();
+        // 2. 当前满充容量 (Charge Full / FCC)
+        if (lowerLine.contains("charge full") || lowerLine.contains("full charge")
+                || lowerLine.contains("learned capacity") || lowerLine.contains("fcc")) {
+            try {
+                Matcher m = Pattern.compile("(\\d+)\\s*mAh", Pattern.CASE_INSENSITIVE).matcher(line);
+                if (m.find()) {
+                    int mah = Integer.parseInt(m.group(1));
+                    if (mah > 100 && mah < 20000 && result.deviceInfo != null) {
+                        result.deviceInfo.currentCapacity = mah;
+                        if (result.deviceInfo.batteryCapacity > 0) {
+                            result.deviceInfo.healthPercentage = Math.max(0f, Math.min(100f,
+                                    (mah * 100f) / result.deviceInfo.batteryCapacity));
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 3. 循环次数 (Cycle Count)
         if (lowerLine.contains("cycle") && lowerLine.contains(":")) {
             try {
                 Matcher m = Pattern.compile("(\\d+)").matcher(line.substring(line.indexOf(':') + 1));
@@ -199,24 +230,73 @@ public class BugReportAnalyzer {
                         updateDeviceInfo(result, -1, cycles);
                     }
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         }
 
-        // 提取 charge_full（当前满充容量）: "Charge full: 3800 mAh"
-        if (line.contains("harge") && line.contains("full") && line.contains("mAh")) {
+        // 4. 充电次数 (Charge Count)
+        if ((lowerLine.contains("charge count") || lowerLine.contains("charge_count")
+                || lowerLine.contains("num charges") || lowerLine.contains("charge_sessions"))
+                && lowerLine.contains(":")) {
             try {
-                Matcher m = Pattern.compile("(\\d+)\\s*mAh", Pattern.CASE_INSENSITIVE).matcher(line);
+                Matcher m = Pattern.compile("(\\d+)").matcher(line.substring(line.indexOf(':') + 1));
                 if (m.find()) {
-                    int mah = Integer.parseInt(m.group(1));
-                    if (mah > 100 && mah < 20000 && result.deviceInfo != null && result.deviceInfo.batteryCapacity > 0) {
-                        // 计算健康度
-                        float health = (mah * 100f) / result.deviceInfo.batteryCapacity;
-                        result.deviceInfo.healthPercentage = Math.max(0f, Math.min(100f, health));
+                    int count = Integer.parseInt(m.group(1));
+                    if (count >= 0 && count < 100000 && result.deviceInfo != null) {
+                        result.deviceInfo.chargeCount = count;
                     }
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
+        }
+
+        // 5. 电池温度
+        if (lowerLine.contains("temperature") && lowerLine.contains(":") && !lowerLine.contains("high")) {
+            try {
+                Matcher m = Pattern.compile("(\\d+)").matcher(line.substring(line.indexOf(':') + 1));
+                if (m.find()) {
+                    int temp = Integer.parseInt(m.group(1));
+                    if (temp > 0 && temp < 1000 && result.deviceInfo != null) {
+                        result.deviceInfo.temperature = temp / 10.0f;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 6. 电池电压
+        if (lowerLine.contains("voltage") && lowerLine.contains(":") && lowerLine.contains("mv")) {
+            try {
+                Matcher m = Pattern.compile("(\\d+)\\s*mv", Pattern.CASE_INSENSITIVE).matcher(line);
+                if (m.find()) {
+                    int voltage = Integer.parseInt(m.group(1));
+                    if (voltage > 2000 && voltage < 5000 && result.deviceInfo != null) {
+                        result.deviceInfo.voltage = voltage;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 7. 电池技术
+        if (lowerLine.contains("technology") && lowerLine.contains(":")
+                && (lowerLine.contains("li-ion") || lowerLine.contains("li-poly") || lowerLine.contains("lipo"))) {
+            try {
+                int idx = line.indexOf(':');
+                if (idx >= 0 && idx < line.length() - 1 && result.deviceInfo != null) {
+                    String tech = line.substring(idx + 1).trim();
+                    if (!tech.isEmpty()) result.deviceInfo.technology = tech;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 8. 健康状态
+        if (lowerLine.contains("health") && lowerLine.contains(":") && !lowerLine.contains("check")) {
+            try {
+                int idx = line.indexOf(':');
+                if (idx >= 0 && idx < line.length() - 1 && result.deviceInfo != null) {
+                    String health = line.substring(idx + 1).trim();
+                    if (!health.isEmpty() && !health.equalsIgnoreCase("unknown")) {
+                        result.deviceInfo.healthStatus = health;
+                    }
+                }
+            } catch (Exception ignored) {}
         }
     }
 
@@ -267,21 +347,30 @@ public class BugReportAnalyzer {
 
     private void parseChargingSession(String line, BugReportGuide.AnalysisResult result) {
         if (result.chargeSessions.size() >= MAX_CHARGE_SESSIONS) return;
-        if (line.contains("charging") || line.contains("Charging")) {
+
+        String lower = line.toLowerCase();
+        // Match more specific patterns for charging session start/end
+        boolean isChargeStart = lower.contains("charge start") || lower.contains("charging start")
+                || lower.contains("begin charging") || (lower.contains("status") && lower.contains("charging") && lower.contains("level"));
+        boolean isChargeEnd = lower.contains("charge end") || lower.contains("charging stop")
+                || lower.contains("full") || lower.contains("charged");
+
+        if (isChargeStart || isChargeEnd) {
             int level = extractLevel(line);
             float power = extractPower(line);
             String type = extractChargeType(line);
 
-            if (level >= 0 && !result.chargeSessions.isEmpty()) {
-                BugReportGuide.AnalysisResult.ChargeSession lastSession = result.chargeSessions.get(result.chargeSessions.size() - 1);
+            if (isChargeEnd && !result.chargeSessions.isEmpty()) {
+                BugReportGuide.AnalysisResult.ChargeSession lastSession =
+                        result.chargeSessions.get(result.chargeSessions.size() - 1);
                 if (lastSession.endLevel == -1) {
-                    lastSession.endLevel = level;
+                    lastSession.endLevel = level >= 0 ? level : lastSession.startLevel;
                     lastSession.endTime = System.currentTimeMillis();
                     if (power > lastSession.maxPower) {
                         lastSession.maxPower = power;
                     }
                 }
-            } else if (level >= 0 && (line.contains("start") || line.contains("START"))) {
+            } else if (isChargeStart && level >= 0) {
                 result.chargeSessions.add(new BugReportGuide.AnalysisResult.ChargeSession(
                         System.currentTimeMillis(), System.currentTimeMillis(),
                         level, -1, type, power, power
@@ -337,10 +426,12 @@ public class BugReportAnalyzer {
      * 从 bugreport 头部解析设备信息（Build: brand/model/device）。
      */
     private void parseDeviceInfo(String line, BugReportGuide.AnalysisResult result) {
-        if (result.deviceInfo != null) return; // 已设置
+        if (line == null) return;
+
+        // Parse Build line: "Build: brand/model/device: user/release-keys"
         if (line.startsWith("Build: ") || line.contains("Build: ")) {
+            if (result.deviceInfo != null && result.deviceInfo.model != null) return; // Already set
             try {
-                // bugreport 头部格式: "Build: brand/model/device: ..."
                 Matcher m = Pattern.compile("Build:\\s*(\\S+)/(\\S+)/(\\S+)").matcher(line);
                 if (m.find()) {
                     String brand = m.group(1);
@@ -349,7 +440,77 @@ public class BugReportAnalyzer {
                             model, brand, Build.VERSION.RELEASE, Build.DISPLAY, 0, 0, 0f
                     );
                 }
-            } catch (Exception ignored) {
+            } catch (Exception ignored) {}
+        }
+
+        // Parse Android version from header
+        if (result.deviceInfo != null && (result.deviceInfo.androidVersion == null
+                || result.deviceInfo.androidVersion.equals(Build.VERSION.RELEASE))) {
+            if (line.contains("Android version") || line.contains("Release:")) {
+                try {
+                    Matcher m = Pattern.compile("(?:Android version|Release:)\\s*(\\d+(?:\\.\\d+)*)").matcher(line);
+                    if (m.find()) {
+                        result.deviceInfo.androidVersion = m.group(1);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Parse Build number
+        if (result.deviceInfo != null && (result.deviceInfo.buildNumber == null
+                || result.deviceInfo.buildNumber.equals(Build.DISPLAY))) {
+            if (line.contains("Build number:") || line.contains("Build:")) {
+                try {
+                    Matcher m = Pattern.compile("(?:Build number|Build):\\s*(.+)").matcher(line);
+                    if (m.find()) {
+                        String buildNum = m.group(1).trim();
+                        if (!buildNum.isEmpty() && buildNum.length() < 100) {
+                            result.deviceInfo.buildNumber = buildNum;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Parse CPU/Processor info
+        if (result.deviceInfo != null && result.deviceInfo.processor == null) {
+            if (line.contains("Processor:") || line.contains("Hardware:")) {
+                try {
+                    int idx = line.indexOf(':');
+                    if (idx >= 0 && idx < line.length() - 1) {
+                        String proc = line.substring(idx + 1).trim();
+                        if (!proc.isEmpty() && !proc.equalsIgnoreCase("unknown") && proc.length() < 100) {
+                            result.deviceInfo.processor = proc;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Parse RAM
+        if (result.deviceInfo != null && result.deviceInfo.ramMb == 0) {
+            if (line.contains("MemTotal:") || line.contains("Total RAM:")) {
+                try {
+                    Matcher m = Pattern.compile("(\\d+)").matcher(line);
+                    if (m.find()) {
+                        long kb = Long.parseLong(m.group(1));
+                        if (kb > 100000 && kb < 50000000) {
+                            result.deviceInfo.ramMb = (int) (kb / 1024);
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Parse screen resolution
+        if (result.deviceInfo != null && result.deviceInfo.screenResolution == null) {
+            if (line.contains("Display:") && line.contains("x")) {
+                try {
+                    Matcher m = Pattern.compile("(\\d+)x(\\d+)").matcher(line);
+                    if (m.find()) {
+                        result.deviceInfo.screenResolution = m.group(1) + "x" + m.group(2);
+                    }
+                } catch (Exception ignored) {}
             }
         }
     }

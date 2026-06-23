@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,8 @@ import java.util.Locale;
  * 不使用模拟数据或空实现。
  */
 public class BatteryHealthFragment extends Fragment {
+
+    private static final String TAG = "BatteryHealthFragment";
 
     private HealthRingView healthRing;
     private TextView tvHealthPercentage;
@@ -94,22 +97,27 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Animation fadeUp = AnimationUtils.loadAnimation(ctx, R.anim.fade_up);
         view.startAnimation(fadeUp);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        Context ctx = getContext();
+        if (ctx == null) return;
+
         // 从 MainActivity 获取共享的 BatteryDataManager
         if (getActivity() instanceof MainActivity) {
             batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
             deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
         }
         if (batteryDataManager == null) {
-            batteryDataManager = new BatteryDataManager(requireContext());
+            batteryDataManager = new BatteryDataManager(ctx);
         }
-        reportGenerator = new BatteryReportGenerator(requireContext());
+        reportGenerator = new BatteryReportGenerator(ctx);
         registerBatteryReceiver();
         startPeriodicUpdate();
     }
@@ -129,18 +137,27 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void registerBatteryReceiver() {
+        Context ctx = getContext();
+        if (ctx == null) return;
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ctx.registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                ctx.registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "registerBatteryReceiver failed: " + e.getMessage());
         }
     }
 
     private void unregisterBatteryReceiver() {
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
-        } catch (IllegalArgumentException ignored) {
+            Context ctx = getContext();
+            if (ctx != null) {
+                ctx.unregisterReceiver(batteryReceiver);
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -193,82 +210,85 @@ public class BatteryHealthFragment extends Fragment {
      */
     private void updateUI(BatteryInfo info) {
         if (info == null || !isAdded()) return;
+        try {
+            // 1. 电量
+            tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));
 
-        // 1. 电量
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));
+            // 2. 充电状态
+            tvChargingStatus.setText(batteryDataManager != null ? batteryDataManager.getChargingStatusText() : "--");
 
-        // 2. 充电状态
-        tvChargingStatus.setText(batteryDataManager.getChargingStatusText());
+            // 3. 电流
+            float currentMa = info.getCurrentNow() / 1000f;
+            tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
 
-        // 3. 电流
-        float currentMa = info.getCurrentNow() / 1000f;
-        tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
-
-        // 4. 容量（多路 fallback）
-        int displayCapacity = -1;
-        if (info.getCurrentCapacity() > 0) {
-            displayCapacity = info.getCurrentCapacity();
-        } else if (info.getDesignCapacity() > 0) {
-            displayCapacity = info.getDesignCapacity();
-        }
-        // Fallback: try DeviceConfig capacity
-        if (displayCapacity <= 0 && deviceInfoManager != null) {
-            try {
-                DeviceConfig config = deviceInfoManager.getDeviceConfig();
-                if (config != null && config.getBatteryCapacity() > 0) {
-                    displayCapacity = config.getBatteryCapacity();
-                }
-            } catch (Exception ignored) {}
-        }
-        if (displayCapacity > 0) {
-            tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity));
-        } else {
-            tvCapacity.setText("--");
-        }
-
-        // 5. 循环次数（使用 BatteryDataManager 的真实循环次数）
-        tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
-
-        // 6. 温度
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
-
-        // 7. 电压
-        float voltageV = info.getVoltage() / 1000f;
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-
-        // 8. 电池技术
-        tvTechnology.setText(info.getTechnology());
-
-        // 9. 电池来源（使用真实的多维验证结果）
-        tvBatterySource.setText(batteryDataManager.getBatterySourceText());
-
-        // 10. 健康度（使用真实的三段损耗计算结果）
-        float healthPct = info.getHealthPercentage();
-        if (healthPct >= 0) {
-            tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.0f%%", healthPct));
-            String grade = calculateGrade(healthPct);
-            tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
-
-            String statusText;
-            if (healthPct >= 90) {
-                statusText = getString(R.string.status_excellent);
-            } else if (healthPct >= 80) {
-                statusText = getString(R.string.status_good);
-            } else if (healthPct >= 60) {
-                statusText = getString(R.string.status_fair);
-            } else {
-                statusText = getString(R.string.status_poor);
+            // 4. 容量（多路 fallback）
+            int displayCapacity = -1;
+            if (info.getCurrentCapacity() > 0) {
+                displayCapacity = info.getCurrentCapacity();
+            } else if (info.getDesignCapacity() > 0) {
+                displayCapacity = info.getDesignCapacity();
             }
-            tvHealthStatus.setText(statusText);
+            // Fallback: try DeviceConfig capacity
+            if (displayCapacity <= 0 && deviceInfoManager != null) {
+                try {
+                    DeviceConfig config = deviceInfoManager.getDeviceConfig();
+                    if (config != null && config.getBatteryCapacity() > 0) {
+                        displayCapacity = config.getBatteryCapacity();
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (displayCapacity > 0) {
+                tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity));
+            } else {
+                tvCapacity.setText("--");
+            }
 
-            // 健康度来源信息
-            String healthSource = batteryDataManager.getHealthSourceText();
+            // 5. 循环次数（使用 BatteryDataManager 的真实循环次数）
+            tvCycleCount.setText(batteryDataManager != null ? batteryDataManager.formatCycleCount(info) : "--");
 
-            UiAnimationHelper.animateRingProgress(healthRing, (int) healthPct);
-        } else {
-            tvHealthPercentage.setText("--");
-            tvHealthGrade.setText("--");
-            tvHealthStatus.setText(getString(R.string.health_unknown));
+            // 6. 温度
+            tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", info.getTemperature()));
+
+            // 7. 电压
+            float voltageV = info.getVoltage() / 1000f;
+            tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+
+            // 8. 电池技术
+            tvTechnology.setText(info.getTechnology());
+
+            // 9. 电池来源（使用真实的多维验证结果）
+            tvBatterySource.setText(batteryDataManager != null ? batteryDataManager.getBatterySourceText() : "--");
+
+            // 10. 健康度（使用真实的三段损耗计算结果）
+            float healthPct = info.getHealthPercentage();
+            if (healthPct >= 0) {
+                tvHealthPercentage.setText(String.format(Locale.getDefault(), "%.0f%%", healthPct));
+                String grade = calculateGrade(healthPct);
+                tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
+
+                String statusText;
+                if (healthPct >= 90) {
+                    statusText = getString(R.string.status_excellent);
+                } else if (healthPct >= 80) {
+                    statusText = getString(R.string.status_good);
+                } else if (healthPct >= 60) {
+                    statusText = getString(R.string.status_fair);
+                } else {
+                    statusText = getString(R.string.status_poor);
+                }
+                tvHealthStatus.setText(statusText);
+
+                // 健康度来源信息
+                String healthSource = batteryDataManager != null ? batteryDataManager.getHealthSourceText() : "";
+
+                UiAnimationHelper.animateRingProgress(healthRing, (int) healthPct);
+            } else {
+                tvHealthPercentage.setText("--");
+                tvHealthGrade.setText("--");
+                tvHealthStatus.setText(getString(R.string.health_unknown));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating UI", e);
         }
     }
 

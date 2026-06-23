@@ -385,6 +385,12 @@ public class DeviceInfoManager {
      */
     private String toChineseProcessorName(String raw) {
         if (raw == null || raw.isEmpty()) return raw;
+
+        // First: try English marketing name → Chinese mapping
+        String chineseName = englishToChineseProcessorName(raw);
+        if (chineseName != null) return chineseName;
+
+        // Then: try SoC code name mapping (existing logic)
         String lower = raw.toLowerCase(Locale.ROOT);
         for (Map.Entry<String, String> entry : PROCESSOR_CN_MAP.entrySet()) {
             if (lower.contains(entry.getKey())) {
@@ -392,6 +398,74 @@ public class DeviceInfoManager {
             }
         }
         return raw;
+    }
+
+    private String englishToChineseProcessorName(String raw) {
+        if (raw == null) return null;
+        String lower = raw.toLowerCase(Locale.ROOT);
+
+        // Snapdragon English → 骁龙
+        if (lower.contains("snapdragon")) {
+            // Try to match specific models
+            if (lower.contains("8 elite") || lower.contains("8elite")) return "骁龙8 Elite";
+            if (lower.contains("8 gen 4") || lower.contains("8gen4")) return "骁龙8 Gen 4";
+            if (lower.contains("8 gen 3") || lower.contains("8gen3")) return "骁龙8 Gen 3";
+            if (lower.contains("8 gen 2") || lower.contains("8gen2")) return "骁龙8 Gen 2";
+            if (lower.contains("8+ gen 1") || lower.contains("8plus gen 1") || lower.contains("8+gen1")) return "骁龙8+ Gen 1";
+            if (lower.contains("8 gen 1") || lower.contains("8gen1")) return "骁龙8 Gen 1";
+            if (lower.contains("888+")) return "骁龙888+";
+            if (lower.contains("888")) return "骁龙888";
+            if (lower.contains("870")) return "骁龙870";
+            if (lower.contains("865")) return "骁龙865";
+            if (lower.contains("855")) return "骁龙855";
+            if (lower.contains("845")) return "骁龙845";
+            if (lower.contains("7+ gen 3") || lower.contains("7plus gen 3")) return "骁龙7+ Gen 3";
+            if (lower.contains("7+ gen 2") || lower.contains("7plus gen 2")) return "骁龙7+ Gen 2";
+            if (lower.contains("7 gen 1") || lower.contains("7gen1")) return "骁龙7 Gen 1";
+            if (lower.contains("6 gen 1") || lower.contains("6gen1")) return "骁龙6 Gen 1";
+            if (lower.contains("695")) return "骁龙695";
+            if (lower.contains("680")) return "骁龙680";
+            if (lower.contains("665")) return "骁龙665";
+            // Generic fallback
+            return raw.replaceAll("(?i)Snapdragon", "骁龙");
+        }
+
+        // Dimensity English → 天玑
+        if (lower.contains("dimensity")) {
+            if (lower.contains("9500")) return "天玑9500";
+            if (lower.contains("9400")) return "天玑9400";
+            if (lower.contains("9300+")) return "天玑9300+";
+            if (lower.contains("9300")) return "天玑9300";
+            if (lower.contains("9200+")) return "天玑9200+";
+            if (lower.contains("9200")) return "天玑9200";
+            if (lower.contains("8300")) return "天玑8300";
+            if (lower.contains("8200")) return "天玑8200";
+            if (lower.contains("1200")) return "天玑1200";
+            if (lower.contains("1100")) return "天玑1100";
+            if (lower.contains("1080")) return "天玑1080";
+            if (lower.contains("1000+")) return "天玑1000+";
+            if (lower.contains("920")) return "天玑920";
+            if (lower.contains("7050")) return "天玑7050";
+            if (lower.contains("720")) return "天玑720";
+            return raw.replaceAll("(?i)Dimensity", "天玑");
+        }
+
+        // Kirin English → 麒麟
+        if (lower.contains("kirin")) {
+            if (lower.contains("9010")) return "麒麟9010";
+            if (lower.contains("9000s")) return "麒麟9000S";
+            if (lower.contains("9000")) return "麒麟9000";
+            if (lower.contains("990")) return "麒麟990";
+            if (lower.contains("985")) return "麒麟985";
+            if (lower.contains("980")) return "麒麟980";
+            if (lower.contains("820")) return "麒麟820";
+            return raw.replaceAll("(?i)Kirin", "麒麟");
+        }
+
+        // Exynos stays as-is (no Chinese name)
+        // Tensor stays as-is
+
+        return null; // No English marketing name match
     }
 
     /**
@@ -838,6 +912,20 @@ public class DeviceInfoManager {
 
     /** GPU 原始标识 → 营销名映射表（key 为小写匹配模式，value 为营销名+SoC 关联） */
     private static final LinkedHashMap<String, String> GPU_MARKETING_MAP = new LinkedHashMap<String, String>() {{
+        // Additional Adreno models
+        put("adreno 830", "Adreno 830 (骁龙8 Elite)");
+        put("adreno 810", "Adreno 810 (骁龙8s Gen 3)");
+        put("adreno 732", "Adreno 732 (骁龙7+ Gen 3)");
+        put("adreno 710", "Adreno 710 (骁龙7+ Gen 2)");
+        put("adreno 642l", "Adreno 642L (骁龙780G)");
+        put("adreno 619", "Adreno 619 (骁龙750G)");
+        put("adreno 613", "Adreno 613 (骁龙4 Gen 1)");
+        // Additional Mali models
+        put("mali-g76", "Mali-G76 (麒麟990/980)");
+        put("mali g76", "Mali-G76 (麒麟990/980)");
+        put("mali-g57 mc2", "Mali-G57 MC2 (天玑700/810)");
+        put("mali-g57 mc3", "Mali-G57 MC3 (天玑8100)");
+        put("mali-g57 mc5", "Mali-G57 MC5 (天玑8100)");
         // Qualcomm Adreno
         put("adreno 750", "Adreno 750 (骁龙8 Gen 3)");
         put("a750", "Adreno 750 (骁龙8 Gen 3)");
@@ -920,9 +1008,18 @@ public class DeviceInfoManager {
      */
     private String normalizeGpuInfo(String raw) {
         if (raw == null || raw.trim().isEmpty()) return raw;
-        String lower = raw.toLowerCase(Locale.ROOT);
+        // Strip special characters for more flexible matching
+        String cleaned = raw.toLowerCase(Locale.ROOT)
+                .replace("(tm)", "")
+                .replace("(r)", "")
+                .replace("®", "")
+                .replace("™", "")
+                .replaceAll("[()]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+
         for (Map.Entry<String, String> entry : GPU_MARKETING_MAP.entrySet()) {
-            if (lower.contains(entry.getKey())) {
+            if (cleaned.contains(entry.getKey())) {
                 return entry.getValue();
             }
         }

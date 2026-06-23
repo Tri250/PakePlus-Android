@@ -202,7 +202,15 @@ public class DeviceConfigFragment extends Fragment {
         tvDeviceName.setText(tempConfig.getFullModelName());
         tvDeviceModel.setText(Build.MODEL);
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
-        tvProcessor.setText(Build.HARDWARE);
+        // Use DeviceInfoManager's mapping if available, otherwise format Hardware
+        String procName = Build.HARDWARE;
+        if (getActivity() instanceof MainActivity) {
+            DeviceInfoManager dim = ((MainActivity) getActivity()).getDeviceInfoManager();
+            if (dim != null) {
+                procName = dim.getProcessorInfo();
+            }
+        }
+        tvProcessor.setText(procName);
         tvRam.setText("--");
         tvStorage.setText("--");
         tvScreen.setText("--");

@@ -120,6 +120,18 @@ public class BugReportGuide {
             public int batteryCapacity;
             public int cycleCount;
             public float healthPercentage;
+            // New fields
+            public int currentCapacity;      // 当前满充容量
+            public float temperature;        // 电池温度
+            public int voltage;              // 电池电压(mV)
+            public String technology;        // 电池技术
+            public String healthStatus;      // 健康状态文本
+            public int chargeCount;          // 充电次数
+            public String processor;         // 处理器
+            public int ramMb;                // 内存(MB)
+            public int storageGb;            // 存储(GB)
+            public String screenResolution;  // 屏幕分辨率
+            public String gpuInfo;           // GPU信息
 
             public DeviceInfo(String model, String brand, String androidVersion, String buildNumber,
                              int batteryCapacity, int cycleCount, float healthPercentage) {
