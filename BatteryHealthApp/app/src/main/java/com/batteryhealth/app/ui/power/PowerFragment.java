@@ -8,11 +8,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -57,80 +59,113 @@ public class PowerFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_power, container, false);
-        initViews(view);
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_power, container, false);
+            initViews(view);
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e("PowerFragment", "onCreateView failed", e);
+            Context context = getContext();
+            if (context != null) {
+                return new FrameLayout(context);
+            }
+            return null;
+        }
     }
 
     private void initViews(View view) {
-        tvWatt = view.findViewById(R.id.tv_watt);
-        tvPowerType = view.findViewById(R.id.tv_power_type);
-        progressCharge = view.findViewById(R.id.progress_charge);
-        tvVoltage = view.findViewById(R.id.tv_voltage);
-        tvCurrent = view.findViewById(R.id.tv_current);
-        tvChargeStage = view.findViewById(R.id.tv_charge_stage);
-        tvTemperature = view.findViewById(R.id.tv_temperature);
-        tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
-        tvEstimatedFull = view.findViewById(R.id.tv_estimated_full);
-        tvChargeCount = view.findViewById(R.id.tv_charge_count);
-        tvAvgPower = view.findViewById(R.id.tv_avg_power);
-        tvTotalChargeTime = view.findViewById(R.id.tv_total_charge_time);
-        tvTotalCharged = view.findViewById(R.id.tv_total_charged);
-        chartPower = view.findViewById(R.id.chart_power);
-        initChart();
+        try {
+            tvWatt = view.findViewById(R.id.tv_watt);
+            tvPowerType = view.findViewById(R.id.tv_power_type);
+            progressCharge = view.findViewById(R.id.progress_charge);
+            tvVoltage = view.findViewById(R.id.tv_voltage);
+            tvCurrent = view.findViewById(R.id.tv_current);
+            tvChargeStage = view.findViewById(R.id.tv_charge_stage);
+            tvTemperature = view.findViewById(R.id.tv_temperature);
+            tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
+            tvEstimatedFull = view.findViewById(R.id.tv_estimated_full);
+            tvChargeCount = view.findViewById(R.id.tv_charge_count);
+            tvAvgPower = view.findViewById(R.id.tv_avg_power);
+            tvTotalChargeTime = view.findViewById(R.id.tv_total_charge_time);
+            tvTotalCharged = view.findViewById(R.id.tv_total_charged);
+            chartPower = view.findViewById(R.id.chart_power);
+            initChart();
+        } catch (Exception e) {
+            Log.e("PowerFragment", "initViews failed", e);
+        }
     }
 
     private void initChart() {
-        chartPower.setDrawGridBackground(false);
-        chartPower.getDescription().setEnabled(false);
-        chartPower.setTouchEnabled(true);
-        chartPower.setDragEnabled(true);
-        chartPower.setScaleEnabled(false);
-        chartPower.setPinchZoom(false);
+        try {
+            if (chartPower == null) return;
+            Context context = getContext();
+            if (context == null) return;
 
-        XAxis xAxis = chartPower.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-        xAxis.setDrawAxisLine(false);
-        xAxis.setLabelCount(5);
-        xAxis.setTextColor(getResources().getColor(R.color.label_3));
-        xAxis.setTextSize(10f);
+            chartPower.setDrawGridBackground(false);
+            chartPower.getDescription().setEnabled(false);
+            chartPower.setTouchEnabled(true);
+            chartPower.setDragEnabled(true);
+            chartPower.setScaleEnabled(false);
+            chartPower.setPinchZoom(false);
 
-        YAxis leftAxis = chartPower.getAxisLeft();
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setGridColor(getResources().getColor(R.color.separator));
-        leftAxis.setTextColor(getResources().getColor(R.color.label_3));
-        leftAxis.setTextSize(10f);
-        leftAxis.setAxisMinimum(0f);
+            XAxis xAxis = chartPower.getXAxis();
+            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+            xAxis.setDrawGridLines(false);
+            xAxis.setDrawAxisLine(false);
+            xAxis.setLabelCount(5);
+            xAxis.setTextColor(context.getResources().getColor(R.color.label_3));
+            xAxis.setTextSize(10f);
 
-        YAxis rightAxis = chartPower.getAxisRight();
-        rightAxis.setEnabled(false);
+            YAxis leftAxis = chartPower.getAxisLeft();
+            leftAxis.setDrawGridLines(true);
+            leftAxis.setGridColor(context.getResources().getColor(R.color.separator));
+            leftAxis.setTextColor(context.getResources().getColor(R.color.label_3));
+            leftAxis.setTextSize(10f);
+            leftAxis.setAxisMinimum(0f);
 
-        chartPower.getLegend().setEnabled(false);
+            YAxis rightAxis = chartPower.getAxisRight();
+            rightAxis.setEnabled(false);
 
-        LineData data = new LineData();
-        data.setValueTextColor(getResources().getColor(R.color.label_3));
-        chartPower.setData(data);
+            chartPower.getLegend().setEnabled(false);
+
+            LineData data = new LineData();
+            data.setValueTextColor(context.getResources().getColor(R.color.label_3));
+            chartPower.setData(data);
+        } catch (Exception e) {
+            Log.e("PowerFragment", "initChart failed", e);
+        }
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Context context = getContext();
+            if (context == null) return;
+            Animation fadeUp = AnimationUtils.loadAnimation(context, R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            Log.e("PowerFragment", "animateEntry failed", e);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // 从 MainActivity 获取共享的 BatteryDataManager
-        if (getActivity() instanceof MainActivity) {
-            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        try {
+            if (getActivity() instanceof MainActivity) {
+                batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+            }
+            if (batteryDataManager == null) {
+                Context context = getContext();
+                if (context != null) {
+                    batteryDataManager = new BatteryDataManager(context);
+                }
+            }
+            registerBatteryReceiver();
+            startPeriodicUpdate();
+        } catch (Exception e) {
+            Log.e("PowerFragment", "onResume failed", e);
         }
-        if (batteryDataManager == null) {
-            batteryDataManager = new BatteryDataManager(requireContext());
-        }
-        registerBatteryReceiver();
-        startPeriodicUpdate();
     }
 
     @Override
@@ -142,20 +177,26 @@ public class PowerFragment extends Fragment {
 
     private void registerBatteryReceiver() {
         try {
+            Context context = getContext();
+            if (context == null) return;
             IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                context.registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
             } else {
-                requireContext().registerReceiver(batteryReceiver, filter);
+                context.registerReceiver(batteryReceiver, filter);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.e("PowerFragment", "registerBatteryReceiver failed", e);
         }
     }
 
     private void unregisterBatteryReceiver() {
         try {
-            requireContext().unregisterReceiver(batteryReceiver);
-        } catch (IllegalArgumentException ignored) {
+            Context context = getContext();
+            if (context == null) return;
+            context.unregisterReceiver(batteryReceiver);
+        } catch (Exception e) {
+            Log.e("PowerFragment", "unregisterBatteryReceiver failed", e);
         }
     }
 
@@ -203,56 +244,78 @@ public class PowerFragment extends Fragment {
     }
 
     private void updateUI(BatteryInfo info, TodayChargeStats stats) {
-        if (info == null || !isAdded()) return;
+        try {
+            if (info == null || !isAdded() || getView() == null) return;
+            if (tvWatt == null || tvPowerType == null) return;
 
-        int batteryPct = info.getLevel();
-        boolean isCharging = info.isCharging();
+            int batteryPct = info.getLevel();
+            boolean isCharging = info.isCharging();
 
-        // 电压
-        float voltageV = info.getVoltage() / 1000f;
-        // 电流（info.getCurrentNow() 单位 uA）
-        float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
-        float currentA = currentMa / 1000f;
+            float voltageV = info.getVoltage() / 1000f;
+            float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
+            float currentA = currentMa / 1000f;
 
-        // 功率
-        float watt = info.getChargingPower();
+            float watt = info.getChargingPower();
+            float tempC = info.getTemperature();
 
-        // 温度
-        float tempC = info.getTemperature();
+            Context context = getContext();
+            if (context == null) return;
 
-        // 使用 ChargeProtocolDetector 识别充电协议
-        ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
+            ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(context, watt);
 
-        // Update hero
-        tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
+            tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
 
-        // 使用 BatteryDataManager.getPowerLevelLabel() 进行功率类型分类
-        String powerType;
-        if (!isCharging) {
-            powerType = getString(R.string.status_not_charging);
-        } else if (batteryDataManager.isNearOfficialFastCharge(watt)) {
-            powerType = protocolResult.primary;
-        } else {
-            powerType = batteryDataManager.getPowerLevelLabel(watt);
+            String powerType;
+            if (!isCharging) {
+                powerType = getString(R.string.status_not_charging);
+            } else if (batteryDataManager != null && batteryDataManager.isNearOfficialFastCharge(watt)) {
+                powerType = protocolResult.primary;
+            } else if (batteryDataManager != null) {
+                powerType = batteryDataManager.getPowerLevelLabel(watt);
+            } else {
+                powerType = "";
+            }
+            tvPowerType.setText(powerType);
+            if (progressCharge != null) {
+                UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
+            }
+
+            if (tvVoltage != null) {
+                tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+            }
+            if (tvCurrent != null) {
+                tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
+            }
+            if (tvChargeStage != null) {
+                tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
+            }
+            if (tvTemperature != null) {
+                tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+            }
+            if (tvBatteryLevel != null) {
+                tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+            }
+            if (tvEstimatedFull != null) {
+                tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
+            }
+
+            if (tvChargeCount != null) {
+                tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
+            }
+            if (tvAvgPower != null) {
+                tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
+            }
+            if (tvTotalChargeTime != null) {
+                tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
+            }
+            if (tvTotalCharged != null) {
+                tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
+            }
+
+            updatePowerChart(watt);
+        } catch (Exception e) {
+            Log.e("PowerFragment", "updateUI failed", e);
         }
-        tvPowerType.setText(powerType);
-        UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
-
-        // Update details
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
-        tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
-
-        // Today stats (from database)
-        tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
-        tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
-
-        updatePowerChart(watt);
     }
 
     /**
@@ -392,30 +455,38 @@ public class PowerFragment extends Fragment {
     }
 
     private void updatePowerChart(float watt) {
-        powerHistory.add(watt);
-        if (powerHistory.size() > MAX_HISTORY_SIZE) {
-            powerHistory.remove(0);
+        try {
+            if (chartPower == null || getView() == null || !isAdded()) return;
+            Context context = getContext();
+            if (context == null) return;
+
+            powerHistory.add(watt);
+            if (powerHistory.size() > MAX_HISTORY_SIZE) {
+                powerHistory.remove(0);
+            }
+
+            List<Entry> entries = new ArrayList<>();
+            for (int i = 0; i < powerHistory.size(); i++) {
+                entries.add(new Entry(i, powerHistory.get(i)));
+            }
+
+            LineDataSet dataSet = new LineDataSet(entries, "功率");
+            dataSet.setColor(context.getResources().getColor(R.color.primary));
+            dataSet.setLineWidth(2f);
+            dataSet.setDrawCircles(false);
+            dataSet.setDrawValues(false);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            dataSet.setCubicIntensity(0.2f);
+
+            List<ILineDataSet> dataSets = new ArrayList<>();
+            dataSets.add(dataSet);
+
+            LineData data = new LineData(dataSets);
+            chartPower.setData(data);
+            chartPower.notifyDataSetChanged();
+            chartPower.invalidate();
+        } catch (Exception e) {
+            Log.e("PowerFragment", "updatePowerChart failed", e);
         }
-
-        List<Entry> entries = new ArrayList<>();
-        for (int i = 0; i < powerHistory.size(); i++) {
-            entries.add(new Entry(i, powerHistory.get(i)));
-        }
-
-        LineDataSet dataSet = new LineDataSet(entries, "功率");
-        dataSet.setColor(getResources().getColor(R.color.primary));
-        dataSet.setLineWidth(2f);
-        dataSet.setDrawCircles(false);
-        dataSet.setDrawValues(false);
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setCubicIntensity(0.2f);
-
-        List<ILineDataSet> dataSets = new ArrayList<>();
-        dataSets.add(dataSet);
-
-        LineData data = new LineData(dataSets);
-        chartPower.setData(data);
-        chartPower.notifyDataSetChanged();
-        chartPower.invalidate();
     }
 }
