@@ -23,6 +23,73 @@ public class PerformanceAnalyzer {
         this.context = context;
     }
 
+    /**
+     * 获取系统CPU使用率（百分比）
+     * 通过读取 /proc/stat 计算两次采样间的CPU使用率
+     */
+    public int getCpuUsage() {
+        long[] first = readCpuTimes();
+        if (first == null) return -1;
+
+        try { Thread.sleep(200); } catch (InterruptedException e) { return -1; }
+
+        long[] second = readCpuTimes();
+        if (second == null) return -1;
+
+        long idleDiff = second[3] - first[3];
+        long totalDiff = 0;
+        for (int i = 0; i < first.length; i++) {
+            totalDiff += second[i] - first[i];
+        }
+
+        if (totalDiff <= 0) return 0;
+        return (int) ((1.0 - (double) idleDiff / totalDiff) * 100);
+    }
+
+    /**
+     * 获取系统内存使用率（百分比）
+     */
+    public int getMemoryUsage() {
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager)
+                    context.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return -1;
+
+            android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
+            am.getMemoryInfo(mi);
+
+            if (mi.totalMem <= 0) return -1;
+            long usedMem = mi.totalMem - mi.availMem;
+            return (int) ((usedMem * 100) / mi.totalMem);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting memory usage: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    /**
+     * 读取 /proc/stat 中的CPU时间片
+     * 返回 [user, nice, system, idle, iowait, irq, softirq, steal]
+     */
+    private long[] readCpuTimes() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"))) {
+            String line = reader.readLine();
+            if (line != null && line.startsWith("cpu ")) {
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length >= 5) {
+                    long[] times = new long[Math.min(parts.length - 1, 8)];
+                    for (int i = 0; i < times.length; i++) {
+                        times[i] = Long.parseLong(parts[i + 1]);
+                    }
+                    return times;
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Cannot read /proc/stat: " + e.getMessage());
+        }
+        return null;
+    }
+
     public AnrAnalysisResult analyzeAnrLogs() {
         AnrAnalysisResult result = new AnrAnalysisResult();
         List<AnrRecord> records = new ArrayList<>();
