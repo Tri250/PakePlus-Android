@@ -72,41 +72,14 @@ public class DeviceConfigQuery {
     }
 
     private long detectActivationDate() {
-        long result = -1;
-
-        try {
-            String firstUseTimeStr = Settings.Secure.getString(context.getContentResolver(),
-                    Settings.Secure.USER_SETUP_COMPLETE);
-            if (firstUseTimeStr != null && !firstUseTimeStr.isEmpty()) {
-                try {
-                    result = Long.parseLong(firstUseTimeStr);
-                } catch (NumberFormatException e) {
-                    Log.w(TAG, "Failed to parse USER_SETUP_COMPLETE: " + firstUseTimeStr);
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Error reading USER_SETUP_COMPLETE: " + e.getMessage());
+        // Use ActivationDateHelper as the single source of truth
+        ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
+        if (result.isValid()) {
+            return result.timestamp;
         }
 
-        if (result <= 0) {
-            File buildProp = new File("/system/build.prop");
-            if (buildProp.exists()) {
-                try {
-                    String buildDate = Build.DISPLAY;
-                    if (buildDate.contains("20") || buildDate.contains("202")) {
-                        result = parseDateFromBuild(buildDate);
-                    }
-                } catch (Exception e) {
-                    Log.w(TAG, "Error parsing build date: " + e.getMessage());
-                }
-            }
-        }
-
-        if (result <= 0) {
-            result = getFirstInstallTime();
-        }
-
-        return result;
+        // Fallback: use first install time
+        return getFirstInstallTime();
     }
 
     private long parseDateFromBuild(String buildDate) {
@@ -140,7 +113,20 @@ public class DeviceConfigQuery {
     public String getFormattedActivationDate() {
         long date = getDeviceActivationDate();
         if (date <= 0) return "未知";
-        return new SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(new Date(date));
+        ActivationDateHelper.Result result = ActivationDateHelper.detect(context);
+        String sourceLabel = "";
+        if (result.isValid()) {
+            switch (result.source) {
+                case "electronic_warranty_card": sourceLabel = "（电子保卡）"; break;
+                case "system_first_boot_time": sourceLabel = "（首次开机）"; break;
+                case "first_unlock_time": sourceLabel = "（首次解锁）"; break;
+                case "gms_first_install": sourceLabel = "（GMS安装）"; break;
+                case "system_framework_install": sourceLabel = "（系统安装）"; break;
+                case "app_first_install": sourceLabel = "（应用安装）"; break;
+                default: sourceLabel = ""; break;
+            }
+        }
+        return new SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(new Date(date)) + sourceLabel;
     }
 
     public ConfigAnalysisResult analyzeConfiguration() {

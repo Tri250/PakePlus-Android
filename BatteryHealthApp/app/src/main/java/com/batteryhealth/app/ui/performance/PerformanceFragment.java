@@ -342,7 +342,17 @@ public class PerformanceFragment extends Fragment {
             };
             for (String path : vulkanPaths) {
                 if (new File(path).exists()) {
-                    return "Vulkan 1.x";
+                    // Check for Vulkan 1.3+ (most modern devices)
+                    String vulkan13 = getSystemProperty("ro.hardware.vulkan.version");
+                    if (vulkan13 != null && !vulkan13.isEmpty()) {
+                        try {
+                            int version = Integer.parseInt(vulkan13.trim(), 16);
+                            int major = (version >> 22) & 0x3FF;
+                            int minor = (version >> 12) & 0x3FF;
+                            return "Vulkan " + major + "." + minor;
+                        } catch (Exception ignored) {}
+                    }
+                    return "Vulkan 1.0+";
                 }
             }
 

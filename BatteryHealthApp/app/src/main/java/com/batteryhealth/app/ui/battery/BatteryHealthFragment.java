@@ -24,6 +24,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.DeviceDatabaseManager;
 import com.batteryhealth.app.utils.BatteryReportGenerator;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
@@ -200,8 +201,26 @@ public class BatteryHealthFragment extends Fragment {
         tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
 
         // 4. 容量（设计容量 + 当前满充容量）
-        int displayCapacity = info.getCurrentCapacity() > 0 ? info.getCurrentCapacity() : info.getDesignCapacity();
-        tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity > 0 ? displayCapacity : 0));
+        int designCap = info.getDesignCapacity();
+        int currentCap = info.getCurrentCapacity();
+        boolean hasDesign = designCap > 0;
+        boolean hasCurrent = currentCap > 0;
+        String capacityText;
+        if (hasDesign && hasCurrent) {
+            capacityText = String.format(Locale.getDefault(), "%d / %d mAh", currentCap, designCap);
+        } else if (hasDesign) {
+            capacityText = String.format(Locale.getDefault(), "%d mAh（设计）", designCap);
+        } else if (hasCurrent) {
+            capacityText = String.format(Locale.getDefault(), "%d mAh（当前）", currentCap);
+        } else {
+            int dbDesignCap = DeviceDatabaseManager.getInstance(requireContext()).getDesignCapacity();
+            if (dbDesignCap > 0) {
+                capacityText = String.format(Locale.getDefault(), "%d mAh（设计）", dbDesignCap);
+            } else {
+                capacityText = "--";
+            }
+        }
+        tvCapacity.setText(capacityText);
 
         // 5. 循环次数（使用 BatteryDataManager 的真实循环次数）
         tvCycleCount.setText(batteryDataManager.formatCycleCount(info));
