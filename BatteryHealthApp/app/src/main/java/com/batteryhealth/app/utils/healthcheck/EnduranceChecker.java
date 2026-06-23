@@ -4,16 +4,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.SystemClock;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
+import com.batteryhealth.app.utils.BatteryDataManager;
+
+import java.io.File;
 
 /**
- * 续航预测检测：基于当前电量与放电速率估算剩余可用时间，并
- * 根据预计续航时长与用户历史数据评分。
+ * 续航预测检测：基于真实电池参数（电流瞬时值/容量）计算放电速率，
+ * 避免任何"硬编码 + 简化估算"。
+ *
+ * <p>数据来源优先级：
+ * <ol>
+ *   <li>BatteryManager 提供的 BATTERY_PROPERTY_CURRENT_NOW（µA）</li>
+ *   <li>sysfs /sys/class/power_supply/battery/current_now</li>
+ *   <li>回退：仅给出数据不足提示，不做"每小时 10%"的伪估算</li>
+ * </ol>
  */
 public class EnduranceChecker implements IHealthChecker {
 
-    private static final float DEFAULT_DISCHARGE_PER_HOUR = 10f; // 默认每小时消耗 10%
+    /** 兜底用：典型手机平均放电电流 800mA（仅在所有数据源均失败时使用） */
+    private static final float FALLBACK_DISCHARGE_MA = 800f;
 
     @Override
     public String getName() { return "续航预测"; }
@@ -54,17 +66,30 @@ public class EnduranceChecker implements IHealthChecker {
             boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
 
-            // 简化估算：每小时消耗 DEFAULT_DISCHARGE_PER_HOUR%，充电状态按 1%/分钟 反向估算
+            // 真实获取电池容量（mAh）
+            int capacityMah = readCapacityMah(appCtx);
+            // 真实获取当前电流绝对值（mA）
+            float currentMa = Math.abs(readCurrentMa(appCtx));
+
             float hours;
             int severity;
             String statusText;
             String advice;
             int score;
+            String detail;
 
             if (isCharging) {
-                int remainingToFull = 100 - pct;
-                float minutesToFull = remainingToFull * 2.0f; // 粗略估算 每 2 分钟充 1%
-                hours = minutesToFull / 60f;
+                // 充电时：通过实际充电电流计算充满时间
+                if (currentMa > 0 && capacityMah > 0) {
+                    int remainingToFullPct = 100 - pct;
+                    float remainingMah = capacityMah * remainingToFullPct / 100f;
+                    hours = remainingMah / currentMa;
+                    detail = String.format("当前充电电流约 %.0f mA，剩余 %d%% 约需 %.1f 小时",
+                            currentMa, remainingToFullPct, hours);
+                } else {
+                    hours = 0;
+                    detail = "无法读取充电电流数据。";
+                }
 
                 if (pct >= 90) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
@@ -83,7 +108,17 @@ public class EnduranceChecker implements IHealthChecker {
                     score = 65;
                 }
             } else {
-                hours = pct / DEFAULT_DISCHARGE_PER_HOUR;
+                // 放电时：通过真实电流 + 真实容量计算剩余可用时间
+                if (currentMa > 0 && capacityMah > 0) {
+                    float remainingMah = capacityMah * pct / 100f;
+                    hours = remainingMah / currentMa;
+                    detail = String.format("当前放电电流约 %.0f mA，剩余 %d%%（%.0f mAh）预计可用 %.1f 小时",
+                            currentMa, pct, remainingMah, hours);
+                } else {
+                    hours = 0;
+                    detail = "无法读取实时电流数据，无法准确估算续航。";
+                }
+
                 if (hours >= 6f) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
                     statusText = "充裕";
@@ -99,21 +134,28 @@ public class EnduranceChecker implements IHealthChecker {
                     statusText = "偏低";
                     advice = "预计续航时间较短，建议开启低电模式或及时充电。";
                     score = 50;
-                } else {
+                } else if (hours > 0) {
                     severity = HealthCheckResult.SEVERITY_CRITICAL;
                     statusText = "电量告急";
                     advice = "电池即将耗尽，请立即接入充电器。";
                     score = 25;
+                } else {
+                    // 真实数据缺失：诚实告知用户
+                    severity = HealthCheckResult.SEVERITY_INFO;
+                    statusText = "数据不足";
+                    advice = "暂无法估算续航。请保持应用前台运行 1-2 分钟以采集电流数据。";
+                    score = 40;
+                    hours = 0;
                 }
             }
 
-            String desc = String.format("当前电量：%1$d%%。%2$s状态下预计可用约 %3$.1f 小时",
-                    pct, isCharging ? "充电" : "放电", hours);
+            String desc = String.format("当前电量：%1$d%%。%2$s。%3$s",
+                    pct, isCharging ? "充电中" : "放电中", detail);
 
             return builder
                     .setSeverity(severity)
                     .setStatus(statusText)
-                    .setValue(String.format("%.1f", hours))
+                    .setValue(hours > 0 ? String.format("%.1f", hours) : "--")
                     .setUnit("小时")
                     .setDescription(desc)
                     .setAdvice(advice)
@@ -133,5 +175,62 @@ public class EnduranceChecker implements IHealthChecker {
                     .setItemScore(55)
                     .build();
         }
+    }
+
+    /** 真实读取电池容量 mAh（优先 BatteryManager API，回退 sysfs） */
+    private int readCapacityMah(Context ctx) {
+        try {
+            BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
+            if (bm != null) {
+                // BATTERY_PROPERTY_CHARGE_FULL = 25
+                int micro = bm.getIntProperty(25);
+                if (micro > 1000) return micro / 1000;
+            }
+        } catch (Throwable ignored) {}
+        // 退路：sysfs charge_full
+        try {
+            File f = new File("/sys/class/power_supply/battery/charge_full");
+            if (f.exists() && f.canRead()) {
+                try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(f))) {
+                    String line = r.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Long.parseLong(line.trim());
+                        if (raw > 1000) return (int) (raw / 1000); // µAh → mAh
+                        return (int) raw; // mAh
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return -1;
+    }
+
+    /** 真实读取当前电流绝对值 mA */
+    private float readCurrentMa(Context ctx) {
+        try {
+            BatteryManager bm = (BatteryManager) ctx.getSystemService(Context.BATTERY_SERVICE);
+            if (bm != null) {
+                int currentUa = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                if (currentUa != Integer.MIN_VALUE && currentUa != 0) {
+                    int abs = Math.abs(currentUa);
+                    if (abs > 100000) return abs / 1000f; // µA → mA
+                    return abs;
+                }
+            }
+        } catch (Throwable ignored) {}
+        // 退路：sysfs current_now
+        try {
+            File f = new File("/sys/class/power_supply/battery/current_now");
+            if (f.exists() && f.canRead()) {
+                try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(f))) {
+                    String line = r.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        long raw = Math.abs(Long.parseLong(line.trim()));
+                        if (raw > 100000) return raw / 1000f; // µA → mA
+                        if (raw > 0) return raw; // mA
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return -1f;
     }
 }

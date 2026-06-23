@@ -135,15 +135,24 @@ public class PermissionSelfCheck {
     }
 
     /**
-     * 检查后台启动限制（Android 14+）
+     * 检查后台启动限制（Android 14+）。
+     * <p>Android 14 引入 {@code ActivityManager.isBackgroundRestricted}，
+     * 可用于判断应用是否被限制从后台启动前台服务。
      */
     public static boolean checkBackgroundStartRestriction(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             return false; // 无限制
         }
-        // Android 14+ 可能限制后台启动前台服务
-        // 这里返回是否受到限制（true = 受限制）
-        return false; // 默认假设未受限制，实际需要更复杂的检测
+        try {
+            android.app.ActivityManager am =
+                    (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                return am.isBackgroundRestricted();
+            }
+        } catch (Throwable t) {
+            LogHelper.e(TAG, "checkBackgroundStartRestriction failed: " + t.getMessage());
+        }
+        return false;
     }
 
     /**

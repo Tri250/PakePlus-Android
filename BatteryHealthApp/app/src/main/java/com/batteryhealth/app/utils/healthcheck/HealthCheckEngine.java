@@ -305,17 +305,18 @@ public class HealthCheckEngine {
     }
 
     private static HealthCheckResult buildFallbackResult(String title, String category) {
+        // 异常 fallback 应当显著低于正常检测结果，确保用户能看到该项"未通过"
         return new HealthCheckResult.Builder()
                 .setId("fallback_" + (title == null ? "unknown" : title))
                 .setTitle(title == null ? "未知项" : title)
                 .setCategory(category == null ? HealthCheckResult.CATEGORY_SYSTEM : category)
-                .setSeverity(HealthCheckResult.SEVERITY_INFO)
-                .setStatus("读取失败")
+                .setSeverity(HealthCheckResult.SEVERITY_WARNING)
+                .setStatus("检测异常")
                 .setValue("--")
                 .setUnit("")
-                .setDescription("检测过程中发生异常。")
-                .setAdvice("请稍后重试。")
-                .setItemScore(50)
+                .setDescription("检测过程中发生异常或权限不足，无法完成该项检查。")
+                .setAdvice("请检查应用权限或稍后重试。")
+                .setItemScore(30)
                 .build();
     }
 

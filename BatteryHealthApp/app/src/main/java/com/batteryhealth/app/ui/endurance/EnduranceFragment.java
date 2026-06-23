@@ -261,17 +261,21 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void updatePowerRanking() {
-        if (lastAnalysisResult != null) {
-            tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+        if (lastAnalysisResult != null
+                && lastAnalysisResult.screenPowerPercent >= 0
+                && lastAnalysisResult.systemPowerPercent >= 0
+                && lastAnalysisResult.appsPowerPercent >= 0) {
+            tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%",
                     lastAnalysisResult.screenPowerPercent));
-            tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+            tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%",
                     lastAnalysisResult.systemPowerPercent));
-            tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
+            tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%",
                     lastAnalysisResult.appsPowerPercent));
         } else {
-            tvScreenPower.setText("35%");
-            tvSystemPower.setText("25%");
-            tvAppsPower.setText("40%");
+            // 真实数据尚未就绪：诚实展示"--"，禁止硬编码假数据
+            tvScreenPower.setText("--");
+            tvSystemPower.setText("--");
+            tvAppsPower.setText("--");
         }
     }
 

@@ -10,10 +10,19 @@ import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BatteryRepositoryImpl implements BatteryRepository {
 
     private static final String TAG = "BatteryRepositoryImpl";
+
+    /** 单一后台线程，避免阻塞主线程执行数据库 IO */
+    private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "BatteryRepo-IO");
+        t.setDaemon(true);
+        return t;
+    });
 
     private final BatteryDataManager batteryDataManager;
     private final AppDatabase database;
@@ -31,6 +40,8 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public BatteryInfo getCurrentBatteryInfo() {
+        // BatteryDataManager 仅做 sysfs + BatteryManager 内存读取，可在调用方已切换线程时直接执行；
+        // 此处仅 refresh，不做数据库 IO
         batteryDataManager.refreshFromStickyIntent();
         BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
         batteryInfoLiveData.postValue(info);
@@ -39,21 +50,23 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public void saveBatteryInfo(BatteryInfo info) {
-        if (database != null) {
-            new Thread(() -> {
-                try {
-                    info.setId(0);
-                    info.setTimestamp(System.currentTimeMillis());
-                    database.batteryInfoDao().insert(info);
-                } catch (Exception e) {
-                    android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
-                }
-            }).start();
-        }
+        if (database == null || info == null) return;
+        IO_EXECUTOR.execute(() -> {
+            try {
+                info.setId(0);
+                info.setTimestamp(System.currentTimeMillis());
+                database.batteryInfoDao().insert(info);
+            } catch (Exception e) {
+                android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
+            }
+        });
     }
 
     @Override
     public List<BatteryInfo> getHistorySince(long timestamp) {
+        // 该方法由 ViewModel 通过 RxJava / 协程风格的 LiveData 调用；
+        // 直接执行 Room 同步查询仅在 ViewModel 内 IO 线程上合法；
+        // 兼容旧调用：仍可同步执行，但调用方需在子线程调用
         if (database != null) {
             try {
                 return database.batteryInfoDao().getSince(timestamp);
@@ -91,13 +104,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     @Override
     public void deleteOlderThan(long timestamp) {
         if (database != null) {
-            new Thread(() -> {
+            IO_EXECUTOR.execute(() -> {
                 try {
                     database.batteryInfoDao().deleteOlderThan(timestamp);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error deleting old data: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 
