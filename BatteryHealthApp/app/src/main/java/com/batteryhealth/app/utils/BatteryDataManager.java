@@ -210,7 +210,7 @@ public class BatteryDataManager {
         info.setDeviceModel(Build.MODEL);
         info.setDeviceBrand(Build.BRAND);
 
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent intent = registerBatteryReceiver();
         if (intent == null) return info;
 
         BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
@@ -875,6 +875,24 @@ public class BatteryDataManager {
 
     // region sysfs 工具
 
+    /**
+     * 安全注册电池广播接收器（sticky intent），兼容 Android 14+。
+     * Android 14+ (targetSdk 34+) 需要显式指定 RECEIVER_NOT_EXPORTED 标志。
+     */
+    private Intent registerBatteryReceiver() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                return context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                        Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                return context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "registerBatteryReceiver failed: " + e.getMessage());
+            return null;
+        }
+    }
+
     private int readSysfsInt(String[] paths, int def) {
         for (String p : paths) {
             try {
@@ -955,7 +973,7 @@ public class BatteryDataManager {
     // region 公开辅助方法
 
     public boolean isCharging() {
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent intent = registerBatteryReceiver();
         if (intent == null) return false;
         int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
         return status == BatteryManager.BATTERY_STATUS_CHARGING
@@ -966,7 +984,7 @@ public class BatteryDataManager {
      * 读取当前电池电压（mV），供外部 UI 复用。
      */
     public int readVoltageNow() {
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent intent = registerBatteryReceiver();
         if (intent != null) {
             int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
             if (voltageMv > 10000) voltageMv = voltageMv / 1000;

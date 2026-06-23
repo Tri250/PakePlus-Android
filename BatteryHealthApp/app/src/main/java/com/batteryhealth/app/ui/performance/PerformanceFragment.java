@@ -376,20 +376,35 @@ public class PerformanceFragment extends Fragment {
 
     private void loadAnrAnalysis() {
         new Thread(() -> {
-            PerformanceAnalyzer.AnrAnalysisResult anrResult = performanceAnalyzer.analyzeAnrLogs();
-            PerformanceAnalyzer.PerformanceInsights insights = performanceAnalyzer.getPerformanceInsights();
+            try {
+                PerformanceAnalyzer.AnrAnalysisResult anrResult = performanceAnalyzer.analyzeAnrLogs();
+                PerformanceAnalyzer.PerformanceInsights insights = performanceAnalyzer.getPerformanceInsights();
 
-            requireActivity().runOnUiThread(() -> {
-                tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
-                tvAnrSeverity.setText(anrResult.severity);
-                tvAnrMessage.setText(anrResult.message);
+                if (isAdded()) {
+                    handler.post(() -> {
+                        if (!isAdded()) return;
+                        tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
+                        tvAnrSeverity.setText(anrResult.severity);
+                        tvAnrMessage.setText(anrResult.message);
 
-                StringBuilder tipsBuilder = new StringBuilder();
-                for (String tip : insights.suggestions) {
-                    tipsBuilder.append(tip).append("\n");
+                        StringBuilder tipsBuilder = new StringBuilder();
+                        for (String tip : insights.suggestions) {
+                            tipsBuilder.append(tip).append("\n");
+                        }
+                        tvPerformanceTips.setText(tipsBuilder.toString().trim());
+                    });
                 }
-                tvPerformanceTips.setText(tipsBuilder.toString().trim());
-            });
+            } catch (Exception e) {
+                if (isAdded()) {
+                    handler.post(() -> {
+                        if (!isAdded()) return;
+                        tvAnrCount.setText("0");
+                        tvAnrSeverity.setText("--");
+                        tvAnrMessage.setText("分析失败");
+                        tvPerformanceTips.setText("");
+                    });
+                }
+            }
         }).start();
     }
 }

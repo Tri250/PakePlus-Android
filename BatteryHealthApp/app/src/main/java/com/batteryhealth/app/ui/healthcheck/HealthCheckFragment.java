@@ -142,13 +142,19 @@ public class HealthCheckFragment extends Fragment {
 
             @Override
             public void onCompleted(final List<HealthCheckResult> results) {
-                mainHandler.post(() -> renderResults(results));
+                mainHandler.post(() -> {
+                    if (isAdded()) renderResults(results);
+                });
             }
 
             @Override
             public void onError(final String message) {
                 mainHandler.post(() -> {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    if (!isAdded()) return;
+                    Context ctx = getContext();
+                    if (ctx != null) {
+                        Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show();
+                    }
                     finishCheckingUI();
                 });
             }

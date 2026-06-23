@@ -2,6 +2,8 @@ package com.batteryhealth.app.ui.trend;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +37,7 @@ import java.util.Locale;
 public class TrendFragment extends Fragment {
 
     private static final long THIRTY_DAYS_MS = 30L * 24 * 60 * 60 * 1000;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
@@ -88,18 +91,23 @@ public class TrendFragment extends Fragment {
                 long since = System.currentTimeMillis() - THIRTY_DAYS_MS;
                 List<BatteryInfo> history = dao.getSince(since);
 
-                if (getActivity() == null) return;
-                getActivity().runOnUiThread(() -> updateUI(history, currentHealth));
+                if (!isAdded()) return;
+                final float finalHealth = currentHealth;
+                mainHandler.post(() -> {
+                    if (isAdded()) updateUI(history, finalHealth);
+                });
             } catch (Exception e) {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(this::postEmptyState);
+                if (isAdded()) {
+                    mainHandler.post(() -> {
+                        if (isAdded()) postEmptyState();
+                    });
                 }
             }
         }).start();
     }
 
     private float getCurrentRealHealth() {
-        if (getActivity() instanceof MainActivity) {
+        if (isAdded() && getActivity() instanceof MainActivity) {
             BatteryDataManager mgr = ((MainActivity) getActivity()).getBatteryDataManager();
             if (mgr != null) {
                 BatteryInfo info = mgr.getCurrentBatteryInfo();

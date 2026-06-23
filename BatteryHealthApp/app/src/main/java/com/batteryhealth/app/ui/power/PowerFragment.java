@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -140,8 +141,15 @@ public class PowerFragment extends Fragment {
     }
 
     private void registerBatteryReceiver() {
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        requireContext().registerReceiver(batteryReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requireContext().registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireContext().registerReceiver(batteryReceiver, filter);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void unregisterBatteryReceiver() {
@@ -253,7 +261,7 @@ public class PowerFragment extends Fragment {
     private TodayChargeStats queryTodayChargeStats() {
         TodayChargeStats stats = new TodayChargeStats();
         try {
-            BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
+            BatteryHealthApplication app = BatteryHealthApplication.getInstance();
             if (app == null) return stats;
             var db = app.getDatabase();
             if (db == null) return stats;

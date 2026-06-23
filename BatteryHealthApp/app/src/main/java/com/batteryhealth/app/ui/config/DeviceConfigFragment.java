@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +39,7 @@ public class DeviceConfigFragment extends Fragment {
             tvPerformanceAssessment, tvSuggestions;
     private Switch switchHealthAlert;
     private DeviceConfigQuery configQuery;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -96,7 +99,8 @@ public class DeviceConfigFragment extends Fragment {
             @Override
             public void onConfigLoaded(DeviceConfig config) {
                 if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> {
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
                     applyConfig(config);
                     loadSystemAnalysis();
                 });
@@ -106,7 +110,8 @@ public class DeviceConfigFragment extends Fragment {
             public void onConfigLoadFailed(Exception e) {
                 Log.e(TAG, "Failed to load device config", e);
                 if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> {
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
                     loadFallbackData();
                     loadSystemAnalysis();
                 });
@@ -189,7 +194,12 @@ public class DeviceConfigFragment extends Fragment {
      * DeviceInfoManager 不可用时的回退数据
      */
     private void loadFallbackData() {
-        tvDeviceName.setText(getLocalizedBrandName(Build.BRAND) + " " + Build.MODEL);
+        // 构造临时 DeviceConfig 复用 getFullModelName() 逻辑，避免品牌前缀冗余
+        DeviceConfig tempConfig = new DeviceConfig();
+        tempConfig.setBrand(Build.BRAND);
+        tempConfig.setModel(Build.MODEL);
+        tempConfig.setOriginalModel(Build.MODEL);
+        tvDeviceName.setText(tempConfig.getFullModelName());
         tvDeviceModel.setText(Build.MODEL);
         tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
         tvProcessor.setText(Build.HARDWARE);

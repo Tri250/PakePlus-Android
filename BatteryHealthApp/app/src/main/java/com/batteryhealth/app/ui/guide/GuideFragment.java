@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.guide;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -165,8 +166,16 @@ public class GuideFragment extends Fragment {
             btnUpload.setText("分析中...");
             btnUpload.setEnabled(false);
 
+            // 在主线程获取 Context，避免后台线程调用 requireContext()
+            final Context ctx = getContext();
+            if (ctx == null) {
+                btnUpload.setText("上传分析报告");
+                btnUpload.setEnabled(true);
+                return;
+            }
+
             new Thread(() -> {
-                File tempFile = copyUriToTempFile(uri, fileName);
+                File tempFile = copyUriToTempFile(ctx, uri, fileName);
                 if (tempFile != null) {
                     BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
 
@@ -217,7 +226,7 @@ public class GuideFragment extends Fragment {
         return result;
     }
 
-    private File copyUriToTempFile(Uri uri, String fileName) {
+    private File copyUriToTempFile(Context ctx, Uri uri, String fileName) {
         // 保留原始文件扩展名，避免 .txt bugreport 被当作 .zip 解析
         String ext = ".txt";
         if (fileName != null) {
@@ -226,8 +235,8 @@ public class GuideFragment extends Fragment {
                 ext = fileName.substring(dotIdx).toLowerCase();
             }
         }
-        File tempFile = new File(requireContext().getCacheDir(), "bugreport_temp" + ext);
-        try (java.io.InputStream is = requireContext().getContentResolver().openInputStream(uri);
+        File tempFile = new File(ctx.getCacheDir(), "bugreport_temp" + ext);
+        try (java.io.InputStream is = ctx.getContentResolver().openInputStream(uri);
              java.io.OutputStream os = new java.io.FileOutputStream(tempFile)) {
             if (is == null) {
                 Log.e(TAG, "InputStream is null for uri: " + uri);

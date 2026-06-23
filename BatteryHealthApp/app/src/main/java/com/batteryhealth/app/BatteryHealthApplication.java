@@ -59,27 +59,36 @@ public class BatteryHealthApplication extends Application {
     }
 
     /**
-     * 注册全局未捕获异常处理器，所有未处理异常都会跳转到 ErrorActivity。
+     * 注册全局未捕获异常处理器。
+     * 主线程异常跳转 ErrorActivity 并退出；后台线程异常仅记录日志，不杀进程。
      */
     private void registerUncaughtExceptionHandler() {
         Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            try {
-                Intent intent = ErrorActivity.createIntent(
-                        this,
-                        getString(R.string.error_crash_title),
-                        getString(R.string.error_crash_message),
-                        throwable
-                );
-                startActivity(intent);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to start ErrorActivity", e);
-            } finally {
-                if (defaultHandler != null) {
-                    defaultHandler.uncaughtException(thread, throwable);
+            // 区分主线程和后台线程
+            boolean isMainThread = thread == Looper.getMainLooper().getThread();
+            if (isMainThread) {
+                try {
+                    Intent intent = ErrorActivity.createIntent(
+                            this,
+                            getString(R.string.error_crash_title),
+                            getString(R.string.error_crash_message),
+                            throwable
+                    );
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to start ErrorActivity", e);
+                } finally {
+                    if (defaultHandler != null) {
+                        defaultHandler.uncaughtException(thread, throwable);
+                    }
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                    System.exit(1);
                 }
-                android.os.Process.killProcess(android.os.Process.myPid());
-                System.exit(1);
+            } else {
+                // 后台线程异常：仅记录日志，不杀进程，避免因小异常导致整个应用崩溃
+                Log.e(TAG, "Uncaught exception in background thread: " + thread.getName(), throwable);
             }
         });
     }

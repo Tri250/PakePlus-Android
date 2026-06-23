@@ -285,10 +285,12 @@ public class EnduranceFragment extends Fragment {
      * 在后台线程执行耗电分析，避免阻塞 UI。
      */
     private void runAnalysisAsync() {
+        final Context ctx = getContext();
+        if (ctx == null) return;
         new Thread(() -> {
             try {
                 BatteryConsumptionAnalyzer.Result result =
-                        BatteryConsumptionAnalyzer.analyze(requireContext(), 24 * 60 * 60 * 1000L);
+                        BatteryConsumptionAnalyzer.analyze(ctx, 24 * 60 * 60 * 1000L);
                 if (result != null) {
                     lastAnalysisResult = result;
                     // 切回主线程刷新 UI

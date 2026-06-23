@@ -271,16 +271,30 @@ public class BatteryHealthFragment extends Fragment {
         btnMonthlyReport.setEnabled(false);
 
         new Thread(() -> {
-            BatteryReportGenerator.Report report = weekly 
-                    ? reportGenerator.generateWeeklyReport() 
-                    : reportGenerator.generateMonthlyReport();
+            try {
+                BatteryReportGenerator.Report report = weekly
+                        ? reportGenerator.generateWeeklyReport()
+                        : reportGenerator.generateMonthlyReport();
 
-            String summary = formatReportSummary(report);
-            requireActivity().runOnUiThread(() -> {
-                tvReportSummary.setText(summary);
-                btnWeeklyReport.setEnabled(true);
-                btnMonthlyReport.setEnabled(true);
-            });
+                String summary = formatReportSummary(report);
+                if (isAdded()) {
+                    handler.post(() -> {
+                        if (!isAdded()) return;
+                        tvReportSummary.setText(summary);
+                        btnWeeklyReport.setEnabled(true);
+                        btnMonthlyReport.setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                if (isAdded()) {
+                    handler.post(() -> {
+                        if (!isAdded()) return;
+                        tvReportSummary.setText(getString(R.string.health_check_no_data));
+                        btnWeeklyReport.setEnabled(true);
+                        btnMonthlyReport.setEnabled(true);
+                    });
+                }
+            }
         }).start();
     }
 
