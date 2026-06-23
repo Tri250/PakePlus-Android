@@ -128,7 +128,7 @@ public class BatteryOriginFragment extends Fragment {
         if (methods == null || methods.isEmpty()) {
             TextView emptyView = new TextView(requireContext());
             emptyView.setText(getString(R.string.status_no_data));
-            emptyView.setTextSize(14sp);
+            emptyView.setTextSize(14);
             emptyView.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
             emptyView.setPadding(16, 16, 16, 16);
             containerMethods.addView(emptyView);
@@ -151,13 +151,13 @@ public class BatteryOriginFragment extends Fragment {
 
             TextView tvName = new TextView(requireContext());
             tvName.setText(method.name);
-            tvName.setTextSize(14sp);
+            tvName.setTextSize(14);
             tvName.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
             tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
             TextView tvValue = new TextView(requireContext());
             tvValue.setText(method.value);
-            tvValue.setTextSize(14sp);
+            tvValue.setTextSize(14);
             tvValue.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
 
             row.addView(tvName);

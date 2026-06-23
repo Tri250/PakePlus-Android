@@ -4,6 +4,8 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
+import com.batteryhealth.app.data.model.BatteryInfo;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

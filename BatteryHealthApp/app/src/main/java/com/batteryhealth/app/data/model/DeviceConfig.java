@@ -57,6 +57,9 @@ public class DeviceConfig {
     private String networkType; // 网络类型
     private String ipAddress; // IP地址
     private String macAddress; // MAC地址
+
+    // 存储加密信息
+    private String storageEncryption; // 存储加密状态
     
     // 激活信息
     private long activationDate; // 激活日期 (时间戳)
@@ -352,7 +355,15 @@ public class DeviceConfig {
     public void setMacAddress(String macAddress) {
         this.macAddress = macAddress;
     }
-    
+
+    public String getStorageEncryption() {
+        return storageEncryption;
+    }
+
+    public void setStorageEncryption(String storageEncryption) {
+        this.storageEncryption = storageEncryption;
+    }
+
     public long getActivationDate() {
         return activationDate;
     }

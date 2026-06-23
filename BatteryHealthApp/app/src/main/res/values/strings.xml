@@ -84,6 +84,7 @@
     <string name="result_original">原装电池</string>
     <string name="result_replaced">非原装电池</string>
     <string name="status_no_data">无检测数据</string>
+    <string name="status_not_connected">未连接</string>
     <string name="label_avg_temperature">平均温度</string>
     <string name="label_max_temperature">最高温度</string>
     <string name="label_record_count">记录数</string>
@@ -94,7 +95,6 @@
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
     <string name="label_battery_capacity">电池容量</string>
-    <string name="label_cycle_count">循环次数</string>
     <string name="label_battery_temperature">电池温度</string>
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
@@ -249,4 +249,9 @@
     <string name="charging_monitor_notification_content_charging">充电中 %1$d%% · %2$.1fW · %3$s</string>
     <string name="charging_monitor_notification_content_idle">未充电 · 电量 %1$d%%</string>
     <string name="charging_monitor_notification_title">充电监测中</string>
+    <string name="label_share">分享</string>
+    <string name="section_alert_settings">预警设置</string>
+    <string name="section_gpu_info">GPU 信息</string>
+    <string name="desc_performance_tips">性能优化建议</string>
+    <string name="section_history_data">历史数据</string>
 </resources>
