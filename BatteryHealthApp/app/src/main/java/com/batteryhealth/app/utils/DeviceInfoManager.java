@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.BugReportGuide;
 import com.batteryhealth.app.data.model.DeviceConfig;
 
 import java.io.BufferedReader;
@@ -45,6 +46,8 @@ public class DeviceInfoManager {
     private DeviceConfig cachedConfig;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private BugReportGuide.AnalysisResult bugreportData;
 
     // GPU 渲染器 sysfs / 属性候选路径
     private static final String[] GPU_RENDERER_PATHS = {
@@ -160,6 +163,29 @@ public class DeviceInfoManager {
         }
         config.setGpuInfo(gpuInfo);
 
+        // 9.5 Bugreport 数据回退（当其他来源都失败时）
+        if (bugreportData != null && bugreportData.deviceInfo != null) {
+            BugReportGuide.AnalysisResult.DeviceInfo di = bugreportData.deviceInfo;
+            // 处理器：数据库没有时用 bugreport 的
+            if ((config.getCpuInfo() == null || config.getCpuInfo().isEmpty() 
+                    || config.getCpuInfo().equals(context.getString(R.string.status_not_recognized)))
+                    && di.processor != null && !di.processor.isEmpty()) {
+                config.setCpuInfo(toChineseProcessorName(di.processor));
+            }
+            // GPU：数据库没有时用 bugreport 的
+            if (config.getGpuInfo() == null || config.getGpuInfo().equals(context.getString(R.string.status_not_recognized))
+                    || config.getGpuInfo().equals(context.getString(R.string.gpu_adreno))
+                    || config.getGpuInfo().equals(context.getString(R.string.gpu_mali_mediatek))) {
+                if (di.gpuInfo != null && !di.gpuInfo.isEmpty()) {
+                    config.setGpuInfo(di.gpuInfo);
+                }
+            }
+            // 电池容量：数据库没有时用 bugreport 的
+            if (config.getBatteryCapacity() <= 0 && di.batteryCapacity > 0) {
+                config.setBatteryCapacity(di.batteryCapacity);
+            }
+        }
+
         return config;
     }
 
@@ -236,6 +262,10 @@ public class DeviceInfoManager {
         }
 
         return context.getString(R.string.status_not_recognized);
+    }
+
+    public void setBugreportData(BugReportGuide.AnalysisResult result) {
+        this.bugreportData = result;
     }
 
     private String readCpuInfoFromProc() {

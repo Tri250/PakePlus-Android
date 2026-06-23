@@ -68,32 +68,49 @@ public class BatteryHealthFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
-        initViews(view);
-        animateEntry(view);
+        View view = null;
+        try {
+            view = inflater.inflate(R.layout.fragment_battery_health, container, false);
+            initViews(view);
+            animateEntry(view);
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreateView", e);
+            // Fallback: create a simple empty frame to prevent white screen
+            if (view == null) {
+                android.widget.FrameLayout fallback = new android.widget.FrameLayout(requireContext());
+                fallback.setLayoutParams(new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+                return fallback;
+            }
+        }
         return view;
     }
 
     private void initViews(View view) {
-        healthRing = view.findViewById(R.id.health_ring);
-        tvHealthPercentage = view.findViewById(R.id.tv_health_percentage);
-        tvHealthGrade = view.findViewById(R.id.tv_health_grade);
-        tvHealthStatus = view.findViewById(R.id.tv_health_status);
-        tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
-        tvChargingStatus = view.findViewById(R.id.tv_charging_status);
-        tvCurrentNow = view.findViewById(R.id.tv_current_now);
-        tvCapacity = view.findViewById(R.id.tv_capacity);
-        tvCycleCount = view.findViewById(R.id.tv_cycle_count);
-        tvTemperature = view.findViewById(R.id.tv_temperature);
-        tvVoltage = view.findViewById(R.id.tv_voltage);
-        tvBatterySource = view.findViewById(R.id.tv_battery_source);
-        tvTechnology = view.findViewById(R.id.tv_technology);
-        btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
-        btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
-        tvReportSummary = view.findViewById(R.id.tv_report_summary);
+        try {
+            healthRing = view.findViewById(R.id.health_ring);
+            tvHealthPercentage = view.findViewById(R.id.tv_health_percentage);
+            tvHealthGrade = view.findViewById(R.id.tv_health_grade);
+            tvHealthStatus = view.findViewById(R.id.tv_health_status);
+            tvBatteryLevel = view.findViewById(R.id.tv_battery_level);
+            tvChargingStatus = view.findViewById(R.id.tv_charging_status);
+            tvCurrentNow = view.findViewById(R.id.tv_current_now);
+            tvCapacity = view.findViewById(R.id.tv_capacity);
+            tvCycleCount = view.findViewById(R.id.tv_cycle_count);
+            tvTemperature = view.findViewById(R.id.tv_temperature);
+            tvVoltage = view.findViewById(R.id.tv_voltage);
+            tvBatterySource = view.findViewById(R.id.tv_battery_source);
+            tvTechnology = view.findViewById(R.id.tv_technology);
+            btnWeeklyReport = view.findViewById(R.id.btn_weekly_report);
+            btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
+            tvReportSummary = view.findViewById(R.id.tv_report_summary);
 
-        btnWeeklyReport.setOnClickListener(v -> generateReport(true));
-        btnMonthlyReport.setOnClickListener(v -> generateReport(false));
+            btnWeeklyReport.setOnClickListener(v -> generateReport(true));
+            btnMonthlyReport.setOnClickListener(v -> generateReport(false));
+        } catch (Exception e) {
+            Log.e(TAG, "Error in initViews", e);
+        }
     }
 
     private void animateEntry(View view) {
@@ -210,6 +227,7 @@ public class BatteryHealthFragment extends Fragment {
      */
     private void updateUI(BatteryInfo info) {
         if (info == null || !isAdded()) return;
+        if (healthRing == null || tvHealthPercentage == null) return; // Guard against uninitialized views
         try {
             // 1. 电量
             tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", info.getLevel()));

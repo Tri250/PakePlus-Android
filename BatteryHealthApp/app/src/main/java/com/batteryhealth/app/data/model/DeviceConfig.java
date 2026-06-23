@@ -66,6 +66,13 @@ public class DeviceConfig {
     private String activationSource; // 激活日期来源
     private float activationConfidence; // 激活日期可信度 0-1
     
+    // BugReport 数据
+    private String bugreportProcessor;    // BugReport解析出的处理器
+    private String bugreportGpu;         // BugReport解析出的GPU
+    private int bugreportCycleCount;     // BugReport解析出的循环次数
+    private int bugreportBatteryMah;     // BugReport解析出的电池容量
+    private long bugreportTimestamp;     // BugReport解析时间
+    
     public DeviceConfig() {
         // 初始化基本信息
         this.brand = Build.BRAND;
@@ -401,6 +408,17 @@ public class DeviceConfig {
     public void setActivationConfidence(float activationConfidence) {
         this.activationConfidence = activationConfidence;
     }
+
+    public String getBugreportProcessor() { return bugreportProcessor; }
+    public void setBugreportProcessor(String v) { this.bugreportProcessor = v; }
+    public String getBugreportGpu() { return bugreportGpu; }
+    public void setBugreportGpu(String v) { this.bugreportGpu = v; }
+    public int getBugreportCycleCount() { return bugreportCycleCount; }
+    public void setBugreportCycleCount(int v) { this.bugreportCycleCount = v; }
+    public int getBugreportBatteryMah() { return bugreportBatteryMah; }
+    public void setBugreportBatteryMah(int v) { this.bugreportBatteryMah = v; }
+    public long getBugreportTimestamp() { return bugreportTimestamp; }
+    public void setBugreportTimestamp(long v) { this.bugreportTimestamp = v; }
 
     /**
      * 获取格式化的品牌名（国内品牌返回中文营销名）。

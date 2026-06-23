@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BugReportGuide;
+import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BugReportAnalyzer;
 
 import java.io.File;
@@ -190,6 +191,20 @@ public class GuideFragment extends Fragment {
                     File tempFile = copyUriToTempFile(ctx, uri, fileName);
                     if (tempFile != null) {
                         BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
+
+                        // Inject bugreport data into BatteryDataManager for use by other modules
+                        try {
+                            if (getActivity() instanceof com.batteryhealth.app.MainActivity) {
+                                com.batteryhealth.app.MainActivity activity = (com.batteryhealth.app.MainActivity) getActivity();
+                                BatteryDataManager bdm = activity.getBatteryDataManager();
+                                if (bdm != null) {
+                                    bdm.setBugreportData(result);
+                                    Log.d(TAG, "Bugreport data injected into BatteryDataManager");
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to inject bugreport data: " + e.getMessage());
+                        }
 
                         if (isAdded()) {
                             mainHandler.post(() -> {

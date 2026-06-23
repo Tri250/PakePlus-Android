@@ -12,6 +12,7 @@ import androidx.annotation.WorkerThread;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.BugReportGuide;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,6 +55,8 @@ public class BatteryDataManager {
     private String chargingStatusText;
     private String healthSourceText;
     private String batterySourceText;
+
+    private BugReportGuide.AnalysisResult bugreportData;
 
     // 中值滤波缓冲
     private final List<Float> healthBuffer = new ArrayList<>();
@@ -209,6 +212,46 @@ public class BatteryDataManager {
         info.setTimestamp(System.currentTimeMillis());
         info.setDeviceModel(Build.MODEL);
         info.setDeviceBrand(Build.BRAND);
+
+        // 如果有 bugreport 数据，优先使用其中的电池信息
+        if (bugreportData != null && bugreportData.deviceInfo != null) {
+            BugReportGuide.AnalysisResult.DeviceInfo di = bugreportData.deviceInfo;
+            // 使用 bugreport 中的设计容量（如果当前获取失败）
+            if (di.batteryCapacity > 0 && info.getDesignCapacity() <= 0) {
+                info.setDesignCapacity(di.batteryCapacity);
+                info.setDesignCapacitySource("bugreport");
+            }
+            // 使用 bugreport 中的循环次数
+            if (di.cycleCount > 0 && info.getCycleCount() < 0) {
+                info.setCycleCount(di.cycleCount);
+                info.setCycleCountSource("bugreport");
+                info.setCycleCountEstimated(false);
+            }
+            // 使用 bugreport 中的当前满充容量
+            if (di.currentCapacity > 0 && info.getCurrentCapacity() <= 0) {
+                info.setCurrentCapacity(di.currentCapacity);
+                info.setCurrentCapacitySource("bugreport");
+            }
+            // 使用 bugreport 中的温度
+            if (di.temperature > 0 && info.getTemperature() <= 0) {
+                info.setTemperature(di.temperature);
+            }
+            // 使用 bugreport 中的电压
+            if (di.voltage > 0 && info.getVoltage() <= 0) {
+                info.setVoltage(di.voltage);
+            }
+            // 使用 bugreport 中的电池技术
+            if (di.technology != null && !di.technology.isEmpty() && info.getTechnology() != null
+                    && info.getTechnology().equals(context.getString(R.string.battery_technology_default))) {
+                info.setTechnology(di.technology);
+            }
+            // 使用 bugreport 中的健康状态重新计算健康度
+            if (di.healthPercentage > 0 && info.getHealthPercentage() <= 0) {
+                info.setHealthPercentage(di.healthPercentage);
+                info.setHealthConfidence(0.95f);
+                info.setHealthDataSource("bugreport");
+            }
+        }
 
         Intent intent = registerBatteryReceiver();
         if (intent == null) return info;
@@ -1039,6 +1082,22 @@ public class BatteryDataManager {
 
     public void setUsageDays(int days) {
         this.usageDays = days;
+    }
+
+    /**
+     * 接受 BugReportAnalyzer 解析出的电池数据。
+     * 当用户通过上传 bugreport 分析电池信息时，调用此方法将数据注入 BatteryDataManager，
+     * 使其在后续 getBatteryInfo() 中可用。
+     */
+    public void setBugreportData(BugReportGuide.AnalysisResult result) {
+        this.bugreportData = result;
+    }
+
+    /**
+     * 获取已注入的 bugreport 电池数据。
+     */
+    public BugReportGuide.AnalysisResult getBugreportData() {
+        return bugreportData;
     }
 
     /**
