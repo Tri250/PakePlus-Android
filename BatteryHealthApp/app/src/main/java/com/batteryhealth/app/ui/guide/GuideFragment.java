@@ -86,49 +86,69 @@ public class GuideFragment extends Fragment {
     }
 
     private void addSection(String title, String subtitle) {
-        View sectionView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.item_guide_section, guideContainer, false);
-        
-        TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
-        TextView tvSubtitle = sectionView.findViewById(R.id.tv_section_subtitle);
-        
-        tvTitle.setText(title);
-        if (subtitle != null) {
-            tvSubtitle.setText(subtitle);
-            tvSubtitle.setVisibility(View.VISIBLE);
-        } else {
-            tvSubtitle.setVisibility(View.GONE);
+        if (guideContainer == null) return;
+        try {
+            View sectionView = LayoutInflater.from(requireContext())
+                    .inflate(R.layout.item_guide_section, guideContainer, false);
+
+            TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
+            TextView tvSubtitle = sectionView.findViewById(R.id.tv_section_subtitle);
+
+            tvTitle.setText(title);
+            if (subtitle != null) {
+                tvSubtitle.setText(subtitle);
+                tvSubtitle.setVisibility(View.VISIBLE);
+            } else {
+                tvSubtitle.setVisibility(View.GONE);
+            }
+
+            guideContainer.addView(sectionView);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding section: " + e.getMessage());
         }
-        
-        guideContainer.addView(sectionView);
     }
 
     private void addListItem(String text) {
-        TextView tv = new TextView(requireContext());
-        tv.setText(text);
-        tv.setTextAppearance(requireContext(), R.style.WebListLabel);
-        tv.setPadding(dpToPx(32), dpToPx(8), dpToPx(16), dpToPx(8));
-        tv.setTextSize(15);
-        guideContainer.addView(tv);
+        if (guideContainer == null) return;
+        try {
+            TextView tv = new TextView(requireContext());
+            tv.setText(text);
+            tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+            tv.setPadding(dpToPx(32), dpToPx(8), dpToPx(16), dpToPx(8));
+            tv.setTextSize(15);
+            guideContainer.addView(tv);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding list item: " + e.getMessage());
+        }
     }
 
     private void addCodeItem(String code) {
-        View codeView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.item_guide_code, guideContainer, false);
-        
-        TextView tvCode = codeView.findViewById(R.id.tv_code);
-        tvCode.setText(code);
-        
-        guideContainer.addView(codeView);
+        if (guideContainer == null) return;
+        try {
+            View codeView = LayoutInflater.from(requireContext())
+                    .inflate(R.layout.item_guide_code, guideContainer, false);
+
+            TextView tvCode = codeView.findViewById(R.id.tv_code);
+            tvCode.setText(code);
+
+            guideContainer.addView(codeView);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding code item: " + e.getMessage());
+        }
     }
 
     private void addNoteItem(String note) {
-        TextView tv = new TextView(requireContext());
-        tv.setText("• " + note);
-        tv.setTextAppearance(requireContext(), R.style.WebListValue);
-        tv.setPadding(dpToPx(32), dpToPx(4), dpToPx(16), dpToPx(4));
-        tv.setTextSize(14);
-        guideContainer.addView(tv);
+        if (guideContainer == null) return;
+        try {
+            TextView tv = new TextView(requireContext());
+            tv.setText("• " + note);
+            tv.setTextAppearance(requireContext(), R.style.WebListValue);
+            tv.setPadding(dpToPx(32), dpToPx(4), dpToPx(16), dpToPx(4));
+            tv.setTextSize(14);
+            guideContainer.addView(tv);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding note item: " + e.getMessage());
+        }
     }
 
     private void pickBugReportFile() {
@@ -245,115 +265,125 @@ public class GuideFragment extends Fragment {
     }
 
     private void showAnalysisResult(BugReportGuide.AnalysisResult result) {
-        analysisResultContainer.removeAllViews();
-        
-        if (result.summary != null) {
-            StringBuilder summary = new StringBuilder();
-            summary.append("分析完成\n\n");
-            summary.append("设备健康度: ").append(result.summary.overallHealth).append("\n");
-            summary.append("充电次数: ").append(result.summary.totalChargeSessions).append(" 次\n");
-            summary.append("平均充电功率: ").append(String.format("%.1f", result.summary.avgChargePower)).append(" W\n");
-            summary.append("异常数量: ").append(result.summary.anomalyCount).append(" (严重: ").append(result.summary.criticalAnomalyCount).append(")\n");
-            if (result.batteryEvents != null) {
-                summary.append("Bugreport 事件数: ").append(result.batteryEvents.size()).append("\n");
+        if (analysisResultContainer == null || tvAnalysisSummary == null) return;
+        try {
+            analysisResultContainer.removeAllViews();
+
+            if (result != null && result.summary != null) {
+                StringBuilder summary = new StringBuilder();
+                summary.append("分析完成\n\n");
+                summary.append("设备健康度: ").append(result.summary.overallHealth).append("\n");
+                summary.append("充电次数: ").append(result.summary.totalChargeSessions).append(" 次\n");
+                summary.append("平均充电功率: ").append(String.format("%.1f", result.summary.avgChargePower)).append(" W\n");
+                summary.append("异常数量: ").append(result.summary.anomalyCount).append(" (严重: ").append(result.summary.criticalAnomalyCount).append(")\n");
+                if (result.batteryEvents != null) {
+                    summary.append("Bugreport 事件数: ").append(result.batteryEvents.size()).append("\n");
+                }
+
+                tvAnalysisSummary.setText(summary.toString());
+                tvAnalysisSummary.setVisibility(View.VISIBLE);
             }
-            
-            tvAnalysisSummary.setText(summary.toString());
-            tvAnalysisSummary.setVisibility(View.VISIBLE);
-        }
 
-        if (result.anomalies != null && !result.anomalies.isEmpty()) {
-            addAnalysisSection("异常检测结果", null);
-            
-            for (BugReportGuide.AnalysisResult.Anomaly anomaly : result.anomalies) {
-                View itemView = LayoutInflater.from(requireContext())
-                        .inflate(R.layout.item_analysis_anomaly, analysisResultContainer, false);
-                
-                TextView tvSeverity = itemView.findViewById(R.id.tv_severity);
-                TextView tvType = itemView.findViewById(R.id.tv_type);
-                TextView tvDesc = itemView.findViewById(R.id.tv_description);
-                TextView tvSuggestion = itemView.findViewById(R.id.tv_suggestion);
-                
-                tvSeverity.setText(anomaly.severity);
-                tvSeverity.setTextColor(getSeverityColor(anomaly.severity));
-                tvType.setText(anomaly.type);
-                tvDesc.setText(anomaly.description);
-                tvSuggestion.setText("建议: " + anomaly.suggestion);
-                
-                analysisResultContainer.addView(itemView);
+            if (result != null && result.anomalies != null && !result.anomalies.isEmpty()) {
+                addAnalysisSection("异常检测结果", null);
+
+                for (BugReportGuide.AnalysisResult.Anomaly anomaly : result.anomalies) {
+                    View itemView = LayoutInflater.from(requireContext())
+                            .inflate(R.layout.item_analysis_anomaly, analysisResultContainer, false);
+
+                    TextView tvSeverity = itemView.findViewById(R.id.tv_severity);
+                    TextView tvType = itemView.findViewById(R.id.tv_type);
+                    TextView tvDesc = itemView.findViewById(R.id.tv_description);
+                    TextView tvSuggestion = itemView.findViewById(R.id.tv_suggestion);
+
+                    tvSeverity.setText(anomaly.severity);
+                    tvSeverity.setTextColor(getSeverityColor(anomaly.severity));
+                    tvType.setText(anomaly.type);
+                    tvDesc.setText(anomaly.description);
+                    tvSuggestion.setText("建议: " + anomaly.suggestion);
+
+                    analysisResultContainer.addView(itemView);
+                }
             }
-        }
 
-        if (result.batteryEvents != null && !result.batteryEvents.isEmpty()) {
-            addAnalysisSection("Bugreport 关键指标", "从 bugreport 解析出的电池/性能指标");
+            if (result != null && result.batteryEvents != null && !result.batteryEvents.isEmpty()) {
+                addAnalysisSection("Bugreport 关键指标", "从 bugreport 解析出的电池/性能指标");
 
-            for (BugReportGuide.AnalysisResult.BatteryEvent event : result.batteryEvents) {
-                String time = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
-                        .format(new java.util.Date(event.timestamp));
-                String info = String.format("[%s] %s - %s",
-                        time, event.type != null ? event.type : "未知",
-                        event.detail != null ? event.detail : "");
+                for (BugReportGuide.AnalysisResult.BatteryEvent event : result.batteryEvents) {
+                    String time = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                            .format(new java.util.Date(event.timestamp));
+                    String info = String.format("[%s] %s - %s",
+                            time, event.type != null ? event.type : "未知",
+                            event.detail != null ? event.detail : "");
 
-                TextView tv = new TextView(requireContext());
-                tv.setText(info);
-                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
-                tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
-                tv.setTextIsSelectable(true);
-                analysisResultContainer.addView(tv);
+                    TextView tv = new TextView(requireContext());
+                    tv.setText(info);
+                    tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                    tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
+                    tv.setTextIsSelectable(true);
+                    analysisResultContainer.addView(tv);
+                }
             }
-        }
 
-        if (result.chargeSessions != null && !result.chargeSessions.isEmpty()) {
-            addAnalysisSection("充电会话统计", null);
-            
-            for (BugReportGuide.AnalysisResult.ChargeSession session : result.chargeSessions) {
-                String duration = formatDuration(session.endTime - session.startTime);
-                String info = String.format("电量: %d%%→%d%%, 时长: %s, 功率: %.1fW (最高: %.1fW)",
-                        session.startLevel, session.endLevel, duration, session.avgPower, session.maxPower);
-                
-                TextView tv = new TextView(requireContext());
-                tv.setText(info);
-                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
-                tv.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
-                analysisResultContainer.addView(tv);
+            if (result != null && result.chargeSessions != null && !result.chargeSessions.isEmpty()) {
+                addAnalysisSection("充电会话统计", null);
+
+                for (BugReportGuide.AnalysisResult.ChargeSession session : result.chargeSessions) {
+                    String duration = formatDuration(session.endTime - session.startTime);
+                    String info = String.format("电量: %d%%→%d%%, 时长: %s, 功率: %.1fW (最高: %.1fW)",
+                            session.startLevel, session.endLevel, duration, session.avgPower, session.maxPower);
+
+                    TextView tv = new TextView(requireContext());
+                    tv.setText(info);
+                    tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                    tv.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
+                    analysisResultContainer.addView(tv);
+                }
             }
-        }
 
-        if (result.wakelocks != null && !result.wakelocks.isEmpty()) {
-            addAnalysisSection("耗电应用排行", null);
-            
-            for (BugReportGuide.AnalysisResult.AppWakelock wakelock : result.wakelocks) {
-                String info = String.format("%s (%s) - 唤醒 %d 次, 持续 %s",
-                        wakelock.appName, wakelock.packageName, wakelock.count, 
-                        formatDuration(wakelock.durationMs));
-                
-                TextView tv = new TextView(requireContext());
-                tv.setText(info);
-                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
-                tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
-                analysisResultContainer.addView(tv);
+            if (result != null && result.wakelocks != null && !result.wakelocks.isEmpty()) {
+                addAnalysisSection("耗电应用排行", null);
+
+                for (BugReportGuide.AnalysisResult.AppWakelock wakelock : result.wakelocks) {
+                    String info = String.format("%s (%s) - 唤醒 %d 次, 持续 %s",
+                            wakelock.appName, wakelock.packageName, wakelock.count,
+                            formatDuration(wakelock.durationMs));
+
+                    TextView tv = new TextView(requireContext());
+                    tv.setText(info);
+                    tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                    tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
+                    analysisResultContainer.addView(tv);
+                }
             }
-        }
 
-        analysisResultContainer.setVisibility(View.VISIBLE);
+            analysisResultContainer.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing analysis result: " + e.getMessage());
+        }
     }
 
     private void addAnalysisSection(String title, String subtitle) {
-        View sectionView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.item_guide_section, analysisResultContainer, false);
-        
-        TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
-        TextView tvSubtitle = sectionView.findViewById(R.id.tv_section_subtitle);
-        
-        tvTitle.setText(title);
-        if (subtitle != null) {
-            tvSubtitle.setText(subtitle);
-            tvSubtitle.setVisibility(View.VISIBLE);
-        } else {
-            tvSubtitle.setVisibility(View.GONE);
+        if (analysisResultContainer == null) return;
+        try {
+            View sectionView = LayoutInflater.from(requireContext())
+                    .inflate(R.layout.item_guide_section, analysisResultContainer, false);
+
+            TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
+            TextView tvSubtitle = sectionView.findViewById(R.id.tv_section_subtitle);
+
+            tvTitle.setText(title);
+            if (subtitle != null) {
+                tvSubtitle.setText(subtitle);
+                tvSubtitle.setVisibility(View.VISIBLE);
+            } else {
+                tvSubtitle.setVisibility(View.GONE);
+            }
+
+            analysisResultContainer.addView(sectionView);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding analysis section: " + e.getMessage());
         }
-        
-        analysisResultContainer.addView(sectionView);
     }
 
     private int getSeverityColor(String severity) {

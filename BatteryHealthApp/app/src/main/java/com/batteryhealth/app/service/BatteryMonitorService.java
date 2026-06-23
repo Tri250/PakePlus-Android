@@ -94,8 +94,11 @@ public class BatteryMonitorService extends Service {
         public void run() {
             if (!isRunning) return;
 
+            // 修复：handler 为 null 时不应继续调度
+            if (handler == null) return;
+
             // 耗时读取与 DB 写入下沉到 ioExecutor
-            if (ioExecutor != null) {
+            if (ioExecutor != null && !ioExecutor.isShutdown()) {
                 ioExecutor.submit(() -> {
                     try {
                         if (batteryDataManager != null) {
@@ -110,8 +113,9 @@ public class BatteryMonitorService extends Service {
                     }
 
                     // 通知与 UI 回调放回主线程
-                    if (handler != null) {
-                        handler.post(() -> {
+                    Handler h = handler;
+                    if (h != null) {
+                        h.post(() -> {
                             if (!isRunning) return;
                             if (dataListener != null && currentBatteryInfo != null) {
                                 dataListener.onBatteryDataUpdated(currentBatteryInfo);
@@ -128,8 +132,9 @@ public class BatteryMonitorService extends Service {
                 });
             }
 
-            if (handler != null) {
-                handler.postDelayed(this, UPDATE_INTERVAL);
+            Handler h = handler;
+            if (h != null) {
+                h.postDelayed(this, UPDATE_INTERVAL);
             }
         }
     };
@@ -189,8 +194,15 @@ public class BatteryMonitorService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
             // 用户主动停止服务后，再次通过闹钟重启时清除标志
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            prefs.edit().putBoolean(PREF_USER_STOPPED_SERVICE, false).apply();
+            // 修复：prefs 可能为 null（onCreate 异常时），做防御性初始化
+            SharedPreferences localPrefs;
+            try {
+                localPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                localPrefs.edit().putBoolean(PREF_USER_STOPPED_SERVICE, false).apply();
+            } catch (Exception e) {
+                Log.e(TAG, "Error accessing SharedPreferences in onStartCommand: " + e.getMessage());
+                localPrefs = null;
+            }
 
             if (!isRunning) {
                 isRunning = true;
@@ -222,7 +234,8 @@ public class BatteryMonitorService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error in onStartCommand: " + e.getMessage());
         }
-        return START_STICKY;
+        // 修复：若前台启动失败已返回 START_NOT_STICKY，此处仅在正常流程到达
+        return isRunning ? START_STICKY : START_NOT_STICKY;
     }
 
     @Override
@@ -555,6 +568,10 @@ public class BatteryMonitorService extends Service {
     
     /**
      * 保存电池数据到数据库
+     * 修复点：
+     * 1. copy() 异常时捕获，避免 NPE 崩溃
+     * 2. ioExecutor shutdown 后不再提交任务
+     * 3. getApplicationContext() 异常时做兜底
      */
     private void saveBatteryData() {
         if (currentBatteryInfo == null) return;
@@ -575,22 +592,34 @@ public class BatteryMonitorService extends Service {
         }
 
         // 先深拷贝，避免后台写入时修改 currentBatteryInfo 影响 UI/通知数据流
-        final BatteryInfo snapshot = currentBatteryInfo.copy();
-        if (snapshot == null) return;
+        final BatteryInfo snapshot;
+        final BatteryInfo lastSnapshot;
+        try {
+            snapshot = currentBatteryInfo.copy();
+            if (snapshot == null) return;
+            lastSnapshot = snapshot.copy();
+        } catch (Exception e) {
+            Log.e(TAG, "Error copying BatteryInfo: " + e.getMessage());
+            return;
+        }
 
         snapshot.setId(0);
         snapshot.setTimestamp(System.currentTimeMillis());
         snapshot.setDeviceModel(android.os.Build.MODEL);
         snapshot.setDeviceBrand(android.os.Build.BRAND);
 
-        lastSavedBatteryInfo = snapshot.copy();
+        lastSavedBatteryInfo = lastSnapshot;
 
         // 复用 ioExecutor 而非创建新线程，避免多线程并发写入 Room 数据库
-        if (ioExecutor != null) {
+        if (ioExecutor != null && !ioExecutor.isShutdown()) {
             ioExecutor.submit(() -> {
                 try {
+                    android.content.Context appCtx = getApplicationContext();
+                    if (!(appCtx instanceof com.batteryhealth.app.BatteryHealthApplication)) {
+                        return;
+                    }
                     com.batteryhealth.app.BatteryHealthApplication app =
-                        (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                        (com.batteryhealth.app.BatteryHealthApplication) appCtx;
                     com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                     if (db != null) {
                         db.batteryInfoDao().insert(snapshot);

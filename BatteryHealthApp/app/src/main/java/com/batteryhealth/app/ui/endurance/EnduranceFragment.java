@@ -75,8 +75,12 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            // 动画加载失败静默处理
+        }
     }
 
     @Override
@@ -148,137 +152,153 @@ public class EnduranceFragment extends Fragment {
     }
 
     private void updateFromIntent(Intent intent) {
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        int batteryPct = (int) ((level / (float) scale) * 100);
+        if (intent == null || !isAdded()) return;
+        try {
+            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            int batteryPct = (int) ((level / (float) scale) * 100);
 
-        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
-                || status == BatteryManager.BATTERY_STATUS_FULL;
-        String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
+            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
+                    || status == BatteryManager.BATTERY_STATUS_FULL;
+            String chargingStatus = isCharging ? getString(R.string.status_charging) : getString(R.string.status_discharging);
 
-        int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
-        float tempC = temp / 10f;
+            int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
+            float tempC = temp / 10f;
 
-        // 通过 BatteryConsumptionAnalyzer 获取真实耗电分析
-        if (lastAnalysisResult == null) {
-            runAnalysisAsync();
-        }
+            // 通过 BatteryConsumptionAnalyzer 获取真实耗电分析
+            if (lastAnalysisResult == null) {
+                runAnalysisAsync();
+            }
 
-        // 从分析结果获取真实放电速率
-        BatteryConsumptionAnalyzer.Result analysis = lastAnalysisResult;
-        if (analysis != null && analysis.systemEstimatedHours > 0 && batteryPct > 0) {
-            // 根据系统预估续航和当前电量反算真实放电速率
-            dischargeRate = batteryPct / (float) analysis.systemEstimatedHours;
-        }
+            // 从分析结果获取真实放电速率
+            BatteryConsumptionAnalyzer.Result analysis = lastAnalysisResult;
+            if (analysis != null && analysis.systemEstimatedHours > 0 && batteryPct > 0) {
+                // 根据系统预估续航和当前电量反算真实放电速率
+                dischargeRate = batteryPct / (float) analysis.systemEstimatedHours;
+            }
 
-        // 如果分析结果不可用，从 BatteryDataManager 获取电流数据估算放电速率
-        if (dischargeRate <= 0) {
-            BatteryDataManager bdm = getBatteryDataManager();
-            if (bdm != null) {
-                int currentMa = bdm.readCurrentMa();
-                if (currentMa != 0) {
-                    // 通过电流和容量估算放电速率
-                    BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
-                    if (bm != null) {
-                        int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-                        if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                            capacityMicroAh = bm.getIntProperty(24); // BATTERY_PROPERTY_CHARGE_FULL
-                        }
-                        int capacityMah = -1;
-                        if (capacityMicroAh > 100000) {
-                            capacityMah = capacityMicroAh / 1000;
-                        } else if (capacityMicroAh > 100) {
-                            capacityMah = capacityMicroAh;
-                        }
-                        if (capacityMah > 0 && batteryPct > 0) {
-                            float remainingMah = capacityMah * (batteryPct / 100f);
-                            float absCurrentMa = Math.abs(currentMa);
-                            if (absCurrentMa > 0) {
-                                float remainingHours = remainingMah / absCurrentMa;
-                                dischargeRate = batteryPct / remainingHours;
+            // 如果分析结果不可用，从 BatteryDataManager 获取电流数据估算放电速率
+            if (dischargeRate <= 0) {
+                BatteryDataManager bdm = getBatteryDataManager();
+                if (bdm != null) {
+                    int currentMa = bdm.readCurrentMa();
+                    if (currentMa != 0) {
+                        // 通过电流和容量估算放电速率
+                        BatteryManager bm = (BatteryManager) requireContext().getSystemService(Context.BATTERY_SERVICE);
+                        if (bm != null) {
+                            int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                            if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
+                                capacityMicroAh = bm.getIntProperty(24); // BATTERY_PROPERTY_CHARGE_FULL
+                            }
+                            int capacityMah = -1;
+                            if (capacityMicroAh > 100000) {
+                                capacityMah = capacityMicroAh / 1000;
+                            } else if (capacityMicroAh > 100) {
+                                capacityMah = capacityMicroAh;
+                            }
+                            if (capacityMah > 0 && batteryPct > 0) {
+                                float remainingMah = capacityMah * (batteryPct / 100f);
+                                float absCurrentMa = Math.abs(currentMa);
+                                if (absCurrentMa > 0) {
+                                    float remainingHours = remainingMah / absCurrentMa;
+                                    dischargeRate = batteryPct / remainingHours;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Endurance estimate
-        float remainingHours;
-        if (analysis != null && analysis.systemEstimatedHours > 0) {
-            // 使用系统预估续航（基于当前电量比例）
-            remainingHours = (float) analysis.systemEstimatedHours;
-        } else if (dischargeRate > 0) {
-            remainingHours = batteryPct / dischargeRate;
-        } else {
-            remainingHours = 0;
-        }
-
-        int hours = (int) remainingHours;
-        int minutes = (int) ((remainingHours - hours) * 60);
-        tvEnduranceHours.setText(String.valueOf(hours));
-        tvEnduranceMeta.setText(String.format(Locale.getDefault(),
-                getString(R.string.meta_endurance), batteryPct, dischargeRate));
-
-        // Quick metrics
-        tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
-        tvMetricTemp.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-
-        // Details
-        tvChargingStatus.setText(chargingStatus);
-        tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
-        tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
-
-        // 预计充满时间：充电时使用 BatteryConsumptionAnalyzer 的系统预估
-        if (isCharging) {
+            // Endurance estimate
+            float remainingHours;
             if (analysis != null && analysis.systemEstimatedHours > 0) {
-                // 充电时 systemEstimatedHours 表示充满预估
-                int fullHours = (int) analysis.systemEstimatedHours;
-                int fullMinutes = (int) ((analysis.systemEstimatedHours - fullHours) * 60);
-                tvEstimatedFull.setText(String.format(Locale.getDefault(), "%d小时%d分", fullHours, fullMinutes));
+                // 使用系统预估续航（基于当前电量比例）
+                remainingHours = (float) analysis.systemEstimatedHours;
+            } else if (dischargeRate > 0) {
+                remainingHours = batteryPct / dischargeRate;
             } else {
-                tvEstimatedFull.setText(getString(R.string.status_calculating));
+                remainingHours = 0;
             }
-        } else {
-            // 放电时显示预估续航时间
-            if (remainingHours > 0) {
-                int estHours = (int) remainingHours;
-                int estMinutes = (int) ((remainingHours - estHours) * 60);
-                tvEstimatedFull.setText(String.format(Locale.getDefault(), "%d小时%d分", estHours, estMinutes));
+
+            int hours = (int) remainingHours;
+            int minutes = (int) ((remainingHours - hours) * 60);
+            if (tvEnduranceHours != null) tvEnduranceHours.setText(String.valueOf(hours));
+            if (tvEnduranceMeta != null) tvEnduranceMeta.setText(String.format(Locale.getDefault(),
+                    getString(R.string.meta_endurance), batteryPct, dischargeRate));
+
+            // Quick metrics
+            if (tvMetricBattery != null) tvMetricBattery.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+            if (tvMetricDischarge != null) tvMetricDischarge.setText(String.format(Locale.getDefault(), "%.1f%%/h", dischargeRate));
+            if (tvMetricTemp != null) tvMetricTemp.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+
+            // Details
+            if (tvChargingStatus != null) tvChargingStatus.setText(chargingStatus);
+            if (tvUsedTime != null) tvUsedTime.setText(formatDuration(SystemClock.elapsedRealtime()));
+            if (tvConsumedBattery != null) tvConsumedBattery.setText(String.format(Locale.getDefault(), "%d%%", 100 - batteryPct));
+
+            // 预计充满时间：充电时使用 BatteryConsumptionAnalyzer 的系统预估
+            if (isCharging) {
+                if (analysis != null && analysis.systemEstimatedHours > 0) {
+                    // 充电时 systemEstimatedHours 表示充满预估
+                    int fullHours = (int) analysis.systemEstimatedHours;
+                    int fullMinutes = (int) ((analysis.systemEstimatedHours - fullHours) * 60);
+                    if (tvEstimatedFull != null)
+                        tvEstimatedFull.setText(String.format(Locale.getDefault(), "%d小时%d分", fullHours, fullMinutes));
+                } else {
+                    if (tvEstimatedFull != null)
+                        tvEstimatedFull.setText(getString(R.string.status_calculating));
+                }
             } else {
-                tvEstimatedFull.setText("--");
+                // 放电时显示预估续航时间
+                if (remainingHours > 0) {
+                    int estHours = (int) remainingHours;
+                    int estMinutes = (int) ((remainingHours - estHours) * 60);
+                    if (tvEstimatedFull != null)
+                        tvEstimatedFull.setText(String.format(Locale.getDefault(), "%d小时%d分", estHours, estMinutes));
+                } else {
+                    if (tvEstimatedFull != null) tvEstimatedFull.setText("--");
+                }
             }
+
+            // 使用 UsageStatsManager 获取真实屏幕亮屏时间
+            long screenOnTimeMs = queryScreenOnTime();
+            if (tvScreenOnTime != null) tvScreenOnTime.setText(formatDuration(screenOnTimeMs));
+
+            updatePowerRanking();
+            updateWearableData();
+        } catch (Exception e) {
+            // 静默处理，避免定时刷新时崩溃
         }
-
-        // 使用 UsageStatsManager 获取真实屏幕亮屏时间
-        long screenOnTimeMs = queryScreenOnTime();
-        tvScreenOnTime.setText(formatDuration(screenOnTimeMs));
-
-        updatePowerRanking();
-        updateWearableData();
     }
 
     private void updatePowerRanking() {
-        if (lastAnalysisResult != null) {
-            tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.screenPowerPercent));
-            tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.systemPowerPercent));
-            tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.appsPowerPercent));
-        } else {
-            tvScreenPower.setText("35%");
-            tvSystemPower.setText("25%");
-            tvAppsPower.setText("40%");
+        try {
+            if (lastAnalysisResult != null) {
+                if (tvScreenPower != null) tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                        lastAnalysisResult.screenPowerPercent));
+                if (tvSystemPower != null) tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                        lastAnalysisResult.systemPowerPercent));
+                if (tvAppsPower != null) tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%",
+                        lastAnalysisResult.appsPowerPercent));
+            } else {
+                if (tvScreenPower != null) tvScreenPower.setText("35%");
+                if (tvSystemPower != null) tvSystemPower.setText("25%");
+                if (tvAppsPower != null) tvAppsPower.setText("40%");
+            }
+        } catch (Exception e) {
+            // 静默处理
         }
     }
 
     private void updateWearableData() {
-        tvWearableStatus.setText(getString(R.string.status_not_connected));
-        tvWearableBattery.setText("--");
-        tvWearableEndurance.setText("--");
+        try {
+            if (tvWearableStatus != null) tvWearableStatus.setText(getString(R.string.status_not_connected));
+            if (tvWearableBattery != null) tvWearableBattery.setText("--");
+            if (tvWearableEndurance != null) tvWearableEndurance.setText("--");
+        } catch (Exception e) {
+            // 静默处理
+        }
     }
 
     /**

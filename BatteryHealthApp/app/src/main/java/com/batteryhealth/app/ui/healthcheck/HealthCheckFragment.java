@@ -115,18 +115,22 @@ public class HealthCheckFragment extends Fragment {
         if (engine == null) return;
         if (engine.isRunning()) return;
 
-        tvActionCheck.setEnabled(false);
-        tvActionCheck.setText(R.string.health_check_action_checking);
-        if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
-        if (tvScanningStatus != null) {
-            tvScanningStatus.setVisibility(View.VISIBLE);
-            tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
-        }
-        // 综合评分先重置
-        tvOverallScore.setText("--");
-        tvOverallLabel.setText(R.string.health_check_label_running);
-        if (progressOverall != null) {
-            progressOverall.setProgress(0);
+        try {
+            tvActionCheck.setEnabled(false);
+            tvActionCheck.setText(R.string.health_check_action_checking);
+            if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
+            if (tvScanningStatus != null) {
+                tvScanningStatus.setVisibility(View.VISIBLE);
+                tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
+            }
+            // 综合评分先重置
+            if (tvOverallScore != null) tvOverallScore.setText("--");
+            if (tvOverallLabel != null) tvOverallLabel.setText(R.string.health_check_label_running);
+            if (progressOverall != null) {
+                progressOverall.setProgress(0);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting check UI: " + e.getMessage());
         }
 
         Context ctx = getContext();
@@ -134,6 +138,7 @@ public class HealthCheckFragment extends Fragment {
             @Override
             public void onProgress(final int percent) {
                 mainHandler.post(() -> {
+                    if (!isAdded()) return;
                     if (tvScanningStatus != null) {
                         tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", percent));
                     }
@@ -142,12 +147,15 @@ public class HealthCheckFragment extends Fragment {
 
             @Override
             public void onCompleted(final List<HealthCheckResult> results) {
-                mainHandler.post(() -> renderResults(results));
+                mainHandler.post(() -> {
+                    if (isAdded()) renderResults(results);
+                });
             }
 
             @Override
             public void onError(final String message) {
                 mainHandler.post(() -> {
+                    if (!isAdded()) return;
                     Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
                     finishCheckingUI();
                 });
@@ -156,34 +164,45 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void renderResults(List<HealthCheckResult> results) {
-        lastResults = results != null ? results : new ArrayList<>();
-        if (adapter != null) adapter.setData(lastResults);
+        if (!isAdded()) return;
+        try {
+            lastResults = results != null ? results : new ArrayList<>();
+            if (adapter != null) adapter.setData(lastResults);
 
-        int score = engine != null ? engine.getOverallScore(lastResults) : 0;
-        if (tvOverallScore != null) {
-            tvOverallScore.setText(String.format(Locale.getDefault(), "%d", score));
-        }
-        if (tvOverallLabel != null) {
-            String label;
-            if (score >= 85) label = getString(R.string.health_check_score_excellent);
-            else if (score >= 70) label = getString(R.string.health_check_score_good);
-            else if (score >= 50) label = getString(R.string.health_check_score_normal);
-            else if (score >= 30) label = getString(R.string.health_check_score_warning);
-            else label = getString(R.string.health_check_score_critical);
-            tvOverallLabel.setText(label);
-        }
-        if (progressOverall != null) {
-            progressOverall.setProgress(Math.max(0, Math.min(100, score)));
-        }
+            int score = engine != null ? engine.getOverallScore(lastResults) : 0;
+            if (tvOverallScore != null) {
+                tvOverallScore.setText(String.format(Locale.getDefault(), "%d", score));
+            }
+            if (tvOverallLabel != null) {
+                String label;
+                if (score >= 85) label = getString(R.string.health_check_score_excellent);
+                else if (score >= 70) label = getString(R.string.health_check_score_good);
+                else if (score >= 50) label = getString(R.string.health_check_score_normal);
+                else if (score >= 30) label = getString(R.string.health_check_score_warning);
+                else label = getString(R.string.health_check_score_critical);
+                tvOverallLabel.setText(label);
+            }
+            if (progressOverall != null) {
+                progressOverall.setProgress(Math.max(0, Math.min(100, score)));
+            }
 
-        finishCheckingUI();
+            finishCheckingUI();
+        } catch (Exception e) {
+            Log.e(TAG, "Error rendering results: " + e.getMessage());
+        }
     }
 
     private void finishCheckingUI() {
-        tvActionCheck.setEnabled(true);
-        tvActionCheck.setText(R.string.health_check_action_recheck);
-        if (progressScanning != null) progressScanning.setVisibility(View.GONE);
-        if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.GONE);
+        try {
+            if (tvActionCheck != null) {
+                tvActionCheck.setEnabled(true);
+                tvActionCheck.setText(R.string.health_check_action_recheck);
+            }
+            if (progressScanning != null) progressScanning.setVisibility(View.GONE);
+            if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.GONE);
+        } catch (Exception e) {
+            Log.e(TAG, "Error finishing check UI: " + e.getMessage());
+        }
     }
 
     private void exportReport() {

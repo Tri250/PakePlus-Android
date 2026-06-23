@@ -60,29 +60,45 @@ public class BatteryHealthApplication extends Application {
 
     /**
      * 注册全局未捕获异常处理器，所有未处理异常都会跳转到 ErrorActivity。
+     * 修复点：
+     * 1. 避免在 Activity 创建异常时二次崩溃（加 try-catch）
+     * 2. 避免重复启动 ErrorActivity（标记+去重）
+     * 3. 避免 killProcess + System.exit 导致数据丢失（仅调用一次）
+     * 4. 使用 NEW_TASK + CLEAR_TASK 确保错误页独立栈
      */
     private void registerUncaughtExceptionHandler() {
         Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             try {
-                Intent intent = ErrorActivity.createIntent(
-                        this,
-                        getString(R.string.error_crash_title),
-                        getString(R.string.error_crash_message),
-                        throwable
-                );
-                startActivity(intent);
+                // 防止重复启动 ErrorActivity 导致循环
+                if (!isErrorActivityShowing) {
+                    isErrorActivityShowing = true;
+                    Intent intent = ErrorActivity.createIntent(
+                            getApplicationContext(),
+                            getString(R.string.error_crash_title),
+                            getString(R.string.error_crash_message),
+                            throwable
+                    );
+                    // 使用 ApplicationContext 启动，避免 Activity 上下文异常
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    getApplicationContext().startActivity(intent);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Failed to start ErrorActivity", e);
             } finally {
                 if (defaultHandler != null) {
-                    defaultHandler.uncaughtException(thread, throwable);
+                    try {
+                        defaultHandler.uncaughtException(thread, throwable);
+                    } catch (Exception ignored) {
+                    }
                 }
+                // 仅调用一次退出，避免数据丢失
                 android.os.Process.killProcess(android.os.Process.myPid());
-                System.exit(1);
             }
         });
     }
+
+    private volatile boolean isErrorActivityShowing = false;
     
     /**
      * 异步启动数据库初始化

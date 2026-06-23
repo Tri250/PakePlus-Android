@@ -78,8 +78,12 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            // 动画加载失败静默处理
+        }
     }
 
     private void loadData() {
@@ -115,73 +119,94 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void loadSystemAnalysis() {
-        DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
-        tvVersionAssessment.setText(result.versionAssessment);
-        tvSecurityAssessment.setText(result.securityAssessment);
-        tvPerformanceAssessment.setText(result.performanceAssessment);
-        tvSuggestions.setText(result.suggestions);
+        try {
+            if (configQuery == null) return;
+            DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
+            if (result == null) return;
+            if (tvVersionAssessment != null) tvVersionAssessment.setText(result.versionAssessment);
+            if (tvSecurityAssessment != null) tvSecurityAssessment.setText(result.securityAssessment);
+            if (tvPerformanceAssessment != null) tvPerformanceAssessment.setText(result.performanceAssessment);
+            if (tvSuggestions != null) tvSuggestions.setText(result.suggestions);
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading system analysis: " + e.getMessage());
+        }
     }
 
     private void applyConfig(DeviceConfig config) {
-        // 设备名称：使用 DeviceConfig 的营销型号名
-        tvDeviceName.setText(config.getFullModelName());
-        tvDeviceModel.setText(config.getModel());
+        if (config == null) return;
+        try {
+            // 设备名称：使用 DeviceConfig 的营销型号名
+            if (tvDeviceName != null) tvDeviceName.setText(config.getFullModelName());
+            if (tvDeviceModel != null) tvDeviceModel.setText(config.getModel());
 
-        // Android 版本
-        tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+            // Android 版本
+            if (tvAndroidVersion != null)
+                tvAndroidVersion.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
 
-        // 处理器：使用 DeviceConfig 的 cpuInfo（含营销名称）
-        String cpuInfo = config.getCpuInfo();
-        tvProcessor.setText(cpuInfo != null && !cpuInfo.isEmpty() ? cpuInfo : Build.HARDWARE);
+            // 处理器：使用 DeviceConfig 的 cpuInfo（含营销名称）
+            String cpuInfo = config.getCpuInfo();
+            if (tvProcessor != null)
+                tvProcessor.setText(cpuInfo != null && !cpuInfo.isEmpty() ? cpuInfo : Build.HARDWARE);
 
-        // 内存：使用 DeviceConfig 的格式化内存（按营销规格取整）
-        tvRam.setText(config.getFormattedMemory());
+            // 内存：使用 DeviceConfig 的格式化内存（按营销规格取整）
+            if (tvRam != null) tvRam.setText(config.getFormattedMemory());
 
-        // 存储：使用 DeviceConfig 的格式化存储
-        tvStorage.setText(config.getFormattedStorage());
+            // 存储：使用 DeviceConfig 的格式化存储
+            if (tvStorage != null) tvStorage.setText(config.getFormattedStorage());
 
-        // 屏幕：使用 DeviceConfig 的屏幕信息（WindowMetrics API，含尺寸）
-        StringBuilder screenInfo = new StringBuilder();
-        screenInfo.append(config.getScreenResolution());
-        if (config.getScreenSize() > 0) {
-            screenInfo.append("  ").append(config.getFormattedScreenSize());
+            // 屏幕：使用 DeviceConfig 的屏幕信息（WindowMetrics API，含尺寸）
+            StringBuilder screenInfo = new StringBuilder();
+            screenInfo.append(config.getScreenResolution());
+            if (config.getScreenSize() > 0) {
+                screenInfo.append("  ").append(config.getFormattedScreenSize());
+            }
+            if (tvScreen != null) tvScreen.setText(screenInfo.toString());
+
+            // 激活日期：使用 DeviceConfig 的激活日期（ActivationDateHelper 内部实现）
+            String activationDateStr = config.getActivationDateStr();
+            if (tvActivationDate != null)
+                tvActivationDate.setText(activationDateStr != null && !activationDateStr.isEmpty()
+                        ? activationDateStr : "--");
+
+            // 使用天数
+            int usageDays = config.getUsageDays();
+            if (tvUsageDays != null)
+                tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
+
+            // 激活来源：使用 DeviceConfig 的激活来源（非硬编码）
+            String activationSource = config.getActivationSource();
+            if (tvActivationSource != null)
+                tvActivationSource.setText(activationSource != null && !activationSource.isEmpty()
+                        ? activationSource : getString(R.string.source_internal));
+
+            // 可用内存
+            long availableMemoryMb = config.getAvailableMemory();
+            if (tvAvailableRam != null) {
+                if (availableMemoryMb > 0) {
+                    tvAvailableRam.setText(formatMemory(availableMemoryMb));
+                } else {
+                    tvAvailableRam.setText("--");
+                }
+            }
+
+            // 可用存储
+            long availableStorageGb = config.getAvailableStorage();
+            if (tvAvailableStorage != null) {
+                if (availableStorageGb > 0) {
+                    tvAvailableStorage.setText(formatStorage(availableStorageGb));
+                } else {
+                    tvAvailableStorage.setText("--");
+                }
+            }
+
+            // 网络类型：使用 DeviceConfig 的网络类型（ConnectivityManager 内部实现）
+            String networkType = config.getNetworkType();
+            if (tvNetworkType != null)
+                tvNetworkType.setText(networkType != null && !networkType.isEmpty()
+                        ? networkType : getString(R.string.status_unknown));
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying config: " + e.getMessage());
         }
-        tvScreen.setText(screenInfo.toString());
-
-        // 激活日期：使用 DeviceConfig 的激活日期（ActivationDateHelper 内部实现）
-        String activationDateStr = config.getActivationDateStr();
-        tvActivationDate.setText(activationDateStr != null && !activationDateStr.isEmpty()
-                ? activationDateStr : "--");
-
-        // 使用天数
-        int usageDays = config.getUsageDays();
-        tvUsageDays.setText(usageDays >= 0 ? usageDays + " 天" : "--");
-
-        // 激活来源：使用 DeviceConfig 的激活来源（非硬编码）
-        String activationSource = config.getActivationSource();
-        tvActivationSource.setText(activationSource != null && !activationSource.isEmpty()
-                ? activationSource : getString(R.string.source_internal));
-
-        // 可用内存
-        long availableMemoryMb = config.getAvailableMemory();
-        if (availableMemoryMb > 0) {
-            tvAvailableRam.setText(formatMemory(availableMemoryMb));
-        } else {
-            tvAvailableRam.setText("--");
-        }
-
-        // 可用存储
-        long availableStorageGb = config.getAvailableStorage();
-        if (availableStorageGb > 0) {
-            tvAvailableStorage.setText(formatStorage(availableStorageGb));
-        } else {
-            tvAvailableStorage.setText("--");
-        }
-
-        // 网络类型：使用 DeviceConfig 的网络类型（ConnectivityManager 内部实现）
-        String networkType = config.getNetworkType();
-        tvNetworkType.setText(networkType != null && !networkType.isEmpty()
-                ? networkType : getString(R.string.status_unknown));
     }
 
     /**

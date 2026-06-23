@@ -93,12 +93,15 @@ public class CommunityFragment extends Fragment {
     }
 
     private void loadBatteryDataAndPopulate() {
+        if (batteryDataManager == null) return;
         new Thread(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info != null && isAdded()) {
-                    handler.post(() -> populateContent(info));
+                    handler.post(() -> {
+                        if (isAdded()) populateContent(info);
+                    });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error loading battery data: " + e.getMessage());
@@ -191,119 +194,132 @@ public class CommunityFragment extends Fragment {
 
     private void populateContent(BatteryInfo info) {
         if (!isAdded()) return;
+        try {
+            float healthPct = info.getHealthPercentage();
+            float temperature = info.getTemperature();
+            int level = info.getLevel();
+            int cycleCount = info.getCycleCount();
+            boolean isCharging = info.isCharging();
 
-        float healthPct = info.getHealthPercentage();
-        float temperature = info.getTemperature();
-        int level = info.getLevel();
-        int cycleCount = info.getCycleCount();
-        boolean isCharging = info.isCharging();
+            // === 充电建议 ===
+            if (containerTips != null) {
+                containerTips.removeAllViews();
+                List<TipItem> chargeTips = buildChargeTips(level, isCharging);
+                populateTipContainer(containerTips, chargeTips);
+            }
 
-        // === 充电建议 ===
-        if (containerTips != null) {
-            containerTips.removeAllViews();
-            List<TipItem> chargeTips = buildChargeTips(level, isCharging);
-            populateTipContainer(containerTips, chargeTips);
-        }
+            // === 温度管理 ===
+            if (containerTemp != null) {
+                containerTemp.removeAllViews();
+                List<TipItem> tempTips = buildTempTips(temperature, isCharging);
+                populateTipContainer(containerTemp, tempTips);
+            }
 
-        // === 温度管理 ===
-        if (containerTemp != null) {
-            containerTemp.removeAllViews();
-            List<TipItem> tempTips = buildTempTips(temperature, isCharging);
-            populateTipContainer(containerTemp, tempTips);
-        }
+            // === 延长寿命 ===
+            if (containerLifespan != null) {
+                containerLifespan.removeAllViews();
+                List<TipItem> lifespanTips = buildLifespanTips(healthPct, cycleCount);
+                populateTipContainer(containerLifespan, lifespanTips);
+            }
 
-        // === 延长寿命 ===
-        if (containerLifespan != null) {
-            containerLifespan.removeAllViews();
-            List<TipItem> lifespanTips = buildLifespanTips(healthPct, cycleCount);
-            populateTipContainer(containerLifespan, lifespanTips);
-        }
-
-        // === 常见问题 ===
-        if (containerQa != null) {
-            containerQa.removeAllViews();
-            List<QaItem> qaList = buildPersonalizedQa(healthPct, temperature, cycleCount);
-            populateQaContainer(containerQa, qaList);
+            // === 常见问题 ===
+            if (containerQa != null) {
+                containerQa.removeAllViews();
+                List<QaItem> qaList = buildPersonalizedQa(healthPct, temperature, cycleCount);
+                populateQaContainer(containerQa, qaList);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error populating content: " + e.getMessage());
         }
     }
 
     private void populateTipContainer(LinearLayout container, List<TipItem> tips) {
-        for (int i = 0; i < tips.size(); i++) {
-            TipItem tip = tips.get(i);
-            if (i > 0) {
-                View separator = new View(requireContext());
-                separator.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
-                container.addView(separator);
+        if (container == null || tips == null) return;
+        try {
+            for (int i = 0; i < tips.size(); i++) {
+                TipItem tip = tips.get(i);
+                if (i > 0) {
+                    View separator = new View(requireContext());
+                    separator.setLayoutParams(new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                    separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
+                    container.addView(separator);
+                }
+
+                LinearLayout row = new LinearLayout(requireContext());
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                int padV = dpToPx(12);
+                int padH = dpToPx(22);
+                row.setPadding(padH, padV, padH, padV);
+                row.setMinimumHeight(dpToPx(48));
+
+                TextView tvTitle = new TextView(requireContext());
+                tvTitle.setText(tip.title);
+                tvTitle.setTextAppearance(requireContext(), R.style.iOSBody);
+                tvTitle.setLineSpacing(dpToPx(3), 1f);
+                LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                tvTitle.setLayoutParams(titleParams);
+
+                TextView tvSummary = new TextView(requireContext());
+                tvSummary.setText(tip.summary);
+                tvSummary.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+                tvSummary.setLineSpacing(dpToPx(2), 1f);
+                LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                summaryParams.setMarginStart(dpToPx(12));
+                tvSummary.setLayoutParams(summaryParams);
+
+                row.addView(tvTitle);
+                row.addView(tvSummary);
+                container.addView(row);
             }
-
-            LinearLayout row = new LinearLayout(requireContext());
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            int padV = dpToPx(12);
-            int padH = dpToPx(22);
-            row.setPadding(padH, padV, padH, padV);
-            row.setMinimumHeight(dpToPx(48));
-
-            TextView tvTitle = new TextView(requireContext());
-            tvTitle.setText(tip.title);
-            tvTitle.setTextAppearance(requireContext(), R.style.iOSBody);
-            tvTitle.setLineSpacing(dpToPx(3), 1f);
-            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            tvTitle.setLayoutParams(titleParams);
-
-            TextView tvSummary = new TextView(requireContext());
-            tvSummary.setText(tip.summary);
-            tvSummary.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
-            tvSummary.setLineSpacing(dpToPx(2), 1f);
-            LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            summaryParams.setMarginStart(dpToPx(12));
-            tvSummary.setLayoutParams(summaryParams);
-
-            row.addView(tvTitle);
-            row.addView(tvSummary);
-            container.addView(row);
+        } catch (Exception e) {
+            Log.e(TAG, "Error populating tips: " + e.getMessage());
         }
     }
 
     private void populateQaContainer(LinearLayout container, List<QaItem> qaList) {
-        for (int i = 0; i < qaList.size(); i++) {
-            QaItem qa = qaList.get(i);
-            if (i > 0) {
-                View separator = new View(requireContext());
-                separator.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
-                container.addView(separator);
+        if (container == null || qaList == null) return;
+        try {
+            for (int i = 0; i < qaList.size(); i++) {
+                QaItem qa = qaList.get(i);
+                if (i > 0) {
+                    View separator = new View(requireContext());
+                    separator.setLayoutParams(new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                    separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
+                    container.addView(separator);
+                }
+
+                LinearLayout qaRow = new LinearLayout(requireContext());
+                qaRow.setOrientation(LinearLayout.VERTICAL);
+                int padH = dpToPx(22);
+                int padTop = dpToPx(14);
+                int padBottom = dpToPx(14);
+                qaRow.setPadding(padH, padTop, padH, padBottom);
+
+                TextView tvQuestion = new TextView(requireContext());
+                tvQuestion.setText(qa.question);
+                tvQuestion.setTextAppearance(requireContext(), R.style.iOSBody);
+                tvQuestion.setLineSpacing(dpToPx(3), 1f);
+
+                TextView tvAnswer = new TextView(requireContext());
+                tvAnswer.setText(qa.answer);
+                tvAnswer.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+                tvAnswer.setLineSpacing(dpToPx(3), 1f);
+                LinearLayout.LayoutParams answerParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                answerParams.topMargin = dpToPx(6);
+                tvAnswer.setLayoutParams(answerParams);
+
+                qaRow.addView(tvQuestion);
+                qaRow.addView(tvAnswer);
+                container.addView(qaRow);
             }
-
-            LinearLayout qaRow = new LinearLayout(requireContext());
-            qaRow.setOrientation(LinearLayout.VERTICAL);
-            int padH = dpToPx(22);
-            int padTop = dpToPx(14);
-            int padBottom = dpToPx(14);
-            qaRow.setPadding(padH, padTop, padH, padBottom);
-
-            TextView tvQuestion = new TextView(requireContext());
-            tvQuestion.setText(qa.question);
-            tvQuestion.setTextAppearance(requireContext(), R.style.iOSBody);
-            tvQuestion.setLineSpacing(dpToPx(3), 1f);
-
-            TextView tvAnswer = new TextView(requireContext());
-            tvAnswer.setText(qa.answer);
-            tvAnswer.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
-            tvAnswer.setLineSpacing(dpToPx(3), 1f);
-            LinearLayout.LayoutParams answerParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            answerParams.topMargin = dpToPx(6);
-            tvAnswer.setLayoutParams(answerParams);
-
-            qaRow.addView(tvQuestion);
-            qaRow.addView(tvAnswer);
-            container.addView(qaRow);
+        } catch (Exception e) {
+            Log.e(TAG, "Error populating QA: " + e.getMessage());
         }
     }
 

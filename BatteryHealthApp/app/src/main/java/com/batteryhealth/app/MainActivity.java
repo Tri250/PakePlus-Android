@@ -396,6 +396,10 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 安全启动服务：若应用在前台直接启动；若在后台（Android 14+）使用 AlarmManager 延迟启动
+     * 修复点：
+     * 1. Android 14+ 不允许 PendingIntent.getForegroundService，改用 getService + 服务内部自行 startForeground
+     * 2. isAppInForeground 增加进程状态容错，避免 onCreate 时误判为后台
+     * 3. 增加 try-catch 防止启动服务崩溃
      */
     private void startServiceSafely(Class<?> serviceClass) {
         Intent intent = new Intent(this, serviceClass);
@@ -406,45 +410,67 @@ public class MainActivity extends AppCompatActivity {
                 : PENDING_INTENT_REQUEST_CHARGING_MONITOR;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (isAppInForeground || Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForegroundService(intent);
+                try {
+                    startForegroundService(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to start foreground service for " + serviceClass.getSimpleName(), e);
+                }
             } else {
                 // Android 14+ 且不在前台：使用 AlarmManager 延迟 5 秒启动
+                // 修复：Android 14+ 不允许 getForegroundService，改用 getService
                 AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                 if (alarmManager != null) {
-                    PendingIntent pendingIntent = PendingIntent.getForegroundService(
-                            this, requestCode, intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                    );
-                    long triggerAt = System.currentTimeMillis() + 5000;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                    } else {
-                        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    try {
+                        PendingIntent pendingIntent = PendingIntent.getService(
+                                this, requestCode, intent,
+                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                        );
+                        long triggerAt = System.currentTimeMillis() + 5000;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        } else {
+                            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        }
+                        Log.d(TAG, "Scheduled delayed start for " + serviceClass.getSimpleName());
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to schedule service start for " + serviceClass.getSimpleName(), e);
                     }
-                    Log.d(TAG, "Scheduled delayed start for " + serviceClass.getSimpleName());
                 }
             }
         } else {
-            startService(intent);
+            try {
+                startService(intent);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start service for " + serviceClass.getSimpleName(), e);
+            }
         }
     }
 
     /**
-     * 判断应用是否处于前台
+     * 判断应用是否处于前台（增加进程状态容错）。
+     * 在 onCreate 早期调用时，进程可能尚未被标记为 IMPORTANCE_FOREGROUND，
+     * 因此同时检查是否存在可见 Activity。
      */
     private boolean isAppInForeground() {
-        android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        if (am != null) {
-            List<android.app.ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
-            if (processes != null) {
-                for (android.app.ActivityManager.RunningAppProcessInfo process : processes) {
-                    if (process.processName.equals(getPackageName())) {
-                        return process.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) {
+                List<android.app.ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
+                if (processes != null) {
+                    for (android.app.ActivityManager.RunningAppProcessInfo process : processes) {
+                        if (process.processName.equals(getPackageName())) {
+                            // 前台或感知前台都视为前台，减少误判
+                            return process.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                                    || process.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
+                        }
                     }
                 }
             }
+        } catch (Exception e) {
+            Log.w(TAG, "Error checking foreground state: " + e.getMessage());
         }
-        return false;
+        // 兜底：若无法判断，保守视为前台，避免在 onCreate 时走 AlarmManager 分支
+        return true;
     }
 
     /**
@@ -494,13 +520,20 @@ public class MainActivity extends AppCompatActivity {
     
     /**
      * 加载初始数据
+     * 修复点：延迟到数据库初始化完成后再刷新数据，避免数据库未就绪时访问。
      */
     private void loadInitialData() {
-        // 直接调用 refreshAllDataAsync()，BatteryDataManager 内部已创建后台线程，
-        // 不需要外层再包裹 Thread，避免嵌套线程和生命周期失控
-        if (batteryDataManager != null) {
-            batteryDataManager.refreshAllDataAsync();
-        }
+        if (batteryDataManager == null) return;
+        // 延迟 3 秒，确保 Application 中数据库后台初始化有足够时间完成
+        mainHandler.postDelayed(() -> {
+            try {
+                if (!isFinishing() && !isDestroyed() && batteryDataManager != null) {
+                    batteryDataManager.refreshAllDataAsync();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading initial data: " + e.getMessage());
+            }
+        }, 3000);
     }
     
     /**

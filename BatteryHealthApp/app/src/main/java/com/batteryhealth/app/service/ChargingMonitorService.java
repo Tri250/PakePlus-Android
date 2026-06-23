@@ -219,17 +219,36 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 根据充电状态更新前台服务状态
+     * 修复：startForeground 增加 try-catch，防止前台启动失败崩溃
      */
     private void updateForegroundState() {
         boolean showNotification = isNotificationEnabled();
         if (isCharging && !foregroundStarted && showNotification) {
-            startForeground(NOTIFICATION_ID, buildNotification());
-            foregroundStarted = true;
+            try {
+                startForeground(NOTIFICATION_ID, buildNotification());
+                foregroundStarted = true;
+            } catch (Exception e) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                        && e instanceof android.app.ForegroundServiceStartNotAllowedException) {
+                    Log.e(TAG, "ForegroundServiceStartNotAllowedException in charging monitor", e);
+                } else {
+                    Log.e(TAG, "Error starting foreground in charging monitor: " + e.getMessage(), e);
+                }
+                foregroundStarted = false;
+            }
         } else if (!isCharging && foregroundStarted) {
-            stopForeground(true);
+            try {
+                stopForeground(true);
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping foreground: " + e.getMessage());
+            }
             foregroundStarted = false;
         } else if (isCharging && foregroundStarted && !showNotification) {
-            stopForeground(true);
+            try {
+                stopForeground(true);
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping foreground: " + e.getMessage());
+            }
             foregroundStarted = false;
         }
     }
@@ -373,13 +392,19 @@ public class ChargingMonitorService extends Service {
         sendChargingCompleteNotification(summary);
 
         // 发送广播供 UI 层接收（限定包名，Android 14+ 安全要求）
-        Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
-        broadcast.setPackage(getPackageName());
-        broadcast.putExtra("session_id", summary.sessionId);
-        broadcast.putExtra("duration", summary.duration);
-        broadcast.putExtra("max_power", summary.maxPower);
-        broadcast.putExtra("avg_power", summary.avgPower);
-        sendBroadcast(broadcast);
+        // 修复：Android 14+ 发送显式广播需使用 setPackage 且接收器需声明；此处改为 LocalBroadcastManager 更安全
+        try {
+            androidx.localbroadcastmanager.content.LocalBroadcastManager lbm =
+                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this);
+            Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
+            broadcast.putExtra("session_id", summary.sessionId);
+            broadcast.putExtra("duration", summary.duration);
+            broadcast.putExtra("max_power", summary.maxPower);
+            broadcast.putExtra("avg_power", summary.avgPower);
+            lbm.sendBroadcast(broadcast);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending charging broadcast: " + e.getMessage());
+        }
 
         currentSessionId = null;
         // 充电结束时退出前台服务，避免未充电时显示常驻通知
@@ -619,12 +644,15 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 记录充电采样点，维护固定长度滑动窗口。
+     * 修复：虽然使用了 synchronizedList，但复合操作（addLast + removeFirst）仍需同步块保护
      */
     private void addPowerSample(float voltage, float current, float power, int level) {
         long now = System.currentTimeMillis();
-        powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
-        while (powerSamples.size() > MAX_SAMPLES) {
-            powerSamples.removeFirst();
+        synchronized (powerSamples) {
+            powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
+            while (powerSamples.size() > MAX_SAMPLES) {
+                powerSamples.removeFirst();
+            }
         }
     }
 
@@ -636,6 +664,8 @@ public class ChargingMonitorService extends Service {
      * 2. 电量 >= 80% 且电流明显下降（dI/dt 负向）-> 恒压阶段（constant_voltage）
      * 3. 大功率稳定输出 -> 恒流阶段（constant_current）
      * 4. 低功率且电量低 -> 涓流（trickle）
+     *
+     * 修复：迭代 powerSamples 时加同步块，防止 ConcurrentModificationException
      */
     private String detectChargingPhase(PowerHistory history) {
         int level = history.getBatteryLevel();
@@ -646,9 +676,15 @@ public class ChargingMonitorService extends Service {
         }
 
         // 当样本足够时，计算电流变化趋势和电压变化趋势
-        if (powerSamples.size() >= 10) {
-            PowerSample first = powerSamples.getFirst();
-            PowerSample last = powerSamples.getLast();
+        PowerSample first = null;
+        PowerSample last = null;
+        synchronized (powerSamples) {
+            if (powerSamples.size() >= 10) {
+                first = powerSamples.getFirst();
+                last = powerSamples.getLast();
+            }
+        }
+        if (first != null && last != null) {
             long timeDiff = last.timestamp - first.timestamp; // ms
             if (timeDiff > 10_000) { // 至少 10 秒数据
                 float currentDiff = last.current - first.current; // A
@@ -698,12 +734,17 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 保存功率历史记录（调用方已在后台线程时可直接执行，否则提交到 executor）
+     * 修复：executor 为 null 或已 shutdown 时，不再在主线程直接执行，避免阻塞主线程 / ANR
      */
     private void savePowerHistory(PowerHistory history) {
         Runnable saveTask = () -> {
             try {
+                android.content.Context appCtx = getApplicationContext();
+                if (!(appCtx instanceof com.batteryhealth.app.BatteryHealthApplication)) {
+                    return;
+                }
                 com.batteryhealth.app.BatteryHealthApplication app =
-                    (com.batteryhealth.app.BatteryHealthApplication) getApplicationContext();
+                    (com.batteryhealth.app.BatteryHealthApplication) appCtx;
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
                     db.powerHistoryDao().insert(history);
@@ -715,11 +756,10 @@ public class ChargingMonitorService extends Service {
                 Log.e(TAG, "Error saving power history: " + e.getMessage());
             }
         };
-        if (executor != null) {
+        if (executor != null && !executor.isShutdown()) {
             executor.submit(saveTask);
-        } else {
-            saveTask.run();
         }
+        // 若 executor 不可用，静默丢弃，避免在主线程执行数据库 IO
     }
 
     /**

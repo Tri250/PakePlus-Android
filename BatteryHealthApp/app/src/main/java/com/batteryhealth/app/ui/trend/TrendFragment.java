@@ -63,8 +63,12 @@ public class TrendFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            // 动画加载失败静默处理
+        }
     }
 
     private void loadDataAsync() {
@@ -112,6 +116,7 @@ public class TrendFragment extends Fragment {
     }
 
     private void updateUI(List<BatteryInfo> history, float currentHealth) {
+        if (!isAdded()) return;
         if (history == null || history.isEmpty() || currentHealth < 0) {
             showNoDataState();
             return;
@@ -152,10 +157,14 @@ public class TrendFragment extends Fragment {
             }
         }
 
-        tvInitialHealth.setText(String.format(Locale.getDefault(), "%.1f%%", initialHealth));
-        tvCurrentHealth.setText(String.format(Locale.getDefault(), "%.1f%%", latestHealth));
-        tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", totalDecay));
-        tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.2f%%", monthlyDecay));
+        if (tvInitialHealth != null)
+            tvInitialHealth.setText(String.format(Locale.getDefault(), "%.1f%%", initialHealth));
+        if (tvCurrentHealth != null)
+            tvCurrentHealth.setText(String.format(Locale.getDefault(), "%.1f%%", latestHealth));
+        if (tvTotalDecay != null)
+            tvTotalDecay.setText(String.format(Locale.getDefault(), "%.1f%%", totalDecay));
+        if (tvMonthlyDecay != null)
+            tvMonthlyDecay.setText(String.format(Locale.getDefault(), "%.2f%%", monthlyDecay));
 
         // 计算历史数据统计
         calculateHistoryStats(validHistory);
@@ -165,10 +174,10 @@ public class TrendFragment extends Fragment {
 
     private void calculateHistoryStats(List<BatteryInfo> history) {
         if (history == null || history.isEmpty()) {
-            tvAvgTemperature.setText("--");
-            tvMaxTemperature.setText("--");
-            tvRecordCount.setText("--");
-            tvDataSpan.setText("--");
+            if (tvAvgTemperature != null) tvAvgTemperature.setText("--");
+            if (tvMaxTemperature != null) tvMaxTemperature.setText("--");
+            if (tvRecordCount != null) tvRecordCount.setText("--");
+            if (tvDataSpan != null) tvDataSpan.setText("--");
             return;
         }
 
@@ -188,52 +197,59 @@ public class TrendFragment extends Fragment {
         }
 
         if (validTempCount > 0) {
-            tvAvgTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", sumTemp / validTempCount));
-            tvMaxTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", maxTemp));
+            if (tvAvgTemperature != null)
+                tvAvgTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", sumTemp / validTempCount));
+            if (tvMaxTemperature != null)
+                tvMaxTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", maxTemp));
         } else {
-            tvAvgTemperature.setText("--");
-            tvMaxTemperature.setText("--");
+            if (tvAvgTemperature != null) tvAvgTemperature.setText("--");
+            if (tvMaxTemperature != null) tvMaxTemperature.setText("--");
         }
 
-        tvRecordCount.setText(String.valueOf(history.size()));
+        if (tvRecordCount != null) tvRecordCount.setText(String.valueOf(history.size()));
 
         long earliestTs = history.get(0).getTimestamp();
         long latestTs = history.get(history.size() - 1).getTimestamp();
         long daysSpan = (latestTs - earliestTs) / (1000L * 60 * 60 * 24);
-        if (daysSpan <= 0) {
-            tvDataSpan.setText("1天");
-        } else {
-            tvDataSpan.setText(String.format("%d天", daysSpan));
+        if (tvDataSpan != null) {
+            if (daysSpan <= 0) {
+                tvDataSpan.setText("1天");
+            } else {
+                tvDataSpan.setText(String.format("%d天", daysSpan));
+            }
         }
     }
 
     private void showNoDataState() {
-        tvInitialHealth.setText("--");
-        tvCurrentHealth.setText("--");
-        tvTotalDecay.setText("--");
-        tvMonthlyDecay.setText("--");
+        if (!isAdded()) return;
+        if (tvInitialHealth != null) tvInitialHealth.setText("--");
+        if (tvCurrentHealth != null) tvCurrentHealth.setText("--");
+        if (tvTotalDecay != null) tvTotalDecay.setText("--");
+        if (tvMonthlyDecay != null) tvMonthlyDecay.setText("--");
 
         // 无数据时显示提示图表
-        List<Entry> entries = new ArrayList<>();
-        LineDataSet dataSet = new LineDataSet(entries, "");
-        dataSet.setDrawCircles(false);
-        dataSet.setDrawValues(false);
-        dataSet.setLineWidth(3f);
-        dataSet.setColor(Color.parseColor("#0A84FF"));
-        dataSet.setDrawFilled(true);
-        dataSet.setFillColor(Color.parseColor("#0A84FF"));
-        dataSet.setFillAlpha(72);
+        if (lineChart != null) {
+            List<Entry> entries = new ArrayList<>();
+            LineDataSet dataSet = new LineDataSet(entries, "");
+            dataSet.setDrawCircles(false);
+            dataSet.setDrawValues(false);
+            dataSet.setLineWidth(3f);
+            dataSet.setColor(Color.parseColor("#0A84FF"));
+            dataSet.setDrawFilled(true);
+            dataSet.setFillColor(Color.parseColor("#0A84FF"));
+            dataSet.setFillAlpha(72);
 
-        LineData lineData = new LineData(dataSet);
-        lineChart.setData(lineData);
-        lineChart.getDescription().setEnabled(false);
-        lineChart.getLegend().setEnabled(false);
-        lineChart.setTouchEnabled(false);
-        lineChart.setDragEnabled(false);
-        lineChart.setScaleEnabled(false);
-        lineChart.setPinchZoom(false);
-        lineChart.setNoDataText(getString(R.string.health_check_no_data));
-        lineChart.invalidate();
+            LineData lineData = new LineData(dataSet);
+            lineChart.setData(lineData);
+            lineChart.getDescription().setEnabled(false);
+            lineChart.getLegend().setEnabled(false);
+            lineChart.setTouchEnabled(false);
+            lineChart.setDragEnabled(false);
+            lineChart.setScaleEnabled(false);
+            lineChart.setPinchZoom(false);
+            lineChart.setNoDataText(getString(R.string.health_check_no_data));
+            lineChart.invalidate();
+        }
     }
 
     private void postEmptyState() {

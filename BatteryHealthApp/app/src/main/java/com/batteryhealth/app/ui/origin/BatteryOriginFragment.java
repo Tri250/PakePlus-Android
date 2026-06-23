@@ -66,103 +66,147 @@ public class BatteryOriginFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            // 动画加载失败静默处理
+        }
     }
 
     private void performDetection() {
-        btnDetect.setEnabled(false);
-        btnDetect.setText(getString(R.string.status_detecting));
+        if (btnDetect != null) {
+            btnDetect.setEnabled(false);
+            btnDetect.setText(getString(R.string.status_detecting));
+        }
 
         new Thread(() -> {
-            // Pass BatteryDataManager for comprehensive data
-            if (getActivity() instanceof com.batteryhealth.app.MainActivity) {
-                BatteryDataManager bdm = ((com.batteryhealth.app.MainActivity) getActivity()).getBatteryDataManager();
-                if (bdm != null) {
-                    originDetector.setBatteryDataManager(bdm);
+            try {
+                // Pass BatteryDataManager for comprehensive data
+                if (getActivity() instanceof com.batteryhealth.app.MainActivity) {
+                    BatteryDataManager bdm = ((com.batteryhealth.app.MainActivity) getActivity()).getBatteryDataManager();
+                    if (bdm != null && originDetector != null) {
+                        originDetector.setBatteryDataManager(bdm);
+                    }
                 }
-            }
-            // Refresh BatteryDataManager data before passing to detector
-            if (originDetector != null) {
-                BatteryDataManager bdm = originDetector.getBatteryDataManager();
-                if (bdm != null) {
-                    bdm.refreshFromStickyIntent();
+                // Refresh BatteryDataManager data before passing to detector
+                if (originDetector != null) {
+                    BatteryDataManager bdm = originDetector.getBatteryDataManager();
+                    if (bdm != null) {
+                        bdm.refreshFromStickyIntent();
+                    }
                 }
-            }
-            BatteryOriginDetector.OriginResult result = originDetector.detect();
+                BatteryOriginDetector.OriginResult result = originDetector != null ? originDetector.detect() : null;
 
-            requireActivity().runOnUiThread(() -> {
-                updateUI(result);
-                btnDetect.setEnabled(true);
-                btnDetect.setText(getString(R.string.label_detect_battery));
-            });
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        updateUI(result);
+                        if (btnDetect != null) {
+                            btnDetect.setEnabled(true);
+                            btnDetect.setText(getString(R.string.label_detect_battery));
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        if (btnDetect != null) {
+                            btnDetect.setEnabled(true);
+                            btnDetect.setText(getString(R.string.label_detect_battery));
+                        }
+                    });
+                }
+            }
         }).start();
     }
 
     private void updateUI(BatteryOriginDetector.OriginResult result) {
-        if (result.isOriginal) {
-            tvOriginResult.setText(getString(R.string.result_original));
-            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.health_a_plus));
-        } else {
-            tvOriginResult.setText(getString(R.string.result_replaced));
-            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange));
+        if (!isAdded()) return;
+        try {
+            if (result != null && result.isOriginal) {
+                if (tvOriginResult != null) tvOriginResult.setText(getString(R.string.result_original));
+                if (tvOriginResult != null)
+                    tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.health_a_plus));
+            } else {
+                if (tvOriginResult != null) tvOriginResult.setText(getString(R.string.result_replaced));
+                if (tvOriginResult != null)
+                    tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange));
+            }
+
+            if (tvOriginConfidence != null)
+                tvOriginConfidence.setText(String.format("置信度：%d%%", result != null ? result.confidence : 0));
+            if (tvOriginConclusion != null)
+                tvOriginConclusion.setText(result != null && result.conclusion != null ? result.conclusion : "--");
+
+            if (tvManufactureDate != null)
+                tvManufactureDate.setText(result != null && result.manufactureDate != null ? result.manufactureDate : "--");
+            if (tvSerialNumber != null)
+                tvSerialNumber.setText(result != null && result.serialNumber != null ? result.serialNumber : "--");
+            if (tvHealthStatus != null)
+                tvHealthStatus.setText(result != null && result.healthStatus != null ? result.healthStatus : "--");
+            if (tvCycleCount != null)
+                tvCycleCount.setText(result != null && result.cycleCount != null ? result.cycleCount : "--");
+            if (tvManufacturer != null)
+                tvManufacturer.setText(result != null && result.manufacturer != null ? result.manufacturer : "--");
+            if (tvOemInfo != null)
+                tvOemInfo.setText(result != null && result.oemInfo != null ? result.oemInfo : "--");
+            if (tvTechnology != null)
+                tvTechnology.setText(result != null && result.technology != null ? result.technology : "--");
+
+            updateDetectionMethods(result != null ? result.detectionMethods : null);
+        } catch (Exception e) {
+            // 静默处理
         }
-
-        tvOriginConfidence.setText(String.format("置信度：%d%%", result.confidence));
-        tvOriginConclusion.setText(result.conclusion);
-
-        tvManufactureDate.setText(result.manufactureDate != null ? result.manufactureDate : "--");
-        tvSerialNumber.setText(result.serialNumber != null ? result.serialNumber : "--");
-        tvHealthStatus.setText(result.healthStatus != null ? result.healthStatus : "--");
-        tvCycleCount.setText(result.cycleCount != null ? result.cycleCount : "--");
-        tvManufacturer.setText(result.manufacturer != null ? result.manufacturer : "--");
-        tvOemInfo.setText(result.oemInfo != null ? result.oemInfo : "--");
-        tvTechnology.setText(result.technology != null ? result.technology : "--");
-
-        updateDetectionMethods(result.detectionMethods);
     }
 
     private void updateDetectionMethods(List<BatteryOriginDetector.DetectionMethod> methods) {
-        containerMethods.removeAllViews();
+        if (containerMethods == null) return;
+        try {
+            containerMethods.removeAllViews();
 
-        if (methods == null || methods.isEmpty()) {
-            TextView emptyView = new TextView(requireContext());
-            emptyView.setText(getString(R.string.status_no_data));
-            emptyView.setTextSize(14);
-            emptyView.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
-            emptyView.setPadding(16, 16, 16, 16);
-            containerMethods.addView(emptyView);
-            return;
-        }
-
-        for (int i = 0; i < methods.size(); i++) {
-            BatteryOriginDetector.DetectionMethod method = methods.get(i);
-            if (i > 0) {
-                View separator = new View(requireContext());
-                separator.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.separator));
-                containerMethods.addView(separator);
+            if (methods == null || methods.isEmpty()) {
+                TextView emptyView = new TextView(requireContext());
+                emptyView.setText(getString(R.string.status_no_data));
+                emptyView.setTextSize(14);
+                emptyView.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
+                emptyView.setPadding(16, 16, 16, 16);
+                containerMethods.addView(emptyView);
+                return;
             }
 
-            LinearLayout row = new LinearLayout(requireContext());
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setPadding(16, 12, 16, 12);
+            for (int i = 0; i < methods.size(); i++) {
+                BatteryOriginDetector.DetectionMethod method = methods.get(i);
+                if (i > 0) {
+                    View separator = new View(requireContext());
+                    separator.setLayoutParams(new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                    separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.separator));
+                    containerMethods.addView(separator);
+                }
 
-            TextView tvName = new TextView(requireContext());
-            tvName.setText(method.name);
-            tvName.setTextSize(14);
-            tvName.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
-            tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                LinearLayout row = new LinearLayout(requireContext());
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setPadding(16, 12, 16, 12);
 
-            TextView tvValue = new TextView(requireContext());
-            tvValue.setText(method.value);
-            tvValue.setTextSize(14);
-            tvValue.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
+                TextView tvName = new TextView(requireContext());
+                tvName.setText(method.name);
+                tvName.setTextSize(14);
+                tvName.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
+                tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-            row.addView(tvName);
-            row.addView(tvValue);
-            containerMethods.addView(row);
+                TextView tvValue = new TextView(requireContext());
+                tvValue.setText(method.value);
+                tvValue.setTextSize(14);
+                tvValue.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
+
+                row.addView(tvName);
+                row.addView(tvValue);
+                containerMethods.addView(row);
+            }
+        } catch (Exception e) {
+            // 静默处理
         }
     }
 }

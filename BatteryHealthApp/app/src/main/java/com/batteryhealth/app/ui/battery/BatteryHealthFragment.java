@@ -95,8 +95,12 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+        try {
+            Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+            view.startAnimation(fadeUp);
+        } catch (Exception e) {
+            // 动画加载失败静默处理
+        }
     }
 
     @Override
@@ -279,21 +283,36 @@ public class BatteryHealthFragment extends Fragment {
     }
 
     private void generateReport(boolean weekly) {
+        if (!isAdded()) return;
         tvReportSummary.setText(getString(R.string.status_calculating));
         btnWeeklyReport.setEnabled(false);
         btnMonthlyReport.setEnabled(false);
 
         new Thread(() -> {
-            BatteryReportGenerator.Report report = weekly 
-                    ? reportGenerator.generateWeeklyReport() 
-                    : reportGenerator.generateMonthlyReport();
+            try {
+                BatteryReportGenerator.Report report = weekly
+                        ? reportGenerator.generateWeeklyReport()
+                        : reportGenerator.generateMonthlyReport();
 
-            String summary = formatReportSummary(report);
-            requireActivity().runOnUiThread(() -> {
-                tvReportSummary.setText(summary);
-                btnWeeklyReport.setEnabled(true);
-                btnMonthlyReport.setEnabled(true);
-            });
+                String summary = formatReportSummary(report);
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        tvReportSummary.setText(summary);
+                        btnWeeklyReport.setEnabled(true);
+                        btnMonthlyReport.setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        tvReportSummary.setText(getString(R.string.status_error));
+                        btnWeeklyReport.setEnabled(true);
+                        btnMonthlyReport.setEnabled(true);
+                    });
+                }
+            }
         }).start();
     }
 
