@@ -1,4 +1,5 @@
 #include "battery_models.h"
+#include "battery_health.h"
 #include <cmath>
 
 namespace digiguide::core {

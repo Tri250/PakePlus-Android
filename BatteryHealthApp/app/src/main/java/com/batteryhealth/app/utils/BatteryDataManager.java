@@ -364,7 +364,7 @@ public class BatteryDataManager {
         }
 
         // 2.5 Android 16+ 原生设计容量（API 36 BATTERY_PROPERTY_CHARGE_FULL_DESIGN）
-        if (Build.VERSION.SDK_INT >= 36) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
             BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 try {
@@ -633,7 +633,7 @@ public class BatteryDataManager {
         if (effectiveUsageDays < 0 && activation != null) effectiveUsageDays = activation.usageDays;
 
         // === 路径 0: Android 16+ 原生健康度百分比（最高优先级） ===
-        if (Build.VERSION.SDK_INT >= 36) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
             BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 try {

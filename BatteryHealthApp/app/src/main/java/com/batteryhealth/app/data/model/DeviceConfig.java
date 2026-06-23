@@ -41,6 +41,7 @@ public class DeviceConfig {
     private long availableMemory; // 可用内存 (MB)
     private long totalStorage; // 总存储 (GB)
     private long availableStorage; // 可用存储 (GB)
+    private String storageEncryption; // 存储加密状态（Android 16+）
     
     // 显示信息
     private int screenWidth; // 屏幕宽度
@@ -272,7 +273,15 @@ public class DeviceConfig {
     public void setAvailableStorage(long availableStorage) {
         this.availableStorage = availableStorage;
     }
-    
+
+    public String getStorageEncryption() {
+        return storageEncryption;
+    }
+
+    public void setStorageEncryption(String storageEncryption) {
+        this.storageEncryption = storageEncryption;
+    }
+
     public int getScreenWidth() {
         return screenWidth;
     }

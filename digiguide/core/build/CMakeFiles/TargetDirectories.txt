@@ -1,0 +1,11 @@
+/workspace/digiguide/core/build/CMakeFiles/digiguide_core.dir
+/workspace/digiguide/core/build/CMakeFiles/test_sn_decoder.dir
+/workspace/digiguide/core/build/CMakeFiles/test_bugreport.dir
+/workspace/digiguide/core/build/CMakeFiles/test_health.dir
+/workspace/digiguide/core/build/CMakeFiles/test.dir
+/workspace/digiguide/core/build/CMakeFiles/edit_cache.dir
+/workspace/digiguide/core/build/CMakeFiles/rebuild_cache.dir
+/workspace/digiguide/core/build/CMakeFiles/list_install_components.dir
+/workspace/digiguide/core/build/CMakeFiles/install.dir
+/workspace/digiguide/core/build/CMakeFiles/install/local.dir
+/workspace/digiguide/core/build/CMakeFiles/install/strip.dir

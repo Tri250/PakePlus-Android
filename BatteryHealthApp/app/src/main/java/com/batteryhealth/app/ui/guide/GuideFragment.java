@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
@@ -257,7 +258,8 @@ public class GuideFragment extends Fragment {
             if (result.batteryEvents != null) {
                 summary.append("Bugreport 事件数: ").append(result.batteryEvents.size()).append("\n");
             }
-            
+            summary.append("\n注：Bugreport 解析依赖文本正则匹配，充电会话/唤醒锁等数据可能不完整或存在误报，结果仅供参考。");
+
             tvAnalysisSummary.setText(summary.toString());
             tvAnalysisSummary.setVisibility(View.VISIBLE);
         }
@@ -358,10 +360,10 @@ public class GuideFragment extends Fragment {
 
     private int getSeverityColor(String severity) {
         switch (severity) {
-            case "CRITICAL": return getResources().getColor(R.color.red);
-            case "HIGH": return getResources().getColor(R.color.orange);
-            case "MEDIUM": return getResources().getColor(R.color.yellow);
-            default: return getResources().getColor(R.color.label_2);
+            case "CRITICAL": return ContextCompat.getColor(requireContext(), R.color.red);
+            case "HIGH": return ContextCompat.getColor(requireContext(), R.color.orange);
+            case "MEDIUM": return ContextCompat.getColor(requireContext(), R.color.yellow);
+            default: return ContextCompat.getColor(requireContext(), R.color.label_2);
         }
     }
 

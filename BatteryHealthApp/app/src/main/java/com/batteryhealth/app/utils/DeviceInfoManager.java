@@ -610,7 +610,7 @@ public class DeviceInfoManager {
                                 .getMethod("isDirectoryEncrypted");
                         Object encResult = isEncryptedMethod.invoke(primaryVolume);
                         if (encResult instanceof Boolean && (Boolean) encResult) {
-                            info.storageEncryption = "文件级加密（FBE）";
+                            config.setStorageEncryption("文件级加密（FBE）");
                         }
                     } catch (NoSuchMethodException nsme) {
                         Log.d(TAG, "isDirectoryEncrypted() not available on this device");

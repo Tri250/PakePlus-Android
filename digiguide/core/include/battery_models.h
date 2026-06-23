@@ -1,6 +1,8 @@
 #pragma once
 
 #include "result_types.h"
+#include "bugreport_parser.h"
+#include <cmath>
 #include <optional>
 #include <vector>
 
@@ -211,7 +213,7 @@ public:
         const std::vector<BatteryRawData::ChargingEvent>& events) {
 
         if (events.empty()) {
-            return std::nullopt;
+            return 1.0f;  // 无充电事件数据，假设无额外损伤
         }
 
         float damage_score = 0.0f;

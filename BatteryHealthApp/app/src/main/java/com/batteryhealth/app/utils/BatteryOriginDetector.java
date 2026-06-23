@@ -601,16 +601,17 @@ public class BatteryOriginDetector {
     }
 
     private String generateConclusion(OriginResult result) {
+        String disclaimer = "（本结果仅基于可读系统信息加权估算，非官方认证，建议结合售后检测）";
         if (result.confidence >= 80) {
-            return "电池极可能为原装，检测数据完整可靠";
+            return "检测信息较完整，疑似原装电池 " + disclaimer;
         } else if (result.confidence >= 65) {
-            return "电池大概率为原装，部分信息缺失但核心指标正常";
+            return "检测信息基本完整，疑似原装电池 " + disclaimer;
         } else if (result.confidence >= 45) {
-            return "电池来源难以判断，建议通过官方渠道验证";
+            return "电池来源难以判断，建议通过官方渠道验证 " + disclaimer;
         } else if (result.confidence >= 30) {
-            return "电池可能已更换，部分指标异常";
+            return "部分指标异常，疑似非原装或老化电池 " + disclaimer;
         } else {
-            return "无法准确判断电池来源，建议前往售后检测";
+            return "信息不足，无法判断电池来源，建议前往售后检测 " + disclaimer;
         }
     }
 

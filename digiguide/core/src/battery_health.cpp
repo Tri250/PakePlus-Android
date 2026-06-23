@@ -345,8 +345,8 @@ std::optional<int> BatteryHealthCalculator::estimateRemainingLifespan(
     }
 
     // Factor 4: Temperature aging — chronic heat exposure accelerates degradation
-    if (factors.temperature_aging.has_value()) {
-        float temp_score = factors.temperature_aging.value();
+    if (factors.thermal_aging.has_value()) {
+        float temp_score = factors.thermal_aging.value();
         if (temp_score < 0.6f) {
             adjusted_monthly_decay *= 1.0f + (0.6f - temp_score) * 1.0f;
         }

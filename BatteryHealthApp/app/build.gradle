@@ -15,8 +15,8 @@ android {
         applicationId "com.batteryhealth.app"
         minSdk 24
         targetSdk 36
-        versionCode 56
-        versionName "4.9.7"
+        versionCode 57
+        versionName "4.9.8"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -29,8 +29,8 @@ android {
         }
         externalNativeBuild {
             cmake {
-                // 预留：若后续接入NDK库，需传递16KB page size参数
-                // arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                // Android 16 强制要求原生库支持 16KB 页大小
+                arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
             }
         }
     }

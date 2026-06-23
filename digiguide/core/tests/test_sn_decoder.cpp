@@ -8,8 +8,8 @@ using namespace digiguide::core;
 void testAppleSN() {
     std::cout << "Testing Apple SN decoder..." << std::endl;
 
-    // 测试有效Apple SN
-    SNDecodeResult result = SNDecoder::decode("C3LXK2XXXXX");
+    // 测试有效Apple SN（必须为12位）
+    SNDecodeResult result = SNDecoder::decode("C3LXK2XXXXXX");
     assert(result.brand == Brand::APPLE);
     assert(result.status == SNDecodeStatus::SUCCESS);
     assert(result.factory_year.has_value());
@@ -63,7 +63,7 @@ void testBrandIdentification() {
     std::cout << "Testing brand identification..." << std::endl;
 
     // Apple识别
-    Brand brand = SNDecoder::identifyBrand("C3LXK2XXXXX");
+    Brand brand = SNDecoder::identifyBrand("C3LXK2XXXXXX");
     assert(brand == Brand::APPLE);
 
     // 未知品牌
@@ -77,7 +77,7 @@ void testFormatValidation() {
     std::cout << "Testing format validation..." << std::endl;
 
     // Apple格式验证
-    assert(SNDecoder::validateFormat("C3LXK2XXXXX", Brand::APPLE));
+    assert(SNDecoder::validateFormat("C3LXK2XXXXXX", Brand::APPLE));
     assert(!SNDecoder::validateFormat("C3LX", Brand::APPLE));
 
     // Samsung格式验证
@@ -105,7 +105,7 @@ void testFormatHint() {
 void testProductionDateEstimate() {
     std::cout << "Testing production date estimate..." << std::endl;
 
-    SNDecodeResult result = SNDecoder::decode("C3LXK2XXXXX");
+    SNDecodeResult result = SNDecoder::decode("C3LXK2XXXXXX");
     std::string date = result.getProductionDateEstimate();
     std::cout << "  Estimated date: " << date << std::endl;
     assert(!date.empty());

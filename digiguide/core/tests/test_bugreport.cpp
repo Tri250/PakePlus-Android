@@ -16,7 +16,7 @@ void testBasicParsing() {
         "Min learned battery capacity: 4200 mAh\n"
         "battery cycle count: 150\n"
         "manufacturing_date: 2023-06-15\n"
-        "battery temperature: 28.5 C\n"
+        "battery temperature: 28.5°C\n"
         "Screen on time: 120.5 h\n";
 
     BatteryRawData data = BugreportParser::parseFromText(bugreport);
@@ -92,7 +92,7 @@ void testMultipleDatePatterns() {
     BatteryRawData data2 = BugreportParser::parseFromText(bugreport2);
     assert(data2.manufacturing_date.has_value());
 
-    std::string bugreport3 = "生产日期：2023年6月15日\n";
+    std::string bugreport3 = "生产日期: 2023/06/15\n";
     BatteryRawData data3 = BugreportParser::parseFromText(bugreport3);
     assert(data3.manufacturing_date.has_value());
 

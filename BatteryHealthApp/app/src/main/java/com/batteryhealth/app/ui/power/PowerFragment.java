@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -93,13 +94,13 @@ public class PowerFragment extends Fragment {
         xAxis.setDrawGridLines(false);
         xAxis.setDrawAxisLine(false);
         xAxis.setLabelCount(5);
-        xAxis.setTextColor(getResources().getColor(R.color.label_3));
+        xAxis.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         xAxis.setTextSize(10f);
 
         YAxis leftAxis = chartPower.getAxisLeft();
         leftAxis.setDrawGridLines(true);
-        leftAxis.setGridColor(getResources().getColor(R.color.separator));
-        leftAxis.setTextColor(getResources().getColor(R.color.label_3));
+        leftAxis.setGridColor(ContextCompat.getColor(requireContext(), R.color.separator));
+        leftAxis.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         leftAxis.setTextSize(10f);
         leftAxis.setAxisMinimum(0f);
 
@@ -109,7 +110,7 @@ public class PowerFragment extends Fragment {
         chartPower.getLegend().setEnabled(false);
 
         LineData data = new LineData();
-        data.setValueTextColor(getResources().getColor(R.color.label_3));
+        data.setValueTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         chartPower.setData(data);
     }
 
@@ -395,7 +396,7 @@ public class PowerFragment extends Fragment {
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "功率");
-        dataSet.setColor(getResources().getColor(R.color.primary));
+        dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.primary));
         dataSet.setLineWidth(2f);
         dataSet.setDrawCircles(false);
         dataSet.setDrawValues(false);

@@ -164,7 +164,12 @@ public class PerformanceFragment extends Fragment {
         UiAnimationHelper.animateProgressBar(progressScore, score);
 
         // App info - 使用真实的 /proc/self/stat 读取应用 CPU 使用率
-        tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", getAppCpuUsage()));
+        float appCpu = getAppCpuUsage();
+        if (appCpu < 0) {
+            tvAppCpu.setText("读取受限");
+        } else {
+            tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", appCpu));
+        }
         tvAppMemory.setText(formatSize(getAppMemoryUsage()));
         long runtimeMs = SystemClock.elapsedRealtime();
         tvRuntime.setText(formatDuration(runtimeMs));
@@ -225,7 +230,9 @@ public class PerformanceFragment extends Fragment {
             // 读取系统总 CPU 时间
             long[] sysTimes = readSystemCpuTimes();
 
-            if (appTimes == null || sysTimes == null) return 0f;
+            // /proc/self/stat 在部分 Android 16 OEM 设备上受 selinux 限制无法读取，
+            // 返回 -1 以在 UI 上显示“读取受限”，避免与真实 0% 占用混淆。
+            if (appTimes == null || sysTimes == null) return -1f;
 
             long appCpuTime = appTimes[0] + appTimes[1]; // utime + stime
             long sysCpuTime = 0;
