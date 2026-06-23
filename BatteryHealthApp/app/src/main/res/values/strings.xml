@@ -236,9 +236,9 @@
     <string name="battery_monitor_channel_description">实时电池状态监测</string>
     <string name="health_alert_channel_name">健康预警</string>
     <string name="health_alert_channel_description">电池健康度预警通知</string>
-    <string name="health_alert_content">电池健康度已降至 %1$d%%，建议关注</string>
+    <string name="health_alert_content">健康度近30天下降 %1$.1f%%（历史均值 %2$.1f%% → 当前 %3$.1f%%），建议关注</string>
     <string name="health_alert_title">电池健康预警</string>
-    <string name="battery_monitor_notification_content">电池 %1$d%% · %2$s · %3$.1f°C</string>
+    <string name="battery_monitor_notification_content">电池 %1$d%% · %2$.1f°C · 健康%3$.1f%%</string>
     <string name="battery_monitor_notification_title">电池监测中</string>
     <string name="battery_monitor_notification_fallback">电池监测服务运行中</string>
     <string name="confidence_format"> (可信度 %1$d%%)</string>

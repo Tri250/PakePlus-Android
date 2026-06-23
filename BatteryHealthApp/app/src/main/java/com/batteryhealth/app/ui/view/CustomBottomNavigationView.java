@@ -22,7 +22,7 @@ import java.util.List;
  * 自定义底部导航栏
  *
  * 重构原因：
- * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 6 个 Tab。
+ * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 9 个 Tab。
  * 2. BottomNavigationView 在低版本 ROM / 特定 Material 组件版本下解析自定义
  *    TextAppearance 时会出现 Binary XML 崩溃。
  * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
@@ -41,7 +41,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private int activeColor;
     private int inactiveColor;
     private LinearLayout container;
-    private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
+    private boolean forceAverageWidth = true; // Tab 时强制平均分布，避免滚动
 
     private int baseHeightPx = -1;
     private int bottomInset = 0;
@@ -89,7 +89,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 6 Tab，默认平均分配
+        // 根据总宽度与子项数量决定是否平均分布；当前产品固定 9 Tab，默认平均分配
         boolean average = forceAverageWidth && items.size() > 0;
         for (int i = 0; i < items.size(); i++) {
             final int position = i;

@@ -372,8 +372,9 @@ public class ChargingMonitorService extends Service {
         // 发送充电完成本地通知
         sendChargingCompleteNotification(summary);
 
-        // 发送广播供 UI 层接收
+        // 发送广播供 UI 层接收（限定包名，Android 14+ 安全要求）
         Intent broadcast = new Intent("com.batteryhealth.app.CHARGING_COMPLETED");
+        broadcast.setPackage(getPackageName());
         broadcast.putExtra("session_id", summary.sessionId);
         broadcast.putExtra("duration", summary.duration);
         broadcast.putExtra("max_power", summary.maxPower);

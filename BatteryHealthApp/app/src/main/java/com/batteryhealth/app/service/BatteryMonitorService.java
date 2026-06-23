@@ -500,8 +500,8 @@ public class BatteryMonitorService extends Service {
             );
 
             BatteryInfo info = currentBatteryInfo != null ? currentBatteryInfo : new BatteryInfo();
-            String content = String.format(
-                    getString(R.string.battery_monitor_notification_content),
+            String content = getString(
+                    R.string.battery_monitor_notification_content,
                     info.getLevel(),
                     info.getTemperature(),
                     info.getHealthPercentage());
