@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -145,7 +147,12 @@ public class DeviceInfoManager {
                 config.setModel(entry.marketName); // 营销名覆盖 model，originalModel 保留 Build.MODEL
             }
             if (entry.processor != null && !entry.processor.isEmpty()) {
-                config.setCpuInfo(entry.processor);
+                String proc = entry.processor;
+                // 安全检查：如果数据库中的处理器名不含中文字符且不匹配已知营销名模式，尝试映射
+                if (!containsChinese(proc) && !isKnownMarketingPattern(proc)) {
+                    proc = toChineseProcessorName(proc);
+                }
+                config.setCpuInfo(proc);
             }
             if (entry.batteryMah > 0) {
                 config.setBatteryCapacity(entry.batteryMah);
@@ -205,20 +212,20 @@ public class DeviceInfoManager {
         // 1. 本地机型数据库（最准确，含营销名与型号）
         String dbProcessor = deviceDb.getProcessorName();
         if (dbProcessor != null && !dbProcessor.isEmpty()) {
-            return dbProcessor;
+            return toChineseProcessorName(dbProcessor);
         }
 
         // 2. sysprop SoC 标识
         String soc = SystemPropertiesCompat.getSoC();
         if (soc != null && !soc.isEmpty()) {
             String normalized = normalizeProcessorName(soc);
-            if (normalized != null) return normalized;
+            if (normalized != null) return toChineseProcessorName(normalized);
         }
 
         // 3. /proc/cpuinfo Hardware / model name / Processor 行
         String cpuInfo = readCpuInfoFromProc();
         if (cpuInfo != null && !cpuInfo.isEmpty()) {
-            return cpuInfo;
+            return toChineseProcessorName(cpuInfo);
         }
 
         // 4. 设备配置中已经收集的 CPU 字段
@@ -295,6 +302,119 @@ public class DeviceInfoManager {
             return "Google Tensor G5";
         }
         return v;
+    }
+
+    /** 处理器原始标识 → 中文营销名映射表（key 为小写标识符，value 为中文营销名） */
+    private static final LinkedHashMap<String, String> PROCESSOR_CN_MAP = new LinkedHashMap<String, String>() {{
+        // Qualcomm Snapdragon (骁龙)
+        put("kalama", "骁龙8 Gen 2");
+        put("pineapple", "骁龙8 Gen 3");
+        put("sm8750", "骁龙8 Elite");
+        put("sm8650", "骁龙8 Gen 3");
+        put("sm8450", "骁龙8 Gen 1");
+        put("sm8350", "骁龙888");
+        put("sm7675", "骁龙7+ Gen 3");
+        put("sm7550", "骁龙7 Gen 1");
+        put("sm7475", "骁龙7+ Gen 2");
+        put("sm7450", "骁龙7 Gen 1");
+        put("sm6450", "骁龙6 Gen 1");
+        put("sm6375", "骁龙695");
+        put("taro", "骁龙8 Gen 1");
+        put("cape", "骁龙8 Gen 1+");
+        put("shima", "骁龙888+");
+        put("yupik", "骁龙870");
+        put("lahaina", "骁龙888");
+        put("kona", "骁龙865");
+        put("parrot", "骁龙6 Gen 1");
+        put("khaje", "骁龙6 Gen 1");
+        put("holi", "骁龙695");
+        put("bengal", "骁龙680");
+        put("sun", "骁龙8 Elite (骁龙8至尊版)");
+        put("cliff", "骁龙8 Elite (骁龙8至尊版)");
+        // MediaTek Dimensity (天玑)
+        put("mt6991", "天玑9400");
+        put("mt6989z", "天玑9300");
+        put("mt6989w", "天玑9300+");
+        put("mt6989", "天玑9300");
+        put("mt6985", "天玑9200+");
+        put("mt6983", "天玑9200");
+        put("mt6897", "天玑8300");
+        put("mt6895", "天玑8200");
+        put("mt6893", "天玑1200");
+        put("mt6891", "天玑1100");
+        put("mt6889", "天玑1000+");
+        put("mt6879", "天玑1080");
+        put("mt6877", "天玑920");
+        put("mt6855", "天玑7050");
+        put("mt6853", "天玑720");
+        put("mt6833", "天玑720");
+        // HiSilicon Kirin (麒麟)
+        put("kirin9010", "麒麟9010");
+        put("kirin9000s", "麒麟9000S");
+        put("kirin9000", "麒麟9000");
+        put("kirin990", "麒麟990");
+        put("kirin985", "麒麟985");
+        put("kirin980", "麒麟980");
+        put("kirin820", "麒麟820");
+        // Samsung Exynos
+        put("exynos2500", "Exynos 2500");
+        put("exynos2400", "Exynos 2400");
+        put("exynos2200", "Exynos 2200");
+        put("exynos2100", "Exynos 2100");
+        put("exynos1380", "Exynos 1380");
+        put("exynos1280", "Exynos 1280");
+        // UNISOC
+        put("ud712", "唐古拉T760");
+        put("ud710", "唐古拉T770");
+        put("t820", "唐古拉T820");
+        // Google Tensor
+        put("tensor g5", "Google Tensor G5");
+        put("tensor g4", "Google Tensor G4");
+        put("tensor g3", "Google Tensor G3");
+        put("tensor g2", "Google Tensor G2");
+        put("tensor", "Google Tensor");
+    }};
+
+    /**
+     * 将原始处理器标识转换为中文营销名。
+     * 匹配策略：将输入转为小写后，检查是否包含映射表中的某个 key。
+     * 优先匹配较长的 key（如 "mt6989w" 优先于 "mt6989"），通过 LinkedHashMap 的插入顺序保证。
+     *
+     * @param raw 原始处理器字符串（来自 /proc/cpuinfo、sysprops 等）
+     * @return 中文营销名，若未匹配则返回原始字符串
+     */
+    private String toChineseProcessorName(String raw) {
+        if (raw == null || raw.isEmpty()) return raw;
+        String lower = raw.toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : PROCESSOR_CN_MAP.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return raw;
+    }
+
+    /**
+     * 判断字符串是否包含中文字符。
+     */
+    private boolean containsChinese(String s) {
+        if (s == null || s.isEmpty()) return false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= '\u4e00' && c <= '\u9fff') return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断字符串是否匹配已知的处理器营销名模式（如 "骁龙*", "天玑*", "Exynos *", "Google Tensor*" 等）。
+     */
+    private boolean isKnownMarketingPattern(String s) {
+        if (s == null || s.isEmpty()) return false;
+        String lower = s.toLowerCase(Locale.ROOT);
+        return lower.startsWith("骁龙") || lower.startsWith("天玑") || lower.startsWith("麒麟")
+                || lower.startsWith("唐古拉") || lower.startsWith("exynos")
+                || lower.startsWith("google tensor");
     }
 
     /**
@@ -395,7 +515,7 @@ public class DeviceInfoManager {
             cpuResult = formatHardwareName(Build.HARDWARE);
         }
 
-        config.setCpuInfo(cpuResult);
+        config.setCpuInfo(toChineseProcessorName(cpuResult));
     }
 
     /**
@@ -716,20 +836,125 @@ public class DeviceInfoManager {
 
     // region GPU
 
+    /** GPU 原始标识 → 营销名映射表（key 为小写匹配模式，value 为营销名+SoC 关联） */
+    private static final LinkedHashMap<String, String> GPU_MARKETING_MAP = new LinkedHashMap<String, String>() {{
+        // Qualcomm Adreno
+        put("adreno 750", "Adreno 750 (骁龙8 Gen 3)");
+        put("a750", "Adreno 750 (骁龙8 Gen 3)");
+        put("adreno 740", "Adreno 740 (骁龙8 Gen 2)");
+        put("a740", "Adreno 740 (骁龙8 Gen 2)");
+        put("adreno 730", "Adreno 730 (骁龙8+ Gen 1 / 骁龙8 Gen 1)");
+        put("a730", "Adreno 730 (骁龙8+ Gen 1 / 骁龙8 Gen 1)");
+        put("adreno 660", "Adreno 660 (骁龙888)");
+        put("a660", "Adreno 660 (骁龙888)");
+        put("adreno 650", "Adreno 650 (骁龙865)");
+        put("a650", "Adreno 650 (骁龙865)");
+        put("adreno 640", "Adreno 640 (骁龙855)");
+        put("a640", "Adreno 640 (骁龙855)");
+        put("adreno 630", "Adreno 630 (骁龙845)");
+        put("a630", "Adreno 630 (骁龙845)");
+        put("adreno 620", "Adreno 620 (骁龙765G)");
+        put("a620", "Adreno 620 (骁龙765G)");
+        put("adreno 618", "Adreno 618 (骁龙778G)");
+        put("a618", "Adreno 618 (骁龙778G)");
+        put("adreno 615", "Adreno 615 (骁龙690)");
+        put("a615", "Adreno 615 (骁龙690)");
+        put("adreno 612", "Adreno 612 (骁龙675)");
+        put("a612", "Adreno 612 (骁龙675)");
+        put("adreno 610", "Adreno 610 (骁龙665)");
+        put("a610", "Adreno 610 (骁龙665)");
+        put("adreno 830", "Adreno 830 (骁龙8 Elite)");
+        put("a830", "Adreno 830 (骁龙8 Elite)");
+        put("adreno 810", "Adreno 810 (骁龙8s Gen 3)");
+        put("a810", "Adreno 810 (骁龙8s Gen 3)");
+        // ARM Mali
+        put("mali-g715 mc11", "Mali-G715 MC11 (天玑9200+)");
+        put("mali-g710 mc7", "Mali-G710 MC7 (天玑9000)");
+        put("mali-g715", "Mali-G715 (天玑9200/9300)");
+        put("mali g715", "Mali-G715 (天玑9200/9300)");
+        put("mali-g710", "Mali-G710");
+        put("mali g710", "Mali-G710");
+        put("mali-g78", "Mali-G78");
+        put("mali g78", "Mali-G78");
+        put("mali-g77", "Mali-G77 (天玑1000+/1100/1200)");
+        put("mali g77", "Mali-G77 (天玑1000+/1100/1200)");
+        put("mali-g720", "Mali-G720 (天玑9400)");
+        put("mali g720", "Mali-G720 (天玑9400)");
+        put("mali-g920", "Mali-G920 (天玑9400)");
+        put("mali g920", "Mali-G920 (天玑9400)");
+        put("mali-g615", "Mali-G615 (天玑8300)");
+        put("mali g615", "Mali-G615 (天玑8300)");
+        put("mali-g610", "Mali-G610");
+        put("mali g610", "Mali-G610");
+        put("mali-g68", "Mali-G68");
+        put("mali g68", "Mali-G68");
+        put("mali-g57", "Mali-G57");
+        put("mali g57", "Mali-G57");
+        put("mali-g510", "Mali-G510");
+        put("mali g510", "Mali-G510");
+        put("mali-c720", "Mali-C720 (麒麟9010)");
+        put("mali c720", "Mali-C720 (麒麟9010)");
+        put("mali-c715", "Mali-C715 (麒麟9000S)");
+        put("mali c715", "Mali-C715 (麒麟9000S)");
+        // Samsung Xclipse
+        put("xclipse 940", "Xclipse 940 (Exynos 2500)");
+        put("xclipse940", "Xclipse 940 (Exynos 2500)");
+        put("xclipse 930", "Xclipse 930 (Exynos 2400)");
+        put("xclipse930", "Xclipse 930 (Exynos 2400)");
+        put("xclipse 920", "Xclipse 920 (Exynos 2200)");
+        put("xclipse920", "Xclipse 920 (Exynos 2200)");
+        // IMG PowerVR
+        put("powervr bxm", "PowerVR BXM (天玑9200)");
+        put("bxm", "PowerVR BXM (天玑9200)");
+        put("powervr bxs", "PowerVR BXS");
+        put("bxs", "PowerVR BXS");
+    }};
+
+    /**
+     * 将原始 GPU 标识映射为营销名称。
+     * 匹配策略：将输入转为小写后，检查是否包含映射表中的某个 key。
+     * 优先匹配较长的 key（如 "mali-g715 mc11" 优先于 "mali-g715"），通过 LinkedHashMap 插入顺序保证。
+     *
+     * @param raw 原始 GPU 字符串（来自 GL_RENDERER、sysfs、系统属性等）
+     * @return 营销名（含 SoC 关联），若未匹配则返回清理后的原始字符串
+     */
+    private String normalizeGpuInfo(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return raw;
+        String lower = raw.toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : GPU_MARKETING_MAP.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        // 未匹配时返回清理后的原始字符串
+        return raw.trim();
+    }
+
     private String collectGpuInfo() {
+        // 0. 优先尝试 Qualcomm 专用 gpu_model 节点（直接返回 GPU 型号名称）
+        String kgslModel = readFile("/sys/class/kgsl/kgsl-3d0/gpu_model");
+        if (kgslModel != null && !kgslModel.isEmpty()) {
+            String normalized = normalizeGpuInfo(kgslModel.trim());
+            if (normalized != null && !normalized.isEmpty()) {
+                return normalized;
+            }
+        }
+
         // 1. 尝试读取 sysfs
         for (String path : GPU_RENDERER_PATHS) {
             String value = readFile(path);
             if (value != null && !value.isEmpty()) {
-                return value.trim();
+                String normalized = normalizeGpuInfo(value.trim());
+                if (normalized != null && !normalized.isEmpty()) {
+                    return normalized;
+                }
             }
         }
 
-        // 2. 通过系统属性读取（增加 ro.opengles.version）
+        // 2. 通过系统属性读取
         String[] properties = {
                 "ro.hardware.egl",
                 "ro.hardware.vulkan",
-                "ro.opengles.version",
                 "ro.product.board",
                 "ro.board.platform",
                 "ro.hardware"
@@ -737,50 +962,141 @@ public class DeviceInfoManager {
         for (String prop : properties) {
             String value = getSystemProperty(prop);
             if (value != null && !value.isEmpty()) {
-                return value;
+                String normalized = normalizeGpuInfo(value);
+                if (normalized != null && !normalized.isEmpty()) {
+                    return normalized;
+                }
             }
         }
 
         // 2b. Android 16 新增 GPU 检测属性（通过 SystemPropertiesCompat）
         String[] newGpuProps = {
-                "ro.hardware.gpu",
-                "ro.opengles.version"
+                "ro.hardware.gpu"
         };
         for (String prop : newGpuProps) {
             String value = SystemPropertiesCompat.get(prop);
             if (value != null && !value.isEmpty()) {
-                return value;
+                String normalized = normalizeGpuInfo(value);
+                if (normalized != null && !normalized.isEmpty()) {
+                    return normalized;
+                }
             }
         }
 
         // 3. 通过反射调用 GLES20.glGetString(GL_RENDERER)
         String glRenderer = getGlRendererViaReflection();
         if (glRenderer != null && !glRenderer.isEmpty()) {
-            return glRenderer;
+            String normalized = normalizeGpuInfo(glRenderer);
+            if (normalized != null && !normalized.isEmpty()) {
+                return normalized;
+            }
         }
 
         // 4. 从 /proc/gpuinfo 读取（部分设备存在）
         String procGpu = readFile("/proc/gpuinfo");
         if (procGpu != null && !procGpu.isEmpty()) {
-            return procGpu.trim();
+            String normalized = normalizeGpuInfo(procGpu.trim());
+            if (normalized != null && !normalized.isEmpty()) {
+                return normalized;
+            }
         }
 
-        // 5. 从 /proc/cpuinfo 的 Hardware 字段推断 GPU 厂商
+        // 5. 从 /proc/cpuinfo 的 Hardware 字段推断具体 GPU 型号
         String cpuHardware = getCpuHardware();
         if (cpuHardware != null) {
-            String lower = cpuHardware.toLowerCase(Locale.ROOT);
-            if (lower.contains("qcom") || lower.contains("qualcomm") || lower.contains("snapdragon")) {
-                return context.getString(R.string.gpu_adreno);
-            } else if (lower.contains("mtk") || lower.contains("mediatek")) {
-                return context.getString(R.string.gpu_mali_mediatek);
-            } else if (lower.contains("kirin") || lower.contains("hisilicon")) {
-                return context.getString(R.string.gpu_mali_hisilicon);
-            } else if (lower.contains("exynos")) {
-                return context.getString(R.string.gpu_mali_samsung);
+            String gpuFromHardware = inferGpuFromHardware(cpuHardware);
+            if (gpuFromHardware != null) {
+                return gpuFromHardware;
             }
         }
 
         return context.getString(R.string.status_not_recognized);
+    }
+
+    /**
+     * 根据 CPU Hardware 标识推断具体 GPU 型号。
+     * 覆盖高通、联发科、海思、三星、谷歌等主流 SoC 平台。
+     */
+    private String inferGpuFromHardware(String hardware) {
+        if (hardware == null || hardware.isEmpty()) return null;
+        String lower = hardware.toLowerCase(Locale.ROOT);
+
+        // Qualcomm Snapdragon 平台 → Adreno
+        if (lower.contains("qcom") || lower.contains("qualcomm") || lower.contains("snapdragon")) {
+            // 尝试从 SoC 代号推断具体 Adreno 型号
+            if (lower.contains("pineapple") || lower.contains("sm8650")) return "Adreno 750 (骁龙8 Gen 3)";
+            if (lower.contains("kalama") || lower.contains("sm8550")) return "Adreno 740 (骁龙8 Gen 2)";
+            if (lower.contains("taro") || lower.contains("cape") || lower.contains("sm8450")) return "Adreno 730 (骁龙8+ Gen 1 / 骁龙8 Gen 1)";
+            if (lower.contains("shima") || lower.contains("lahaina") || lower.contains("sm8350")) return "Adreno 660 (骁龙888)";
+            if (lower.contains("yupik") || lower.contains("kona") || lower.contains("sm8250")) return "Adreno 650 (骁龙865)";
+            if (lower.contains("sm8150") || lower.contains("msmnile")) return "Adreno 640 (骁龙855)";
+            if (lower.contains("sdm845")) return "Adreno 630 (骁龙845)";
+            if (lower.contains("sm7675")) return "Adreno 732 (骁龙7+ Gen 3)";
+            if (lower.contains("sm7475")) return "Adreno 710 (骁龙7+ Gen 2)";
+            if (lower.contains("sun") || lower.contains("cliff") || lower.contains("sm8750")) return "Adreno 830 (骁龙8 Elite)";
+            if (lower.contains("sm8635")) return "Adreno 810 (骁龙8s Gen 3)";
+            if (lower.contains("sm7325") || lower.contains("tundra")) return "Adreno 620 (骁龙765G)";
+            if (lower.contains("sm7325-g")) return "Adreno 620 (骁龙765G)";
+            if (lower.contains("sm7350")) return "Adreno 642L (骁龙780G)";
+            if (lower.contains("sm7225")) return "Adreno 618 (骁龙778G)";
+            if (lower.contains("sm6375")) return "Adreno 615 (骁龙690)";
+            if (lower.contains("sm6150")) return "Adreno 612 (骁龙675)";
+            if (lower.contains("sm6125")) return "Adreno 610 (骁龙665)";
+            // 通用高通平台兜底
+            return context.getString(R.string.gpu_adreno);
+        }
+
+        // MediaTek Dimensity / Helio 平台 → Mali
+        if (lower.contains("mtk") || lower.contains("mediatek")) {
+            if (lower.contains("mt6991")) return "Mali-G920 (天玑9400)";
+            if (lower.contains("mt6989z")) return "Mali-G720 (天玑9300)";
+            if (lower.contains("mt6989w")) return "Mali-G720 (天玑9300+)";
+            if (lower.contains("mt6989")) return "Mali-G720 (天玑9300)";
+            if (lower.contains("mt6985")) return "Mali-G715 MC11 (天玑9200+)";
+            if (lower.contains("mt6983")) return "Mali-G715 (天玑9200/9300)";
+            if (lower.contains("mt6897")) return "Mali-G615 (天玑8300)";
+            if (lower.contains("mt6895")) return "Mali-G610 (天玑8200)";
+            if (lower.contains("mt6893")) return "Mali-G77 (天玑1000+/1100/1200)";
+            if (lower.contains("mt6891")) return "Mali-G77 (天玑1000+/1100/1200)";
+            if (lower.contains("mt6889")) return "Mali-G77 (天玑1000+/1100/1200)";
+            if (lower.contains("mt6879")) return "Mali-G68 (天玑1080)";
+            if (lower.contains("mt6877")) return "Mali-G68 (天玑920)";
+            return context.getString(R.string.gpu_mali_mediatek);
+        }
+
+        // HiSilicon Kirin 平台 → Mali
+        if (lower.contains("kirin") || lower.contains("hisilicon")) {
+            if (lower.contains("kirin9010")) return "Mali-C720 (麒麟9010)";
+            if (lower.contains("kirin9000s")) return "Mali-C715 (麒麟9000S)";
+            if (lower.contains("kirin9000")) return "Mali-G78 (麒麟9000)";
+            if (lower.contains("kirin990")) return "Mali-G76 (麒麟990)";
+            if (lower.contains("kirin985")) return "Mali-G77 (麒麟985)";
+            if (lower.contains("kirin980")) return "Mali-G76 (麒麟980)";
+            if (lower.contains("kirin820")) return "Mali-G57 (麒麟820)";
+            return context.getString(R.string.gpu_mali_hisilicon);
+        }
+
+        // Samsung Exynos 平台 → Xclipse / Mali
+        if (lower.contains("exynos")) {
+            if (lower.contains("exynos2500")) return "Xclipse 940 (Exynos 2500)";
+            if (lower.contains("exynos2400")) return "Xclipse 930 (Exynos 2400)";
+            if (lower.contains("exynos2200")) return "Xclipse 920 (Exynos 2200)";
+            if (lower.contains("exynos2100")) return "Mali-G78 (Exynos 2100)";
+            if (lower.contains("exynos1380")) return "Mali-G68 (Exynos 1380)";
+            if (lower.contains("exynos1280")) return "Mali-G68 (Exynos 1280)";
+            return context.getString(R.string.gpu_mali_samsung);
+        }
+
+        // Google Tensor 平台 → Mali / IMG
+        if (lower.contains("tensor") || lower.contains("google")) {
+            if (lower.contains("g5")) return "Mali-G715 (Tensor G5)";
+            if (lower.contains("g4")) return "Mali-G715 (Tensor G4)";
+            if (lower.contains("g3")) return "Mali-G715 (Tensor G3)";
+            if (lower.contains("g2")) return "Mali-G710 (Tensor G2)";
+            return "Mali-G710 (Google Tensor)";
+        }
+
+        return null;
     }
 
     private String getGlRendererViaReflection() {

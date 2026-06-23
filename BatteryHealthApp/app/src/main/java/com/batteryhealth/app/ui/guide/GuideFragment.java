@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.R;
@@ -47,7 +48,7 @@ public class GuideFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_guide, container, false);
         initViews(view);
-        analyzer = new BugReportAnalyzer(requireContext());
+        analyzer = new BugReportAnalyzer(getContext());
         loadBrandGuide();
         return view;
     }
@@ -62,6 +63,8 @@ public class GuideFragment extends Fragment {
     }
 
     private void loadBrandGuide() {
+        if (getContext() == null) return;
+
         BugReportGuide.BrandGuide guide = BugReportGuide.getCurrentBrandGuide();
         if (guide == null) {
             guide = BugReportGuide.getGuideForBrand("google");
@@ -90,7 +93,9 @@ public class GuideFragment extends Fragment {
     }
 
     private void addSection(String title, String subtitle) {
-        View sectionView = LayoutInflater.from(requireContext())
+        Context ctx = getContext();
+        if (ctx == null) return;
+        View sectionView = LayoutInflater.from(ctx)
                 .inflate(R.layout.item_guide_section, guideContainer, false);
         
         TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
@@ -108,16 +113,20 @@ public class GuideFragment extends Fragment {
     }
 
     private void addListItem(String text) {
-        TextView tv = new TextView(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) return;
+        TextView tv = new TextView(ctx);
         tv.setText(text);
-        tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+        tv.setTextAppearance(ctx, R.style.WebListLabel);
         tv.setPadding(dpToPx(32), dpToPx(8), dpToPx(16), dpToPx(8));
         tv.setTextSize(15);
         guideContainer.addView(tv);
     }
 
     private void addCodeItem(String code) {
-        View codeView = LayoutInflater.from(requireContext())
+        Context ctx = getContext();
+        if (ctx == null) return;
+        View codeView = LayoutInflater.from(ctx)
                 .inflate(R.layout.item_guide_code, guideContainer, false);
         
         TextView tvCode = codeView.findViewById(R.id.tv_code);
@@ -127,9 +136,11 @@ public class GuideFragment extends Fragment {
     }
 
     private void addNoteItem(String note) {
-        TextView tv = new TextView(requireContext());
+        Context ctx = getContext();
+        if (ctx == null) return;
+        TextView tv = new TextView(ctx);
         tv.setText("• " + note);
-        tv.setTextAppearance(requireContext(), R.style.WebListValue);
+        tv.setTextAppearance(ctx, R.style.WebListValue);
         tv.setPadding(dpToPx(32), dpToPx(4), dpToPx(16), dpToPx(4));
         tv.setTextSize(14);
         guideContainer.addView(tv);
@@ -175,25 +186,36 @@ public class GuideFragment extends Fragment {
             }
 
             new Thread(() -> {
-                File tempFile = copyUriToTempFile(ctx, uri, fileName);
-                if (tempFile != null) {
-                    BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
+                try {
+                    File tempFile = copyUriToTempFile(ctx, uri, fileName);
+                    if (tempFile != null) {
+                        BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
 
-                    if (isAdded()) {
-                        mainHandler.post(() -> {
-                            if (!isAdded()) return;
-                            showAnalysisResult(result);
-                            btnUpload.setText("上传分析报告");
-                            btnUpload.setEnabled(true);
-                        });
+                        if (isAdded()) {
+                            mainHandler.post(() -> {
+                                if (!isAdded()) return;
+                                showAnalysisResult(result);
+                                btnUpload.setText("上传分析报告");
+                                btnUpload.setEnabled(true);
+                            });
+                        }
+
+                        tempFile.delete();
+                    } else {
+                        if (isAdded()) {
+                            mainHandler.post(() -> {
+                                if (!isAdded()) return;
+                                tvAnalysisSummary.setText("文件读取失败");
+                                btnUpload.setText("上传分析报告");
+                                btnUpload.setEnabled(true);
+                            });
+                        }
                     }
-
-                    tempFile.delete();
-                } else {
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in analysis thread: " + e.getMessage());
                     if (isAdded()) {
                         mainHandler.post(() -> {
                             if (!isAdded()) return;
-                            tvAnalysisSummary.setText("文件读取失败");
                             btnUpload.setText("上传分析报告");
                             btnUpload.setEnabled(true);
                         });
@@ -209,9 +231,11 @@ public class GuideFragment extends Fragment {
     }
 
     private String getFileName(Uri uri) {
+        Context ctx = getContext();
+        if (ctx == null) return uri.getLastPathSegment();
         String result = null;
         if (uri.getScheme().equals("content")) {
-            try (android.database.Cursor cursor = requireContext().getContentResolver().query(uri, null, null, null, null)) {
+            try (android.database.Cursor cursor = ctx.getContentResolver().query(uri, null, null, null, null)) {
                 if (cursor != null && cursor.moveToFirst()) {
                     int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
                     if (index >= 0) {
@@ -256,6 +280,9 @@ public class GuideFragment extends Fragment {
     }
 
     private void showAnalysisResult(BugReportGuide.AnalysisResult result) {
+        if (!isAdded() || getContext() == null) return;
+
+        Context ctx = getContext();
         analysisResultContainer.removeAllViews();
         
         if (result.summary != null) {
@@ -274,7 +301,7 @@ public class GuideFragment extends Fragment {
             addAnalysisSection("异常检测结果", null);
             
             for (BugReportGuide.AnalysisResult.Anomaly anomaly : result.anomalies) {
-                View itemView = LayoutInflater.from(requireContext())
+                View itemView = LayoutInflater.from(ctx)
                         .inflate(R.layout.item_analysis_anomaly, analysisResultContainer, false);
                 
                 TextView tvSeverity = itemView.findViewById(R.id.tv_severity);
@@ -300,9 +327,9 @@ public class GuideFragment extends Fragment {
                 String info = String.format("电量: %d%%→%d%%, 时长: %s, 功率: %.1fW (最高: %.1fW)",
                         session.startLevel, session.endLevel, duration, session.avgPower, session.maxPower);
                 
-                TextView tv = new TextView(requireContext());
+                TextView tv = new TextView(ctx);
                 tv.setText(info);
-                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                tv.setTextAppearance(ctx, R.style.WebListLabel);
                 tv.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
                 analysisResultContainer.addView(tv);
             }
@@ -316,9 +343,9 @@ public class GuideFragment extends Fragment {
                         wakelock.appName, wakelock.packageName, wakelock.count, 
                         formatDuration(wakelock.durationMs));
                 
-                TextView tv = new TextView(requireContext());
+                TextView tv = new TextView(ctx);
                 tv.setText(info);
-                tv.setTextAppearance(requireContext(), R.style.WebListLabel);
+                tv.setTextAppearance(ctx, R.style.WebListLabel);
                 tv.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
                 analysisResultContainer.addView(tv);
             }
@@ -328,7 +355,9 @@ public class GuideFragment extends Fragment {
     }
 
     private void addAnalysisSection(String title, String subtitle) {
-        View sectionView = LayoutInflater.from(requireContext())
+        Context ctx = getContext();
+        if (ctx == null) return;
+        View sectionView = LayoutInflater.from(ctx)
                 .inflate(R.layout.item_guide_section, analysisResultContainer, false);
         
         TextView tvTitle = sectionView.findViewById(R.id.tv_section_title);
@@ -346,11 +375,13 @@ public class GuideFragment extends Fragment {
     }
 
     private int getSeverityColor(String severity) {
+        Context ctx = getContext();
+        if (ctx == null) return 0;
         switch (severity) {
-            case "CRITICAL": return getResources().getColor(R.color.red);
-            case "HIGH": return getResources().getColor(R.color.orange);
-            case "MEDIUM": return getResources().getColor(R.color.yellow);
-            default: return getResources().getColor(R.color.label_2);
+            case "CRITICAL": return ContextCompat.getColor(ctx, R.color.red);
+            case "HIGH": return ContextCompat.getColor(ctx, R.color.orange);
+            case "MEDIUM": return ContextCompat.getColor(ctx, R.color.yellow);
+            default: return ContextCompat.getColor(ctx, R.color.label_2);
         }
     }
 
@@ -370,6 +401,7 @@ public class GuideFragment extends Fragment {
     }
 
     private int dpToPx(int dp) {
+        if (getResources() == null) return dp;
         return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
     }
 }

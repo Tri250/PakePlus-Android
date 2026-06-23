@@ -76,6 +76,46 @@ public class BatteryOriginDetector {
             Log.w(TAG, "Error detecting cycle count: " + e.getMessage());
         }
 
+        try {
+            String designCapacity = detectDesignCapacity();
+            if (designCapacity != null) {
+                result.designCapacity = designCapacity;
+                methods.add(new DetectionMethod("设计容量", designCapacity));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting design capacity: " + e.getMessage());
+        }
+
+        try {
+            String currentCapacity = detectCurrentCapacity();
+            if (currentCapacity != null) {
+                result.currentCapacity = currentCapacity;
+                methods.add(new DetectionMethod("当前容量", currentCapacity));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting current capacity: " + e.getMessage());
+        }
+
+        try {
+            String technology = detectTechnology();
+            if (technology != null) {
+                result.technology = technology;
+                methods.add(new DetectionMethod("电池技术", technology));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting technology: " + e.getMessage());
+        }
+
+        try {
+            String manufacturer = detectManufacturer();
+            if (manufacturer != null) {
+                result.manufacturer = manufacturer;
+                methods.add(new DetectionMethod("制造商", manufacturer));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error detecting manufacturer: " + e.getMessage());
+        }
+
         boolean isOriginal = analyzeOriginal(result);
         result.isOriginal = isOriginal;
         result.confidence = calculateConfidence(result);
@@ -183,20 +223,25 @@ public class BatteryOriginDetector {
     }
 
     private String detectHealthStatus() {
-        try {
-            File healthFile = new File("/sys/class/power_supply/battery0/health");
-            if (!healthFile.exists()) {
-                healthFile = new File("/sys/class/power_supply/bms/health");
-            }
-            if (healthFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(healthFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null && !line.isEmpty()) {
-                    return line.trim().toUpperCase();
+        // Try primary paths first (most common on real devices)
+        String[] healthPaths = {
+            "/sys/class/power_supply/battery/health",
+            "/sys/class/power_supply/bms/health",
+            "/sys/class/power_supply/battery0/health",
+            "/sys/class/power_supply/maxfg/health"
+        };
+        for (String path : healthPaths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) {
+                        return line.trim().toUpperCase();
+                    }
                 }
-            }
-        } catch (IOException ignored) {
+            } catch (IOException ignored) {}
         }
 
         try {
@@ -210,20 +255,33 @@ public class BatteryOriginDetector {
     }
 
     private String detectCycleCount() {
-        try {
-            File cycleFile = new File("/sys/class/power_supply/battery0/cycle_count");
-            if (!cycleFile.exists()) {
-                cycleFile = new File("/sys/class/power_supply/bms/cycle_count");
-            }
-            if (cycleFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(cycleFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null && !line.isEmpty()) {
-                    return line.trim();
+        String[] cyclePaths = {
+            "/sys/class/power_supply/battery/cycle_count",
+            "/sys/class/power_supply/bms/cycle_count",
+            "/sys/class/power_supply/maxfg/cycle_count",
+            "/sys/class/power_supply/battery0/cycle_count",
+            "/sys/class/power_supply/battery/battery_cycle_count",
+            "/sys/class/power_supply/battery/charge_cycle",
+            "/sys/class/power_supply/battery/cycle_count_complete",
+            "/sys/class/power_supply/battery/batt_cycle",
+            "/sys/class/power_supply/battery/fg_cycle_count"
+        };
+        for (String path : cyclePaths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) {
+                        String trimmed = line.trim();
+                        try {
+                            int val = Integer.parseInt(trimmed);
+                            if (val >= 0 && val < 100000) return trimmed;
+                        } catch (NumberFormatException ignored) {}
+                    }
                 }
-            }
-        } catch (IOException ignored) {
+            } catch (IOException ignored) {}
         }
 
         try {
@@ -235,6 +293,114 @@ public class BatteryOriginDetector {
             Log.w(TAG, "Error getting cycle count from BatteryDataManager: " + e.getMessage());
             return null;
         }
+    }
+
+    private String detectDesignCapacity() {
+        String[] paths = {
+            "/sys/class/power_supply/battery/charge_full_design",
+            "/sys/class/power_supply/bms/charge_full_design",
+            "/sys/class/power_supply/battery/design_capacity",
+            "/sys/class/power_supply/bms/design_capacity",
+            "/sys/class/power_supply/battery/batt_design_capacity",
+            "/sys/class/power_supply/battery/fg_design_capacity"
+        };
+        for (String path : paths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) {
+                        String trimmed = line.trim();
+                        try {
+                            int val = Integer.parseInt(trimmed);
+                            if (val > 100 && val < 20000) return trimmed + " mAh";
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+        // Try device database
+        try {
+            DeviceDatabaseManager db = DeviceDatabaseManager.getInstance(context);
+            int cap = db.getDesignCapacity();
+            if (cap > 0) return cap + " mAh";
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String detectCurrentCapacity() {
+        String[] paths = {
+            "/sys/class/power_supply/battery/charge_full",
+            "/sys/class/power_supply/bms/charge_full",
+            "/sys/class/power_supply/maxfg/charge_full",
+            "/sys/class/power_supply/battery/learned_full_capacity",
+            "/sys/class/power_supply/bms/learned_full_capacity",
+            "/sys/class/power_supply/battery/fg_full_capacity",
+            "/sys/class/power_supply/battery/fcc"
+        };
+        for (String path : paths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) {
+                        String trimmed = line.trim();
+                        try {
+                            int val = Integer.parseInt(trimmed);
+                            if (val > 100 && val < 20000) return trimmed + " mAh";
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+        return null;
+    }
+
+    private String detectTechnology() {
+        String[] paths = {
+            "/sys/class/power_supply/battery/technology",
+            "/sys/class/power_supply/bms/technology"
+        };
+        for (String path : paths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty()) return line.trim();
+                }
+            } catch (IOException ignored) {}
+        }
+        return null;
+    }
+
+    private String detectManufacturer() {
+        String[] paths = {
+            "/sys/class/power_supply/battery/manufacturer",
+            "/sys/class/power_supply/bms/manufacturer",
+            "/sys/class/power_supply/battery/company",
+            "/sys/class/power_supply/bms/company"
+        };
+        for (String path : paths) {
+            try {
+                File f = new File(path);
+                if (f.exists() && f.canRead()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(f));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null && !line.isEmpty() && !line.trim().equals("0")
+                            && !line.trim().equalsIgnoreCase("unknown")) {
+                        return line.trim();
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+        return null;
     }
 
     private boolean analyzeOriginal(OriginResult result) {
@@ -297,7 +463,50 @@ public class BatteryOriginDetector {
             }
         }
 
+        if (result.designCapacity != null) {
+            confidence += 10;
+        }
+
+        if (result.manufacturer != null) {
+            // Known battery manufacturers
+            String lower = result.manufacturer.toLowerCase();
+            if (lower.contains("coslight") || lower.contains("sunwoda") || lower.contains("byd")
+                    || lower.contains("desay") || lower.contains("scud") || lower.contains("lg")
+                    || lower.contains("sanyo") || lower.contains("tdk") || lower.contains("at")
+                    || lower.contains("atl") || lower.contains("lishen") || lower.contains("bak")
+                    || lower.contains("farasis") || lower.contains("catl")) {
+                confidence += 15;
+            } else {
+                confidence += 5;
+            }
+        }
+
+        // Capacity deviation check
+        if (result.designCapacity != null && result.currentCapacity != null) {
+            try {
+                int design = extractNumber(result.designCapacity);
+                int current = extractNumber(result.currentCapacity);
+                if (design > 0 && current > 0) {
+                    float ratio = current / (float) design;
+                    if (ratio >= 0.85f && ratio <= 1.05f) {
+                        confidence += 10; // Normal capacity, likely original
+                    } else if (ratio < 0.7f || ratio > 1.2f) {
+                        confidence -= 15; // Abnormal deviation, possibly replaced
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
         return Math.min(100, Math.max(0, confidence));
+    }
+
+    private int extractNumber(String s) {
+        if (s == null) return -1;
+        try {
+            Matcher m = Pattern.compile("(\\d+)").matcher(s);
+            if (m.find()) return Integer.parseInt(m.group(1));
+        } catch (Exception ignored) {}
+        return -1;
     }
 
     private String generateConclusion(OriginResult result) {
@@ -320,6 +529,12 @@ public class BatteryOriginDetector {
         public String serialNumber;
         public String healthStatus;
         public String cycleCount;
+        public String designCapacity;    // 设计容量
+        public String currentCapacity;   // 当前满充容量
+        public String technology;        // 电池技术（Li-ion, Li-poly等）
+        public String manufacturer;      // 电池制造商
+        public String temperature;       // 电池温度
+        public String voltage;           // 电池电压
         public boolean isOriginal;
         public int confidence;
         public String conclusion;

@@ -493,19 +493,22 @@ public final class ActivationDateHelper {
     }
 
     private static long settingsLong(Context context, String key) {
+        // Try Settings.Secure first
         try {
-            return Settings.Secure.getLong(context.getContentResolver(), key, -1);
-        } catch (Exception e) {
-            try {
-                return Settings.Global.getLong(context.getContentResolver(), key, -1);
-            } catch (Exception e2) {
-                try {
-                    return Settings.System.getLong(context.getContentResolver(), key, -1);
-                } catch (Exception ignored) {
-                    return -1;
-                }
-            }
-        }
+            long value = Settings.Secure.getLong(context.getContentResolver(), key, -1);
+            if (value > 0) return value;
+        } catch (Exception ignored) {}
+        // Try Settings.Global
+        try {
+            long value = Settings.Global.getLong(context.getContentResolver(), key, -1);
+            if (value > 0) return value;
+        } catch (Exception ignored) {}
+        // Try Settings.System
+        try {
+            long value = Settings.System.getLong(context.getContentResolver(), key, -1);
+            if (value > 0) return value;
+        } catch (Exception ignored) {}
+        return -1;
     }
 
     /**

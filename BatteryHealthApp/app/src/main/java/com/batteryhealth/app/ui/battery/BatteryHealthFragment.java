@@ -23,9 +23,11 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BatteryReportGenerator;
+import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
@@ -58,6 +60,7 @@ public class BatteryHealthFragment extends Fragment {
     private Runnable updateRunnable;
     private BatteryDataManager batteryDataManager;
     private BatteryReportGenerator reportGenerator;
+    private DeviceInfoManager deviceInfoManager;
 
     @Nullable
     @Override
@@ -101,6 +104,7 @@ public class BatteryHealthFragment extends Fragment {
         // 从 MainActivity 获取共享的 BatteryDataManager
         if (getActivity() instanceof MainActivity) {
             batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+            deviceInfoManager = ((MainActivity) getActivity()).getDeviceInfoManager();
         }
         if (batteryDataManager == null) {
             batteryDataManager = new BatteryDataManager(requireContext());
@@ -200,8 +204,22 @@ public class BatteryHealthFragment extends Fragment {
         float currentMa = info.getCurrentNow() / 1000f;
         tvCurrentNow.setText(String.format(Locale.getDefault(), "%.0f mA", Math.abs(currentMa)));
 
-        // 4. 容量（设计容量 + 当前满充容量）
-        int displayCapacity = info.getCurrentCapacity() > 0 ? info.getCurrentCapacity() : info.getDesignCapacity();
+        // 4. 容量（多路 fallback）
+        int displayCapacity = -1;
+        if (info.getCurrentCapacity() > 0) {
+            displayCapacity = info.getCurrentCapacity();
+        } else if (info.getDesignCapacity() > 0) {
+            displayCapacity = info.getDesignCapacity();
+        }
+        // Fallback: try DeviceConfig capacity
+        if (displayCapacity <= 0 && deviceInfoManager != null) {
+            try {
+                DeviceConfig config = deviceInfoManager.getDeviceConfig();
+                if (config != null && config.getBatteryCapacity() > 0) {
+                    displayCapacity = config.getBatteryCapacity();
+                }
+            } catch (Exception ignored) {}
+        }
         if (displayCapacity > 0) {
             tvCapacity.setText(String.format(Locale.getDefault(), "%d mAh", displayCapacity));
         } else {
