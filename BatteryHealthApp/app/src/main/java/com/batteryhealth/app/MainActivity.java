@@ -81,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
     
     private Handler mainHandler;
     private final AtomicBoolean servicesStarted = new AtomicBoolean(false);
+
+    // 跟踪前台状态（替代废弃的 getRunningAppProcesses API）
+    private static final AtomicBoolean isAppInForeground = new AtomicBoolean(false);
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -433,21 +436,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 判断应用是否处于前台
+     * 判断应用是否处于前台（使用静态标志，避免废弃的 getRunningAppProcesses API）。
      */
     private boolean isAppInForeground() {
-        android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        if (am != null) {
-            List<android.app.ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
-            if (processes != null) {
-                for (android.app.ActivityManager.RunningAppProcessInfo process : processes) {
-                    if (process.processName.equals(getPackageName())) {
-                        return process.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
-                    }
-                }
-            }
-        }
-        return false;
+        return isAppInForeground.get();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isAppInForeground.set(true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isAppInForeground.set(false);
     }
 
     /**

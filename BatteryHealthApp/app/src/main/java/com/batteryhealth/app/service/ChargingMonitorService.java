@@ -20,6 +20,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.MainActivity;
@@ -97,7 +98,7 @@ public class ChargingMonitorService extends Service {
         }
     };
 
-    // 定时更新任务：UI 调度在 Handler，IO 与数据库操作下沉到 executor
+    // 定时更新任务：仅在充电时执行数据采集，非充电时降低轮询频率
     private Runnable updateTask = new Runnable() {
         @Override
         public void run() {
@@ -118,7 +119,9 @@ public class ChargingMonitorService extends Service {
                 });
             }
             if (handler != null) {
-                handler.postDelayed(this, UPDATE_INTERVAL);
+                // 充电时 3 秒高频采集，非充电时 30 秒低频检查以节省电量
+                long interval = isCharging ? UPDATE_INTERVAL : 30000L;
+                handler.postDelayed(this, interval);
             }
         }
     };
@@ -309,13 +312,13 @@ public class ChargingMonitorService extends Service {
     }
 
     /**
-     * 安全获取电池sticky intent（兼容Android 14+）
+     * 安全获取电池sticky intent（兼容Android 13+ 废弃 API）
      */
     private Intent getBatteryIntent() {
         try {
             IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                return registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                return ContextCompat.registerReceiver(this, null, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
             } else {
                 return registerReceiver(null, filter);
             }
@@ -631,9 +634,11 @@ public class ChargingMonitorService extends Service {
      */
     private void addPowerSample(float voltage, float current, float power, int level) {
         long now = System.currentTimeMillis();
-        powerSamples.add(powerSamples.size(), new PowerSample(now, voltage, current, power, level));
-        while (powerSamples.size() > MAX_SAMPLES) {
-            powerSamples.remove(0);
+        synchronized (powerSamples) {
+            powerSamples.add(new PowerSample(now, voltage, current, power, level));
+            while (powerSamples.size() > MAX_SAMPLES) {
+                powerSamples.remove(0);
+            }
         }
     }
 
@@ -655,25 +660,27 @@ public class ChargingMonitorService extends Service {
         }
 
         // 当样本足够时，计算电流变化趋势和电压变化趋势
-        if (powerSamples.size() >= 10) {
-            PowerSample first = powerSamples.get(0);
-            PowerSample last = powerSamples.get(powerSamples.size() - 1);
-            long timeDiff = last.timestamp - first.timestamp; // ms
-            if (timeDiff > 10_000) { // 至少 10 秒数据
-                float currentDiff = last.current - first.current; // A
-                float voltageDiff = last.voltage - first.voltage; // V
-                float hours = timeDiff / (1000.0f * 60 * 60);
-                float didt = currentDiff / hours; // A/h
-                float dvdt = voltageDiff / hours; // V/h
+        synchronized (powerSamples) {
+            if (powerSamples.size() >= 10) {
+                PowerSample first = powerSamples.get(0);
+                PowerSample last = powerSamples.get(powerSamples.size() - 1);
+                long timeDiff = last.timestamp - first.timestamp; // ms
+                if (timeDiff > 10_000) { // 至少 10 秒数据
+                    float currentDiff = last.current - first.current; // A
+                    float voltageDiff = last.voltage - first.voltage; // V
+                    float hours = timeDiff / (1000.0f * 60 * 60);
+                    float didt = currentDiff / hours; // A/h
+                    float dvdt = voltageDiff / hours; // V/h
 
-                // 恒压阶段特征：电流快速下降，电压基本稳定
-                if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
-                    return "constant_voltage";
-                }
+                    // 恒压阶段特征：电流快速下降，电压基本稳定
+                    if (level >= 75 && didt < -0.3f && Math.abs(dvdt) < 0.05f) {
+                        return "constant_voltage";
+                    }
 
-                // 恒流阶段特征：电流稳定或缓慢下降，电压上升
-                if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
-                    return "constant_current";
+                    // 恒流阶段特征：电流稳定或缓慢下降，电压上升
+                    if (power > 5 && Math.abs(didt) < 0.5f && dvdt > 0.01f) {
+                        return "constant_current";
+                    }
                 }
             }
         }
