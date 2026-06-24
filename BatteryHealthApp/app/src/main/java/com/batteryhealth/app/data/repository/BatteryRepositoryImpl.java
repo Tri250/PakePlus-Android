@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
@@ -103,5 +104,18 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     public BatteryDataManager getBatteryDataManager() {
         return batteryDataManager;
+    }
+
+    @Override
+    public void savePerformanceData(PerformanceData data) {
+        if (database != null) {
+            new Thread(() -> {
+                try {
+                    database.performanceDataDao().insert(data);
+                } catch (Exception e) {
+                    android.util.Log.e(TAG, "Error saving performance data: " + e.getMessage());
+                }
+            }).start();
+        }
     }
 }

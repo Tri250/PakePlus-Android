@@ -3,6 +3,7 @@ package com.batteryhealth.app.domain.repository;
 import androidx.lifecycle.LiveData;
 
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.PerformanceData;
 
 import java.util.List;
 
@@ -21,4 +22,6 @@ public interface BatteryRepository {
     float getAverageHealthSince(long timestamp);
 
     void deleteOlderThan(long timestamp);
+
+    void savePerformanceData(PerformanceData data);
 }
