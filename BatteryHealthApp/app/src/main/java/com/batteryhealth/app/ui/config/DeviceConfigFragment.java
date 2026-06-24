@@ -13,6 +13,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -138,10 +139,20 @@ public class DeviceConfigFragment extends Fragment {
     }
 
     private void initViewModel() {
-        viewModel = new ViewModelProvider(this).get(DeviceConfigViewModel.class);
-        viewModel.getDeviceConfig().observe(getViewLifecycleOwner(), this::applyConfig);
-        viewModel.getUsageDays().observe(getViewLifecycleOwner(), days -> 
-                tvUsageDays.setText(days >= 0 ? days + " 天" : "--"));
+        try {
+            viewModel = new ViewModelProvider(this).get(DeviceConfigViewModel.class);
+            viewModel.getDeviceConfig().observe(getViewLifecycleOwner(), this::applyConfig);
+            viewModel.getUsageDays().observe(getViewLifecycleOwner(), days ->
+                    tvUsageDays.setText(days >= 0 ? days + " 天" : "--"));
+            viewModel.getErrorMessage().observe(getViewLifecycleOwner(), msg -> {
+                if (msg != null && !msg.isEmpty() && getContext() != null) {
+                    Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing ViewModel", e);
+            viewModel = null;
+        }
     }
 
     private void animateEntry(View view) {
@@ -152,16 +163,27 @@ public class DeviceConfigFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        viewModel.loadDeviceConfig();
-        loadSystemAnalysis();
+        try {
+            if (viewModel != null) {
+                viewModel.loadDeviceConfig();
+            }
+            loadSystemAnalysis();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onResume", e);
+        }
     }
 
     private void loadSystemAnalysis() {
-        DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
-        tvVersionAssessment.setText(result.versionAssessment);
-        tvSecurityAssessment.setText(result.securityAssessment);
-        tvPerformanceAssessment.setText(result.performanceAssessment);
-        tvSuggestions.setText(result.suggestions);
+        if (configQuery == null) return;
+        try {
+            DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
+            tvVersionAssessment.setText(result.versionAssessment);
+            tvSecurityAssessment.setText(result.securityAssessment);
+            tvPerformanceAssessment.setText(result.performanceAssessment);
+            tvSuggestions.setText(result.suggestions);
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading system analysis", e);
+        }
     }
 
     private void applyConfig(DeviceConfig config) {
