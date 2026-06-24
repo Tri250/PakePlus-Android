@@ -323,4 +323,40 @@
     <string name="origin_result_original_detail">电池极可能为原装，检测数据完整可靠</string>
     <string name="origin_result_replaced_detail">电池可能已更换，部分指标异常</string>
     <string name="origin_result_uncertain_detail">电池来源难以判断，建议通过官方渠道验证</string>
+
+    <!-- Bugreport 分析指南增强 -->
+    <string name="section_analysis_history">分析历史</string>
+    <string name="action_export_report">导出报告</string>
+    <string name="action_share_report">分享报告</string>
+    <string name="action_clear_history">清除历史</string>
+    <string name="action_copy_command">已复制到剪贴板</string>
+    <string name="progress_validating">校验文件格式…</string>
+    <string name="progress_parsing">解析 bugreport 内容…</string>
+    <string name="progress_analyzing">分析电池数据…</string>
+    <string name="progress_cross_referencing">交叉验证实时数据…</string>
+    <string name="progress_generating_report">生成诊断报告…</string>
+    <string name="progress_complete">分析完成</string>
+    <string name="error_invalid_file">文件格式无效，请选择 bugreport 文件（.zip 或 .txt）</string>
+    <string name="error_file_too_small">文件过小，可能不是有效的 bugreport</string>
+    <string name="error_file_too_large">文件过大（超过 2GB），请选择有效的 bugreport</string>
+    <string name="error_file_not_readable">文件无法读取</string>
+    <string name="error_no_bugreport_content">文件中未找到 bugreport 相关内容</string>
+    <string name="success_file_validated">文件校验通过</string>
+    <string name="label_brand_guide">品牌指南</string>
+    <string name="label_all_brands">全部品牌</string>
+    <string name="history_empty">暂无分析历史</string>
+    <string name="history_record_format">%1$s · %2$s · %3$s</string>
+    <string name="history_anomaly_format">异常 %1$d (严重 %2$d)</string>
+    <string name="history_health_format">健康度 %.1f%%</string>
+    <string name="dialog_clear_history_title">清除历史</string>
+    <string name="dialog_clear_history_message">确定要清除所有分析历史记录吗？此操作不可撤销。</string>
+    <string name="action_confirm">确定</string>
+    <string name="action_cancel">取消</string>
+    <string name="export_success">报告已导出</string>
+    <string name="export_failed">导出失败</string>
+    <string name="share_failed">分享失败</string>
+    <string name="section_device_detail">设备详情</string>
+    <string name="section_parse_detail">解析详情</string>
+    <string name="parse_extracted">已提取: %1$s</string>
+    <string name="parse_missing">缺失: %1$s</string>
 </resources>

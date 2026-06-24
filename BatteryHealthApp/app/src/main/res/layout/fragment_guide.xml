@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_canvas">
@@ -10,6 +11,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Title -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -22,8 +24,24 @@
             android:layout_height="wrap_content"
             android:text="@string/subtitle_bugreport_guide"
             android:textAppearance="@style/WebPageSubtitle"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="16dp"/>
 
+        <!-- Brand selector -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/brand_tab_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+
+        </HorizontalScrollView>
+
+        <!-- Upload card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -50,7 +68,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/desc_upload_bugreport"
                     android:textAppearance="@style/WebListValue"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btn_upload_bugreport"
@@ -62,17 +80,71 @@
                     android:textColor="@color/white"
                     android:padding="12dp"/>
 
+                <!-- Progress bar -->
+                <ProgressBar
+                    android:id="@+id/progress_analysis"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:visibility="gone"/>
+
+                <TextView
+                    android:id="@+id/tv_progress_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/WebListValue"
+                    android:layout_marginTop="4dp"
+                    android:visibility="gone"/>
+
                 <TextView
                     android:id="@+id/tv_analysis_summary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="@style/WebListLabel"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:visibility="gone"/>
+
+                <!-- Export/Share buttons (shown after analysis) -->
+                <LinearLayout
+                    android:id="@+id/export_button_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone">
+
+                    <Button
+                        android:id="@+id/btn_export_report"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/action_export_report"
+                        android:textAppearance="@style/WebListLabel"
+                        android:background="@drawable/bg_btn_primary"
+                        android:textColor="@color/white"
+                        android:padding="10dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <Button
+                        android:id="@+id/btn_share_report"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/action_share_report"
+                        android:textAppearance="@style/WebListLabel"
+                        android:background="@drawable/bg_btn_primary"
+                        android:textColor="@color/white"
+                        android:padding="10dp"/>
+
+                </LinearLayout>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Guide card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -89,6 +161,7 @@
 
         </androidx.cardview.widget.CardView>
 
+        <!-- Analysis result card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -104,6 +177,50 @@
                 android:orientation="vertical"
                 android:visibility="gone"/>
 
+        </androidx.cardview.widget.CardView>
+
+        <!-- History card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/history_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/surface_solid"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="@dimen/elevation_card"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_analysis_history"
+                    android:textAppearance="@style/WebCardHeader"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:id="@+id/history_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+                <Button
+                    android:id="@+id/btn_clear_history"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/action_clear_history"
+                    android:textAppearance="@style/WebListValue"
+                    android:background="@android:color/transparent"
+                    android:textColor="@color/red"
+                    android:padding="8dp"
+                    android:layout_gravity="end"/>
+
+            </LinearLayout>
         </androidx.cardview.widget.CardView>
 
     </LinearLayout>
