@@ -94,7 +94,6 @@
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
     <string name="label_battery_capacity">电池容量</string>
-    <string name="label_cycle_count">循环次数</string>
     <string name="label_battery_temperature">电池温度</string>
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
@@ -114,6 +113,11 @@
     <string name="label_network_type">网络类型</string>
     <string name="label_health_decay_alert">电池健康度衰减预警</string>
     <string name="desc_health_decay_alert">当电池健康度低于80%时提醒您</string>
+    <string name="section_alert_settings">提醒设置</string>
+    <string name="section_gpu_info">GPU 信息</string>
+    <string name="desc_performance_tips">性能优化建议</string>
+    <string name="section_history_data">历史数据</string>
+    <string name="label_share">分享</string>
     <string name="label_cpu_usage">CPU 使用率</string>
     <string name="label_memory_usage">内存使用率</string>
     <string name="label_performance_score">性能评分</string>
