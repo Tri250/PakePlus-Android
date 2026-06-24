@@ -6,6 +6,7 @@ import android.os.Looper;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -31,12 +32,16 @@ public final class ThreadExecutor {
     /** 主线程 Handler */
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
 
+    /** 标记线程池是否已关闭，关闭后不再接受新任务 */
+    private static volatile boolean shutdown = false;
+
     /**
      * 在 IO 线程执行任务。
      *
      * @param task 后台任务
      */
     public static void execute(Runnable task) {
+        if (shutdown || task == null) return;
         IO_EXECUTOR.execute(() -> {
             try {
                 task.run();
@@ -54,6 +59,12 @@ public final class ThreadExecutor {
      * @param <T>     结果类型
      */
     public static <T> void executeWithCallback(Task<T> task, MainCallback<T> callback) {
+        if (shutdown || task == null) {
+            if (callback != null) {
+                MAIN_HANDLER.post(() -> callback.onError(new IllegalStateException("ThreadExecutor is shutdown")));
+            }
+            return;
+        }
         IO_EXECUTOR.execute(() -> {
             T result = null;
             Exception error = null;
@@ -103,6 +114,44 @@ public final class ThreadExecutor {
     public interface MainCallback<T> {
         void onSuccess(T result);
         void onError(Exception e);
+    }
+
+    /**
+     * 优雅关闭线程池，等待已提交任务完成。
+     * <p>应在 Application.onTerminate() 或进程退出前调用。
+     * 注意：Android 真机上 onTerminate() 不保证被调用，进程退出时系统会
+     * 自动回收线程池资源；此方法主要用于测试环境和模拟器中清理资源。
+     *
+     * @param timeoutSeconds 等待超时时间（秒）
+     * @return true 表示所有任务在超时前已正常结束
+     */
+    public static boolean shutdown(long timeoutSeconds) {
+        if (shutdown) return true;
+        shutdown = true;
+        IO_EXECUTOR.shutdown();
+        try {
+            return IO_EXECUTOR.awaitTermination(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            IO_EXECUTOR.shutdownNow();
+            return false;
+        }
+    }
+
+    /**
+     * 立即关闭线程池，尝试中断正在执行的任务。
+     */
+    public static void shutdownNow() {
+        if (shutdown) return;
+        shutdown = true;
+        IO_EXECUTOR.shutdownNow();
+    }
+
+    /**
+     * 返回线程池是否已关闭。
+     */
+    public static boolean isShutdown() {
+        return shutdown || IO_EXECUTOR.isShutdown();
     }
 
     /**

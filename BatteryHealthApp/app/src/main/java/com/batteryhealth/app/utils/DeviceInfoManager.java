@@ -147,7 +147,10 @@ public class DeviceInfoManager {
 
     /**
      * 获取完整设备配置（同步，首次调用可能阻塞，建议 UI 层使用异步接口）。
+     * <p>首次调用会同步执行 sysfs 读取、机型数据库查询等耗时操作，必须在后台线程调用。
+     * 后续调用命中缓存后可直接在主线程使用。推荐使用 {@link #getDeviceConfigAsync(DeviceConfigCallback)}。
      */
+    @androidx.annotation.WorkerThread
     public DeviceConfig getDeviceConfig() {
         if (cachedConfig != null) {
             return cachedConfig;

@@ -12,6 +12,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+import androidx.annotation.WorkerThread;
+
 public class BatteryReportGenerator {
 
     public static class Report {
@@ -72,6 +74,12 @@ public class BatteryReportGenerator {
         return generateReport(startTime, endTime, "本月");
     }
 
+    /**
+     * 生成指定时间段的电池报告。
+     * <p>同步访问数据库，必须在后台线程调用（推荐通过 {@code ThreadExecutor.execute()} 或
+     * ViewModel 的后台协程调用），否则在数据量较大时可能触发 ANR。
+     */
+    @WorkerThread
     public Report generateReport(long startTime, long endTime, String periodLabel) {
         Report report = new Report();
         report.periodLabel = periodLabel;

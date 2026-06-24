@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 
+import androidx.core.content.ContextCompat;
+
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
@@ -38,7 +40,11 @@ public class ChargingProtectionChecker implements IHealthChecker {
     public HealthCheckResult check(Context context) {
         try {
             Context appCtx = context.getApplicationContext();
-            Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            // Android 14+ 动态注册接收器必须显式指定 RECEIVER_NOT_EXPORTED / RECEIVER_EXPORTED，
+            // 否则抛出 SecurityException。使用 ContextCompat 兼容低版本。
+            Intent battery = ContextCompat.registerReceiver(
+                    appCtx, null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             if (battery == null) {
                 return buildNoDataResult();
             }

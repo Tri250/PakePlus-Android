@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.WorkerThread;
 import androidx.room.Room;
 
 import com.batteryhealth.app.data.database.AppDatabase;
@@ -238,11 +239,12 @@ public class BatteryHealthApplication extends Application {
      * 获取数据库实例（同步，阻塞调用线程）。
      * 若初始化尚未完成，会阻塞调用线程最多 5 秒。
      *
-     * 警告：不要在主线程调用此方法！
+     * 警告：不要在主线程调用此方法！会阻塞主线程导致 ANR。
      * 推荐使用 {@link #getDatabaseAsync(DatabaseCallback)} 异步版本。
      *
      * @return 数据库实例，若超时仍未初始化完成则返回 null
      */
+    @WorkerThread
     public AppDatabase getDatabase() {
         startDatabaseInitAsync();
         CountDownLatch latch = dbInitLatch;
@@ -339,6 +341,8 @@ public class BatteryHealthApplication extends Application {
         if (deviceInfoManager != null) {
             deviceInfoManager.shutdown();
         }
+        // 关闭全局 IO 线程池，等待已提交任务完成（最多 2 秒）
+        com.batteryhealth.app.utils.ThreadExecutor.shutdown(2);
     }
 
     // 由 MainActivity 注入 DeviceInfoManager 引用，用于 onTerminate 时关闭

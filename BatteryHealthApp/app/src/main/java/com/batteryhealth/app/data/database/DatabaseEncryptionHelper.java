@@ -91,7 +91,10 @@ public class DatabaseEncryptionHelper {
 
     /**
      * 若存在明文数据库，读取全部数据并返回快照；若不存在或读取失败返回 null。
+     * <p>同步读取全部数据库记录，必须在后台线程调用（调用方 BatteryHealthApplication
+     * 已通过 new Thread 在后台执行）。此为一次性迁移操作，使用 getAll() 读取全量数据。
      */
+    @androidx.annotation.WorkerThread
     public static DatabaseSnapshot migratePlainDatabaseIfNeeded(Context context) {
         Context appContext = context.getApplicationContext();
         File dbFile = appContext.getDatabasePath(DATABASE_NAME);

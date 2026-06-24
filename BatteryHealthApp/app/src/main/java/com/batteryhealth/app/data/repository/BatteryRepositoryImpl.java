@@ -1,5 +1,6 @@
 package com.batteryhealth.app.data.repository;
 
+import androidx.annotation.WorkerThread;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
@@ -9,6 +10,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.List;
 
@@ -50,7 +52,8 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void saveBatteryInfo(BatteryInfo info) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            // 复用全局线程池，避免高频写入时无限制创建线程导致 OOM
+            ThreadExecutor.execute(() -> {
                 try {
                     info.setId(0);
                     info.setTimestamp(System.currentTimeMillis());
@@ -58,10 +61,11 @@ public class BatteryRepositoryImpl implements BatteryRepository {
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 
+    @WorkerThread
     @Override
     public List<BatteryInfo> getHistorySince(long timestamp) {
         AppDatabase db = getDatabase();
@@ -75,6 +79,7 @@ public class BatteryRepositoryImpl implements BatteryRepository {
         return List.of();
     }
 
+    @WorkerThread
     @Override
     public int getHistoryCountSince(long timestamp) {
         AppDatabase db = getDatabase();
@@ -88,6 +93,7 @@ public class BatteryRepositoryImpl implements BatteryRepository {
         return 0;
     }
 
+    @WorkerThread
     @Override
     public float getAverageHealthSince(long timestamp) {
         AppDatabase db = getDatabase();
@@ -105,13 +111,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void deleteOlderThan(long timestamp) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            ThreadExecutor.execute(() -> {
                 try {
                     db.batteryInfoDao().deleteOlderThan(timestamp);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error deleting old data: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 
@@ -123,13 +129,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void savePerformanceData(PerformanceData data) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            ThreadExecutor.execute(() -> {
                 try {
                     db.performanceDataDao().insert(data);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving performance data: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 }

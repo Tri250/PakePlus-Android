@@ -422,8 +422,15 @@ public class MainActivity extends AppCompatActivity {
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
                     long triggerAt = System.currentTimeMillis() + 5000;
+                    // Android 12+ 调用 setExactAndAllowWhileIdle 需 SCHEDULE_EXACT_ALARM 权限，
+                    // 否则抛 SecurityException。无权限时降级为非精确闹钟，保证服务仍能启动。
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        if (alarmManager.canScheduleExactAlarms()) {
+                            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        } else {
+                            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                            Log.w(TAG, "Exact alarm permission not granted, using inexact alarm for " + serviceClass.getSimpleName());
+                        }
                     } else {
                         alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
                     }

@@ -275,6 +275,22 @@ public class ChargingMonitorService extends Service {
     }
 
     /**
+     * Android 15 (API 35)+ 前台服务超时回调。
+     * dataSync 类型前台服务默认有 6 小时运行上限，超时后系统会调用此方法。
+     * 此处优雅退出前台状态并停止服务，避免被系统强制 kill。
+     */
+    @Override
+    public void onTimeout(int startId) {
+        super.onTimeout(startId);
+        Log.w(TAG, "Foreground service timed out (Android 15+ dataSync 6h limit), stopping gracefully");
+        if (foregroundStarted) {
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+            foregroundStarted = false;
+        }
+        stopSelf(startId);
+    }
+
+    /**
      * 注册充电广播接收器
      */
     private void registerChargingReceiver() {

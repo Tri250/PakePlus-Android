@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -487,6 +488,12 @@ public class BatteryDataManager {
         return -1;
     }
 
+    /**
+     * 从历史充电记录估算循环次数。
+     * <p>同步访问数据库，必须在后台线程调用（{@link #getBatteryInfo()} 已标注 @WorkerThread，
+     * 本方法仅由其调用）。同时限制加载记录数，避免 180 天全量数据导致内存压力。
+     */
+    @androidx.annotation.WorkerThread
     private int estimateCycleCountFromHistory() {
         try {
             com.batteryhealth.app.BatteryHealthApplication app =
@@ -496,7 +503,9 @@ public class BatteryDataManager {
             if (db == null) return -1;
 
             long startTime = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
-            List<BatteryInfo> records = db.batteryInfoDao().getSince(startTime);
+            // 限制加载记录数，避免 180 天全量数据（5 分钟采样约 5 万条）导致 OOM。
+            // 采样 5000 条已足够覆盖循环次数估算（约 17 天数据，循环通常每日 1 次）。
+            List<BatteryInfo> records = db.batteryInfoDao().getSinceLimited(startTime, 5000);
             if (records == null || records.size() < 5) return -1;
 
             java.util.Set<String> cycleDays = new java.util.HashSet<>();
@@ -1047,6 +1056,12 @@ public class BatteryDataManager {
 
     public BatteryInfo getCurrentBatteryInfo() {
         if (currentBatteryInfo == null) {
+            // 若在主线程调用且缓存为空，不再同步触发 sysfs 读取（避免 ANR），
+            // 改为异步预加载并返回 null，调用方应通过 refreshAllDataAsync() 预热缓存。
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                refreshAllDataAsync();
+                return null;
+            }
             synchronized (this) {
                 if (currentBatteryInfo == null) {
                     refreshFromStickyIntent();

@@ -125,9 +125,10 @@ public class BugReportAnalyzer {
 
     private final Context context;
     private final BatteryDataManager batteryDataManager;
-    // SimpleDateFormat 非线程安全，但本类实例仅在单一后台线程使用，复用即可
-    private final SimpleDateFormat timestampSdf =
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    // SimpleDateFormat 非线程安全，使用 ThreadLocal 保证多线程下解析正确。
+    // 即使当前调用方仅在单一后台线程使用，ThreadLocal 也能防御未来并发调用。
+    private static final ThreadLocal<SimpleDateFormat> TIMESTAMP_SDF =
+            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()));
 
     public interface AnalysisProgressCallback {
         void onProgress(int step, int totalSteps, String description);
@@ -1082,7 +1083,7 @@ public class BugReportAnalyzer {
         Matcher matcher = RE_TIMESTAMP.matcher(line);
         if (matcher.find()) {
             try {
-                Date date = timestampSdf.parse(matcher.group(1).replace("T", " "));
+                Date date = TIMESTAMP_SDF.get().parse(matcher.group(1).replace("T", " "));
                 if (date != null) return date.getTime();
             } catch (Exception ignored) {}
         }

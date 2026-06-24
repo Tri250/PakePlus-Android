@@ -82,10 +82,10 @@ public class PerformanceHealthChecker implements IHealthChecker {
     }
 
     private static float readCpuUsage() {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader("/proc/stat"));
+        // 使用 try-with-resources 确保异常时 BufferedReader/FileReader 自动关闭，
+        // 避免文件描述符泄漏（原实现在 readLine/close 抛异常时不会关闭资源）
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/stat"))) {
             String line = br.readLine();
-            br.close();
             if (line == null) return 0f;
             String[] parts = line.split("\\s+");
             if (parts.length < 5) return 0f;

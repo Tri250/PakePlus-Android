@@ -259,7 +259,14 @@ public class BatteryMonitorService extends Service {
                 }
                 long triggerAt = System.currentTimeMillis() + 5000;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    // Android 12+ 调用 setExactAndAllowWhileIdle 需 SCHEDULE_EXACT_ALARM 权限，
+                    // 否则抛 SecurityException。无权限时降级为非精确闹钟。
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                    } else {
+                        alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                        Log.w(TAG, "Exact alarm permission not granted, using inexact alarm for restart");
+                    }
                 } else {
                     alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
                 }
@@ -293,6 +300,28 @@ public class BatteryMonitorService extends Service {
             prefs.edit().putBoolean(PREF_USER_STOPPED_SERVICE, true).apply();
         } catch (Exception ignored) {
         }
+    }
+
+    /**
+     * Android 15 (API 35)+ 前台服务超时回调。
+     * dataSync 类型前台服务默认有 6 小时运行上限，超时后系统会调用此方法。
+     * 此处优雅停止服务并清理资源，避免被系统强制 kill 导致数据丢失。
+     */
+    @Override
+    public void onTimeout(int startId) {
+        super.onTimeout(startId);
+        Log.w(TAG, "Foreground service timed out (Android 15+ dataSync 6h limit), stopping gracefully");
+        try {
+            // 保存最后一次电池数据，避免超时导致数据丢失
+            if (currentBatteryInfo != null) {
+                saveBatteryData();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving data on timeout: " + e.getMessage());
+        }
+        // 退出前台状态并停止服务，系统不会再强制 kill
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        stopSelf(startId);
     }
 
     @Nullable
