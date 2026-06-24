@@ -251,4 +251,12 @@
     <string name="charging_monitor_notification_title">充电监测中</string>
     <string name="status_no_permission_hint">请授权使用情况访问</string>
     <string name="share_report_title">电池健康报告</string>
+    <string name="label_gpu">GPU</string>
+    <string name="label_cpu_cores">CPU 核心</string>
+    <string name="label_cpu_freq">CPU 频率</string>
+    <string name="label_battery_capacity_config">电池容量</string>
+    <string name="label_storage_encryption">存储加密</string>
+    <string name="section_more_features">更多功能</string>
+    <string name="desc_community_entry">电池使用经验分享与交流</string>
+    <string name="desc_guide_entry">Bugreport 分析指南与诊断</string>
 </resources>
