@@ -28,11 +28,57 @@
 
         <!-- Page subtitle -->
         <TextView
+            android:id="@+id/tv_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/subtitle_trend"
             android:textAppearance="@style/WebPageSubtitle"
-            android:layout_marginBottom="22dp" />
+            android:layout_marginBottom="18dp" />
+
+        <!-- Time range selector -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_range"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedChip="@id/chip_30d"
+            app:chipSpacingHorizontal="6dp"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_7d"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/range_7d"
+                android:textSize="13sp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_30d"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/range_30d"
+                android:textSize="13sp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_90d"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/range_90d"
+                android:textSize="13sp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_180d"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/range_180d"
+                android:textSize="13sp" />
+
+        </com.google.android.material.chip.ChipGroup>
 
         <!-- Chart card -->
         <com.google.android.material.card.MaterialCardView
@@ -62,68 +108,44 @@
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/line_chart"
                     android:layout_width="match_parent"
-                    android:layout_height="220dp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_height="240dp"
+                    android:layout_marginBottom="4dp" />
 
+                <!-- Chart legend -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:paddingTop="4dp">
+
+                    <View
+                        android:layout_width="12dp"
+                        android:layout_height="3dp"
+                        android:background="@color/blue"
+                        android:layout_marginEnd="4dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1月"
+                        android:text="@string/legend_health"
                         android:textSize="11sp"
                         android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
+                        android:layout_marginEnd="16dp" />
+
+                    <View
+                        android:id="@+id/legend_temp_indicator"
+                        android:layout_width="12dp"
+                        android:layout_height="3dp"
+                        android:background="@color/orange"
+                        android:layout_marginEnd="4dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2月"
+                        android:text="@string/legend_temperature"
                         android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="3月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="4月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="6月"
-                        android:textSize="11sp"
-                        android:textColor="@color/label_3"
-                        android:layout_weight="1"
-                        android:gravity="center" />
+                        android:textColor="@color/label_3" />
 
                 </LinearLayout>
 
@@ -302,6 +324,73 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: 电池寿命预测 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_lifespan_prediction"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Lifespan prediction card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_lifespan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tv_remaining_months"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/label"
+                        android:letterSpacing="-0.04" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/unit_months"
+                        android:textSize="14sp"
+                        android:textColor="@color/label_2"
+                        android:layout_marginStart="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_lifespan_prediction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/lifespan_calculating"
+                    android:textSize="14sp"
+                    android:textColor="@color/label_2"
+                    android:layout_marginTop="6dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Section eyebrow: 历史数据 -->
         <TextView
             android:layout_width="wrap_content"
@@ -421,6 +510,78 @@
                         android:textAppearance="@style/WebListValue" />
 
                 </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section eyebrow: 异常事件 -->
+        <TextView
+            android:id="@+id/section_anomalies"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_anomaly_events"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp"
+            android:visibility="gone" />
+
+        <!-- Anomaly events card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_anomalies"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/anomaly_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="18dp">
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section eyebrow: 充电建议 -->
+        <TextView
+            android:id="@+id/section_charging_advice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_charging_advice"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp"
+            android:visibility="gone" />
+
+        <!-- Charging advice card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_charging_advice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/advice_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="18dp">
 
             </LinearLayout>
 

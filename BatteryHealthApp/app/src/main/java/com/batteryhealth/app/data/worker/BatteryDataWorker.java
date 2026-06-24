@@ -35,8 +35,8 @@ public class BatteryDataWorker extends Worker {
                 repository.saveBatteryInfo(info);
             }
             
-            long sevenDaysAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L;
-            repository.deleteOlderThan(sevenDaysAgo);
+            long retentionCutoff = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
+            repository.deleteOlderThan(retentionCutoff);
             
             return Result.success();
         } catch (Exception e) {

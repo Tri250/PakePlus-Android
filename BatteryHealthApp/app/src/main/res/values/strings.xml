@@ -265,4 +265,24 @@
     <string name="section_top_apps">TOP 耗电应用</string>
     <string name="section_power_tips">省电建议</string>
     <string name="label_estimated_charge_time">预计充满时间</string>
+
+    <!-- ============================== -->
+    <!-- 趋势追踪 v5.0 新增字符串 -->
+    <!-- ============================== -->
+    <string name="range_7d">7天</string>
+    <string name="range_30d">30天</string>
+    <string name="range_90d">90天</string>
+    <string name="range_180d">6个月</string>
+    <string name="subtitle_trend_7d">近 7 天电池健康度变化</string>
+    <string name="subtitle_trend_30d">近 30 天电池健康度变化</string>
+    <string name="subtitle_trend_90d">近 90 天电池健康度变化</string>
+    <string name="subtitle_trend_180d">近 6 个月电池健康度变化</string>
+    <string name="section_lifespan_prediction">寿命预测</string>
+    <string name="section_anomaly_events">异常事件</string>
+    <string name="section_charging_advice">充电建议</string>
+    <string name="unit_months">个月</string>
+    <string name="lifespan_calculating">计算中…</string>
+    <string name="lifespan_no_data">数据不足，无法预测</string>
+    <string name="legend_health">健康度</string>
+    <string name="legend_temperature">温度</string>
 </resources>
