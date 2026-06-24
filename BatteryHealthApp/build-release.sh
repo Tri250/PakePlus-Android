@@ -33,7 +33,19 @@ success() {
 # 检查环境
 info "检查构建环境..."
 
-# 检查Java
+# 检查Java：项目要求 JDK 17，优先使用系统安装的 JDK 17
+if [ -z "$JAVA_HOME" ] || [[ ! "$JAVA_HOME" == *"java-17"* ]]; then
+    # 尝试查找 JDK 17
+    for jdk_path in /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/jdk-17; do
+        if [ -d "$jdk_path" ] && [ -x "$jdk_path/bin/java" ]; then
+            export JAVA_HOME="$jdk_path"
+            export PATH="$JAVA_HOME/bin:$PATH"
+            info "已设置 JAVA_HOME=$JAVA_HOME"
+            break
+        fi
+    done
+fi
+
 if ! command -v java &> /dev/null; then
     error "未找到Java，请先安装JDK 17+"
     exit 1
@@ -41,6 +53,13 @@ fi
 
 JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2)
 info "Java版本: $JAVA_VERSION"
+
+# 校验主版本是否为 17
+JAVA_MAJOR=$(echo "$JAVA_VERSION" | cut -d'.' -f1)
+if [ "$JAVA_MAJOR" != "17" ]; then
+    warn "当前 Java 主版本为 $JAVA_MAJOR，项目要求 JDK 17"
+    warn "请设置 JAVA_HOME 指向 JDK 17 路径后再试"
+fi
 
 # 检查Android SDK
 if [ -z "$ANDROID_HOME" ]; then
@@ -58,23 +77,32 @@ if [ -z "$ANDROID_HOME" ]; then
     info "自动设置 ANDROID_HOME=$ANDROID_HOME"
 fi
 
-# 检查Gradle Wrapper
-if [ ! -f "./gradlew" ]; then
-    warn "未找到gradlew，尝试使用系统Gradle..."
-    if command -v gradle &> /dev/null; then
-        GRADLE_CMD="gradle"
-    else
-        error "未找到Gradle，请先安装或下载Gradle Wrapper"
-        exit 1
-    fi
-else
+# 优先使用系统 Gradle，不存在时回退到 Gradle Wrapper
+if command -v gradle &> /dev/null; then
+    GRADLE_CMD="gradle"
+    info "使用系统 Gradle: $(gradle --version 2>&1 | head -n 1)"
+elif [ -f "./gradlew" ]; then
     GRADLE_CMD="./gradlew"
+else
+    error "未找到 Gradle，请先安装或下载 Gradle Wrapper"
+    exit 1
 fi
 
 # 检查签名配置
 if [ ! -f "keystore.properties" ]; then
     warn "未找到 keystore.properties，Release构建将使用debug签名"
     warn "正式发版前请创建 keystore.properties 文件"
+fi
+
+# 执行 Release 自检规范标准
+info "========================================"
+info "执行 Release 自检规范标准"
+info "========================================"
+if [ -f "./release-checklist.sh" ]; then
+    chmod +x ./release-checklist.sh
+    ./release-checklist.sh || { error "Release 自检未通过，终止构建"; exit 1; }
+else
+    warn "未找到 release-checklist.sh，跳过自检"
 fi
 
 info "========================================"
@@ -85,20 +113,19 @@ info "========================================"
 info "清理旧构建..."
 $GRADLE_CMD clean
 
-# 执行Lint检查
-info "执行Lint检查..."
-$GRADLE_CMD lintRelease || warn "Lint检查发现问题，继续构建..."
-
 # 执行Release构建
 info "开始构建Release APK..."
 $GRADLE_CMD assembleRelease
 
-# 检查构建结果
+# 检查构建结果并复制为带版本号的发布包
 APK_PATH="app/build/outputs/apk/release/app-release.apk"
+RELEASE_APK="app-release-5.0.0.apk"
 if [ -f "$APK_PATH" ]; then
     APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+    cp "$APK_PATH" "$RELEASE_APK"
     success "Release APK构建成功!"
     success "路径: $APK_PATH"
+    success "发布包: $RELEASE_APK"
     success "大小: $APK_SIZE"
 else
     error "构建失败，未找到APK文件"

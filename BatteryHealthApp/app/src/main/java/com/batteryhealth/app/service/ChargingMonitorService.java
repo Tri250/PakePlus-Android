@@ -631,9 +631,9 @@ public class ChargingMonitorService extends Service {
      */
     private void addPowerSample(float voltage, float current, float power, int level) {
         long now = System.currentTimeMillis();
-        powerSamples.addLast(new PowerSample(now, voltage, current, power, level));
+        powerSamples.add(powerSamples.size(), new PowerSample(now, voltage, current, power, level));
         while (powerSamples.size() > MAX_SAMPLES) {
-            powerSamples.removeFirst();
+            powerSamples.remove(0);
         }
     }
 
@@ -656,8 +656,8 @@ public class ChargingMonitorService extends Service {
 
         // 当样本足够时，计算电流变化趋势和电压变化趋势
         if (powerSamples.size() >= 10) {
-            PowerSample first = powerSamples.getFirst();
-            PowerSample last = powerSamples.getLast();
+            PowerSample first = powerSamples.get(0);
+            PowerSample last = powerSamples.get(powerSamples.size() - 1);
             long timeDiff = last.timestamp - first.timestamp; // ms
             if (timeDiff > 10_000) { // 至少 10 秒数据
                 float currentDiff = last.current - first.current; // A

@@ -105,6 +105,26 @@ public class DeviceInfoManager {
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("config-loader"));
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private ActivationInfoListener activationInfoListener;
+
+    /**
+     * 激活信息监听器，供 UI 层在激活信息就绪后接收使用天数等数据。
+     */
+    public interface ActivationInfoListener {
+        void onActivationInfoReady(ActivationInfo activationInfo);
+    }
+
+    /**
+     * 设置激活信息监听器。如果缓存配置已加载，会立即回调当前激活信息。
+     */
+    public void setActivationInfoListener(ActivationInfoListener listener) {
+        this.activationInfoListener = listener;
+        if (cachedConfig != null && listener != null) {
+            ActivationInfo info = collectActivationInfo();
+            mainHandler.post(() -> listener.onActivationInfoReady(info));
+        }
+    }
+
     // GPU 渲染器 sysfs / 属性候选路径（仅包含型号名称路径，不包含频率路径）
     private static final String[] GPU_RENDERER_PATHS = {
             "/sys/class/kgsl/kgsl-3d0/gpu_model",
@@ -119,6 +139,10 @@ public class DeviceInfoManager {
     public DeviceInfoManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
+    }
+
+    public Context getContext() {
+        return context;
     }
 
     /**
@@ -811,6 +835,9 @@ public class DeviceInfoManager {
         } else {
             info.setUnknown();
         }
+        if (activationInfoListener != null) {
+            mainHandler.post(() -> activationInfoListener.onActivationInfoReady(info));
+        }
         return info;
     }
 
@@ -1107,17 +1134,17 @@ public class DeviceInfoManager {
 
     @android.annotation.SuppressLint("PrivateApi")
     private String getSystemProperty(String propertyName) {
-        return SystemPropertiesCompat.get(context, propertyName);
+        return SystemPropertiesCompat.get(propertyName);
     }
 
     // endregion
 
-    private static class ActivationInfo {
-        long timestamp;
-        String dateStr;
-        int usageDays;
-        String source;
-        float confidence;
+    public static class ActivationInfo {
+        public long timestamp;
+        public String dateStr;
+        public int usageDays;
+        public String source;
+        public float confidence;
 
         void set(long timestamp, String source, float confidence) {
             this.timestamp = timestamp;

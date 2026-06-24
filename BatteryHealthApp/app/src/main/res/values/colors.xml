@@ -61,6 +61,7 @@
     <color name="liquid_glass_glow">#33007AFF</color>
 
     <color name="ios_label">#1C1C1E</color>
+    <color name="ios_label_primary">#1C1C1E</color>
     <color name="ios_secondary_label">#3C3C4399</color>
     <color name="ios_tertiary_label">#3C3C4366</color>
 
@@ -80,6 +81,7 @@
     <color name="primary">@color/blue</color>
     <color name="primaryVariant">@color/indigo</color>
     <color name="secondary">@color/teal</color>
+    <color name="accent">@color/blue</color>
     <color name="background">@color/bg_canvas</color>
     <color name="error">@color/red</color>
 
