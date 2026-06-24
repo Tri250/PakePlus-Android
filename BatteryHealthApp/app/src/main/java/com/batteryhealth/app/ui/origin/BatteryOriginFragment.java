@@ -1,7 +1,9 @@
 package com.batteryhealth.app.ui.origin;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,11 +26,14 @@ import com.batteryhealth.app.data.model.BatteryOriginRecord;
 import com.batteryhealth.app.ui.viewmodel.BatteryOriginViewModel;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BatteryOriginDetector;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 
 import java.util.List;
 import java.util.Locale;
 
 public class BatteryOriginFragment extends Fragment {
+
+    private static final String TAG = "BatteryOriginFragment";
 
     private TextView tvOriginResult;
     private TextView tvOriginConfidence;
@@ -57,17 +62,28 @@ public class BatteryOriginFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_battery_origin, container, false);
-        initViews(view);
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_battery_origin, container, false);
+            initViews(view);
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        initViewModel();
-        observeViewModel();
+        try {
+            initViewModel();
+            observeViewModel();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onViewCreated", e);
+        }
     }
 
     @Override

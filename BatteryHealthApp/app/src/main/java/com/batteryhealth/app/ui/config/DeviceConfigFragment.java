@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,10 +25,13 @@ import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.guide.GuideFragment;
 import com.batteryhealth.app.ui.viewmodel.DeviceConfigViewModel;
 import com.batteryhealth.app.utils.DeviceConfigQuery;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 
 import java.util.Locale;
 
 public class DeviceConfigFragment extends Fragment {
+
+    private static final String TAG = "DeviceConfigFragment";
 
     private static final String PREFS_CONFIG = "config_prefs";
     private static final String PREF_HEALTH_ALERT = "health_decay_alert";
@@ -49,11 +53,18 @@ public class DeviceConfigFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_device_config, container, false);
-        initViews(view);
-        initViewModel();
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_device_config, container, false);
+            initViews(view);
+            initViewModel();
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

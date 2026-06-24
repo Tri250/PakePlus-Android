@@ -9,6 +9,7 @@ import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.os.IBinder;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -32,6 +33,7 @@ import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 import com.batteryhealth.app.ui.viewmodel.PowerViewModel;
@@ -49,6 +51,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class PowerFragment extends Fragment {
+
+    private static final String TAG = "PowerFragment";
 
     private TextView tvWatt, tvPowerType;
     private ProgressBar progressCharge;
@@ -85,10 +89,17 @@ public class PowerFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_power, container, false);
-        initViews(view);
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_power, container, false);
+            initViews(view);
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {
@@ -275,69 +286,69 @@ public class PowerFragment extends Fragment {
 
     private void updateUI(BatteryInfo info, TodayChargeStats stats, String serviceChargingPhase) {
         if (info == null || !isAdded()) return;
+        try {
+            int batteryPct = info.getLevel();
+            boolean isCharging = info.isCharging();
 
-        int batteryPct = info.getLevel();
-        boolean isCharging = info.isCharging();
+            float voltageV = info.getVoltage() / 1000f;
+            float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
+            float currentA = currentMa / 1000f;
+            float watt = info.getChargingPower();
+            float tempC = info.getTemperature();
 
-        float voltageV = info.getVoltage() / 1000f;
-        float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
-        float currentA = currentMa / 1000f;
-        float watt = info.getChargingPower();
-        float tempC = info.getTemperature();
+            ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
 
-        ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
+            // 功率大数字
+            tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
 
-        // 功率大数字
-        tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
-
-        // 充电类型
-        String powerType;
-        if (!isCharging) {
-            powerType = getString(R.string.status_not_charging);
-        } else if (batteryDataManager.isNearOfficialFastCharge(watt)) {
-            powerType = protocolResult.primary;
-        } else {
-            powerType = batteryDataManager.getPowerLevelLabel(watt);
-        }
-        tvPowerType.setText(powerType);
-        UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
-
-        // 充电详情
-        tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
-        tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
-
-        // 充电阶段：优先使用 Service 的智能四阶段检测结果
-        if (serviceChargingPhase != null) {
-            tvChargeStage.setText(serviceChargingPhase);
-        } else if (isCharging) {
-            // 回退：使用 PowerHistory 的阶段描述逻辑
-            PowerHistory ph = new PowerHistory();
-            ph.setBatteryLevel(batteryPct);
-            ph.setPower(watt);
-            if (batteryPct >= 99) {
-                tvChargeStage.setText(getString(R.string.stage_full));
-            } else if (batteryPct >= 80) {
-                tvChargeStage.setText(getString(R.string.stage_trickle));
+            // 充电类型
+            String powerType;
+            if (!isCharging) {
+                powerType = getString(R.string.status_not_charging);
+            } else if (batteryDataManager.isNearOfficialFastCharge(watt)) {
+                powerType = protocolResult.primary;
             } else {
-                tvChargeStage.setText(getString(R.string.stage_fast));
+                powerType = batteryDataManager.getPowerLevelLabel(watt);
             }
-        } else {
-            tvChargeStage.setText("--");
-        }
+            tvPowerType.setText(powerType);
+            UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
-        tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
-        tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
-        tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
+            // 充电详情
+            tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
+            tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
 
-        // 今日充电统计
-        tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", stats.avgPower));
-        tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
-        tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
+            // 充电阶段：优先使用 Service 的智能四阶段检测结果
+            if (serviceChargingPhase != null) {
+                tvChargeStage.setText(serviceChargingPhase);
+            } else if (isCharging) {
+                // 回退：使用 PowerHistory 的阶段描述逻辑
+                if (batteryPct >= 99) {
+                    tvChargeStage.setText(getString(R.string.stage_full));
+                } else if (batteryPct >= 80) {
+                    tvChargeStage.setText(getString(R.string.stage_trickle));
+                } else {
+                    tvChargeStage.setText(getString(R.string.stage_fast));
+                }
+            } else {
+                tvChargeStage.setText("--");
+            }
 
-        // 实时更新功率曲线
-        if (isCharging && watt > 0) {
-            addChartPoint(watt);
+            tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
+            tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
+            tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
+
+            // 今日充电统计
+            tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
+            tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", stats.avgPower));
+            tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
+            tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
+
+            // 实时更新功率曲线
+            if (isCharging && watt > 0) {
+                addChartPoint(watt);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("PowerFragment", "updateUI failed", e);
         }
     }
 
@@ -372,41 +383,54 @@ public class PowerFragment extends Fragment {
     }
 
     private void addChartPoint(float watt) {
-        LineData data = chartPower.getData();
-        if (data == null) return;
+        if (chartPower == null) return;
+        try {
+            LineData data = chartPower.getData();
+            if (data == null) return;
 
-        LineDataSet set = (LineDataSet) data.getDataSetByIndex(0);
-        if (set == null) {
-            set = createChartDataSet();
-            data.addDataSet(set);
-        }
-
-        // 最多保留60个点（约2分钟）
-        if (set.getEntryCount() >= 60) {
-            set.removeFirst();
-            // 重新计算 x 值
-            for (int i = 0; i < set.getEntryCount(); i++) {
-                set.getEntryForIndex(i).setX(i);
+            LineDataSet set = (LineDataSet) data.getDataSetByIndex(0);
+            if (set == null) {
+                set = createChartDataSet();
+                data.addDataSet(set);
             }
-        }
 
-        set.addEntry(new Entry(set.getEntryCount(), watt));
-        data.notifyDataChanged();
-        chartPower.notifyDataSetChanged();
-        chartPower.invalidate();
+            // 最多保留60个点（约2分钟）
+            if (set.getEntryCount() >= 60) {
+                // MPAndroidChart v3.1.0 没有 removeFirst()，使用 removeEntry(0) 兼容
+                if (set.getEntryCount() > 0) {
+                    set.removeEntry(0);
+                }
+                // 重新计算 x 值
+                for (int i = 0; i < set.getEntryCount(); i++) {
+                    set.getEntryForIndex(i).setX(i);
+                }
+            }
+
+            set.addEntry(new Entry(set.getEntryCount(), watt));
+            data.notifyDataChanged();
+            chartPower.notifyDataSetChanged();
+            chartPower.invalidate();
+        } catch (Exception e) {
+            android.util.Log.e("PowerFragment", "addChartPoint failed", e);
+        }
     }
 
     private void updateChart(List<Entry> entries) {
-        LineDataSet dataSet = createChartDataSet();
-        dataSet.setValues(entries);
+        if (chartPower == null) return;
+        try {
+            LineDataSet dataSet = createChartDataSet();
+            dataSet.setValues(entries);
 
-        List<ILineDataSet> dataSets = new ArrayList<>();
-        dataSets.add(dataSet);
+            List<ILineDataSet> dataSets = new ArrayList<>();
+            dataSets.add(dataSet);
 
-        LineData data = new LineData(dataSets);
-        chartPower.setData(data);
-        chartPower.notifyDataSetChanged();
-        chartPower.invalidate();
+            LineData data = new LineData(dataSets);
+            chartPower.setData(data);
+            chartPower.notifyDataSetChanged();
+            chartPower.invalidate();
+        } catch (Exception e) {
+            android.util.Log.e("PowerFragment", "updateChart failed", e);
+        }
     }
 
     private LineDataSet createChartDataSet() {

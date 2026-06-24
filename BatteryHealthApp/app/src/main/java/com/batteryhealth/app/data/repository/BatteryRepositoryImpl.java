@@ -16,13 +16,21 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     private static final String TAG = "BatteryRepositoryImpl";
 
+    private final BatteryHealthApplication application;
     private final BatteryDataManager batteryDataManager;
-    private final AppDatabase database;
+    private AppDatabase database;
     private final MutableLiveData<BatteryInfo> batteryInfoLiveData = new MutableLiveData<>();
 
     public BatteryRepositoryImpl(BatteryHealthApplication application) {
+        this.application = application;
         this.batteryDataManager = new BatteryDataManager(application.getApplicationContext());
-        this.database = application.getDatabase();
+    }
+
+    private AppDatabase getDatabase() {
+        if (database == null) {
+            database = application.getDatabase();
+        }
+        return database;
     }
 
     @Override
@@ -40,12 +48,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public void saveBatteryInfo(BatteryInfo info) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             new Thread(() -> {
                 try {
                     info.setId(0);
                     info.setTimestamp(System.currentTimeMillis());
-                    database.batteryInfoDao().insert(info);
+                    db.batteryInfoDao().insert(info);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
                 }
@@ -55,9 +64,10 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public List<BatteryInfo> getHistorySince(long timestamp) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             try {
-                return database.batteryInfoDao().getSince(timestamp);
+                return db.batteryInfoDao().getSince(timestamp);
             } catch (Exception e) {
                 android.util.Log.e(TAG, "Error getting history: " + e.getMessage());
             }
@@ -67,9 +77,10 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public int getHistoryCountSince(long timestamp) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             try {
-                return database.batteryInfoDao().getCountSince(timestamp);
+                return db.batteryInfoDao().getCountSince(timestamp);
             } catch (Exception e) {
                 android.util.Log.e(TAG, "Error getting history count: " + e.getMessage());
             }
@@ -79,9 +90,10 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public float getAverageHealthSince(long timestamp) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             try {
-                return database.batteryInfoDao().getAverageHealthSince(timestamp);
+                return db.batteryInfoDao().getAverageHealthSince(timestamp);
             } catch (Exception e) {
                 android.util.Log.e(TAG, "Error getting average health: " + e.getMessage());
             }
@@ -91,10 +103,11 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public void deleteOlderThan(long timestamp) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             new Thread(() -> {
                 try {
-                    database.batteryInfoDao().deleteOlderThan(timestamp);
+                    db.batteryInfoDao().deleteOlderThan(timestamp);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error deleting old data: " + e.getMessage());
                 }
@@ -108,10 +121,11 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public void savePerformanceData(PerformanceData data) {
-        if (database != null) {
+        AppDatabase db = getDatabase();
+        if (db != null) {
             new Thread(() -> {
                 try {
-                    database.performanceDataDao().insert(data);
+                    db.performanceDataDao().insert(data);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving performance data: " + e.getMessage());
                 }

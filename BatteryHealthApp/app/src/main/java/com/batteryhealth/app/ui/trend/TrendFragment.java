@@ -1,8 +1,10 @@
 package com.batteryhealth.app.ui.trend;
 
+import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.domain.usecase.GetTrendDataUseCase;
 import com.batteryhealth.app.ui.viewmodel.TrendViewModel;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -52,6 +55,8 @@ import java.util.Locale;
  */
 public class TrendFragment extends Fragment {
 
+    private static final String TAG = "TrendFragment";
+
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
     private TextView tvAvgTemperature, tvMaxTemperature, tvRecordCount, tvDataSpan;
@@ -74,21 +79,32 @@ public class TrendFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_trend, container, false);
-        initViews(view);
-        initThemeColors();
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_trend, container, false);
+            initViews(view);
+            initThemeColors();
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        viewModel = new ViewModelProvider(this).get(TrendViewModel.class);
-        setupChipGroup();
-        setupChart();
-        observeViewModel();
-        viewModel.loadTrendData(GetTrendDataUseCase.RANGE_30D);
+        try {
+            viewModel = new ViewModelProvider(this).get(TrendViewModel.class);
+            setupChipGroup();
+            setupChart();
+            observeViewModel();
+            viewModel.loadTrendData(GetTrendDataUseCase.RANGE_30D);
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onViewCreated", e);
+        }
     }
 
     private void initViews(View view) {

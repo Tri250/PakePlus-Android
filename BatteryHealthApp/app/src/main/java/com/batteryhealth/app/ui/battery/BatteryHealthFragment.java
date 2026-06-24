@@ -1,7 +1,9 @@
 package com.batteryhealth.app.ui.battery;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,12 +22,15 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.ui.viewmodel.BatteryHealthViewModel;
 import com.batteryhealth.app.utils.BatteryReportGenerator;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
 
 public class BatteryHealthFragment extends Fragment {
+
+    private static final String TAG = "BatteryHealthFragment";
 
     private HealthRingView healthRing;
     private TextView tvHealthPercentage;
@@ -51,11 +56,18 @@ public class BatteryHealthFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
-        initViews(view);
-        initViewModel();
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_battery_health, container, false);
+            initViews(view);
+            initViewModel();
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

@@ -1,8 +1,10 @@
 package com.batteryhealth.app.ui.endurance;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.ui.viewmodel.EnduranceViewModel;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.List;
@@ -29,6 +32,8 @@ import java.util.Locale;
  * 续航分析页面 — ViewModel 为唯一数据源，Fragment 仅负责 UI 展示。
  */
 public class EnduranceFragment extends Fragment {
+
+    private static final String TAG = "EnduranceFragment";
 
     private TextView tvBatteryLevel, tvDischargeRate, tvTemperature, tvChargingStatus;
     private TextView tvEstimatedEndurance, tvEstimatedChargeTime, tvUsedTime;
@@ -50,11 +55,18 @@ public class EnduranceFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_endurance, container, false);
-        initViews(view);
-        initViewModel();
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_endurance, container, false);
+            initViews(view);
+            initViewModel();
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

@@ -213,91 +213,96 @@ public class BatteryDataManager {
         info.setDeviceModel(Build.MODEL);
         info.setDeviceBrand(Build.BRAND);
 
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent == null) return info;
+        try {
+            Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (intent == null) return info;
 
-        BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
 
-        // 1. 基础电量与状态
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        int percentage = (level >= 0 && scale > 0) ? (level * 100 / scale) : -1;
-        info.setLevel(percentage);
+            // 1. 基础电量与状态
+            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            int percentage = (level >= 0 && scale > 0) ? (level * 100 / scale) : -1;
+            info.setLevel(percentage);
 
-        info.setStatus(intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN));
-        info.setPlugged(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));
+            info.setStatus(intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN));
+            info.setPlugged(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));
 
-        // 2. 温度
-        int tempRaw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-        if (tempRaw < 0) tempRaw = readSysfsInt(TEMP_PATHS, -1);
-        // EXTRA_TEMPERATURE 单位 0.1°C
-        info.setTemperature(tempRaw / 10.0f);
+            // 2. 温度
+            int tempRaw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+            if (tempRaw < 0) tempRaw = readSysfsInt(TEMP_PATHS, -1);
+            // EXTRA_TEMPERATURE 单位 0.1°C
+            info.setTemperature(tempRaw / 10.0f);
 
-        // 3. 电压
-        int voltageMv = readVoltage(intent);
-        info.setVoltage(voltageMv);
+            // 3. 电压
+            int voltageMv = readVoltage(intent);
+            info.setVoltage(voltageMv);
 
-        // 4. 电流
-        int currentMa = readCurrentNow(batteryManager);
-        info.setCurrentNow(currentMa * 1000); // uA
+            // 4. 电流
+            int currentMa = readCurrentNow(batteryManager);
+            info.setCurrentNow(currentMa * 1000); // uA
 
-        // 5. 功率
-        float powerW = calculatePower(voltageMv, currentMa);
-        info.setChargingPower(powerW);
-        info.setChargingVoltage(voltageMv / 1000.0f);
-        info.setChargingCurrent(Math.abs(currentMa) / 1000.0f);
+            // 5. 功率
+            float powerW = calculatePower(voltageMv, currentMa);
+            info.setChargingPower(powerW);
+            info.setChargingVoltage(voltageMv / 1000.0f);
+            info.setChargingCurrent(Math.abs(currentMa) / 1000.0f);
 
-        // 6. 技术
-        String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
-        if (technology == null || technology.isEmpty()) {
-            technology = readSysfsString(TECH_PATHS, "");
+            // 6. 技术
+            String technology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY);
+            if (technology == null || technology.isEmpty()) {
+                technology = readSysfsString(TECH_PATHS, "");
+            }
+            info.setTechnology(technology.isEmpty() ? context.getString(R.string.battery_technology_default) : technology);
+
+            // 7. 设计容量
+            String[] designSourceHolder = new String[1];
+            int designCapacity = getDesignCapacity(designSourceHolder);
+            info.setDesignCapacity(designCapacity);
+            info.setDesignCapacitySource(designCapacity > 0 ? designSourceHolder[0] : "unknown");
+
+            // 8. 当前满充容量（FCC）
+            int fullCapacity = getFullCapacity(batteryManager);
+            info.setCurrentCapacity(fullCapacity);
+            info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
+
+            // 9. 充电计数
+            int chargeCounterMah = getChargeCounterMah(batteryManager);
+            info.setChargeCounter(chargeCounterMah * 1000);
+
+            // 10. 健康度（三段损耗 + 中值滤波）
+            BatteryHealthResult health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
+            // 中值滤波
+            float filteredHealth = applyMedianFilter(health.healthPercentage);
+            info.setHealthPercentage(filteredHealth);
+            info.setHealthStatus(mapHealthStatusToCode(health.healthLevel));
+            info.setHealthConfidence(health.confidence);
+            info.setHealthDataSource(mapHealthDataSource(health.confidence, health.sourceTag));
+            info.setFactoryLossPercent(health.factoryLossPercent);
+            info.setCycleLossPercent(health.cycleLossPercent);
+            info.setUsageLossPercent(health.usageLossPercent);
+
+            // 11. 循环次数
+            int cycleCount = readCycleCount(batteryManager);
+            info.setCycleCount(cycleCount);
+            info.setCycleCountEstimated(cycleCount < 0);
+            info.setCycleCountSource(cycleCount >= 0 ? "sysfs_or_battery_manager" : "unavailable");
+
+            // 12. 电池来源（多维验证）
+            BatterySourceResult source = determineBatterySource(intent, fullCapacity, designCapacity);
+            info.setBatterySource(mapSourceToCode(source.source));
+            info.setBatterySourceConfidence(source.confidence);
+            info.setBatterySourceReason(source.reason);
+
+            // 13. 序列号
+            info.setBatterySerial(readBatterySerial(intent));
+
+            // 14. 系统健康
+            info.setSystemHealth(intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN));
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to build complete battery info", e);
+            // 返回已收集的部分数据，避免 UI 完全空白
         }
-        info.setTechnology(technology.isEmpty() ? context.getString(R.string.battery_technology_default) : technology);
-
-        // 7. 设计容量
-        String[] designSourceHolder = new String[1];
-        int designCapacity = getDesignCapacity(designSourceHolder);
-        info.setDesignCapacity(designCapacity);
-        info.setDesignCapacitySource(designCapacity > 0 ? designSourceHolder[0] : "unknown");
-
-        // 8. 当前满充容量（FCC）
-        int fullCapacity = getFullCapacity(batteryManager);
-        info.setCurrentCapacity(fullCapacity);
-        info.setCurrentCapacitySource(fullCapacity > 0 ? "battery_manager_or_sysfs" : "unknown");
-
-        // 9. 充电计数
-        int chargeCounterMah = getChargeCounterMah(batteryManager);
-        info.setChargeCounter(chargeCounterMah * 1000);
-
-        // 10. 健康度（三段损耗 + 中值滤波）
-        BatteryHealthResult health = calculateHealth(designCapacity, fullCapacity, chargeCounterMah, percentage);
-        // 中值滤波
-        float filteredHealth = applyMedianFilter(health.healthPercentage);
-        info.setHealthPercentage(filteredHealth);
-        info.setHealthStatus(mapHealthStatusToCode(health.healthLevel));
-        info.setHealthConfidence(health.confidence);
-        info.setHealthDataSource(mapHealthDataSource(health.confidence, health.sourceTag));
-        info.setFactoryLossPercent(health.factoryLossPercent);
-        info.setCycleLossPercent(health.cycleLossPercent);
-        info.setUsageLossPercent(health.usageLossPercent);
-
-        // 11. 循环次数
-        int cycleCount = readCycleCount(batteryManager);
-        info.setCycleCount(cycleCount);
-        info.setCycleCountEstimated(cycleCount < 0);
-        info.setCycleCountSource(cycleCount >= 0 ? "sysfs_or_battery_manager" : "unavailable");
-
-        // 12. 电池来源（多维验证）
-        BatterySourceResult source = determineBatterySource(intent, fullCapacity, designCapacity);
-        info.setBatterySource(mapSourceToCode(source.source));
-        info.setBatterySourceConfidence(source.confidence);
-        info.setBatterySourceReason(source.reason);
-
-        // 13. 序列号
-        info.setBatterySerial(readBatterySerial(intent));
-
-        // 14. 系统健康
-        info.setSystemHealth(intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN));
 
         return info;
     }

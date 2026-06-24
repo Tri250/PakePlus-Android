@@ -76,13 +76,22 @@ public class BatteryHealthViewModel extends ViewModel {
                     updateHealthInfo(info);
                     batteryInfo.postValue(info);
                     batterySource.postValue(batteryDataManager.getBatterySourceText());
+                } else {
+                    postNoDataState();
                 }
             } catch (Exception e) {
-                android.util.Log.e("BatteryHealthViewModel", "Error refreshing data: " + e.getMessage());
+                android.util.Log.e("BatteryHealthViewModel", "Error refreshing data: " + e.getMessage(), e);
+                postNoDataState();
             } finally {
                 isLoading.postValue(false);
             }
         });
+    }
+
+    private void postNoDataState() {
+        batterySource.postValue("--");
+        healthGrade.postValue("--");
+        healthStatus.postValue("数据加载失败");
     }
 
     private void updateHealthInfo(BatteryInfo info) {

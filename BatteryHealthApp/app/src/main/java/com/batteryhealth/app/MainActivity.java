@@ -47,10 +47,12 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PermissionManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 主Activity
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private DeviceInfoManager deviceInfoManager;
     
     private Handler mainHandler;
-    private boolean servicesStarted = false;
+    private final AtomicBoolean servicesStarted = new AtomicBoolean(false);
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -375,24 +377,24 @@ public class MainActivity extends AppCompatActivity {
      * 启动监测服务
      */
     private void startMonitorServices() {
-        if (servicesStarted) return;
+        if (!servicesStarted.compareAndSet(false, true)) return;
 
-        try {
-            startServiceSafely(BatteryMonitorService.class);
+        ThreadExecutor.execute(() -> {
+            try {
+                startServiceSafely(BatteryMonitorService.class);
 
-            // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
-            mainHandler.postDelayed(() -> {
-                try {
-                    startServiceSafely(ChargingMonitorService.class);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error starting charging service: " + e.getMessage());
-                }
-            }, 1000);
-
-            servicesStarted = true;
-        } catch (Exception e) {
-            Log.e(TAG, "Error starting services: " + e.getMessage());
-        }
+                // 延迟启动充电监测服务，避免同时启动两个前台服务导致超时
+                mainHandler.postDelayed(() -> {
+                    try {
+                        startServiceSafely(ChargingMonitorService.class);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error starting charging service: " + e.getMessage());
+                    }
+                }, 1000);
+            } catch (Exception e) {
+                Log.e(TAG, "Error starting services: " + e.getMessage());
+            }
+        });
     }
 
     /**
