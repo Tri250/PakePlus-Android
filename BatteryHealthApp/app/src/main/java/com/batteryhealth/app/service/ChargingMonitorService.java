@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.BatteryManager;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -234,10 +235,18 @@ public class ChargingMonitorService extends Service {
         }
     }
 
+    private final IBinder binder = new ChargingBinder();
+
+    public class ChargingBinder extends Binder {
+        public ChargingMonitorService getService() {
+            return ChargingMonitorService.this;
+        }
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
     }
 
     @Override
@@ -378,7 +387,8 @@ public class ChargingMonitorService extends Service {
         broadcast.putExtra("duration", summary.duration);
         broadcast.putExtra("max_power", summary.maxPower);
         broadcast.putExtra("avg_power", summary.avgPower);
-        sendBroadcast(broadcast);
+        // 使用 signature 级别权限保护广播，防止外部应用监听
+        sendBroadcast(broadcast, "com.batteryhealth.app.PERMISSION_CHARGING_EVENT");
 
         currentSessionId = null;
         // 充电结束时退出前台服务，避免未充电时显示常驻通知
@@ -725,7 +735,7 @@ public class ChargingMonitorService extends Service {
      * 获取当前功率历史记录。
      * 优先返回缓存值，避免在主线程上读取 sysfs 触发 StrictMode / ANR。
      */
-    private PowerHistory getCurrentPowerHistory() {
+    public PowerHistory getCurrentPowerHistory() {
         PowerHistory history = new PowerHistory();
         history.setSessionId(currentSessionId);
         history.setVoltage(cachedVoltage);
@@ -828,6 +838,18 @@ public class ChargingMonitorService extends Service {
      */
     public boolean isCharging() {
         return isCharging;
+    }
+
+    /**
+     * 获取当前充电阶段的中文描述
+     */
+    public String getCurrentChargingPhaseDescription() {
+        if (!isCharging) return "未充电";
+        PowerHistory history = getCurrentPowerHistory();
+        if (history != null && history.getChargingPhase() != null) {
+            return history.getChargingPhaseDescription();
+        }
+        return "充电中";
     }
 
     /**

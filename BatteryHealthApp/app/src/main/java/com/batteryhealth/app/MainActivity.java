@@ -38,6 +38,7 @@ import com.batteryhealth.app.ui.endurance.EnduranceFragment;
 import com.batteryhealth.app.ui.guide.GuideFragment;
 import com.batteryhealth.app.ui.origin.BatteryOriginFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
+import com.batteryhealth.app.ui.power.ChargingHistoryFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
 import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.view.CustomBottomNavigationView;

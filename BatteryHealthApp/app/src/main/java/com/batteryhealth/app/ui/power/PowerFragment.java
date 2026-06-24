@@ -1,12 +1,15 @@
 package com.batteryhealth.app.ui.power;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,15 +22,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
+import com.batteryhealth.app.ui.viewmodel.PowerViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -52,8 +59,28 @@ public class PowerFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
     private BatteryDataManager batteryDataManager;
-    private List<Float> powerHistory = new ArrayList<>();
-    private static final int MAX_HISTORY_SIZE = 30;
+    private PowerViewModel viewModel;
+
+    // Service binding
+    private ChargingMonitorService chargingService;
+    private boolean serviceBound = false;
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            ChargingMonitorService.ChargingBinder binder = (ChargingMonitorService.ChargingBinder) service;
+            chargingService = binder.getService();
+            serviceBound = true;
+            // 立即更新一次数据
+            updateBatteryData();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            chargingService = null;
+            serviceBound = false;
+        }
+    };
 
     @Nullable
     @Override
@@ -80,6 +107,19 @@ public class PowerFragment extends Fragment {
         tvTotalCharged = view.findViewById(R.id.tv_total_charged);
         chartPower = view.findViewById(R.id.chart_power);
         initChart();
+
+        // 充电历史入口
+        View historyEntry = view.findViewById(R.id.card_charging_history_entry);
+        if (historyEntry != null) {
+            historyEntry.setOnClickListener(v -> {
+                if (isAdded()) {
+                    requireActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(((ViewGroup) requireView().getParent()).getId(), new ChargingHistoryFragment())
+                            .addToBackStack("charging_history")
+                            .commit();
+                }
+            });
+        }
     }
 
     private void initChart() {
@@ -130,8 +170,16 @@ public class PowerFragment extends Fragment {
         if (batteryDataManager == null) {
             batteryDataManager = new BatteryDataManager(requireContext());
         }
+
+        // 初始化 ViewModel
+        viewModel = new ViewModelProvider(this).get(PowerViewModel.class);
+
+        // 绑定 ChargingMonitorService
+        bindChargingService();
+
         registerBatteryReceiver();
         startPeriodicUpdate();
+        loadHistoricalChart();
     }
 
     @Override
@@ -139,6 +187,27 @@ public class PowerFragment extends Fragment {
         super.onPause();
         unregisterBatteryReceiver();
         stopPeriodicUpdate();
+        unbindChargingService();
+    }
+
+    private void bindChargingService() {
+        try {
+            Intent intent = new Intent(requireContext(), ChargingMonitorService.class);
+            requireContext().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } catch (Exception e) {
+            // Service 可能未启动，忽略
+        }
+    }
+
+    private void unbindChargingService() {
+        if (serviceBound) {
+            try {
+                requireContext().unbindService(serviceConnection);
+            } catch (Exception ignored) {
+            }
+            serviceBound = false;
+            chargingService = null;
+        }
     }
 
     private void registerBatteryReceiver() {
@@ -184,15 +253,19 @@ public class PowerFragment extends Fragment {
     private void updateBatteryData() {
         if (batteryDataManager == null) return;
 
-        // 在后台线程获取完整电池信息（含 sysfs 读取）
         ThreadExecutor.execute(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info != null && isAdded()) {
-                    // 同时查询今日充电统计
                     TodayChargeStats stats = queryTodayChargeStats();
-                    handler.post(() -> updateUI(info, stats));
+                    // 从 Service 获取智能充电阶段
+                    String chargingPhase = null;
+                    if (chargingService != null && serviceBound) {
+                        chargingPhase = chargingService.getCurrentChargingPhaseDescription();
+                    }
+                    final String phase = chargingPhase;
+                    handler.post(() -> updateUI(info, stats, phase));
                 }
             } catch (Exception e) {
                 // 静默处理
@@ -200,31 +273,24 @@ public class PowerFragment extends Fragment {
         });
     }
 
-    private void updateUI(BatteryInfo info, TodayChargeStats stats) {
+    private void updateUI(BatteryInfo info, TodayChargeStats stats, String serviceChargingPhase) {
         if (info == null || !isAdded()) return;
 
         int batteryPct = info.getLevel();
         boolean isCharging = info.isCharging();
 
-        // 电压
         float voltageV = info.getVoltage() / 1000f;
-        // 电流（info.getCurrentNow() 单位 uA）
         float currentMa = Math.abs(info.getCurrentNow()) / 1000f;
         float currentA = currentMa / 1000f;
-
-        // 功率
         float watt = info.getChargingPower();
-
-        // 温度
         float tempC = info.getTemperature();
 
-        // 使用 ChargeProtocolDetector 识别充电协议
         ChargeProtocolDetector.Result protocolResult = ChargeProtocolDetector.detect(requireContext(), watt);
 
-        // Update hero
+        // 功率大数字
         tvWatt.setText(String.format(Locale.getDefault(), "%.1f", watt));
 
-        // 使用 BatteryDataManager.getPowerLevelLabel() 进行功率类型分类
+        // 充电类型
         String powerType;
         if (!isCharging) {
             powerType = getString(R.string.status_not_charging);
@@ -236,25 +302,126 @@ public class PowerFragment extends Fragment {
         tvPowerType.setText(powerType);
         UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);
 
-        // Update details
+        // 充电详情
         tvVoltage.setText(String.format(Locale.getDefault(), "%.2f V", voltageV));
         tvCurrent.setText(String.format(Locale.getDefault(), "%.0f mA", currentMa));
-        tvChargeStage.setText(batteryPct >= 80 ? getString(R.string.stage_trickle) : getString(R.string.stage_fast));
+
+        // 充电阶段：优先使用 Service 的智能四阶段检测结果
+        if (serviceChargingPhase != null) {
+            tvChargeStage.setText(serviceChargingPhase);
+        } else if (isCharging) {
+            // 回退：使用 PowerHistory 的阶段描述逻辑
+            PowerHistory ph = new PowerHistory();
+            ph.setBatteryLevel(batteryPct);
+            ph.setPower(watt);
+            if (batteryPct >= 99) {
+                tvChargeStage.setText(getString(R.string.stage_full));
+            } else if (batteryPct >= 80) {
+                tvChargeStage.setText(getString(R.string.stage_trickle));
+            } else {
+                tvChargeStage.setText(getString(R.string.stage_fast));
+            }
+        } else {
+            tvChargeStage.setText("--");
+        }
+
         tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", tempC));
         tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", batteryPct));
         tvEstimatedFull.setText(isCharging ? calculateTimeToFull(batteryPct, currentA, info) : "--");
 
-        // Today stats (from database)
+        // 今日充电统计
         tvChargeCount.setText(String.format(Locale.getDefault(), "%d", stats.sessionCount));
-        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", watt));
+        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", stats.avgPower));
         tvTotalChargeTime.setText(formatMinutes(stats.totalChargeMinutes));
         tvTotalCharged.setText(String.format(Locale.getDefault(), "%d mAh", stats.totalChargedMah));
 
-        updatePowerChart(watt);
+        // 实时更新功率曲线
+        if (isCharging && watt > 0) {
+            addChartPoint(watt);
+        }
     }
 
     /**
-     * 查询今日充电统计：充电会话数、总充电时间、总充电量。
+     * 从数据库加载历史功率曲线数据
+     */
+    private void loadHistoricalChart() {
+        ThreadExecutor.execute(() -> {
+            try {
+                BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
+                if (app == null) return;
+                var db = app.getDatabase();
+                if (db == null) return;
+
+                // 加载最近30分钟的功率数据
+                long since = System.currentTimeMillis() - 30 * 60 * 1000;
+                List<PowerHistory> histories = db.powerHistoryDao().getSince(since);
+                if (histories != null && !histories.isEmpty() && isAdded()) {
+                    handler.post(() -> {
+                        if (!isAdded()) return;
+                        List<Entry> entries = new ArrayList<>();
+                        for (int i = 0; i < histories.size(); i++) {
+                            entries.add(new Entry(i, histories.get(i).getPower()));
+                        }
+                        updateChart(entries);
+                    });
+                }
+            } catch (Exception e) {
+                // 静默处理
+            }
+        });
+    }
+
+    private void addChartPoint(float watt) {
+        LineData data = chartPower.getData();
+        if (data == null) return;
+
+        LineDataSet set = (LineDataSet) data.getDataSetByIndex(0);
+        if (set == null) {
+            set = createChartDataSet();
+            data.addDataSet(set);
+        }
+
+        // 最多保留60个点（约2分钟）
+        if (set.getEntryCount() >= 60) {
+            set.removeFirst();
+            // 重新计算 x 值
+            for (int i = 0; i < set.getEntryCount(); i++) {
+                set.getEntryForIndex(i).setX(i);
+            }
+        }
+
+        set.addEntry(new Entry(set.getEntryCount(), watt));
+        data.notifyDataChanged();
+        chartPower.notifyDataSetChanged();
+        chartPower.invalidate();
+    }
+
+    private void updateChart(List<Entry> entries) {
+        LineDataSet dataSet = createChartDataSet();
+        dataSet.setValues(entries);
+
+        List<ILineDataSet> dataSets = new ArrayList<>();
+        dataSets.add(dataSet);
+
+        LineData data = new LineData(dataSets);
+        chartPower.setData(data);
+        chartPower.notifyDataSetChanged();
+        chartPower.invalidate();
+    }
+
+    private LineDataSet createChartDataSet() {
+        LineDataSet dataSet = new LineDataSet(new ArrayList<>(), "功率");
+        dataSet.setColor(getResources().getColor(R.color.primary));
+        dataSet.setLineWidth(2f);
+        dataSet.setDrawCircles(false);
+        dataSet.setDrawValues(false);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setCubicIntensity(0.2f);
+        return dataSet;
+    }
+
+    /**
+     * 查询今日充电统计：充电会话数、总充电时间、总充电量、平均功率。
      */
     private TodayChargeStats queryTodayChargeStats() {
         TodayChargeStats stats = new TodayChargeStats();
@@ -264,7 +431,6 @@ public class PowerFragment extends Fragment {
             var db = app.getDatabase();
             if (db == null) return stats;
 
-            // 今日零点时间戳
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
@@ -272,54 +438,64 @@ public class PowerFragment extends Fragment {
             cal.set(Calendar.MILLISECOND, 0);
             long todayStart = cal.getTimeInMillis();
 
-            // 查询今日所有电池记录
-            List<BatteryInfo> records = db.batteryInfoDao().getSince(todayStart);
-            if (records == null || records.isEmpty()) return stats;
+            // 从 PowerHistory 表查询今日充电数据（更精确）
+            List<PowerHistory> powerRecords = db.powerHistoryDao().getSince(todayStart);
+            if (powerRecords != null && !powerRecords.isEmpty()) {
+                // 按会话分组统计
+                String currentSessionId = null;
+                long sessionStartTime = 0;
+                int sessionStartLevel = -1;
+                int sessionEndLevel = -1;
+                float sessionTotalPower = 0;
+                int sessionPowerCount = 0;
 
-            // 统计充电会话数：连续充电记录为一段，中间出现非充电状态则分段
-            int sessionCount = 0;
-            boolean inChargingSession = false;
-            long sessionStartTime = 0;
-            long totalChargeMs = 0;
-            int startLevel = -1;
-            int endLevel = -1;
-            int designCapacity = -1;
-
-            // 获取设计容量用于计算充电量
-            BatteryInfo latestInfo = batteryDataManager.getCurrentBatteryInfo();
-            if (latestInfo != null) {
-                designCapacity = latestInfo.getDesignCapacity();
-            }
-
-            for (BatteryInfo record : records) {
-                boolean charging = record.isCharging();
-                if (charging && !inChargingSession) {
-                    // 新充电会话开始
-                    sessionCount++;
-                    inChargingSession = true;
-                    sessionStartTime = record.getTimestamp();
-                    startLevel = record.getLevel();
-                } else if (!charging && inChargingSession) {
-                    // 充电会话结束
-                    totalChargeMs += record.getTimestamp() - sessionStartTime;
-                    endLevel = record.getLevel();
-                    inChargingSession = false;
+                for (PowerHistory record : powerRecords) {
+                    String sid = record.getSessionId();
+                    if (sid != null && !sid.equals(currentSessionId)) {
+                        // 新会话开始，结算上一个会话
+                        if (currentSessionId != null) {
+                            stats.sessionCount++;
+                            stats.totalChargeMinutes += (int) ((record.getTimestamp() - sessionStartTime) / 60000);
+                            stats.totalPowerSum += sessionTotalPower;
+                            stats.totalPowerCount += sessionPowerCount;
+                            if (sessionStartLevel >= 0 && sessionEndLevel >= sessionStartLevel) {
+                                stats.totalLevelGained += sessionEndLevel - sessionStartLevel;
+                            }
+                        }
+                        currentSessionId = sid;
+                        sessionStartTime = record.getTimestamp();
+                        sessionStartLevel = record.getBatteryLevel();
+                        sessionTotalPower = 0;
+                        sessionPowerCount = 0;
+                    }
+                    sessionEndLevel = record.getBatteryLevel();
+                    sessionTotalPower += record.getPower();
+                    sessionPowerCount++;
                 }
-            }
-            // 如果当前仍在充电，计入当前会话
-            if (inChargingSession) {
-                totalChargeMs += System.currentTimeMillis() - sessionStartTime;
-                endLevel = records.get(records.size() - 1).getLevel();
-            }
 
-            stats.sessionCount = sessionCount;
-            stats.totalChargeMinutes = (int) (totalChargeMs / 60000);
+                // 结算最后一个会话
+                if (currentSessionId != null) {
+                    stats.sessionCount++;
+                    long lastTime = powerRecords.get(powerRecords.size() - 1).getTimestamp();
+                    stats.totalChargeMinutes += (int) ((Math.max(lastTime, System.currentTimeMillis()) - sessionStartTime) / 60000);
+                    stats.totalPowerSum += sessionTotalPower;
+                    stats.totalPowerCount += sessionPowerCount;
+                    if (sessionStartLevel >= 0 && sessionEndLevel >= sessionStartLevel) {
+                        stats.totalLevelGained += sessionEndLevel - sessionStartLevel;
+                    }
+                }
 
-            // 计算总充电量：使用电量差值 × 设计容量估算
-            if (startLevel >= 0 && endLevel >= 0 && designCapacity > 0) {
-                int levelDiff = endLevel - startLevel;
-                if (levelDiff < 0) levelDiff = 0;
-                stats.totalChargedMah = (int) (levelDiff / 100f * designCapacity);
+                // 计算平均功率
+                stats.avgPower = stats.totalPowerCount > 0 ? stats.totalPowerSum / stats.totalPowerCount : 0;
+
+                // 计算充电量：使用电量差值 × 设计容量
+                BatteryInfo latestInfo = batteryDataManager.getCurrentBatteryInfo();
+                if (latestInfo != null) {
+                    int designCapacity = latestInfo.getDesignCapacity();
+                    if (designCapacity > 0 && stats.totalLevelGained > 0) {
+                        stats.totalChargedMah = (int) (stats.totalLevelGained / 100f * designCapacity);
+                    }
+                }
             }
         } catch (Exception e) {
             // 静默处理
@@ -327,46 +503,33 @@ public class PowerFragment extends Fragment {
         return stats;
     }
 
-    /**
-     * 基于实际电流和剩余容量计算充满所需时间。
-     * 使用设计容量（或当前满充容量）计算剩余需要的电量，再除以当前充电电流。
-     */
     private String calculateTimeToFull(int batteryPct, float currentA, BatteryInfo info) {
         if (currentA <= 0) return "--";
 
-        // 获取电池容量（mAh）
         int capacityMah = info.getCurrentCapacity();
         if (capacityMah <= 0) {
             capacityMah = info.getDesignCapacity();
         }
         if (capacityMah <= 0) return "--";
 
-        // 考虑充电限制百分比
         int limitPct = batteryDataManager.getChargingLimitPercent();
         int remainingPct = limitPct - batteryPct;
         if (remainingPct <= 0) return "--";
 
-        // 剩余需要充入的电量（mAh）
         float remainingMah = capacityMah * (remainingPct / 100f);
 
-        // 考虑充电效率（通常 85%-95%，取 90%）
         float efficiency = 0.9f;
-        // 充电效率在涓流阶段更低
         if (batteryPct >= 80) {
             efficiency = 0.6f;
         } else if (batteryPct >= 60) {
             efficiency = 0.8f;
         }
 
-        // 充满所需时间（小时）= 剩余电量 / (电流 × 效率)
         float hours = remainingMah / (currentA * 1000f * efficiency);
         int mins = Math.max(1, (int) (hours * 60));
         return formatMinutes(mins);
     }
 
-    /**
-     * 格式化分钟数为可读字符串。
-     */
     private String formatMinutes(int totalMinutes) {
         if (totalMinutes <= 0) return "--";
         int hours = totalMinutes / 60;
@@ -380,40 +543,13 @@ public class PowerFragment extends Fragment {
         }
     }
 
-    /**
-     * 今日充电统计数据结构。
-     */
     private static class TodayChargeStats {
         int sessionCount = 0;
         int totalChargeMinutes = 0;
         int totalChargedMah = 0;
-    }
-
-    private void updatePowerChart(float watt) {
-        powerHistory.add(watt);
-        if (powerHistory.size() > MAX_HISTORY_SIZE) {
-            powerHistory.remove(0);
-        }
-
-        List<Entry> entries = new ArrayList<>();
-        for (int i = 0; i < powerHistory.size(); i++) {
-            entries.add(new Entry(i, powerHistory.get(i)));
-        }
-
-        LineDataSet dataSet = new LineDataSet(entries, "功率");
-        dataSet.setColor(getResources().getColor(R.color.primary));
-        dataSet.setLineWidth(2f);
-        dataSet.setDrawCircles(false);
-        dataSet.setDrawValues(false);
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setCubicIntensity(0.2f);
-
-        List<ILineDataSet> dataSets = new ArrayList<>();
-        dataSets.add(dataSet);
-
-        LineData data = new LineData(dataSets);
-        chartPower.setData(data);
-        chartPower.notifyDataSetChanged();
-        chartPower.invalidate();
+        float avgPower = 0;
+        float totalPowerSum = 0;
+        int totalPowerCount = 0;
+        int totalLevelGained = 0;
     }
 }

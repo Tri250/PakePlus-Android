@@ -285,4 +285,14 @@
     <string name="lifespan_no_data">数据不足，无法预测</string>
     <string name="legend_health">健康度</string>
     <string name="legend_temperature">温度</string>
+    <string name="stage_full">充电完成</string>
+    <string name="stage_constant_current">恒流充电</string>
+    <string name="stage_constant_voltage">恒压充电</string>
+    <string name="title_charging_history">充电历史</string>
+    <string name="section_charging_strategy">充电策略</string>
+    <string name="strategy_limit_80">建议开启80%充电限制</string>
+    <string name="strategy_avoid_overnight">避免整夜充电</string>
+    <string name="strategy_use_original_charger">使用原装充电器</string>
+    <string name="strategy_avoid_hot_charge">避免高温环境充电</string>
+    <string name="strategy_bypass_gaming">游戏时开启旁路供电</string>
 </resources>

@@ -77,6 +77,7 @@ public class HealthCheckEngine {
         checkers.add(new EnduranceChecker());
         checkers.add(new ChargingProtocolChecker());
         checkers.add(new ChargingLimitChecker());
+        checkers.add(new ChargingProtectionChecker());
         checkers.add(new PerformanceHealthChecker());
         checkers.add(new MemoryHealthChecker());
         checkers.add(new StorageHealthChecker());
