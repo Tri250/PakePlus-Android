@@ -261,4 +261,8 @@
     <string name="desc_guide_entry">Bugreport 分析指南与诊断</string>
     <string name="status_not_running">未运行</string>
     <string name="status_fps_format">FPS: %.0f</string>
+    <string name="warning_abnormal_discharge">放电速率异常偏高，建议检查后台高耗电应用</string>
+    <string name="section_top_apps">TOP 耗电应用</string>
+    <string name="section_power_tips">省电建议</string>
+    <string name="label_estimated_charge_time">预计充满时间</string>
 </resources>
