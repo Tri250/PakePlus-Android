@@ -249,4 +249,6 @@
     <string name="charging_monitor_notification_content_charging">充电中 %1$d%% · %2$.1fW · %3$s</string>
     <string name="charging_monitor_notification_content_idle">未充电 · 电量 %1$d%%</string>
     <string name="charging_monitor_notification_title">充电监测中</string>
+    <string name="status_no_permission_hint">请授权使用情况访问</string>
+    <string name="share_report_title">电池健康报告</string>
 </resources>

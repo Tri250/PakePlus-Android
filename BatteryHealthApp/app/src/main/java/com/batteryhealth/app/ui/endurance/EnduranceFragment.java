@@ -255,31 +255,50 @@ public class EnduranceFragment extends Fragment {
 
         // 使用 UsageStatsManager 获取真实屏幕亮屏时间
         long screenOnTimeMs = queryScreenOnTime();
-        tvScreenOnTime.setText(formatDuration(screenOnTimeMs));
+        if (screenOnTimeMs > 0) {
+            tvScreenOnTime.setText(formatDuration(screenOnTimeMs));
+        } else if (!BatteryConsumptionAnalyzer.hasUsageAccess(requireContext())) {
+            tvScreenOnTime.setText(getString(R.string.status_no_permission_hint));
+        } else {
+            tvScreenOnTime.setText(formatDuration(0));
+        }
 
         updatePowerRanking();
         updateWearableData();
     }
 
     private void updatePowerRanking() {
-        if (lastAnalysisResult != null) {
+        BatteryConsumptionAnalyzer.Result analysis = lastAnalysisResult;
+        if (analysis != null && analysis.dataStatus == 2) {
+            // 有真实耗电数据
             tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.screenPowerPercent));
+                    analysis.screenPowerPercent));
             tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.systemPowerPercent));
+                    analysis.systemPowerPercent));
             tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", 
-                    lastAnalysisResult.appsPowerPercent));
+                    analysis.appsPowerPercent));
+        } else if (analysis != null && analysis.dataStatus == 1) {
+            // 有权限但暂无数据
+            tvScreenPower.setText("--");
+            tvSystemPower.setText("--");
+            tvAppsPower.setText("--");
         } else {
-            tvScreenPower.setText("35%");
-            tvSystemPower.setText("25%");
-            tvAppsPower.setText("40%");
+            // 无权限或无数据，提示用户授权
+            tvScreenPower.setText("--");
+            tvSystemPower.setText("--");
+            tvAppsPower.setText("--");
         }
     }
 
     private void updateWearableData() {
-        tvWearableStatus.setText(getString(R.string.status_not_connected));
-        tvWearableBattery.setText("--");
-        tvWearableEndurance.setText("--");
+        // 穿戴设备功能需要蓝牙/GMS集成，当前版本暂不展示穿戴数据
+        // 隐藏穿戴区域避免用户困惑
+        if (tvWearableStatus != null) {
+            View wearableCard = (View) tvWearableStatus.getParent();
+            if (wearableCard != null) {
+                wearableCard.setVisibility(View.GONE);
+            }
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.battery;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,6 +46,7 @@ public class BatteryHealthFragment extends Fragment {
 
     private BatteryHealthViewModel viewModel;
     private BatteryReportGenerator reportGenerator;
+    private BatteryReportGenerator.Report lastReport;
 
     @Nullable
     @Override
@@ -76,6 +78,12 @@ public class BatteryHealthFragment extends Fragment {
 
         btnWeeklyReport.setOnClickListener(v -> generateReport(true));
         btnMonthlyReport.setOnClickListener(v -> generateReport(false));
+
+        // 长按报告区域可分享
+        tvReportSummary.setOnLongClickListener(v -> {
+            shareReport();
+            return true;
+        });
     }
 
     private void initViewModel() {
@@ -136,6 +144,7 @@ public class BatteryHealthFragment extends Fragment {
             BatteryReportGenerator.Report report = weekly
                     ? reportGenerator.generateWeeklyReport()
                     : reportGenerator.generateMonthlyReport();
+            lastReport = report;
 
             String summary = formatReportSummary(report);
             if (isAdded() && getActivity() != null) {
@@ -147,6 +156,26 @@ public class BatteryHealthFragment extends Fragment {
                 });
             }
         });
+    }
+
+    /**
+     * 分享报告内容到其他应用。
+     */
+    private void shareReport() {
+        String content;
+        if (lastReport != null && lastReport.startHealth >= 0) {
+            content = reportGenerator.formatReport(lastReport);
+        } else {
+            CharSequence currentText = tvReportSummary.getText();
+            content = currentText != null ? currentText.toString() : "";
+        }
+        if (content.isEmpty() || getString(R.string.status_calculating).equals(content)) {
+            return;
+        }
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, content);
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_report_title)));
     }
 
     private String formatReportSummary(BatteryReportGenerator.Report report) {
