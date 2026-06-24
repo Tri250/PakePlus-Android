@@ -1,5 +1,6 @@
 package com.batteryhealth.app.ui.origin;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,25 +9,31 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
+import com.batteryhealth.app.data.model.BatteryOriginRecord;
+import com.batteryhealth.app.ui.viewmodel.BatteryOriginViewModel;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BatteryOriginDetector;
-import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.List;
+import java.util.Locale;
 
 public class BatteryOriginFragment extends Fragment {
 
     private TextView tvOriginResult;
     private TextView tvOriginConfidence;
     private TextView tvOriginConclusion;
+    private TextView tvDataSourceTag;
     private TextView tvManufactureDate;
     private TextView tvSerialNumber;
     private TextView tvManufacturer;
@@ -34,10 +41,18 @@ public class BatteryOriginFragment extends Fragment {
     private TextView tvTechnology;
     private TextView tvHealthStatus;
     private TextView tvCycleCount;
+    private TextView tvCapacityInfo;
     private LinearLayout containerMethods;
+    private ProgressBar progressDetect;
     private Button btnDetect;
+    private Button btnShare;
+    private TextView tvHistoryEyebrow;
+    private LinearLayout cardHistory;
+    private LinearLayout containerHistory;
+    private TextView tvHistoryEmpty;
 
-    private BatteryOriginDetector originDetector;
+    private BatteryOriginViewModel viewModel;
+    private boolean hasAutoDetected = false;
 
     @Nullable
     @Override
@@ -45,14 +60,31 @@ public class BatteryOriginFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_battery_origin, container, false);
         initViews(view);
         animateEntry(view);
-        originDetector = new BatteryOriginDetector(requireContext());
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initViewModel();
+        observeViewModel();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 自动检测：首次进入页面时自动执行一次
+        if (!hasAutoDetected) {
+            hasAutoDetected = true;
+            viewModel.autoDetect();
+        }
     }
 
     private void initViews(View view) {
         tvOriginResult = view.findViewById(R.id.tv_origin_result);
         tvOriginConfidence = view.findViewById(R.id.tv_origin_confidence);
         tvOriginConclusion = view.findViewById(R.id.tv_origin_conclusion);
+        tvDataSourceTag = view.findViewById(R.id.tv_data_source_tag);
         tvManufactureDate = view.findViewById(R.id.tv_manufacture_date);
         tvSerialNumber = view.findViewById(R.id.tv_serial_number);
         tvManufacturer = view.findViewById(R.id.tv_manufacturer);
@@ -60,61 +92,99 @@ public class BatteryOriginFragment extends Fragment {
         tvTechnology = view.findViewById(R.id.tv_technology);
         tvHealthStatus = view.findViewById(R.id.tv_health_status);
         tvCycleCount = view.findViewById(R.id.tv_cycle_count);
+        tvCapacityInfo = view.findViewById(R.id.tv_capacity_info);
         containerMethods = view.findViewById(R.id.container_methods);
+        progressDetect = view.findViewById(R.id.progress_detect);
         btnDetect = view.findViewById(R.id.btn_detect);
+        btnShare = view.findViewById(R.id.btn_share);
+        tvHistoryEyebrow = view.findViewById(R.id.tv_history_eyebrow);
+        cardHistory = view.findViewById(R.id.card_history);
+        containerHistory = view.findViewById(R.id.container_history);
+        tvHistoryEmpty = view.findViewById(R.id.tv_history_empty);
 
-        btnDetect.setOnClickListener(v -> performDetection());
+        btnDetect.setOnClickListener(v -> viewModel.manualDetect());
+        btnShare.setOnClickListener(v -> shareReport());
     }
 
-    private void animateEntry(View view) {
-        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
-        view.startAnimation(fadeUp);
+    private void initViewModel() {
+        viewModel = new ViewModelProvider(this).get(BatteryOriginViewModel.class);
+
+        // 初始化 ViewModel：注入 Context 和 BatteryDataManager
+        BatteryDataManager batteryDataManager = null;
+        if (getActivity() instanceof MainActivity) {
+            batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
+        }
+        viewModel.initialize(requireContext(), batteryDataManager);
     }
 
-    private void performDetection() {
-        btnDetect.setEnabled(false);
-        btnDetect.setText(getString(R.string.status_detecting));
+    private void observeViewModel() {
+        // 观察检测结果
+        viewModel.getOriginResult().observe(getViewLifecycleOwner(), this::updateUI);
 
-        ThreadExecutor.execute(() -> {
-            // Pass BatteryDataManager for comprehensive data
-            if (getActivity() instanceof com.batteryhealth.app.MainActivity) {
-                BatteryDataManager bdm = ((com.batteryhealth.app.MainActivity) getActivity()).getBatteryDataManager();
-                if (bdm != null) {
-                    originDetector.setBatteryDataManager(bdm);
-                }
+        // 观察检测状态
+        viewModel.getIsDetecting().observe(getViewLifecycleOwner(), detecting -> {
+            if (detecting) {
+                progressDetect.setVisibility(View.VISIBLE);
+                btnDetect.setEnabled(false);
+                btnDetect.setText(getString(R.string.origin_detecting));
+            } else {
+                progressDetect.setVisibility(View.GONE);
+                btnDetect.setEnabled(true);
+                btnDetect.setText(getString(R.string.origin_redetect));
             }
-            // Refresh BatteryDataManager data before passing to detector
-            if (originDetector != null) {
-                BatteryDataManager bdm = originDetector.getBatteryDataManager();
-                if (bdm != null) {
-                    bdm.refreshFromStickyIntent();
-                }
-            }
-            BatteryOriginDetector.OriginResult result = originDetector.detect();
+        });
 
-            if (isAdded() && getActivity() != null) {
-                ThreadExecutor.runOnMain(() -> {
-                    if (!isAdded()) return;
-                    updateUI(result);
-                    btnDetect.setEnabled(true);
-                    btnDetect.setText(getString(R.string.label_detect_battery));
-                });
+        // 观察检测错误
+        viewModel.getDetectionError().observe(getViewLifecycleOwner(), error -> {
+            if (error) {
+                tvOriginResult.setText(getString(R.string.origin_detection_failed));
+                tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_low));
+                tvOriginConfidence.setText("");
+                tvOriginConclusion.setText(getString(R.string.origin_detection_failed));
+            }
+        });
+
+        // 观察历史记录
+        viewModel.getHistoryRecords().observe(getViewLifecycleOwner(), this::updateHistoryUI);
+
+        // 观察报告文本（用于分享）
+        viewModel.getReportText().observe(getViewLifecycleOwner(), report -> {
+            if (report != null && !report.isEmpty()) {
+                launchShareIntent(report);
             }
         });
     }
 
     private void updateUI(BatteryOriginDetector.OriginResult result) {
+        if (result == null) return;
+
+        // 判定结果
         if (result.isOriginal) {
             tvOriginResult.setText(getString(R.string.result_original));
-            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.health_a_plus));
+            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_high));
         } else {
             tvOriginResult.setText(getString(R.string.result_replaced));
-            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange));
+            tvOriginResult.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_low));
         }
 
-        tvOriginConfidence.setText(String.format("置信度：%d%%", result.confidence));
-        tvOriginConclusion.setText(result.conclusion);
+        // 置信度（带颜色分级）
+        int confidenceColor = ContextCompat.getColor(requireContext(),
+                viewModel.getConfidenceColorRes(result.confidence));
+        tvOriginConfidence.setText(getString(R.string.origin_confidence_format, result.confidence));
+        tvOriginConfidence.setTextColor(confidenceColor);
 
+        // 结论
+        tvOriginConclusion.setText(result.conclusion != null ? result.conclusion : "--");
+
+        // 数据来源标签
+        if (result.sourceTag != null && !result.sourceTag.isEmpty()) {
+            tvDataSourceTag.setText(getString(R.string.origin_data_source_label) + "：" + result.sourceTag);
+            tvDataSourceTag.setVisibility(View.VISIBLE);
+        } else {
+            tvDataSourceTag.setVisibility(View.GONE);
+        }
+
+        // 检测信息
         tvManufactureDate.setText(result.manufactureDate != null ? result.manufactureDate : "--");
         tvSerialNumber.setText(result.serialNumber != null ? result.serialNumber : "--");
         tvHealthStatus.setText(result.healthStatus != null ? result.healthStatus : "--");
@@ -123,7 +193,29 @@ public class BatteryOriginFragment extends Fragment {
         tvOemInfo.setText(result.oemInfo != null ? result.oemInfo : "--");
         tvTechnology.setText(result.technology != null ? result.technology : "--");
 
+        // 容量信息
+        if (result.designCapacity > 0 || result.currentCapacity > 0) {
+            String capText;
+            if (result.designCapacity > 0 && result.currentCapacity > 0) {
+                float ratio = (result.currentCapacity * 100f) / result.designCapacity;
+                capText = getString(R.string.origin_capacity_ratio_format,
+                        result.designCapacity, result.currentCapacity, ratio);
+            } else if (result.designCapacity > 0) {
+                capText = result.designCapacity + " mAh";
+            } else {
+                capText = result.currentCapacity + " mAh";
+            }
+            tvCapacityInfo.setText(capText);
+        } else {
+            tvCapacityInfo.setText("--");
+        }
+
+        // 检测方法
         updateDetectionMethods(result.detectionMethods);
+
+        // 启用分享按钮
+        btnShare.setEnabled(true);
+        btnShare.setAlpha(1.0f);
     }
 
     private void updateDetectionMethods(List<BatteryOriginDetector.DetectionMethod> methods) {
@@ -132,7 +224,7 @@ public class BatteryOriginFragment extends Fragment {
         if (methods == null || methods.isEmpty()) {
             TextView emptyView = new TextView(requireContext());
             emptyView.setText(getString(R.string.status_no_data));
-            emptyView.setTextSize(14sp);
+            emptyView.setTextSize(14);
             emptyView.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
             emptyView.setPadding(16, 16, 16, 16);
             containerMethods.addView(emptyView);
@@ -155,18 +247,116 @@ public class BatteryOriginFragment extends Fragment {
 
             TextView tvName = new TextView(requireContext());
             tvName.setText(method.name);
-            tvName.setTextSize(14sp);
+            tvName.setTextSize(14);
             tvName.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
             tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
             TextView tvValue = new TextView(requireContext());
             tvValue.setText(method.value);
-            tvValue.setTextSize(14sp);
+            tvValue.setTextSize(14);
             tvValue.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
 
             row.addView(tvName);
             row.addView(tvValue);
             containerMethods.addView(row);
         }
+    }
+
+    private void updateHistoryUI(List<BatteryOriginRecord> records) {
+        if (records == null || records.isEmpty()) {
+            tvHistoryEyebrow.setVisibility(View.GONE);
+            cardHistory.setVisibility(View.GONE);
+            return;
+        }
+
+        tvHistoryEyebrow.setVisibility(View.VISIBLE);
+        cardHistory.setVisibility(View.VISIBLE);
+
+        containerHistory.removeAllViews();
+
+        // 最多显示最近5条
+        int count = Math.min(records.size(), 5);
+        for (int i = 0; i < count; i++) {
+            BatteryOriginRecord record = records.get(i);
+            if (i > 0) {
+                View separator = new View(requireContext());
+                separator.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.separator));
+                containerHistory.addView(separator);
+            }
+
+            LinearLayout row = new LinearLayout(requireContext());
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(16, 12, 16, 12);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+            // 左侧：时间 + 结论
+            LinearLayout leftPart = new LinearLayout(requireContext());
+            leftPart.setOrientation(LinearLayout.VERTICAL);
+            leftPart.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+            TextView tvTime = new TextView(requireContext());
+            tvTime.setText(viewModel.formatRecordTime(record.timestamp));
+            tvTime.setTextSize(13);
+            tvTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
+
+            TextView tvConclusion = new TextView(requireContext());
+            tvConclusion.setText(record.conclusion != null ? record.conclusion : "--");
+            tvConclusion.setTextSize(12);
+            tvConclusion.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
+            tvConclusion.setMaxLines(1);
+
+            leftPart.addView(tvTime);
+            leftPart.addView(tvConclusion);
+
+            // 右侧：原装/非原装 + 置信度
+            TextView tvBadge = new TextView(requireContext());
+            if (record.isOriginal) {
+                tvBadge.setText(getString(R.string.result_original));
+                tvBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_high));
+            } else {
+                tvBadge.setText(getString(R.string.result_replaced));
+                tvBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_low));
+            }
+            tvBadge.setTextSize(13);
+            tvBadge.setTypeface(null, android.graphics.Typeface.BOLD);
+
+            TextView tvConf = new TextView(requireContext());
+            tvConf.setText(String.format(Locale.getDefault(), "%d%%", record.confidence));
+            tvConf.setTextSize(12);
+            tvConf.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
+
+            LinearLayout rightPart = new LinearLayout(requireContext());
+            rightPart.setOrientation(LinearLayout.VERTICAL);
+            rightPart.setGravity(android.view.Gravity.END);
+            rightPart.addView(tvBadge);
+            rightPart.addView(tvConf);
+
+            row.addView(leftPart);
+            row.addView(rightPart);
+            containerHistory.addView(row);
+        }
+
+        // 隐藏空状态
+        tvHistoryEmpty.setVisibility(View.GONE);
+    }
+
+    private void shareReport() {
+        viewModel.generateReport();
+    }
+
+    private void launchShareIntent(String reportContent) {
+        try {
+            Intent shareIntent = viewModel.createShareIntent(reportContent);
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.origin_share_title)));
+        } catch (Exception e) {
+            // 分享失败静默处理
+        }
+    }
+
+    private void animateEntry(View view) {
+        Animation fadeUp = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_up);
+        view.startAnimation(fadeUp);
     }
 }

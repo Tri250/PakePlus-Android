@@ -96,4 +96,9 @@
 
     <!-- Bottom nav tint (referenced in themes) -->
     <!-- defined in res/color/bottom_nav_color.xml as selector -->
+
+    <!-- Confidence level colors -->
+    <color name="confidence_high">#34C759</color>
+    <color name="confidence_medium">#FF9500</color>
+    <color name="confidence_low">#FF3B30</color>
 </resources>

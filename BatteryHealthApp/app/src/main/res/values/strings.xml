@@ -295,4 +295,32 @@
     <string name="strategy_use_original_charger">使用原装充电器</string>
     <string name="strategy_avoid_hot_charge">避免高温环境充电</string>
     <string name="strategy_bypass_gaming">游戏时开启旁路供电</string>
+
+    <!-- ============================== -->
+    <!-- 电池溯源优化新增字符串 -->
+    <!-- ============================== -->
+    <string name="origin_confidence_format">置信度：%1$d%%</string>
+    <string name="origin_confidence_high">高可信度</string>
+    <string name="origin_confidence_medium">中等可信度</string>
+    <string name="origin_confidence_low">低可信度</string>
+    <string name="origin_confidence_insufficient">可信度不足</string>
+    <string name="origin_detecting">检测中…</string>
+    <string name="origin_tap_to_detect">点击检测按钮开始分析</string>
+    <string name="origin_auto_detect_hint">进入页面时自动检测</string>
+    <string name="origin_history_title">历史记录</string>
+    <string name="origin_history_empty">暂无历史检测记录</string>
+    <string name="origin_history_record_format">%1$s · %2$s · 置信度 %3$d%%</string>
+    <string name="origin_share_report">分享报告</string>
+    <string name="origin_share_title">电池溯源报告</string>
+    <string name="origin_redetect">重新检测</string>
+    <string name="origin_detection_failed">检测失败，请重试</string>
+    <string name="label_design_capacity">设计容量</string>
+    <string name="origin_capacity_ratio_format">设计 %1$d mAh / 当前 %2$d mAh（%3$.0f%%）</string>
+    <string name="origin_source_android16">Android 16 原生 API</string>
+    <string name="origin_source_sysfs">系统节点</string>
+    <string name="origin_source_fallback">降级模式</string>
+    <string name="origin_data_source_label">数据来源</string>
+    <string name="origin_result_original_detail">电池极可能为原装，检测数据完整可靠</string>
+    <string name="origin_result_replaced_detail">电池可能已更换，部分指标异常</string>
+    <string name="origin_result_uncertain_detail">电池来源难以判断，建议通过官方渠道验证</string>
 </resources>
