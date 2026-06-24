@@ -111,7 +111,17 @@ public class CommunityFragment extends Fragment {
         if (containerPosts == null) return;
         containerPosts.removeAllViews();
 
-        List<CommunityPost> posts = buildCommunityPosts();
+        // 社区帖子基于用户真实电池数据动态生成，不使用硬编码假帖子
+        List<CommunityPost> posts = buildDataDrivenPosts();
+        if (posts.isEmpty()) {
+            TextView emptyView = new TextView(requireContext());
+            emptyView.setText("暂无社区动态，保持良好的电池使用习惯即可");
+            emptyView.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
+            emptyView.setPadding(dpToPx(22), dpToPx(16), dpToPx(22), dpToPx(16));
+            containerPosts.addView(emptyView);
+            return;
+        }
+
         for (int i = 0; i < posts.size(); i++) {
             CommunityPost post = posts.get(i);
             if (i > 0) {
@@ -155,17 +165,7 @@ public class CommunityFragment extends Fragment {
             tvTime.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
             tvTime.setTextSize(11);
 
-            TextView tvLikes = new TextView(requireContext());
-            tvLikes.setText(post.likes + " 赞");
-            tvLikes.setTextAppearance(requireContext(), R.style.iOSBody_Secondary);
-            tvLikes.setTextSize(11);
-            LinearLayout.LayoutParams likesParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            likesParams.setMarginStart(dpToPx(16));
-            tvLikes.setLayoutParams(likesParams);
-
             footer.addView(tvTime);
-            footer.addView(tvLikes);
 
             postRow.addView(tvAuthor);
             postRow.addView(tvContent);
@@ -174,20 +174,73 @@ public class CommunityFragment extends Fragment {
         }
     }
 
-    private List<CommunityPost> buildCommunityPosts() {
+    /**
+     * 基于用户真实电池数据动态生成社区动态，不使用硬编码假帖子。
+     */
+    private List<CommunityPost> buildDataDrivenPosts() {
         List<CommunityPost> posts = new ArrayList<>();
-        posts.add(new CommunityPost("电池达人小王", "分享一个保养电池的小技巧：每次充电不要等到完全没电再充，保持在20%-80%之间最好！", "2小时前", 128));
-        posts.add(new CommunityPost("数码爱好者", "实测快充对电池寿命影响不大，主要是充电时温度控制很重要！", "5小时前", 256));
-        posts.add(new CommunityPost("手机维修师傅", "换电池一定要去官方售后，第三方电池质量参差不齐，安全第一！", "昨天", 512));
-        posts.add(new CommunityPost("科技博主", "iOS的优化电池充电功能真的很实用，Android用户可以试试电池健康类APP", "2天前", 89));
+        if (batteryDataManager == null) return posts;
+
+        BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+        if (info == null) return posts;
+
+        float health = info.getHealthPercentage();
+        float temp = info.getTemperature();
+        int cycle = info.getCycleCount();
+        int level = info.getLevel();
+
+        // 基于真实健康度生成建议动态
+        if (health >= 0 && health < 75) {
+            posts.add(new CommunityPost("电池健康助手",
+                    String.format(Locale.getDefault(), "您的电池健康度为%.0f%%，建议避免深度放电和高温环境，保持电量在20%%-80%%区间可有效减缓老化。", health),
+                    "刚刚", 0));
+        }
+        if (temp > 35) {
+            posts.add(new CommunityPost("温度监测",
+                    String.format(Locale.getDefault(), "当前电池温度%.1f°C偏高，充电时建议取下手机壳并关闭高耗电应用以帮助散热。", temp),
+                    "刚刚", 0));
+        }
+        if (cycle > 0 && cycle >= 300) {
+            posts.add(new CommunityPost("循环次数提醒",
+                    String.format("您的充电循环已达%d次，锂离子电池设计寿命约500次循环后保持80%%容量，建议关注健康度变化。", cycle),
+                    "刚刚", 0));
+        }
+        if (level <= 20) {
+            posts.add(new CommunityPost("低电量提醒",
+                    String.format("当前电量%d%%，建议尽快充电，避免深度放电损伤电池。", level),
+                    "刚刚", 0));
+        }
+
         return posts;
     }
 
     private void shareTip() {
+        // 分享包含用户真实电池数据的报告
+        StringBuilder shareText = new StringBuilder();
+        shareText.append("【电池健康报告】\n\n");
+
+        if (batteryDataManager != null) {
+            BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+            if (info != null && info.hasValidHealthData()) {
+                shareText.append(String.format(Locale.getDefault(), "电池健康度：%.0f%%（%s）\n",
+                        info.getHealthPercentage(), info.getHealthDescription()));
+                shareText.append(String.format(Locale.getDefault(), "健康等级：%s\n", info.getHealthGrade()));
+                if (info.hasValidCycleCount()) {
+                    shareText.append(String.format("循环次数：%d 次\n", info.getCycleCount()));
+                }
+                shareText.append(String.format(Locale.getDefault(), "当前电量：%d%%\n", info.getLevel()));
+                shareText.append(String.format(Locale.getDefault(), "电池温度：%.1f°C\n", info.getTemperature()));
+            } else {
+                shareText.append("暂无电池数据\n");
+            }
+        }
+
+        shareText.append("\n—— 来自「电池健康」APP");
+
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, "我在电池健康APP学到了很多保养电池的技巧，推荐大家也来试试！");
-        startActivity(Intent.createChooser(shareIntent, "分享给好友"));
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText.toString());
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_report_title)));
     }
 
     private void populateContent(BatteryInfo info) {
@@ -373,13 +426,16 @@ public class CommunityFragment extends Fragment {
     private List<TipItem> buildLifespanTips(float healthPct, int cycleCount) {
         List<TipItem> tips = new ArrayList<>();
 
+        // 统一阈值与 BatteryInfo.getHealthDescription() 一致：95+极佳，85+良好，75+一般，60+较差，<60极差
         if (healthPct >= 0 && healthPct < 60) {
             tips.add(new TipItem("建议更换电池", String.format(Locale.getDefault(), "健康度%.0f%%", healthPct)));
-        } else if (healthPct >= 60 && healthPct < 80) {
+        } else if (healthPct >= 60 && healthPct < 75) {
             tips.add(new TipItem("电池损耗明显", "注意保养"));
-        } else if (healthPct >= 80 && healthPct < 90) {
+        } else if (healthPct >= 75 && healthPct < 85) {
+            tips.add(new TipItem("电池状态一般", "注意保养"));
+        } else if (healthPct >= 85 && healthPct < 95) {
             tips.add(new TipItem("电池状态良好", "继续保持"));
-        } else if (healthPct >= 90) {
+        } else if (healthPct >= 95) {
             tips.add(new TipItem("电池状态极佳", "保养得当"));
         }
 
@@ -401,16 +457,20 @@ public class CommunityFragment extends Fragment {
     private List<QaItem> buildPersonalizedQa(float healthPct, float temperature, int cycleCount) {
         List<QaItem> qaList = new ArrayList<>();
 
-        // 基于健康度的个性化 Q&A
+        // 统一阈值与 BatteryInfo.getHealthDescription() 一致
         if (healthPct >= 0 && healthPct < 60) {
             qaList.add(new QaItem(
                     "电池健康度低于60%怎么办？",
                     "电池容量已严重衰减，建议尽快前往官方售后更换原装电池，以确保设备正常使用和安全。"));
-        } else if (healthPct >= 60 && healthPct < 80) {
+        } else if (healthPct >= 60 && healthPct < 75) {
             qaList.add(new QaItem(
                     "电池健康度下降明显，如何减缓？",
                     "避免将电量用到20%以下再充电，充电至80%左右即可拔掉。避免高温环境下使用和充电，这些措施能有效减缓电池老化。"));
-        } else if (healthPct >= 80 && healthPct < 90) {
+        } else if (healthPct >= 75 && healthPct < 85) {
+            qaList.add(new QaItem(
+                    "电池健康度一般，如何保持？",
+                    "保持20%-80%的电量区间使用，避免长时间满充或深度放电，远离高温环境，使用原装充电器即可。"));
+        } else if (healthPct >= 85 && healthPct < 95) {
             qaList.add(new QaItem(
                     "如何保持电池健康度？",
                     "保持20%-80%的电量区间使用，避免长时间满充或深度放电，远离高温环境，使用原装充电器即可。"));

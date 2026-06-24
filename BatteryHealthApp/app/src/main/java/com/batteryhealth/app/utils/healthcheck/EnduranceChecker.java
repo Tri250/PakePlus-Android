@@ -6,14 +6,13 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
+import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 
 /**
- * 续航预测检测：基于当前电量与放电速率估算剩余可用时间，并
- * 根据预计续航时长与用户历史数据评分。
+ * 续航预测检测：基于当前电量与真实放电速率估算剩余可用时间。
+ * 优先使用 BatteryConsumptionAnalyzer 的系统预估，回退到电流/容量计算。
  */
 public class EnduranceChecker implements IHealthChecker {
-
-    private static final float DEFAULT_DISCHARGE_PER_HOUR = 10f; // 默认每小时消耗 10%
 
     @Override
     public String getName() { return "续航预测"; }
@@ -54,18 +53,66 @@ public class EnduranceChecker implements IHealthChecker {
             boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
 
-            // 简化估算：每小时消耗 DEFAULT_DISCHARGE_PER_HOUR%，充电状态按 1%/分钟 反向估算
-            float hours;
+            // 使用 BatteryConsumptionAnalyzer 获取真实续航预估
+            float hours = -1;
+            float dischargeRate = 0;
+            try {
+                BatteryConsumptionAnalyzer.Result analysis =
+                        BatteryConsumptionAnalyzer.analyze(appCtx, 24 * 60 * 60 * 1000L);
+                if (analysis != null && analysis.systemEstimatedHours > 0) {
+                    hours = (float) analysis.systemEstimatedHours;
+                    if (pct > 0) {
+                        dischargeRate = pct / hours;
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            // 回退：通过电流和容量计算真实放电速率
+            if (hours <= 0) {
+                try {
+                    BatteryManager bm = (BatteryManager) appCtx.getSystemService(Context.BATTERY_SERVICE);
+                    if (bm != null) {
+                        int currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
+                        if (currentAvg == 0 || currentAvg == Integer.MIN_VALUE) {
+                            currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                        }
+                        int voltageMv = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) : 0;
+                        int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                        if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
+                            capacityMicroAh = bm.getIntProperty(24); // BATTERY_PROPERTY_CHARGE_FULL
+                        }
+
+                        if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && pct > 0) {
+                            int capacityMah = -1;
+                            if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;
+                            else if (capacityMicroAh > 100) capacityMah = capacityMicroAh;
+
+                            if (capacityMah > 0) {
+                                float remainingMah = capacityMah * (pct / 100f);
+                                float absCurrentMa = Math.abs(currentAvg / 1000f);
+                                if (absCurrentMa > 0) {
+                                    if (isCharging) {
+                                        // 充电时：剩余容量 / 充电电流
+                                        float remainingToFull = capacityMah * ((100 - pct) / 100f);
+                                        hours = remainingToFull / absCurrentMa;
+                                    } else {
+                                        // 放电时：剩余容量 / 放电电流
+                                        hours = remainingMah / absCurrentMa;
+                                    }
+                                    dischargeRate = pct / hours;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
             int severity;
             String statusText;
             String advice;
             int score;
 
             if (isCharging) {
-                int remainingToFull = 100 - pct;
-                float minutesToFull = remainingToFull * 2.0f; // 粗略估算 每 2 分钟充 1%
-                hours = minutesToFull / 60f;
-
                 if (pct >= 90) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
                     statusText = "即将充满";
@@ -82,8 +129,7 @@ public class EnduranceChecker implements IHealthChecker {
                     advice = "当前电量偏低，保持充电直到达到 80% 以上。";
                     score = 65;
                 }
-            } else {
-                hours = pct / DEFAULT_DISCHARGE_PER_HOUR;
+            } else if (hours > 0) {
                 if (hours >= 6f) {
                     severity = HealthCheckResult.SEVERITY_GOOD;
                     statusText = "充裕";
@@ -105,15 +151,39 @@ public class EnduranceChecker implements IHealthChecker {
                     advice = "电池即将耗尽，请立即接入充电器。";
                     score = 25;
                 }
+            } else {
+                // 无法计算续航，仅基于电量判断
+                if (pct >= 50) {
+                    severity = HealthCheckResult.SEVERITY_GOOD;
+                    statusText = "电量充足";
+                    advice = "当前电量可正常使用。";
+                    score = 80;
+                } else if (pct >= 20) {
+                    severity = HealthCheckResult.SEVERITY_INFO;
+                    statusText = "电量一般";
+                    advice = "建议关注电量变化，适时充电。";
+                    score = 60;
+                } else {
+                    severity = HealthCheckResult.SEVERITY_WARNING;
+                    statusText = "电量偏低";
+                    advice = "建议尽快充电，避免深度放电损伤电池。";
+                    score = 35;
+                }
             }
 
-            String desc = String.format("当前电量：%1$d%%。%2$s状态下预计可用约 %3$.1f 小时",
-                    pct, isCharging ? "充电" : "放电", hours);
+            String desc;
+            if (hours > 0) {
+                desc = String.format("当前电量：%1$d%%。%2$s状态下预计可用约 %3$.1f 小时（放电速率 %4$.1f%%/h）",
+                        pct, isCharging ? "充电" : "放电", hours, dischargeRate);
+            } else {
+                desc = String.format("当前电量：%1$d%%。%2$s状态，暂无法精确估算续航时间。",
+                        pct, isCharging ? "充电" : "放电");
+            }
 
             return builder
                     .setSeverity(severity)
                     .setStatus(statusText)
-                    .setValue(String.format("%.1f", hours))
+                    .setValue(hours > 0 ? String.format("%.1f", hours) : "--")
                     .setUnit("小时")
                     .setDescription(desc)
                     .setAdvice(advice)

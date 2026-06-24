@@ -88,19 +88,9 @@ public class BatteryHealthViewModel extends ViewModel {
     private void updateHealthInfo(BatteryInfo info) {
         if (info.hasValidHealthData()) {
             float health = info.getHealthPercentage();
-            healthGrade.postValue(calculateHealthUseCase.calculateGrade(health));
-            
-            String status;
-            if (health >= 90) {
-                status = "电池状态极佳";
-            } else if (health >= 80) {
-                status = "电池状态良好";
-            } else if (health >= 60) {
-                status = "电池状态一般";
-            } else {
-                status = "建议更换电池";
-            }
-            healthStatus.postValue(status);
+            // 统一使用 BatteryInfo 作为唯一数据源，阈值：95+极佳，85+良好，75+一般，60+较差，<60极差
+            healthGrade.postValue(info.getHealthGrade());
+            healthStatus.postValue(info.getHealthDescription());
         } else {
             healthGrade.postValue("--");
             healthStatus.postValue("无法获取健康数据");
