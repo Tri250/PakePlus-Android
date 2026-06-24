@@ -12,6 +12,7 @@ import androidx.annotation.WorkerThread;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.utils.BatteryOriginDetector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,6 +47,7 @@ public class BatteryDataManager {
 
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
+    private BatteryOriginDetector originDetector;
     private ActivationDateHelper.Result activation;
 
     private volatile BatteryInfo currentBatteryInfo;
@@ -62,6 +64,7 @@ public class BatteryDataManager {
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
+        this.originDetector = new BatteryOriginDetector(context);
         this.chargingStatusText = this.context.getString(R.string.status_unknown);
         this.healthSourceText = this.context.getString(R.string.status_unknown);
         this.batterySourceText = this.context.getString(R.string.status_unknown);
@@ -518,77 +521,81 @@ public class BatteryDataManager {
     // region 电池来源（多维验证）
 
     private BatterySourceResult determineBatterySource(Intent intent, int fullCapacity, int designCapacity) {
+        // 委托给统一判定引擎 BatteryOriginDetector
+        if (originDetector != null) {
+            originDetector.setBatteryDataManager(this);
+        }
+        BatteryOriginDetector.OriginResult originResult = originDetector != null ? originDetector.detect() : null;
+
         BatterySourceResult result = new BatterySourceResult();
-        result.confidence = 0f;
-        Map<String, Float> signals = new HashMap<>();
-
-        // 信号 1: psy_info / oem_info / factory_serial（厂商留下的原厂标识）
-        String vendorInfo = readSysfsString(PSY_INFO_PATHS, "");
-        if (vendorInfo.isEmpty()) vendorInfo = readSysfsString(FACTORY_SERIAL_PATHS, "");
-        if (!vendorInfo.isEmpty()) {
-            // 厂商标识符通常包含品牌或厂内编码；非空即"疑似原厂"
-            if (looksLikeOemSerial(vendorInfo)) {
-                signals.put("vendor_serial", 0.4f);
+        if (originResult != null) {
+            if (originResult.isOriginal) {
+                result.source = context.getString(R.string.battery_source_original);
+                result.confidence = originResult.confidence / 100f; // 转为 0-1
+                result.reason = originResult.conclusion;
+            } else if (originResult.confidence >= 30) {
+                result.source = context.getString(R.string.battery_source_third_party);
+                result.confidence = originResult.confidence / 100f;
+                result.reason = originResult.conclusion;
             } else {
-                signals.put("vendor_serial", -0.3f);
+                result.source = context.getString(R.string.battery_source_unverifiable);
+                result.confidence = 0f;
+                result.reason = originResult.conclusion;
             }
-        }
-
-        // 信号 2: manufacturer / company 字段
-        String mfg = readSysfsString(MANUFACTURER_INFO_PATHS, "");
-        if (!mfg.isEmpty()) {
-            if (mfg.toLowerCase(Locale.ROOT).matches(".*(coslight|sunwoda(desay|scud|desay)|byd|at|lg|chem|sanyo|tdk).*")) {
-                signals.put("manufacturer", 0.3f);
-            } else if (mfg.equalsIgnoreCase("unknown") || mfg.equalsIgnoreCase("0")) {
-                signals.put("manufacturer", -0.1f);
-            }
-        }
-
-        // 信号 3: BatteryManager 序列号
-        String serial = readBatterySerial(intent);
-        if (serial != null && !serial.isEmpty() && !serial.equalsIgnoreCase("unknown")) {
-            // 仅当序列号格式与原厂规则一致时计正分
-            if (isValidOemSerialFormat(serial)) {
-                signals.put("serial_format", 0.25f);
-            } else {
-                signals.put("serial_format", -0.35f);
-            }
-        }
-
-        // 信号 4: 容量偏差
-        if (designCapacity > 0 && fullCapacity > 0) {
-            float ratio = fullCapacity / (float) designCapacity;
-            if (ratio >= 0.85f && ratio <= 1.05f) {
-                signals.put("capacity_ratio", 0.3f);
-            } else if (ratio >= 0.55f && ratio <= 1.25f) {
-                signals.put("capacity_ratio", 0f);
-            } else {
-                signals.put("capacity_ratio", -0.5f); // 严重偏离
-            }
-        }
-
-        // 信号 5: 机型数据库匹配（数据库里有这台机型的容量基准）
-        if (deviceDb.findDevice() != null) {
-            signals.put("device_database_match", 0.2f);
         } else {
-            signals.put("device_database_match", -0.1f);
-        }
-
-        // 汇总
-        float total = 0f;
-        for (float v : signals.values()) total += v;
-        if (total >= 0.5f) {
-            result.source = context.getString(R.string.battery_source_original);
-            result.confidence = Math.min(0.95f, 0.6f + total * 0.1f);
-            result.reason = "综合多项原厂标识通过";
-        } else if (total <= -0.3f) {
-            result.source = context.getString(R.string.battery_source_third_party);
-            result.confidence = Math.min(0.9f, 0.55f - total * 0.1f);
-            result.reason = "存在明显非原厂特征";
-        } else {
-            result.source = context.getString(R.string.battery_source_unverifiable);
+            // BatteryOriginDetector 不可用时回退到简化逻辑
             result.confidence = 0f;
-            result.reason = "原厂标识不足";
+            Map<String, Float> signals = new HashMap<>();
+
+            String vendorInfo = readSysfsString(PSY_INFO_PATHS, "");
+            if (vendorInfo.isEmpty()) vendorInfo = readSysfsString(FACTORY_SERIAL_PATHS, "");
+            if (!vendorInfo.isEmpty()) {
+                if (looksLikeOemSerial(vendorInfo)) {
+                    signals.put("vendor_serial", 0.4f);
+                } else {
+                    signals.put("vendor_serial", -0.3f);
+                }
+            }
+
+            String mfg = readSysfsString(MANUFACTURER_INFO_PATHS, "");
+            if (!mfg.isEmpty()) {
+                if (mfg.toLowerCase(Locale.ROOT).matches(".*(coslight|sunwoda|byd|lg|chem|sanyo|tdk).*")) {
+                    signals.put("manufacturer", 0.3f);
+                } else if (mfg.equalsIgnoreCase("unknown") || mfg.equalsIgnoreCase("0")) {
+                    signals.put("manufacturer", -0.1f);
+                }
+            }
+
+            if (designCapacity > 0 && fullCapacity > 0) {
+                float ratio = fullCapacity / (float) designCapacity;
+                if (ratio >= 0.85f && ratio <= 1.05f) {
+                    signals.put("capacity_ratio", 0.3f);
+                } else if (ratio >= 0.55f && ratio <= 1.25f) {
+                    signals.put("capacity_ratio", 0f);
+                } else {
+                    signals.put("capacity_ratio", -0.5f);
+                }
+            }
+
+            if (deviceDb.findDevice() != null) {
+                signals.put("device_database_match", 0.2f);
+            }
+
+            float total = 0f;
+            for (float v : signals.values()) total += v;
+            if (total >= 0.5f) {
+                result.source = context.getString(R.string.battery_source_original);
+                result.confidence = Math.min(0.95f, 0.6f + total * 0.1f);
+                result.reason = "综合多项原厂标识通过";
+            } else if (total <= -0.3f) {
+                result.source = context.getString(R.string.battery_source_third_party);
+                result.confidence = Math.min(0.9f, 0.55f - total * 0.1f);
+                result.reason = "存在明显非原厂特征";
+            } else {
+                result.source = context.getString(R.string.battery_source_unverifiable);
+                result.confidence = 0f;
+                result.reason = "原厂标识不足";
+            }
         }
         return result;
     }
@@ -1018,6 +1025,10 @@ public class BatteryDataManager {
 
     public void setUsageDays(int days) {
         this.usageDays = days;
+    }
+
+    public BatteryOriginDetector getOriginDetector() {
+        return originDetector;
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.batteryhealth.app.domain.usecase;
 
 import com.batteryhealth.app.domain.repository.DeviceRepository;
+import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.BatteryOriginDetector;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -9,14 +11,42 @@ import java.util.Map;
 public class DetermineBatterySourceUseCase {
 
     private final DeviceRepository deviceRepository;
+    private final BatteryDataManager batteryDataManager;
 
-    public DetermineBatterySourceUseCase(DeviceRepository deviceRepository) {
+    public DetermineBatterySourceUseCase(DeviceRepository deviceRepository, BatteryDataManager batteryDataManager) {
         this.deviceRepository = deviceRepository;
+        this.batteryDataManager = batteryDataManager;
     }
 
     public Result execute(String vendorInfo, String manufacturer, String serial,
                           int fullCapacity, int designCapacity) {
         Result result = new Result();
+
+        // 委托给统一判定引擎
+        if (batteryDataManager != null && batteryDataManager.getOriginDetector() != null) {
+            BatteryOriginDetector detector = batteryDataManager.getOriginDetector();
+            detector.setBatteryDataManager(batteryDataManager);
+            BatteryOriginDetector.OriginResult originResult = detector.detect();
+
+            if (originResult != null) {
+                if (originResult.isOriginal) {
+                    result.source = "original";
+                    result.confidence = originResult.confidence / 100f;
+                    result.reason = originResult.conclusion;
+                } else if (originResult.confidence >= 30) {
+                    result.source = "third_party";
+                    result.confidence = originResult.confidence / 100f;
+                    result.reason = originResult.conclusion;
+                } else {
+                    result.source = "unknown";
+                    result.confidence = 0f;
+                    result.reason = originResult.conclusion;
+                }
+                return result;
+            }
+        }
+
+        // 回退：简化逻辑（当 BatteryOriginDetector 不可用时）
         result.confidence = 0f;
         Map<String, Float> signals = new HashMap<>();
 

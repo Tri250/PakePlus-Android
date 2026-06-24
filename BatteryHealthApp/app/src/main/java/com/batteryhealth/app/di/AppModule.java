@@ -63,8 +63,9 @@ public class AppModule {
     @Provides
     @Singleton
     public DetermineBatterySourceUseCase provideDetermineBatterySourceUseCase(
-            DeviceRepository deviceRepository) {
-        return new DetermineBatterySourceUseCase(deviceRepository);
+            DeviceRepository deviceRepository,
+            BatteryDataManager batteryDataManager) {
+        return new DetermineBatterySourceUseCase(deviceRepository, batteryDataManager);
     }
 
     @Provides
