@@ -49,6 +49,10 @@ public class EnduranceFragment extends Fragment {
 
     private EnduranceViewModel viewModel;
 
+    // 定时刷新 Handler（声明在字段区，避免方法间引用顺序问题）
+    private final android.os.Handler refreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable refreshRunnable;
+
     // 应用启动时间
     private final long appStartTimeMs = System.currentTimeMillis();
 
@@ -265,8 +269,7 @@ public class EnduranceFragment extends Fragment {
         refreshHandler.removeCallbacksAndMessages(null);
     }
 
-    private android.os.Handler refreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private Runnable refreshRunnable;
+    // refreshHandler 已移至字段区声明
 
     private void startPeriodicRefresh() {
         refreshRunnable = new Runnable() {

@@ -206,6 +206,16 @@ public class PerformanceFragment extends Fragment {
         super.onDestroyView();
         // 清理 Handler 待执行回调，避免内存泄漏
         handler.removeCallbacksAndMessages(null);
+        // 清理 Choreographer 帧回调，避免内存泄漏
+        if (fpsFrameCallback != null) {
+            Choreographer.getInstance().removeFrameCallback(fpsFrameCallback);
+            fpsFrameCallback = null;
+        }
+        // 清理 DeviceInfoManager 避免持有 Activity 引用
+        if (deviceInfoManager != null) {
+            deviceInfoManager.shutdown();
+            deviceInfoManager = null;
+        }
     }
 
     private void startPeriodicUpdate() {

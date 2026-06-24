@@ -69,6 +69,9 @@ public class TrendFragment extends Fragment {
 
     private TrendViewModel viewModel;
 
+    // 缓存当前趋势数据，用于图表点击回调展示详情
+    private GetTrendDataUseCase.Result currentTrendResult;
+
     // 暗色模式颜色
     private int chartMainColor;
     private int chartTempColor;
@@ -216,11 +219,14 @@ public class TrendFragment extends Fragment {
         rightAxis.setAxisMinimum(0f);
         rightAxis.setAxisMaximum(60f);
 
-        // 数据点点击回调
+        // 数据点点击回调：显示该时间点的健康度和温度详情
         lineChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, Highlight h) {
-                // 可扩展：显示数据点详情弹窗
+                if (currentTrendResult == null || currentTrendResult.dailyPoints == null) return;
+                int index = Math.min(Math.max((int) e.getX(), 0), currentTrendResult.dailyPoints.size() - 1);
+                GetTrendDataUseCase.DailyPoint point = currentTrendResult.dailyPoints.get(index);
+                showPointDetailDialog(point);
             }
 
             @Override
@@ -238,6 +244,7 @@ public class TrendFragment extends Fragment {
     }
 
     private void updateUI(GetTrendDataUseCase.Result result) {
+        this.currentTrendResult = result;
         if (result == null) return;
 
         if (!result.hasData || result.dailyPoints == null || result.dailyPoints.isEmpty()) {
@@ -486,5 +493,39 @@ public class TrendFragment extends Fragment {
         lineChart.setData(lineData);
         lineChart.setNoDataText(getString(R.string.health_check_no_data));
         lineChart.invalidate();
+    }
+
+    /**
+     * 显示数据点详情弹窗，展示该时间点的健康度、温度等详细信息。
+     */
+    private void showPointDetailDialog(GetTrendDataUseCase.DailyPoint point) {
+        if (!isAdded() || point == null) return;
+        Context ctx = requireContext();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault());
+        String dateStr = sdf.format(new Date(point.timestamp));
+
+        StringBuilder message = new StringBuilder();
+        message.append("日期：").append(dateStr).append("\n\n");
+        if (point.health >= 0) {
+            message.append("健康度：").append(String.format(Locale.getDefault(), "%.1f%%", point.health)).append("\n");
+        }
+        if (point.avgTemperature > 0) {
+            message.append("平均温度：").append(String.format(Locale.getDefault(), "%.1f°C", point.avgTemperature)).append("\n");
+        }
+        if (point.maxTemperature > 0) {
+            message.append("最高温度：").append(String.format(Locale.getDefault(), "%.1f°C", point.maxTemperature)).append("\n");
+        }
+        if (point.minTemperature > 0) {
+            message.append("最低温度：").append(String.format(Locale.getDefault(), "%.1f°C", point.minTemperature)).append("\n");
+        }
+        if (point.recordCount > 0) {
+            message.append("当日记录数：").append(point.recordCount).append("\n");
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(ctx)
+                .setTitle("数据详情")
+                .setMessage(message.toString().trim())
+                .setPositiveButton("确定", null)
+                .show();
     }
 }
