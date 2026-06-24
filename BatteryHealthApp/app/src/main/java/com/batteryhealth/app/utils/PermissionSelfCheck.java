@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 
+import android.annotation.SuppressLint;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -28,6 +29,7 @@ import java.util.List;
  * 4. 电池优化白名单检查
  * 5. 精确闹钟权限检查（Android 12+）
  */
+@SuppressLint("InlinedApi")
 public class PermissionSelfCheck {
 
     private static final String TAG = "PermissionSelfCheck";

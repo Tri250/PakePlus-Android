@@ -30,6 +30,7 @@ import com.batteryhealth.app.data.model.BugReportGuide;
 import com.batteryhealth.app.utils.BugReportAnalyzer;
 import com.batteryhealth.app.utils.BugReportExportUtil;
 import com.batteryhealth.app.utils.BugReportHistoryManager;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.io.File;
@@ -71,25 +72,32 @@ public class GuideFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_guide, container, false);
+        try {
+            View view = inflater.inflate(R.layout.fragment_guide, container, false);
 
-        analyzer = new BugReportAnalyzer(requireContext());
-        historyManager = new BugReportHistoryManager(requireContext());
+            analyzer = new BugReportAnalyzer(requireContext());
+            historyManager = new BugReportHistoryManager(requireContext());
 
-        filePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.OpenDocument(),
-                uri -> {
-                    if (uri != null) {
-                        analyzeBugReport(uri);
+            filePickerLauncher = registerForActivityResult(
+                    new ActivityResultContracts.OpenDocument(),
+                    uri -> {
+                        if (uri != null) {
+                            analyzeBugReport(uri);
+                        }
                     }
-                }
-        );
+            );
 
-        initViews(view);
-        loadBrandTabs();
-        loadHistory();
+            initViews(view);
+            loadBrandTabs();
+            loadHistory();
 
-        return view;
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

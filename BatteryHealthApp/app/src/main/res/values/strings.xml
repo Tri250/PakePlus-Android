@@ -94,7 +94,6 @@
     <string name="label_charging_status">充电状态</string>
     <string name="label_current">电流</string>
     <string name="label_battery_capacity">电池容量</string>
-    <string name="label_cycle_count">循环次数</string>
     <string name="label_battery_temperature">电池温度</string>
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
@@ -265,6 +264,11 @@
     <string name="section_top_apps">TOP 耗电应用</string>
     <string name="section_power_tips">省电建议</string>
     <string name="label_estimated_charge_time">预计充满时间</string>
+    <string name="label_share">分享</string>
+    <string name="section_alert_settings">预警设置</string>
+    <string name="section_gpu_info">GPU 信息</string>
+    <string name="desc_performance_tips">性能优化建议与说明</string>
+    <string name="section_history_data">历史数据</string>
 
     <!-- ============================== -->
     <!-- 趋势追踪 v5.0 新增字符串 -->

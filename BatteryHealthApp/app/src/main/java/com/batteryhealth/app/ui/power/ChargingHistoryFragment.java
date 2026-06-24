@@ -1,7 +1,9 @@
 package com.batteryhealth.app.ui.power;
 
+import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.PowerHistory;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.text.SimpleDateFormat;
@@ -35,6 +38,8 @@ import java.util.Map;
  */
 public class ChargingHistoryFragment extends Fragment {
 
+    private static final String TAG = "ChargingHistoryFragment";
+
     private LinearLayout containerHistory;
     private TextView tvPeriodLabel;
     private TextView tvTotalSessions;
@@ -46,11 +51,18 @@ public class ChargingHistoryFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_charging_history, container, false);
-        initViews(view);
-        animateEntry(view);
-        loadData();
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_charging_history, container, false);
+            initViews(view);
+            animateEntry(view);
+            loadData();
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

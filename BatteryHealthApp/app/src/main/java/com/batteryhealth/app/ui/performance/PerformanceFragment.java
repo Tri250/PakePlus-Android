@@ -2,7 +2,9 @@ package com.batteryhealth.app.ui.performance;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.os.Looper;
 import android.os.Process;
 import android.view.Choreographer;
@@ -22,12 +24,15 @@ import androidx.lifecycle.ViewModelProvider;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.ui.viewmodel.PerformanceViewModel;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.PerformanceAnalyzer;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
 
 public class PerformanceFragment extends Fragment {
+
+    private static final String TAG = "PerformanceFragment";
 
     private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
     private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
@@ -56,11 +61,18 @@ public class PerformanceFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_performance, container, false);
-        initViews(view);
-        initViewModel();
-        animateEntry(view);
-        return view;
+        try {
+            View view = inflater.inflate(R.layout.fragment_performance, container, false);
+            initViews(view);
+            initViewModel();
+            animateEntry(view);
+            return view;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating view", e);
+            Context ctx = getContext();
+            if (ctx == null && container != null) ctx = container.getContext();
+            return FragmentErrorViewHelper.createErrorView(ctx, e);
+        }
     }
 
     private void initViews(View view) {

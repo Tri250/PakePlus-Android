@@ -1,6 +1,9 @@
 pluginManagement {
     repositories {
         maven { url uri('local-repo') }
+        // 国内镜像加速：阿里云公共仓库（聚合 Maven Central / Google / Gradle Plugin）
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        // 国内镜像加速：华为云 Maven 仓库
         maven { url 'https://repo.huaweicloud.com/repository/maven/' }
         google()
         mavenCentral()
@@ -11,6 +14,9 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         maven { url uri('local-repo') }
+        // 国内镜像加速：阿里云公共仓库
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        // 国内镜像加速：华为云 Maven 仓库
         maven { url 'https://repo.huaweicloud.com/repository/maven/' }
         maven { url 'https://jitpack.io' }
         google()
