@@ -1,8 +1,12 @@
 // Top-level build file - 仓库配置已迁移到 settings.gradle 统一管理
 buildscript {
     repositories {
-        maven { url uri('local-repo') }
+        // 国内镜像优先，加速插件解析
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        maven { url uri('local-repo') }
+        // 官方源兜底
         google()
         mavenCentral()
         gradlePluginPortal()

@@ -1,7 +1,11 @@
 pluginManagement {
     repositories {
-        maven { url uri('local-repo') }
+        // 国内镜像优先，加速插件解析
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        maven { url uri('local-repo') }
+        // 官方源兜底
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -10,9 +14,13 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        maven { url uri('local-repo') }
+        // 国内镜像优先，加速依赖下载
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://repo.huaweicloud.com/repository/maven/' }
         maven { url 'https://jitpack.io' }
+        maven { url uri('local-repo') }
+        // 官方源兜底
         google()
         mavenCentral()
     }

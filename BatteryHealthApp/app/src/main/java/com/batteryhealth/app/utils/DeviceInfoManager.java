@@ -811,6 +811,9 @@ public class DeviceInfoManager {
         } else {
             info.setUnknown();
         }
+        if (activationInfoListener != null) {
+            mainHandler.post(() -> activationInfoListener.onActivationInfo(info));
+        }
         return info;
     }
 
@@ -1107,17 +1110,38 @@ public class DeviceInfoManager {
 
     @android.annotation.SuppressLint("PrivateApi")
     private String getSystemProperty(String propertyName) {
-        return SystemPropertiesCompat.get(context, propertyName);
+        return SystemPropertiesCompat.get(propertyName);
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public interface ActivationInfoListener {
+        void onActivationInfo(ActivationInfo info);
+    }
+
+    private ActivationInfoListener activationInfoListener;
+
+    public void setActivationInfoListener(ActivationInfoListener listener) {
+        this.activationInfoListener = listener;
+        // 异步获取一次激活信息并回调
+        executor.submit(() -> {
+            ActivationInfo info = collectActivationInfo();
+            if (listener != null) {
+                mainHandler.post(() -> listener.onActivationInfo(info));
+            }
+        });
     }
 
     // endregion
 
-    private static class ActivationInfo {
-        long timestamp;
-        String dateStr;
-        int usageDays;
-        String source;
-        float confidence;
+    public static class ActivationInfo {
+        public long timestamp;
+        public String dateStr;
+        public int usageDays;
+        public String source;
+        public float confidence;
 
         void set(long timestamp, String source, float confidence) {
             this.timestamp = timestamp;

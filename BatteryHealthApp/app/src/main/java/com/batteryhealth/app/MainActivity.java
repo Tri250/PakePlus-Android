@@ -29,9 +29,11 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.service.BatteryMonitorService;
 import com.batteryhealth.app.service.ChargingMonitorService;
 import com.batteryhealth.app.ui.battery.BatteryHealthFragment;
+import com.batteryhealth.app.ui.healthcheck.HealthCheckFragment;
 import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.config.DeviceConfigFragment;
 import com.batteryhealth.app.ui.endurance.EnduranceFragment;

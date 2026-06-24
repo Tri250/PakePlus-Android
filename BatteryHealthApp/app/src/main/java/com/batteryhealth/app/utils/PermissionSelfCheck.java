@@ -1,6 +1,7 @@
 package com.batteryhealth.app.utils;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.content.Context;
@@ -28,6 +29,7 @@ import java.util.List;
  * 4. 电池优化白名单检查
  * 5. 精确闹钟权限检查（Android 12+）
  */
+@SuppressLint("InlinedApi")
 public class PermissionSelfCheck {
 
     private static final String TAG = "PermissionSelfCheck";
