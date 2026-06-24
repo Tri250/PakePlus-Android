@@ -245,32 +245,29 @@ public class MainActivity extends AppCompatActivity {
                     case 0:
                         return new BatteryHealthFragment();
                     case 1:
-                        return new DeviceConfigFragment();
-                    case 2:
-                        return new PerformanceFragment();
-                    case 3:
-                        return new EnduranceFragment();
-                    case 4:
-                        return new TrendFragment();
-                    case 5:
                         return new PowerFragment();
-                    case 6:
+                    case 2:
+                        return new EnduranceFragment();
+                    case 3:
+                        return new TrendFragment();
+                    case 4:
                         return new BatteryOriginFragment();
-                    case 7:
-                        return new CommunityFragment();
-                    case 8:
-                        return new GuideFragment();
+                    case 5:
+                        return new HealthCheckFragment();
+                    case 6:
+                        return new DeviceConfigFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
+            }
 
             @Override
             public int getItemCount() {
-                return 9;
+                return 7;
             }
         });
 
-        viewPager.setOffscreenPageLimit(4);
+        viewPager.setOffscreenPageLimit(3);
         // 设置页面切换动画
         viewPager.setPageTransformer((page, position) -> {
             float absPosition = Math.abs(position);
@@ -292,6 +289,10 @@ public class MainActivity extends AppCompatActivity {
                 super.onPageSelected(position);
                 Log.d(TAG, "Page selected: " + position);
                 updateBottomNavigation(position);
+                // 进入自检页时清除红点
+                if (position == 5) {
+                    bottomNavigation.hideBadge(5);
+                }
             }
         });
 
@@ -303,19 +304,18 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * 设置底部导航（9项：健康 / 配置 / 性能 / 续航 / 趋势 / 充电 / 溯源 / 社区 / 指南）
+     * 设置底部导航（7项：健康 / 充电 / 续航 / 趋势 / 溯源 / 自检 / 配置）
+     * 社区和指南合并到配置页二级入口，减少Tab数量提升触控体验
      */
     private void setupBottomNavigation() {
         List<CustomBottomNavigationView.NavItem> navItems = new ArrayList<>();
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health), R.drawable.ic_battery_health));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_performance), R.drawable.ic_performance));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_endurance), R.drawable.ic_endurance));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_trend), R.drawable.ic_trend));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_power), R.drawable.ic_power));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_origin), R.drawable.ic_battery));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_community), R.drawable.ic_community));
-        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_guide), R.drawable.ic_guide));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health_check), R.drawable.ic_battery_alert));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {
@@ -494,11 +494,22 @@ public class MainActivity extends AppCompatActivity {
      * 加载初始数据
      */
     private void loadInitialData() {
-        // 直接调用 refreshAllDataAsync()，BatteryDataManager 内部已创建后台线程，
-        // 不需要外层再包裹 Thread，避免嵌套线程和生命周期失控
         if (batteryDataManager != null) {
             batteryDataManager.refreshAllDataAsync();
         }
+        // 延迟检查电池健康度，若低于80%则在自检Tab显示红点提醒
+        mainHandler.postDelayed(() -> {
+            if (batteryDataManager != null && !isFinishing() && !isDestroyed()) {
+                try {
+                    BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                    if (info != null && info.hasValidHealthData() && info.getHealthPercentage() < 80f) {
+                        bottomNavigation.showBadge(5);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Health check badge skipped: " + e.getMessage());
+                }
+            }
+        }, 3000);
     }
     
     /**

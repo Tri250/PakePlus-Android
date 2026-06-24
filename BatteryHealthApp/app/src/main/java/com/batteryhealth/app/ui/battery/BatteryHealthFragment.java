@@ -19,6 +19,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.ui.view.HealthRingView;
 import com.batteryhealth.app.ui.viewmodel.BatteryHealthViewModel;
 import com.batteryhealth.app.utils.BatteryReportGenerator;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
@@ -131,21 +132,21 @@ public class BatteryHealthFragment extends Fragment {
         btnWeeklyReport.setEnabled(false);
         btnMonthlyReport.setEnabled(false);
 
-        new Thread(() -> {
-            BatteryReportGenerator.Report report = weekly 
-                    ? reportGenerator.generateWeeklyReport() 
+        ThreadExecutor.execute(() -> {
+            BatteryReportGenerator.Report report = weekly
+                    ? reportGenerator.generateWeeklyReport()
                     : reportGenerator.generateMonthlyReport();
 
             String summary = formatReportSummary(report);
             if (isAdded() && getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
+                ThreadExecutor.runOnMain(() -> {
                     if (!isAdded()) return;
                     tvReportSummary.setText(summary);
                     btnWeeklyReport.setEnabled(true);
                     btnMonthlyReport.setEnabled(true);
                 });
             }
-        }).start();
+        });
     }
 
     private String formatReportSummary(BatteryReportGenerator.Report report) {

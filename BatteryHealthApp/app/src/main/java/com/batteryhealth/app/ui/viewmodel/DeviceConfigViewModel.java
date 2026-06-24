@@ -9,6 +9,7 @@ import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.data.repository.DeviceRepositoryImpl;
 import com.batteryhealth.app.domain.repository.DeviceRepository;
 import com.batteryhealth.app.utils.DeviceInfoManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 public class DeviceConfigViewModel extends ViewModel {
 
@@ -44,7 +45,7 @@ public class DeviceConfigViewModel extends ViewModel {
 
     public void loadDeviceConfig() {
         isLoading.postValue(true);
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 DeviceConfig config = deviceRepository.getDeviceConfig();
                 deviceConfig.postValue(config);
@@ -56,6 +57,6 @@ public class DeviceConfigViewModel extends ViewModel {
             } finally {
                 isLoading.postValue(false);
             }
-        }).start();
+        });
     }
 }

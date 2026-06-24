@@ -25,6 +25,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.ChargeProtocolDetector;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -179,7 +180,7 @@ public class PowerFragment extends Fragment {
         if (batteryDataManager == null) return;
 
         // 在后台线程获取完整电池信息（含 sysfs 读取）
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
@@ -191,7 +192,7 @@ public class PowerFragment extends Fragment {
             } catch (Exception e) {
                 // 静默处理
             }
-        }).start();
+        });
     }
 
     private void updateUI(BatteryInfo info, TodayChargeStats stats) {

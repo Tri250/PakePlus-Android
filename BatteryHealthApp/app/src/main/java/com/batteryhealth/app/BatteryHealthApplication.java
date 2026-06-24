@@ -17,6 +17,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.ui.error.ErrorActivity;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -231,28 +232,69 @@ public class BatteryHealthApplication extends Application {
     }
     
     /**
-     * 获取数据库实例。
-     * 若初始化尚未完成，会阻塞调用线程最多 30 秒（而非之前的 60 秒，减少 ANR 风险）。
-     * Application.onCreate 本身不会阻塞，在后台线程完成初始化。
+     * 获取数据库实例（同步，阻塞调用线程）。
+     * 若初始化尚未完成，会阻塞调用线程最多 5 秒。
      *
-     * 警告：不要在主线程调用此方法！应在后台线程（ExecutorService/Thread）中使用。
-     * 若必须在主线程获取数据库，请使用 getDatabaseAsync() 异步版本。
+     * 警告：不要在主线程调用此方法！
+     * 推荐使用 {@link #getDatabaseAsync(DatabaseCallback)} 异步版本。
+     *
+     * @return 数据库实例，若超时仍未初始化完成则返回 null
      */
     public AppDatabase getDatabase() {
         startDatabaseInitAsync();
         CountDownLatch latch = dbInitLatch;
         if (latch != null) {
             try {
-                // 缩短超时到 30 秒，减少主线程阻塞时间
-                if (!latch.await(30, TimeUnit.SECONDS)) {
-                    Log.w(TAG, "Wait for database initialization timed out after 30s");
+                // 缩短超时到 5 秒，避免长时间阻塞
+                if (!latch.await(5, TimeUnit.SECONDS)) {
+                    Log.w(TAG, "Database init not ready after 5s, returning null");
+                    return null;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 Log.w(TAG, "Database initialization wait interrupted");
+                return null;
             }
         }
         return database;
+    }
+
+    /**
+     * 异步获取数据库实例，初始化完成后在主线程回调。
+     * 不会阻塞任何线程，推荐在所有场景使用。
+     *
+     * @param callback 回调接口，在主线程触发
+     */
+    public void getDatabaseAsync(DatabaseCallback callback) {
+        if (database != null) {
+            mainHandler.post(() -> callback.onReady(database));
+            return;
+        }
+        startDatabaseInitAsync();
+        ThreadExecutor.execute(() -> {
+            CountDownLatch latch = dbInitLatch;
+            if (latch != null) {
+                try {
+                    latch.await(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            AppDatabase db = database;
+            ThreadExecutor.runOnMain(() -> {
+                if (db != null) {
+                    callback.onReady(db);
+                } else {
+                    callback.onFailed(new IllegalStateException("Database initialization failed"));
+                }
+            });
+        });
+    }
+
+    /** 数据库异步回调接口 */
+    public interface DatabaseCallback {
+        void onReady(AppDatabase database);
+        void onFailed(Exception e);
     }
     
     /**

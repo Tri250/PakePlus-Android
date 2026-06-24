@@ -21,6 +21,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BugReportGuide;
 import com.batteryhealth.app.utils.BugReportAnalyzer;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -162,7 +163,7 @@ public class GuideFragment extends Fragment {
             btnUpload.setText("分析中...");
             btnUpload.setEnabled(false);
 
-            new Thread(() -> {
+            ThreadExecutor.execute(() -> {
                 File tempFile = null;
                 try {
                     tempFile = copyUriToTempFile(uri);
@@ -170,7 +171,7 @@ public class GuideFragment extends Fragment {
                         BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile);
 
                         if (isAdded() && getActivity() != null) {
-                            getActivity().runOnUiThread(() -> {
+                            ThreadExecutor.runOnMain(() -> {
                                 if (!isAdded()) return;
                                 showAnalysisResult(result);
                                 btnUpload.setText("上传分析报告");
@@ -179,7 +180,7 @@ public class GuideFragment extends Fragment {
                         }
                     } else {
                         if (isAdded() && getActivity() != null) {
-                            getActivity().runOnUiThread(() -> {
+                            ThreadExecutor.runOnMain(() -> {
                                 if (!isAdded()) return;
                                 tvAnalysisSummary.setText("文件读取失败");
                                 btnUpload.setText("上传分析报告");
@@ -190,7 +191,7 @@ public class GuideFragment extends Fragment {
                 } catch (Exception e) {
                     Log.e(TAG, "Error analyzing bug report: " + e.getMessage());
                     if (isAdded() && getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
+                        ThreadExecutor.runOnMain(() -> {
                             if (!isAdded()) return;
                             tvAnalysisSummary.setText("分析异常: " + e.getMessage());
                             btnUpload.setText("上传分析报告");
@@ -202,7 +203,7 @@ public class GuideFragment extends Fragment {
                         tempFile.delete();
                     }
                 }
-            }).start();
+            });
 
         } catch (Exception e) {
             Log.e(TAG, "Error analyzing bug report: " + e.getMessage());

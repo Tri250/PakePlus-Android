@@ -26,6 +26,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.ui.viewmodel.PerformanceViewModel;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.PerformanceAnalyzer;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.io.BufferedReader;
@@ -367,12 +368,12 @@ public class PerformanceFragment extends Fragment {
     }
 
     private void loadAnrAnalysis() {
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             PerformanceAnalyzer.AnrAnalysisResult anrResult = performanceAnalyzer.analyzeAnrLogs();
             PerformanceAnalyzer.PerformanceInsights insights = performanceAnalyzer.getPerformanceInsights();
 
             if (isAdded() && getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
+                ThreadExecutor.runOnMain(() -> {
                     if (!isAdded()) return;
                     tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
                     tvAnrSeverity.setText(anrResult.severity);
@@ -385,6 +386,6 @@ public class PerformanceFragment extends Fragment {
                     tvPerformanceTips.setText(tipsBuilder.toString().trim());
                 });
             }
-        }).start();
+        });
     }
 }

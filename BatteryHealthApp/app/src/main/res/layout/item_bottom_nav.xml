@@ -5,15 +5,15 @@
     android:layout_weight="1"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
     android:minWidth="48dp"
     android:background="?attr/selectableItemBackgroundBorderless">
 
     <ImageView
         android:id="@+id/nav_icon"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:scaleType="fitCenter"
         android:importantForAccessibility="no" />
 
@@ -21,8 +21,8 @@
         android:id="@+id/nav_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:textSize="10sp"
+        android:layout_marginTop="4dp"
+        android:textSize="11sp"
         android:textStyle="normal"
         android:fontFamily="sans-serif-medium"
         android:textColor="@color/bottom_nav_color"

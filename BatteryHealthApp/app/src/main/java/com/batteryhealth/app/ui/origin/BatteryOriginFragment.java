@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BatteryOriginDetector;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.List;
 
@@ -74,7 +75,7 @@ public class BatteryOriginFragment extends Fragment {
         btnDetect.setEnabled(false);
         btnDetect.setText(getString(R.string.status_detecting));
 
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             // Pass BatteryDataManager for comprehensive data
             if (getActivity() instanceof com.batteryhealth.app.MainActivity) {
                 BatteryDataManager bdm = ((com.batteryhealth.app.MainActivity) getActivity()).getBatteryDataManager();
@@ -92,14 +93,14 @@ public class BatteryOriginFragment extends Fragment {
             BatteryOriginDetector.OriginResult result = originDetector.detect();
 
             if (isAdded() && getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
+                ThreadExecutor.runOnMain(() -> {
                     if (!isAdded()) return;
                     updateUI(result);
                     btnDetect.setEnabled(true);
                     btnDetect.setText(getString(R.string.label_detect_battery));
                 });
             }
-        }).start();
+        });
     }
 
     private void updateUI(BatteryOriginDetector.OriginResult result) {

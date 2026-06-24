@@ -26,6 +26,7 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.Locale;
 
@@ -285,7 +286,7 @@ public class EnduranceFragment extends Fragment {
      * 在后台线程执行耗电分析，避免阻塞 UI。
      */
     private void runAnalysisAsync() {
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 BatteryConsumptionAnalyzer.Result result =
                         BatteryConsumptionAnalyzer.analyze(requireContext(), 24 * 60 * 60 * 1000L);
@@ -298,7 +299,7 @@ public class EnduranceFragment extends Fragment {
                 }
             } catch (Exception ignored) {
             }
-        }).start();
+        });
     }
 
     /**

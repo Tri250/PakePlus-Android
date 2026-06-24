@@ -1,6 +1,7 @@
 package com.batteryhealth.app.ui.config;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +20,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.DeviceConfig;
+import com.batteryhealth.app.ui.community.CommunityFragment;
+import com.batteryhealth.app.ui.guide.GuideFragment;
 import com.batteryhealth.app.ui.viewmodel.DeviceConfigViewModel;
 import com.batteryhealth.app.utils.DeviceConfigQuery;
 
@@ -75,6 +78,34 @@ public class DeviceConfigFragment extends Fragment {
         switchHealthAlert.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean(PREF_HEALTH_ALERT, isChecked).apply();
         });
+
+        // 二级入口：社区
+        View btnCommunity = view.findViewById(R.id.btn_community);
+        if (btnCommunity != null) {
+            btnCommunity.setOnClickListener(v -> {
+                if (isAdded() && getActivity() != null) {
+                    getActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(android.R.id.content, new CommunityFragment())
+                            .addToBackStack("community")
+                            .commit();
+                }
+            });
+        }
+
+        // 二级入口：指南
+        View btnGuide = view.findViewById(R.id.btn_guide);
+        if (btnGuide != null) {
+            btnGuide.setOnClickListener(v -> {
+                if (isAdded() && getActivity() != null) {
+                    getActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(android.R.id.content, new GuideFragment())
+                            .addToBackStack("guide")
+                            .commit();
+                }
+            });
+        }
     }
 
     private void initViewModel() {

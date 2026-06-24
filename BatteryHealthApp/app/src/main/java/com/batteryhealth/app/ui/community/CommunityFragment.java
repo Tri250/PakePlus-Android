@@ -21,6 +21,7 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.ArrayList;
@@ -93,7 +94,7 @@ public class CommunityFragment extends Fragment {
     }
 
     private void loadBatteryDataAndPopulate() {
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
@@ -103,7 +104,7 @@ public class CommunityFragment extends Fragment {
             } catch (Exception e) {
                 Log.e(TAG, "Error loading battery data: " + e.getMessage());
             }
-        }).start();
+        });
     }
 
     private void loadCommunityPosts() {

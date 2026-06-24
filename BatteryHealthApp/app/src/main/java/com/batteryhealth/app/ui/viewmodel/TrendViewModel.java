@@ -8,6 +8,7 @@ import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.domain.usecase.GetTrendDataUseCase;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 public class TrendViewModel extends ViewModel {
 
@@ -34,7 +35,7 @@ public class TrendViewModel extends ViewModel {
 
     public void loadTrendData() {
         isLoading.postValue(true);
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 GetTrendDataUseCase.Result result = getTrendDataUseCase.execute(DEFAULT_MONTHS);
                 trendData.postValue(result);
@@ -43,6 +44,6 @@ public class TrendViewModel extends ViewModel {
             } finally {
                 isLoading.postValue(false);
             }
-        }).start();
+        });
     }
 }

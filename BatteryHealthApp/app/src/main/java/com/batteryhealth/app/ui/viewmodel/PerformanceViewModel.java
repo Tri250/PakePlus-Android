@@ -8,6 +8,7 @@ import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.PerformanceAnalyzer;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 public class PerformanceViewModel extends ViewModel {
 
@@ -38,7 +39,7 @@ public class PerformanceViewModel extends ViewModel {
 
     public void refreshData() {
         isLoading.postValue(true);
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 int cpu = performanceAnalyzer.getCpuUsage();
                 int memory = performanceAnalyzer.getMemoryUsage();
@@ -52,6 +53,6 @@ public class PerformanceViewModel extends ViewModel {
             } finally {
                 isLoading.postValue(false);
             }
-        }).start();
+        });
     }
 }

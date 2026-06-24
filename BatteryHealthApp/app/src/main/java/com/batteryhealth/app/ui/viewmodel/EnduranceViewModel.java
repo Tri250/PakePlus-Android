@@ -8,6 +8,7 @@ import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.Locale;
 
@@ -38,7 +39,7 @@ public class EnduranceViewModel extends ViewModel {
 
     public void refreshData() {
         isLoading.postValue(true);
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
                 if (info != null) {
@@ -50,7 +51,7 @@ public class EnduranceViewModel extends ViewModel {
             } finally {
                 isLoading.postValue(false);
             }
-        }).start();
+        });
     }
 
     private float calculateEndurance(BatteryInfo info) {

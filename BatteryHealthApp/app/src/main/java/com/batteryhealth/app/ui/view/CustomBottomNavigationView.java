@@ -1,6 +1,10 @@
 package com.batteryhealth.app.ui.view;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,16 +21,20 @@ import androidx.appcompat.widget.TooltipCompat;
 import com.batteryhealth.app.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 自定义底部导航栏
  *
- * 重构原因：
- * 1. Material 的 BottomNavigationView 最多仅支持 5 个菜单项，本应用需要 6 个 Tab。
- * 2. BottomNavigationView 在低版本 ROM / 特定 Material 组件版本下解析自定义
- *    TextAppearance 时会出现 Binary XML 崩溃。
- * 3. 自定义 LinearLayout 实现彻底绕过上述限制与兼容性问题。
+ * 特性：
+ * 1. 突破 Material BottomNavigationView 5 项限制
+ * 2. 支持 Badge 红点/数字提示
+ * 3. 选中态弹性缩放动画 + 颜色渐变
+ * 4. 长按 Tooltip 无障碍提示
+ * 5. Edge-to-Edge 手势条适配
+ * 6. 窄屏自动切换横向滚动模式
  */
 public class CustomBottomNavigationView extends HorizontalScrollView {
 
@@ -36,13 +44,14 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
 
     private final List<NavItem> items = new ArrayList<>();
     private final List<View> itemViews = new ArrayList<>();
+    private final Map<Integer, Badge> badgeMap = new HashMap<>();
     private OnItemSelectedListener listener;
     private int selectedPosition = 0;
 
     private int activeColor;
     private int inactiveColor;
+    private int badgeColor;
     private LinearLayout container;
-    private boolean forceAverageWidth = true; // 6 个 Tab 时强制平均分布，避免滚动
 
     private int baseHeightPx = -1;
     private int bottomInset = 0;
@@ -63,24 +72,23 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private void init() {
         setHorizontalScrollBarEnabled(false);
         setOverScrollMode(OVER_SCROLL_NEVER);
+        setFillViewport(true);
 
         container = new LinearLayout(getContext());
         container.setOrientation(LinearLayout.HORIZONTAL);
-        // 默认撑满宽度，配合子项 layout_weight 实现平均分布
         container.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         addView(container);
 
         activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
         inactiveColor = getResources().getColor(R.color.ios_tertiary_label, getContext().getTheme());
+        badgeColor = getResources().getColor(R.color.red, getContext().getTheme());
     }
 
-    /**
-     * 设置导航项
-     */
     public void setItems(List<NavItem> navItems) {
         items.clear();
         itemViews.clear();
+        badgeMap.clear();
         container.removeAllViews();
 
         if (navItems == null || navItems.isEmpty()) {
@@ -90,37 +98,21 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         items.addAll(navItems);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        // 根据总宽度与子项数量决定是否平均分布
-        // 屏幕宽度 >= 360dp 且项数 <= 6 时强制平均；否则允许横向滚动
-        int screenWidthDp = getResources().getConfiguration().screenWidthDp;
-        boolean average = forceAverageWidth && items.size() > 0
-                && (items.size() <= 6 || screenWidthDp >= 360);
-
         for (int i = 0; i < items.size(); i++) {
             final int position = i;
             NavItem item = items.get(i);
             View view = inflater.inflate(R.layout.item_bottom_nav, container, false);
 
-            // 强制平均分布：每个 item 宽度 = 容器宽度 / 数量
-            if (average) {
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
-                view.setLayoutParams(lp);
-            } else {
-                // 窄屏 + 多 Tab：固定最小宽度，允许横向滚动
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.MATCH_PARENT);
-                lp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
-                view.setLayoutParams(lp);
-            }
+            // 7 Tab 在主流屏幕上平均分布
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+            view.setLayoutParams(lp);
 
             ImageView icon = view.findViewById(R.id.nav_icon);
             TextView label = view.findViewById(R.id.nav_label);
 
             icon.setImageResource(item.iconRes);
             label.setText(item.label);
-            // 长按显示 Tooltip，提升可访问性
             TooltipCompat.setTooltipText(view, item.label);
 
             view.setOnClickListener(v -> {
@@ -136,9 +128,6 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         updateSelection(0);
     }
 
-    /**
-     * 设置选中项
-     */
     public void setSelectedPosition(int position) {
         if (position < 0 || position >= items.size()) {
             return;
@@ -159,23 +148,22 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             icon.setColorFilter(selected ? activeColor : inactiveColor);
             label.setTextColor(selected ? activeColor : inactiveColor);
 
-            // 选中态缩放动画：图标从 1.0 -> 1.12 -> 1.0，文字透明度变化
             if (selected) {
                 icon.animate()
-                        .scaleX(1.12f)
-                        .scaleY(1.12f)
-                        .setDuration(120)
+                        .scaleX(1.15f)
+                        .scaleY(1.15f)
+                        .setDuration(150)
                         .withEndAction(() -> icon.animate()
                                 .scaleX(1.0f)
                                 .scaleY(1.0f)
-                                .setDuration(120)
+                                .setDuration(150)
                                 .start())
                         .start();
                 label.setAlpha(1.0f);
             } else {
                 icon.setScaleX(1.0f);
                 icon.setScaleY(1.0f);
-                label.setAlpha(0.85f);
+                label.setAlpha(0.7f);
             }
         }
     }
@@ -184,9 +172,101 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         this.listener = listener;
     }
 
+    // ==================== Badge 支持 ====================
+
     /**
-     * 应用系统底部导航栏/手势条高度：总高度 = 内容高度（XML 64dp）+ 系统 inset
+     * 显示红点 Badge（无数字）
      */
+    public void showBadge(int position) {
+        showBadge(position, 0);
+    }
+
+    /**
+     * 显示数字 Badge
+     *
+     * @param position 导航项位置
+     * @param count    数字（<=0 时显示红点）
+     */
+    public void showBadge(int position, int count) {
+        badgeMap.put(position, new Badge(true, count));
+        invalidate();
+    }
+
+    /**
+     * 隐藏 Badge
+     */
+    public void hideBadge(int position) {
+        badgeMap.remove(position);
+        invalidate();
+    }
+
+    /**
+     * 清除所有 Badge
+     */
+    public void clearBadges() {
+        badgeMap.clear();
+        invalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        // 绘制 Badge
+        for (Map.Entry<Integer, Badge> entry : badgeMap.entrySet()) {
+            int position = entry.getKey();
+            Badge badge = entry.getValue();
+            if (position < 0 || position >= itemViews.size()) continue;
+
+            View itemView = itemViews.get(position);
+            ImageView icon = itemView.findViewById(R.id.nav_icon);
+            if (icon == null) continue;
+
+            // Badge 位置：图标右上角
+            float iconCenterX = itemView.getLeft() + icon.getLeft() + icon.getWidth() / 2f;
+            float iconTop = itemView.getTop() + icon.getTop();
+            float badgeRadius = getResources().getDisplayMetrics().density * 4f; // 4dp
+
+            if (badge.count > 0) {
+                // 数字 Badge：椭圆背景
+                float textWidth = measureTextWidth(String.valueOf(badge.count));
+                float badgeWidth = Math.max(badgeRadius * 2, textWidth + badgeRadius);
+                float badgeHeight = badgeRadius * 2;
+                float cx = iconCenterX + icon.getWidth() / 2f - badgeWidth / 2f;
+                float cy = iconTop - badgeHeight / 4f;
+
+                Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                bgPaint.setColor(badgeColor);
+                canvas.drawRoundRect(cx, cy, cx + badgeWidth, cy + badgeHeight,
+                        badgeHeight, badgeHeight, bgPaint);
+
+                Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(badgeRadius * 1.4f);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                Paint.FontMetrics fm = textPaint.getFontMetrics();
+                float textY = cy + badgeHeight / 2f - (fm.ascent + fm.descent) / 2f;
+                canvas.drawText(String.valueOf(badge.count), cx + badgeWidth / 2f, textY, textPaint);
+            } else {
+                // 红点 Badge
+                float cx = iconCenterX + icon.getWidth() / 2f - badgeRadius;
+                float cy = iconTop - badgeRadius / 2f;
+                Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                dotPaint.setColor(badgeColor);
+                canvas.drawCircle(cx, cy, badgeRadius, dotPaint);
+            }
+        }
+    }
+
+    private float measureTextWidth(String text) {
+        Paint paint = new Paint();
+        paint.setTextSize(getResources().getDisplayMetrics().density * 5f);
+        Rect bounds = new Rect();
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        return bounds.width();
+    }
+
+    // ==================== 系统适配 ====================
+
     public void applySystemBottomInset(int inset) {
         ensureBaseHeight();
         if (this.bottomInset == inset) {
@@ -212,9 +292,18 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         }
     }
 
-    /**
-     * 单个导航项数据
-     */
+    // ==================== 数据模型 ====================
+
+    private static class Badge {
+        final boolean visible;
+        final int count;
+
+        Badge(boolean visible, int count) {
+            this.visible = visible;
+            this.count = count;
+        }
+    }
+
     public static class NavItem {
         public final String label;
         @DrawableRes

@@ -20,6 +20,7 @@ import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.database.BatteryInfoDao;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -68,7 +69,7 @@ public class TrendFragment extends Fragment {
     }
 
     private void loadDataAsync() {
-        new Thread(() -> {
+        ThreadExecutor.execute(() -> {
             try {
                 // 1. 从 BatteryDataManager 获取真实健康度
                 float currentHealth = getCurrentRealHealth();
@@ -89,13 +90,13 @@ public class TrendFragment extends Fragment {
                 List<BatteryInfo> history = dao.getSince(since);
 
                 if (getActivity() == null) return;
-                getActivity().runOnUiThread(() -> updateUI(history, currentHealth));
+                ThreadExecutor.runOnMain(() -> updateUI(history, currentHealth));
             } catch (Exception e) {
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(this::postEmptyState);
+                    ThreadExecutor.runOnMain(this::postEmptyState);
                 }
             }
-        }).start();
+        });
     }
 
     private float getCurrentRealHealth() {
