@@ -40,8 +40,94 @@ public class BugReportAnalyzer {
     private static final String TAG = "BugReportAnalyzer";
     private static final int TOTAL_ANALYSIS_STEPS = 6;
 
+    // ==================== 预编译正则 ====================
+    // bugreport 可达数万行，所有 Pattern 必须预编译为静态常量，
+    // 避免在 parseLine 逐行调用路径上重复 Pattern.compile 造成 CPU 与 GC 压力。
+
+    // dumpsys battery 段落与字段
+    private static final Pattern RE_BATTERY_SECTION = Pattern.compile(
+            "DUMP OF SERVICE battery:(.*?)(?:DUMP OF SERVICE|$)", Pattern.DOTALL);
+    private static final Pattern RE_HEALTH = Pattern.compile("health:\\s*(\\d+)");
+    private static final Pattern RE_CYCLE = Pattern.compile("cycle_count:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_DESIGN_CAP = Pattern.compile(
+            "(?:design_capacity|charge_full_design):\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_CURRENT_CAP = Pattern.compile(
+            "(?:charge_full|learned_capacity|full_charge_capacity):\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_SERIAL_BATTERY = Pattern.compile(
+            "(?:serial_number|serialno):\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_TEMP = Pattern.compile("temperature:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_VOLTAGE = Pattern.compile("voltage:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_TECH = Pattern.compile("technology:\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
+
+    // dumpsys batterystats 段落与字段
+    private static final Pattern RE_STATS_SECTION = Pattern.compile(
+            "DUMP OF SERVICE batterystats:(.*?)(?:DUMP OF SERVICE|$)", Pattern.DOTALL);
+    private static final Pattern RE_CHARGE_SESSION = Pattern.compile(
+            "Charge\\s+(\\d+)\\s*->\\s*(\\d+)\\s+.*?(?:power=|watt=)\\s*([\\d.]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_WAKELOCK_STATS = Pattern.compile(
+            "Wake lock\\s+(\\S+)\\s+.*?(?:held|time)\\s*=\\s*(\\d+)(?:ms|s)?", Pattern.CASE_INSENSITIVE);
+
+    // 逐行解析字段
+    private static final Pattern RE_PERCENT = Pattern.compile("(\\d+)%");
+    private static final Pattern RE_TEMP_HIGH = Pattern.compile(".*temp\\s*=\\s*[4-9]\\d{2}.*");
+    private static final Pattern RE_TEMPERATURE_HIGH = Pattern.compile(".*temperature\\s*=\\s*[4-9]\\d{2}.*");
+    private static final Pattern RE_SERIALNO = Pattern.compile("ro\\.serialno=\\s*(\\S+)");
+    private static final Pattern RE_SERIAL_NUM = Pattern.compile("serial_number:\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_IMEI = Pattern.compile("IMEI:\\s*(\\d{15})");
+    private static final Pattern RE_BATTERY_VOLTAGE = Pattern.compile(
+            "battery voltage:\\s*(\\d+\\.?\\d*)\\s*mV", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_BATTERY_CURRENT = Pattern.compile(
+            "battery current:\\s*(-?\\d+\\.?\\d*)\\s*mA", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_SCREEN_ON = Pattern.compile(
+            "Screen on time:\\s*(\\d+\\.?\\d*)\\s*h", Pattern.CASE_INSENSITIVE);
+
+    // 提取辅助
+    private static final Pattern RE_TIMESTAMP = Pattern.compile(
+            "(\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2})");
+    private static final Pattern RE_EPOCH = Pattern.compile(
+            "(?:timestamp|time|ts)[=:\\s]+(\\d{10,13})");
+    private static final Pattern RE_KV = Pattern.compile(
+            "((?:level|temp|voltage|current|health|status|capacity)[=:]\\s*[^,\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_LEVEL = Pattern.compile("level[=:]\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_POWER = Pattern.compile(
+            "(?:power|watt|w)[=:]\\s*([\\d.]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_DURATION = Pattern.compile(
+            "(?:duration|time|held)[=:]\\s*(\\d+)(ms|s|m)?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RE_PKG = Pattern.compile("(com\\.[a-z0-9_.]+)");
+
+    // 制造日期：预编译模式数组，避免逐行重复编译 16 个 Pattern
+    private static final Pattern[] RE_MFG_DATE = new Pattern[16];
+    private static final String[] MFG_DATE_SEP = new String[16];
+    static {
+        String[][] raw = {
+                {"manufacturing_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"mfg_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"battery.*?date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"first_use_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"battery_make_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"mfg_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
+                {"manufacturing_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
+                {"mfgdate:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
+                {"battery_produce_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
+                {"生产日期[:：]\\s*(\\d{4})[年/-](\\d{1,2})[月/-](\\d{1,2})", "-"},
+                {"出厂日期[:：]\\s*(\\d{4})[年/-](\\d{1,2})[月/-](\\d{1,2})", "-"},
+                {"manufacturing_date:\\s*(\\d{4})[./](\\d{2})[./](\\d{2})", "-"},
+                {"mfg_date:\\s*(\\d{2})[./](\\d{2})[./](\\d{4})", "-"},
+                {"Battery\\s+MFG\\s+Date:\\s*(\\d{4})[.-](\\d{2})[.-](\\d{2})", "-"},
+                {"battery_production_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
+                {"battery_manufacture_time:\\s*(\\d{4})(\\d{2})(\\d{2})", ""}
+        };
+        for (int i = 0; i < raw.length; i++) {
+            RE_MFG_DATE[i] = Pattern.compile(raw[i][0], Pattern.CASE_INSENSITIVE);
+            MFG_DATE_SEP[i] = raw[i][1];
+        }
+    }
+
     private final Context context;
     private final BatteryDataManager batteryDataManager;
+    // SimpleDateFormat 非线程安全，但本类实例仅在单一后台线程使用，复用即可
+    private final SimpleDateFormat timestampSdf =
+            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
     public interface AnalysisProgressCallback {
         void onProgress(int step, int totalSteps, String description);
@@ -249,18 +335,14 @@ public class BugReportAnalyzer {
     }
 
     private void parseDumpsysBatterySection(String content, AnalysisResult result) {
-        Pattern batterySection = Pattern.compile(
-                "DUMP OF SERVICE battery:(.*?)(?:DUMP OF SERVICE|$)",
-                Pattern.DOTALL);
-        Matcher matcher = batterySection.matcher(content);
+        Matcher matcher = RE_BATTERY_SECTION.matcher(content);
         if (!matcher.find()) return;
 
         String section = matcher.group(1);
         if (section == null) return;
 
         // Parse health percentage
-        Pattern healthPattern = Pattern.compile("health:\\s*(\\d+)");
-        Matcher healthMatcher = healthPattern.matcher(section);
+        Matcher healthMatcher = RE_HEALTH.matcher(section);
         if (healthMatcher.find()) {
             try {
                 int health = Integer.parseInt(healthMatcher.group(1));
@@ -275,8 +357,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse cycle count
-        Pattern cyclePattern = Pattern.compile("cycle_count:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher cycleMatcher = cyclePattern.matcher(section);
+        Matcher cycleMatcher = RE_CYCLE.matcher(section);
         if (cycleMatcher.find()) {
             try {
                 int cycles = Integer.parseInt(cycleMatcher.group(1));
@@ -289,8 +370,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse design capacity
-        Pattern designCapPattern = Pattern.compile("(?:design_capacity|charge_full_design):\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher designCapMatcher = designCapPattern.matcher(section);
+        Matcher designCapMatcher = RE_DESIGN_CAP.matcher(section);
         if (designCapMatcher.find()) {
             try {
                 int designCap = Integer.parseInt(designCapMatcher.group(1));
@@ -303,8 +383,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse current capacity
-        Pattern currentCapPattern = Pattern.compile("(?:charge_full|learned_capacity|full_charge_capacity):\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher currentCapMatcher = currentCapPattern.matcher(section);
+        Matcher currentCapMatcher = RE_CURRENT_CAP.matcher(section);
         if (currentCapMatcher.find()) {
             try {
                 int currentCap = Integer.parseInt(currentCapMatcher.group(1));
@@ -317,8 +396,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse serial number from battery section
-        Pattern serialPattern = Pattern.compile("(?:serial_number|serialno):\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
-        Matcher serialMatcher = serialPattern.matcher(section);
+        Matcher serialMatcher = RE_SERIAL_BATTERY.matcher(section);
         if (serialMatcher.find()) {
             String serial = serialMatcher.group(1);
             if (result.deviceInfo != null) {
@@ -332,8 +410,7 @@ public class BugReportAnalyzer {
         parseManufacturingDateFromSection(section, result);
 
         // Parse temperature
-        Pattern tempPattern = Pattern.compile("temperature:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher tempMatcher = tempPattern.matcher(section);
+        Matcher tempMatcher = RE_TEMP.matcher(section);
         if (tempMatcher.find()) {
             try {
                 int tempRaw = Integer.parseInt(tempMatcher.group(1));
@@ -347,8 +424,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse voltage
-        Pattern voltagePattern = Pattern.compile("voltage:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher voltageMatcher = voltagePattern.matcher(section);
+        Matcher voltageMatcher = RE_VOLTAGE.matcher(section);
         if (voltageMatcher.find()) {
             try {
                 int voltage = Integer.parseInt(voltageMatcher.group(1));
@@ -358,8 +434,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse technology
-        Pattern techPattern = Pattern.compile("technology:\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
-        Matcher techMatcher = techPattern.matcher(section);
+        Matcher techMatcher = RE_TECH.matcher(section);
         if (techMatcher.find()) {
             String tech = techMatcher.group(1);
             result.batteryEvents.add(new BatteryEvent(
@@ -368,20 +443,14 @@ public class BugReportAnalyzer {
     }
 
     private void parseDumpsysBatterystatsSection(String content, AnalysisResult result) {
-        Pattern statsSection = Pattern.compile(
-                "DUMP OF SERVICE batterystats:(.*?)(?:DUMP OF SERVICE|$)",
-                Pattern.DOTALL);
-        Matcher matcher = statsSection.matcher(content);
+        Matcher matcher = RE_STATS_SECTION.matcher(content);
         if (!matcher.find()) return;
 
         String section = matcher.group(1);
         if (section == null) return;
 
         // Parse charging sessions from batterystats
-        Pattern chargePattern = Pattern.compile(
-                "Charge\\s+(\\d+)\\s*->\\s*(\\d+)\\s+.*?(?:power=|watt=)\\s*([\\d.]+)",
-                Pattern.CASE_INSENSITIVE);
-        Matcher chargeMatcher = chargePattern.matcher(section);
+        Matcher chargeMatcher = RE_CHARGE_SESSION.matcher(section);
         while (chargeMatcher.find()) {
             try {
                 int startLevel = Integer.parseInt(chargeMatcher.group(1));
@@ -397,10 +466,7 @@ public class BugReportAnalyzer {
         }
 
         // Parse wakelocks from batterystats
-        Pattern wakelockPattern = Pattern.compile(
-                "Wake lock\\s+(\\S+)\\s+.*?(?:held|time)\\s*=\\s*(\\d+)(?:ms|s)?",
-                Pattern.CASE_INSENSITIVE);
-        Matcher wakelockMatcher = wakelockPattern.matcher(section);
+        Matcher wakelockMatcher = RE_WAKELOCK_STATS.matcher(section);
         Map<String, AppWakelock> wakelockMap = new HashMap<>();
         for (AppWakelock w : result.wakelocks) {
             wakelockMap.put(w.packageName, w);
@@ -479,7 +545,7 @@ public class BugReportAnalyzer {
 
         // Battery temperature anomaly
         if (line.contains("temperature") && (line.contains("overheat") || line.contains("OVERHEAT")
-                || line.matches(".*temp\\s*=\\s*[4-9]\\d{2}.*"))) {
+                || RE_TEMP_HIGH.matcher(line).matches())) {
             result.anomalies.add(new Anomaly(
                     extractTimestamp(line), "HIGH", "电池过热",
                     "检测到电池温度过高: " + line.trim(),
@@ -489,8 +555,7 @@ public class BugReportAnalyzer {
 
         // Low capacity anomaly — only when line explicitly mentions battery capacity/health percentage
         if ((line.contains("capacity") || line.contains("health")) && line.contains("%")) {
-            Pattern pctPattern = Pattern.compile("(\\d+)%");
-            Matcher pctMatcher = pctPattern.matcher(line);
+            Matcher pctMatcher = RE_PERCENT.matcher(line);
             while (pctMatcher.find()) {
                 try {
                     int val = Integer.parseInt(pctMatcher.group(1));
@@ -568,7 +633,7 @@ public class BugReportAnalyzer {
             ));
         }
 
-        if (line.matches(".*temp\\s*=\\s*[4-9]\\d{2}.*") || line.matches(".*temperature\\s*=\\s*[4-9]\\d{2}.*")) {
+        if (RE_TEMP_HIGH.matcher(line).matches() || RE_TEMPERATURE_HIGH.matcher(line).matches()) {
             result.batteryEvents.add(new BatteryEvent(
                     extractTimestamp(line), "高温警告", "检测到设备高温: " + line.trim()
             ));
@@ -587,32 +652,12 @@ public class BugReportAnalyzer {
     private void parseManufacturingDate(String line, AnalysisResult result) {
         if (line == null || line.trim().isEmpty()) return;
 
-        String[][] patterns = {
-                {"manufacturing_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"mfg_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"battery.*?date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"first_use_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"battery_make_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"mfg_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
-                {"manufacturing_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
-                {"mfgdate:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
-                {"battery_produce_date:\\s*(\\d{4})(\\d{2})(\\d{2})", ""},
-                {"生产日期[:：]\\s*(\\d{4})[年/-](\\d{1,2})[月/-](\\d{1,2})", "-"},
-                {"出厂日期[:：]\\s*(\\d{4})[年/-](\\d{1,2})[月/-](\\d{1,2})", "-"},
-                {"manufacturing_date:\\s*(\\d{4})[./](\\d{2})[./](\\d{2})", "-"},
-                {"mfg_date:\\s*(\\d{2})[./](\\d{2})[./](\\d{4})", "-"},
-                {"Battery\\s+MFG\\s+Date:\\s*(\\d{4})[.-](\\d{2})[.-](\\d{2})", "-"},
-                {"battery_production_date:\\s*(\\d{4})-(\\d{2})-(\\d{2})", "-"},
-                {"battery_manufacture_time:\\s*(\\d{4})(\\d{2})(\\d{2})", ""}
-        };
-
-        for (String[] entry : patterns) {
+        for (int i = 0; i < RE_MFG_DATE.length; i++) {
             try {
-                Pattern p = Pattern.compile(entry[0], Pattern.CASE_INSENSITIVE);
-                Matcher m = p.matcher(line);
+                Matcher m = RE_MFG_DATE[i].matcher(line);
                 if (m.find()) {
                     int year, month, day;
-                    if (entry[0].contains("(\\d{2})[./](\\d{2})[./](\\d{4})")) {
+                    if (MFG_DATE_SEP[i].equals("-") && RE_MFG_DATE[i].pattern().contains("(\\d{2})[./](\\d{2})[./](\\d{4})")) {
                         // MM/DD/YYYY format
                         month = Integer.parseInt(m.group(1));
                         day = Integer.parseInt(m.group(2));
@@ -655,8 +700,7 @@ public class BugReportAnalyzer {
         if (line == null || line.trim().isEmpty()) return;
 
         // ro.serialno=
-        Pattern serialnoPattern = Pattern.compile("ro\\.serialno=\\s*(\\S+)");
-        Matcher serialnoMatcher = serialnoPattern.matcher(line);
+        Matcher serialnoMatcher = RE_SERIALNO.matcher(line);
         if (serialnoMatcher.find()) {
             String sn = serialnoMatcher.group(1);
             if (sn != null && !sn.isEmpty() && !"unknown".equalsIgnoreCase(sn) && !"0".equals(sn)) {
@@ -670,8 +714,7 @@ public class BugReportAnalyzer {
         }
 
         // serial_number:
-        Pattern serialPattern = Pattern.compile("serial_number:\\s*(\\S+)", Pattern.CASE_INSENSITIVE);
-        Matcher serialMatcher = serialPattern.matcher(line);
+        Matcher serialMatcher = RE_SERIAL_NUM.matcher(line);
         if (serialMatcher.find()) {
             String sn = serialMatcher.group(1);
             if (sn != null && !sn.isEmpty() && !"unknown".equalsIgnoreCase(sn) && !"0".equals(sn)) {
@@ -685,8 +728,7 @@ public class BugReportAnalyzer {
         }
 
         // IMEI:
-        Pattern imeiPattern = Pattern.compile("IMEI:\\s*(\\d{15})");
-        Matcher imeiMatcher = imeiPattern.matcher(line);
+        Matcher imeiMatcher = RE_IMEI.matcher(line);
         if (imeiMatcher.find()) {
             String imei = imeiMatcher.group(1);
             result.batteryEvents.add(new BatteryEvent(
@@ -701,8 +743,7 @@ public class BugReportAnalyzer {
         if (line == null || line.trim().isEmpty()) return;
 
         // battery voltage:
-        Pattern voltagePattern = Pattern.compile("battery voltage:\\s*(\\d+\\.?\\d*)\\s*mV", Pattern.CASE_INSENSITIVE);
-        Matcher voltageMatcher = voltagePattern.matcher(line);
+        Matcher voltageMatcher = RE_BATTERY_VOLTAGE.matcher(line);
         if (voltageMatcher.find()) {
             try {
                 float voltage = Float.parseFloat(voltageMatcher.group(1));
@@ -712,8 +753,7 @@ public class BugReportAnalyzer {
         }
 
         // battery current:
-        Pattern currentPattern = Pattern.compile("battery current:\\s*(-?\\d+\\.?\\d*)\\s*mA", Pattern.CASE_INSENSITIVE);
-        Matcher currentMatcher = currentPattern.matcher(line);
+        Matcher currentMatcher = RE_BATTERY_CURRENT.matcher(line);
         if (currentMatcher.find()) {
             try {
                 float current = Float.parseFloat(currentMatcher.group(1));
@@ -726,8 +766,7 @@ public class BugReportAnalyzer {
     private void parseScreenOnTime(String line, AnalysisResult result) {
         if (line == null || line.trim().isEmpty()) return;
 
-        Pattern screenPattern = Pattern.compile("Screen on time:\\s*(\\d+\\.?\\d*)\\s*h", Pattern.CASE_INSENSITIVE);
-        Matcher screenMatcher = screenPattern.matcher(line);
+        Matcher screenMatcher = RE_SCREEN_ON.matcher(line);
         if (screenMatcher.find()) {
             try {
                 float hours = Float.parseFloat(screenMatcher.group(1));
@@ -1040,19 +1079,16 @@ public class BugReportAnalyzer {
 
     private long extractTimestamp(String line) {
         // Try yyyy-MM-dd HH:mm:ss
-        Pattern timePattern = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2})");
-        Matcher matcher = timePattern.matcher(line);
+        Matcher matcher = RE_TIMESTAMP.matcher(line);
         if (matcher.find()) {
             try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                Date date = sdf.parse(matcher.group(1).replace("T", " "));
+                Date date = timestampSdf.parse(matcher.group(1).replace("T", " "));
                 if (date != null) return date.getTime();
             } catch (Exception ignored) {}
         }
 
         // Try epoch timestamp
-        Pattern epochPattern = Pattern.compile("(?:timestamp|time|ts)[=:\\s]+(\\d{10,13})");
-        Matcher epochMatcher = epochPattern.matcher(line);
+        Matcher epochMatcher = RE_EPOCH.matcher(line);
         if (epochMatcher.find()) {
             try {
                 long ts = Long.parseLong(epochMatcher.group(1));
@@ -1082,8 +1118,7 @@ public class BugReportAnalyzer {
             return line.substring(start + 1, end);
         }
         // Try to extract from key=value patterns
-        Pattern kvPattern = Pattern.compile("((?:level|temp|voltage|current|health|status|capacity)[=:]\\s*[^,\\s]+)", Pattern.CASE_INSENSITIVE);
-        Matcher m = kvPattern.matcher(line);
+        Matcher m = RE_KV.matcher(line);
         StringBuilder sb = new StringBuilder();
         while (m.find()) {
             if (sb.length() > 0) sb.append(", ");
@@ -1095,8 +1130,7 @@ public class BugReportAnalyzer {
     }
 
     private int extractLevel(String line) {
-        Pattern levelPattern = Pattern.compile("level[=:]\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher m = levelPattern.matcher(line);
+        Matcher m = RE_LEVEL.matcher(line);
         if (m.find()) {
             try {
                 int value = Integer.parseInt(m.group(1));
@@ -1107,8 +1141,7 @@ public class BugReportAnalyzer {
     }
 
     private float extractPower(String line) {
-        Pattern powerPattern = Pattern.compile("(?:power|watt|w)[=:]\\s*([\\d.]+)", Pattern.CASE_INSENSITIVE);
-        Matcher m = powerPattern.matcher(line);
+        Matcher m = RE_POWER.matcher(line);
         if (m.find()) {
             try {
                 float value = Float.parseFloat(m.group(1));
@@ -1137,8 +1170,7 @@ public class BugReportAnalyzer {
     }
 
     private long extractDuration(String line) {
-        Pattern durationPattern = Pattern.compile("(?:duration|time|held)[=:]\\s*(\\d+)(ms|s|m)?", Pattern.CASE_INSENSITIVE);
-        Matcher m = durationPattern.matcher(line);
+        Matcher m = RE_DURATION.matcher(line);
         if (m.find()) {
             try {
                 long value = Long.parseLong(m.group(1));
@@ -1164,8 +1196,7 @@ public class BugReportAnalyzer {
             return line.substring(start + 8);
         }
 
-        Pattern pkgPattern = Pattern.compile("(com\\.[a-z0-9_.]+)");
-        Matcher m = pkgPattern.matcher(line);
+        Matcher m = RE_PKG.matcher(line);
         if (m.find()) return m.group(1);
 
         return "未知应用";

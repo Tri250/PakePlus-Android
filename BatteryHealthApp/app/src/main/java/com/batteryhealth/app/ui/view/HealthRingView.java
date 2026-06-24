@@ -61,6 +61,8 @@ public class HealthRingView extends View {
     public void setColors(int startColor, int endColor) {
         this.startColor = startColor;
         this.endColor = endColor;
+        // 颜色变更后必须重建 LinearGradient，否则 onDraw 仍使用旧 shader
+        updateShader();
         invalidate();
     }
 
@@ -69,7 +71,15 @@ public class HealthRingView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         float inset = strokeWidth / 2f + getPaddingTop() / 2f;
         rectF.set(inset, inset, w - inset, h - inset);
+        updateShader();
+    }
 
+    /**
+     * 根据当前 rectF 与颜色重建渐变 shader。
+     * 在 onSizeChanged 与 setColors 中调用，保证颜色/尺寸变更后 shader 同步。
+     */
+    private void updateShader() {
+        if (rectF.width() <= 0 || rectF.height() <= 0) return;
         LinearGradient gradient = new LinearGradient(
                 rectF.left, rectF.top, rectF.right, rectF.bottom,
                 startColor, endColor, Shader.TileMode.CLAMP);

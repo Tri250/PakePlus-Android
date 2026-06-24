@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -146,13 +147,13 @@ public class PowerFragment extends Fragment {
         xAxis.setDrawGridLines(false);
         xAxis.setDrawAxisLine(false);
         xAxis.setLabelCount(5);
-        xAxis.setTextColor(getResources().getColor(R.color.label_3));
+        xAxis.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         xAxis.setTextSize(10f);
 
         YAxis leftAxis = chartPower.getAxisLeft();
         leftAxis.setDrawGridLines(true);
-        leftAxis.setGridColor(getResources().getColor(R.color.separator));
-        leftAxis.setTextColor(getResources().getColor(R.color.label_3));
+        leftAxis.setGridColor(ContextCompat.getColor(requireContext(), R.color.separator));
+        leftAxis.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         leftAxis.setTextSize(10f);
         leftAxis.setAxisMinimum(0f);
 
@@ -162,7 +163,7 @@ public class PowerFragment extends Fragment {
         chartPower.getLegend().setEnabled(false);
 
         LineData data = new LineData();
-        data.setValueTextColor(getResources().getColor(R.color.label_3));
+        data.setValueTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
         chartPower.setData(data);
     }
 
@@ -199,6 +200,13 @@ public class PowerFragment extends Fragment {
         unregisterBatteryReceiver();
         stopPeriodicUpdate();
         unbindChargingService();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 所有待执行回调，避免内存泄漏
+        handler.removeCallbacksAndMessages(null);
     }
 
     private void bindChargingService() {
@@ -263,13 +271,17 @@ public class PowerFragment extends Fragment {
 
     private void updateBatteryData() {
         if (batteryDataManager == null) return;
+        // 在主线程获取 Application 引用，避免在后台线程调用 requireActivity()
+        android.app.Activity activity = getActivity();
+        if (activity == null) return;
+        final BatteryHealthApplication app = (BatteryHealthApplication) activity.getApplication();
 
         ThreadExecutor.execute(() -> {
             try {
                 batteryDataManager.refreshFromStickyIntent();
                 BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
                 if (info != null && isAdded()) {
-                    TodayChargeStats stats = queryTodayChargeStats();
+                    TodayChargeStats stats = queryTodayChargeStats(app);
                     // 从 Service 获取智能充电阶段
                     String chargingPhase = null;
                     if (chargingService != null && serviceBound) {
@@ -356,9 +368,10 @@ public class PowerFragment extends Fragment {
      * 从数据库加载历史功率曲线数据
      */
     private void loadHistoricalChart() {
+        // 在主线程获取 Application 引用，避免在后台线程调用 requireActivity()
+        final BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
         ThreadExecutor.execute(() -> {
             try {
-                BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
                 if (app == null) return;
                 var db = app.getDatabase();
                 if (db == null) return;
@@ -435,7 +448,7 @@ public class PowerFragment extends Fragment {
 
     private LineDataSet createChartDataSet() {
         LineDataSet dataSet = new LineDataSet(new ArrayList<>(), "功率");
-        dataSet.setColor(getResources().getColor(R.color.primary));
+        dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.primary));
         dataSet.setLineWidth(2f);
         dataSet.setDrawCircles(false);
         dataSet.setDrawValues(false);
@@ -447,10 +460,9 @@ public class PowerFragment extends Fragment {
     /**
      * 查询今日充电统计：充电会话数、总充电时间、总充电量、平均功率。
      */
-    private TodayChargeStats queryTodayChargeStats() {
+    private TodayChargeStats queryTodayChargeStats(BatteryHealthApplication app) {
         TodayChargeStats stats = new TodayChargeStats();
         try {
-            BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
             if (app == null) return stats;
             var db = app.getDatabase();
             if (db == null) return stats;

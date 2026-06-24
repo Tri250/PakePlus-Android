@@ -67,6 +67,7 @@ public class GuideFragment extends Fragment {
     private BugReportGuide.AnalysisResult currentResult;
 
     private ActivityResultLauncher<String[]> filePickerLauncher;
+    private ActivityResultLauncher<Intent> fallbackPickerLauncher;
 
     @Nullable
     @Override
@@ -75,14 +76,24 @@ public class GuideFragment extends Fragment {
         try {
             View view = inflater.inflate(R.layout.fragment_guide, container, false);
 
-            analyzer = new BugReportAnalyzer(requireContext());
-            historyManager = new BugReportHistoryManager(requireContext());
+            analyzer = new BugReportAnalyzer(requireContext().getApplicationContext());
+            historyManager = new BugReportHistoryManager(requireContext().getApplicationContext());
 
             filePickerLauncher = registerForActivityResult(
                     new ActivityResultContracts.OpenDocument(),
                     uri -> {
                         if (uri != null) {
                             analyzeBugReport(uri);
+                        }
+                    }
+            );
+
+            fallbackPickerLauncher = registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                            Uri uri = result.getData().getData();
+                            if (uri != null) analyzeBugReport(uri);
                         }
                     }
             );
@@ -129,16 +140,7 @@ public class GuideFragment extends Fragment {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(intent, 1001);
-        }
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1001 && resultCode == android.app.Activity.RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) analyzeBugReport(uri);
+            fallbackPickerLauncher.launch(intent);
         }
     }
 

@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -309,17 +310,17 @@ public class TrendFragment extends Fragment {
             tvRemainingMonths.setText(String.format(Locale.getDefault(), "%.0f", result.remainingMonths));
             // 根据剩余月数设置颜色
             if (result.remainingMonths > 24) {
-                tvRemainingMonths.setTextColor(getResources().getColor(R.color.green, null));
+                tvRemainingMonths.setTextColor(ContextCompat.getColor(requireContext(), R.color.green));
             } else if (result.remainingMonths > 12) {
-                tvRemainingMonths.setTextColor(getResources().getColor(R.color.label, null));
+                tvRemainingMonths.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
             } else if (result.remainingMonths > 6) {
-                tvRemainingMonths.setTextColor(getResources().getColor(R.color.orange, null));
+                tvRemainingMonths.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange));
             } else {
-                tvRemainingMonths.setTextColor(getResources().getColor(R.color.red, null));
+                tvRemainingMonths.setTextColor(ContextCompat.getColor(requireContext(), R.color.red));
             }
         } else {
             tvRemainingMonths.setText("--");
-            tvRemainingMonths.setTextColor(getResources().getColor(R.color.label, null));
+            tvRemainingMonths.setTextColor(ContextCompat.getColor(requireContext(), R.color.label));
         }
 
         tvLifespanPrediction.setText(result.lifespanPrediction != null && !result.lifespanPrediction.isEmpty()
@@ -345,7 +346,7 @@ public class TrendFragment extends Fragment {
                     "%s  健康度骤降 %.1f%%（%.1f%% → %.1f%%）",
                     date, anomaly.healthDrop, anomaly.healthBefore, anomaly.healthAfter));
             tv.setTextSize(13f);
-            tv.setTextColor(getResources().getColor(R.color.red, null));
+            tv.setTextColor(ContextCompat.getColor(requireContext(), R.color.red));
             tv.setPadding(0, 6, 0, 6);
             anomalyList.addView(tv);
         }
@@ -366,7 +367,7 @@ public class TrendFragment extends Fragment {
             TextView tv = new TextView(requireContext());
             tv.setText("• " + tip);
             tv.setTextSize(13f);
-            tv.setTextColor(getResources().getColor(R.color.label_2, null));
+            tv.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
             tv.setPadding(0, 6, 0, 6);
             adviceList.addView(tv);
         }

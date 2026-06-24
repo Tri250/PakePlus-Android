@@ -22,6 +22,7 @@ import com.batteryhealth.app.utils.ThreadExecutor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 续航分析 ViewModel — 唯一数据源，Fragment 不再直接采集数据。
@@ -56,10 +57,18 @@ public class EnduranceViewModel extends ViewModel {
     private final BatteryRepository batteryRepository;
     private Context appContext;
 
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
+
     public EnduranceViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
         batteryRepository = new BatteryRepositoryImpl(app);
         appContext = app.getApplicationContext();
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     public LiveData<Integer> getBatteryLevel() { return batteryLevel; }
@@ -82,6 +91,7 @@ public class EnduranceViewModel extends ViewModel {
      */
     public void refreshData() {
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 // 1. 读取电池基础信息
                 Intent intent = appContext.registerReceiver(null,

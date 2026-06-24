@@ -130,7 +130,7 @@ public class BatteryOriginFragment extends Fragment {
         if (getActivity() instanceof MainActivity) {
             batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
         }
-        viewModel.initialize(requireContext(), batteryDataManager);
+        viewModel.initialize(requireContext().getApplicationContext(), batteryDataManager);
     }
 
     private void observeViewModel() {

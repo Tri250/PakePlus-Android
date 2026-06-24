@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -65,6 +66,13 @@ public class ChargingHistoryFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 待执行回调，避免内存泄漏
+        handler.removeCallbacksAndMessages(null);
+    }
+
     private void initViews(View view) {
         containerHistory = view.findViewById(R.id.container_history);
         tvPeriodLabel = view.findViewById(R.id.tv_period_label);
@@ -87,9 +95,10 @@ public class ChargingHistoryFragment extends Fragment {
     }
 
     private void loadData() {
+        // 在主线程获取 Application 引用，避免在后台线程调用 requireActivity()
+        final BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
         ThreadExecutor.execute(() -> {
             try {
-                BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
                 if (app == null) return;
                 var db = app.getDatabase();
                 if (db == null) return;
@@ -193,7 +202,7 @@ public class ChargingHistoryFragment extends Fragment {
                 View separator = new View(requireContext());
                 separator.setLayoutParams(new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                separator.setBackgroundColor(getResources().getColor(R.color.ios_separator));
+                separator.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_separator));
                 containerHistory.addView(separator);
             }
 
@@ -217,7 +226,7 @@ public class ChargingHistoryFragment extends Fragment {
             TextView tvType = new TextView(requireContext());
             tvType.setText(getChargeTypeLabel(s.chargeType, s.maxPower));
             tvType.setTextAppearance(requireContext(), R.style.iOSCaption);
-            tvType.setTextColor(getResources().getColor(R.color.primary));
+            tvType.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary));
 
             row1.addView(tvTime);
             row1.addView(tvType);

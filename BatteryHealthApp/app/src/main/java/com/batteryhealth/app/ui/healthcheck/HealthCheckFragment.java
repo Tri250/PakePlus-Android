@@ -111,6 +111,13 @@ public class HealthCheckFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 待执行回调，避免内存泄漏
+        mainHandler.removeCallbacksAndMessages(null);
+    }
+
     private void startCheck() {
         if (engine == null) return;
         if (engine.isRunning()) return;
@@ -129,7 +136,7 @@ public class HealthCheckFragment extends Fragment {
             progressOverall.setProgress(0);
         }
 
-        Context ctx = getContext();
+        Context ctx = requireContext().getApplicationContext();
         engine.startCheck(ctx, new HealthCheckEngine.Callback() {
             @Override
             public void onProgress(final int percent) {

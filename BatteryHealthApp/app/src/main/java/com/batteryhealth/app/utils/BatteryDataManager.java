@@ -9,6 +9,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 import androidx.annotation.WorkerThread;
+import androidx.core.content.ContextCompat;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
@@ -61,6 +62,10 @@ public class BatteryDataManager {
     private final List<Float> healthBuffer = new ArrayList<>();
     private static final int MEDIAN_WINDOW = 5;
 
+    // ThreadLocal SimpleDateFormat 避免热点路径频繁创建
+    private static final ThreadLocal<java.text.SimpleDateFormat> DAY_FORMAT =
+            ThreadLocal.withInitial(() -> new java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault()));
+
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
         this.deviceDb = DeviceDatabaseManager.getInstance(this.context);
@@ -71,12 +76,13 @@ public class BatteryDataManager {
     }
 
     private static final int BATTERY_PROP_CYCLE_COUNT = 7;
-    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 24);
-    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 6);
+    // 反射读取 BatteryManager 常量，fallback 使用 AOSP 公开值（CHARGE_FULL=4, CHARGE_COUNTER=1）
+    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 1);
 
     // Android 16 (API 36) 新增常量
-    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 8);
-    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 9);
+    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 6);
+    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
 
     // 设计容量候选
     private static final String[] DESIGN_CAPACITY_PATHS = {
@@ -214,7 +220,7 @@ public class BatteryDataManager {
         info.setDeviceBrand(Build.BRAND);
 
         try {
-            Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            Intent intent = getBatteryStickyIntent();
             if (intent == null) return info;
 
             BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
@@ -503,8 +509,7 @@ public class BatteryDataManager {
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                         || status == BatteryManager.BATTERY_STATUS_FULL;
                 long ts = info.getTimestamp();
-                String day = new java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-                        .format(new java.util.Date(ts));
+                String day = DAY_FORMAT.get().format(new java.util.Date(ts));
 
                 if (level < 20) wasLow = true;
                 if (wasLow && isCharging) wasCharging = true;
@@ -884,6 +889,27 @@ public class BatteryDataManager {
 
     // region sysfs 工具
 
+    /**
+     * 安全获取电池 sticky intent（兼容 Android 13+ 废弃 API）。
+     * 使用 ContextCompat.registerReceiver 替代 registerReceiver(null, ...)。
+     */
+    private Intent getBatteryStickyIntent() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                return ContextCompat.registerReceiver(
+                        context, null,
+                        new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                        ContextCompat.RECEIVER_NOT_EXPORTED
+                );
+            } else {
+                return context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting battery sticky intent: " + e.getMessage());
+            return null;
+        }
+    }
+
     private int readSysfsInt(String[] paths, int def) {
         for (String p : paths) {
             try {
@@ -964,7 +990,7 @@ public class BatteryDataManager {
     // region 公开辅助方法
 
     public boolean isCharging() {
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent intent = getBatteryStickyIntent();
         if (intent == null) return false;
         int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
         return status == BatteryManager.BATTERY_STATUS_CHARGING
@@ -975,7 +1001,7 @@ public class BatteryDataManager {
      * 读取当前电池电压（mV），供外部 UI 复用。
      */
     public int readVoltageNow() {
-        Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent intent = getBatteryStickyIntent();
         if (intent != null) {
             int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
             if (voltageMv > 10000) voltageMv = voltageMv / 1000;
@@ -1010,7 +1036,7 @@ public class BatteryDataManager {
         return currentPowerW >= official * 0.6f;
     }
 
-    public void refreshFromStickyIntent() {
+    public synchronized void refreshFromStickyIntent() {
         currentBatteryInfo = getBatteryInfo();
         if (currentBatteryInfo != null) {
             chargingStatusText = getStatusString(currentBatteryInfo.getStatus());
@@ -1020,12 +1046,18 @@ public class BatteryDataManager {
     }
 
     public BatteryInfo getCurrentBatteryInfo() {
-        if (currentBatteryInfo == null) refreshFromStickyIntent();
+        if (currentBatteryInfo == null) {
+            synchronized (this) {
+                if (currentBatteryInfo == null) {
+                    refreshFromStickyIntent();
+                }
+            }
+        }
         return currentBatteryInfo;
     }
 
     public void refreshAllDataAsync() {
-        new Thread(this::refreshFromStickyIntent).start();
+        ThreadExecutor.execute(this::refreshFromStickyIntent);
     }
 
     public void setUsageDays(int days) {

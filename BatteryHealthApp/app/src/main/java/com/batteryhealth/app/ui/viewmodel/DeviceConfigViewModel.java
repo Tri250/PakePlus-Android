@@ -11,6 +11,8 @@ import com.batteryhealth.app.domain.repository.DeviceRepository;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class DeviceConfigViewModel extends ViewModel {
 
     private static final String TAG = "DeviceConfigViewModel";
@@ -21,6 +23,9 @@ public class DeviceConfigViewModel extends ViewModel {
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
     private final DeviceRepository deviceRepository;
+
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
 
     public DeviceConfigViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
@@ -42,6 +47,11 @@ public class DeviceConfigViewModel extends ViewModel {
             android.util.Log.e(TAG, "Error initializing DeviceConfigViewModel: " + e.getMessage(), e);
             throw new RuntimeException("Failed to initialize DeviceConfigViewModel", e);
         }
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     public LiveData<DeviceConfig> getDeviceConfig() {
@@ -68,6 +78,7 @@ public class DeviceConfigViewModel extends ViewModel {
         }
         isLoading.postValue(true);
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 DeviceConfig config = deviceRepository.getDeviceConfig();
                 deviceConfig.postValue(config);

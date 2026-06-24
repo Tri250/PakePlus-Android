@@ -143,7 +143,9 @@ public class BatteryHealthApplication extends Application {
                             "battery_health_db"
                     )
                     .openHelperFactory(factory)
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(AppDatabase.MIGRATION_4_5)
+                    // 仅在降级时破坏性重建，升级必须走 Migration，避免用户数据丢失
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build();
 
             // 3. 将历史数据恢复到加密数据库，成功后删除备份
@@ -178,7 +180,8 @@ public class BatteryHealthApplication extends Application {
                                 AppDatabase.class,
                                 "battery_health_db"
                         )
-                        .fallbackToDestructiveMigration()
+                        .addMigrations(AppDatabase.MIGRATION_4_5)
+                        .fallbackToDestructiveMigrationOnDowngrade()
                         .build();
             } catch (Exception e2) {
                 Log.e(TAG, "Failed to create plain database: " + e2.getMessage(), e2);

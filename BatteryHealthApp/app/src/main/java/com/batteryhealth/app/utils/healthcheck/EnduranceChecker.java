@@ -79,7 +79,7 @@ public class EnduranceChecker implements IHealthChecker {
                         int voltageMv = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) : 0;
                         int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
                         if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                            capacityMicroAh = bm.getIntProperty(24); // BATTERY_PROPERTY_CHARGE_FULL
+                            capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
                         }
 
                         if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && pct > 0) {

@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
 
 import com.batteryhealth.app.BuildConfigHelper;
 import com.batteryhealth.app.BatteryHealthApplication;
@@ -195,7 +197,11 @@ public class BatteryMonitorService extends Service {
             if (!isRunning) {
                 isRunning = true;
                 try {
-                    startForeground(NOTIFICATION_ID, buildNotification());
+                    // Android 14+ 要求 startForeground 显式指定 foregroundServiceType，
+                    // 与 AndroidManifest 中声明的 dataSync|health 保持一致
+                    ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(),
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                                    | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
                 } catch (Exception e) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                             && e instanceof android.app.ForegroundServiceStartNotAllowedException) {

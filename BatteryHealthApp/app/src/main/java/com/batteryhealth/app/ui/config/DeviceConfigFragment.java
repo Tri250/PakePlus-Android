@@ -27,6 +27,7 @@ import com.batteryhealth.app.ui.guide.GuideFragment;
 import com.batteryhealth.app.ui.viewmodel.DeviceConfigViewModel;
 import com.batteryhealth.app.utils.DeviceConfigQuery;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.Locale;
 
@@ -93,7 +94,7 @@ public class DeviceConfigFragment extends Fragment {
         tvSuggestions = view.findViewById(R.id.tv_suggestions);
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
 
-        configQuery = new DeviceConfigQuery(requireContext());
+        configQuery = new DeviceConfigQuery(requireContext().getApplicationContext());
 
         // 预警开关：同时读写 BatteryMonitorService 使用的 SharedPreferences，确保开关生效
         SharedPreferences servicePrefs = requireContext().getSharedPreferences(PREFS_BATTERY_HEALTH, Context.MODE_PRIVATE);
@@ -175,15 +176,21 @@ public class DeviceConfigFragment extends Fragment {
 
     private void loadSystemAnalysis() {
         if (configQuery == null) return;
-        try {
-            DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
-            tvVersionAssessment.setText(result.versionAssessment);
-            tvSecurityAssessment.setText(result.securityAssessment);
-            tvPerformanceAssessment.setText(result.performanceAssessment);
-            tvSuggestions.setText(result.suggestions);
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading system analysis", e);
-        }
+        // 将阻塞的系统配置分析移到后台线程，避免阻塞主线程
+        ThreadExecutor.execute(() -> {
+            try {
+                DeviceConfigQuery.ConfigAnalysisResult result = configQuery.analyzeConfiguration();
+                ThreadExecutor.runOnMain(() -> {
+                    if (!isAdded()) return;
+                    tvVersionAssessment.setText(result.versionAssessment);
+                    tvSecurityAssessment.setText(result.securityAssessment);
+                    tvPerformanceAssessment.setText(result.performanceAssessment);
+                    tvSuggestions.setText(result.suggestions);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading system analysis", e);
+            }
+        });
     }
 
     private void applyConfig(DeviceConfig config) {

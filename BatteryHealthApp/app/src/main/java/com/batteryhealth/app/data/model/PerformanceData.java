@@ -1,6 +1,7 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 
@@ -9,7 +10,11 @@ import androidx.room.ColumnInfo;
  * 
  * 存储应用性能分析数据
  */
-@Entity(tableName = "performance_data")
+@Entity(tableName = "performance_data", indices = {
+    @Index(value = "timestamp"),
+    @Index(value = "app_package"),
+    @Index(value = "has_issue")
+})
 public class PerformanceData {
     
     @PrimaryKey(autoGenerate = true)

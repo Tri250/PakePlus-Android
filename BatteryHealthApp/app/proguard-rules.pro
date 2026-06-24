@@ -1,7 +1,24 @@
 # ProGuard规则 for Battery Health App
 
-# 保留类名和方法名
--keep public class com.batteryhealth.app.** { *; }
+# 保留 Application 和入口 Activity（避免 AndroidManifest 反射失败）
+-keep class com.batteryhealth.app.BatteryHealthApplication { *; }
+-keep class com.batteryhealth.app.MainActivity { *; }
+
+# 保留 Hilt 生成的组件（Dagger/Hilt 依赖注入）
+-keep class com.batteryhealth.app.di.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# 保留 Room 实体和 DAO（由 Room 注解处理器生成，需保留）
+-keep @androidx.room.Entity class com.batteryhealth.app.data.model.** { *; }
+-keep @androidx.room.Dao interface com.batteryhealth.app.data.database.** { *; }
+-keep class com.batteryhealth.app.data.database.AppDatabase { *; }
+-keep class com.batteryhealth.app.data.database.AppDatabase_Impl { *; }
+
+# 保留 Retrofit 接口（运行时反射调用）
+-keep interface com.batteryhealth.app.data.api.** { *; }
+
+# 保留 Gson 序列化使用的数据模型（避免字段名混淆后 JSON 解析失败）
+-keep class com.batteryhealth.app.data.model.** { *; }
 
 # OkHttp - 忽略缺失的平台类
 -dontwarn org.bouncycastle.jsse.**
@@ -127,14 +144,13 @@
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
-# 移除日志
+# 移除日志（保留 Log.e 以便在 release 中仍能捕获崩溃关键信息）
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
     public static int i(...);
     public static int w(...);
     public static int d(...);
-    public static int e(...);
 }
 
 # 优化
