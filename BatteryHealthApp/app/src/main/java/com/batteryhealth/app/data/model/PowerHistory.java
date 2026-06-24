@@ -1,6 +1,7 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 
@@ -9,7 +10,10 @@ import androidx.room.ColumnInfo;
  * 
  * 存储充电过程中的功率变化数据
  */
-@Entity(tableName = "power_history")
+@Entity(tableName = "power_history", indices = {
+    @Index(value = "timestamp"),
+    @Index(value = "session_id")
+})
 public class PowerHistory {
     
     @PrimaryKey(autoGenerate = true)

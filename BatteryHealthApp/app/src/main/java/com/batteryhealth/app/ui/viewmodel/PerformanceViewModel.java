@@ -12,6 +12,7 @@ import com.batteryhealth.app.utils.PerformanceAnalyzer;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PerformanceViewModel extends ViewModel {
 
@@ -29,10 +30,18 @@ public class PerformanceViewModel extends ViewModel {
     private final PerformanceAnalyzer performanceAnalyzer;
     private final BatteryRepository batteryRepository;
 
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
+
     public PerformanceViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
         batteryRepository = new BatteryRepositoryImpl(app);
         performanceAnalyzer = new PerformanceAnalyzer(app.getApplicationContext());
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     public LiveData<Integer> getCpuUsage() { return cpuUsage; }
@@ -52,6 +61,7 @@ public class PerformanceViewModel extends ViewModel {
     public void refreshData() {
         isLoading.postValue(true);
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 // 系统级指标
                 int cpu = performanceAnalyzer.getCpuUsage();

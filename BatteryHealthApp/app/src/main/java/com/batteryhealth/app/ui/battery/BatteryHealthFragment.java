@@ -116,7 +116,7 @@ public class BatteryHealthFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        reportGenerator = new BatteryReportGenerator(requireContext());
+        reportGenerator = new BatteryReportGenerator(requireContext().getApplicationContext());
         viewModel.refreshData();
     }
 

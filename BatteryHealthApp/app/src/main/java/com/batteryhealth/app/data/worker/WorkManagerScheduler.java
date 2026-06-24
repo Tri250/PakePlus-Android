@@ -18,6 +18,7 @@ public class WorkManagerScheduler {
     public static void scheduleBatteryDataWork(Context context) {
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                .setRequiresBatteryNotLow(true)
                 .build();
 
         PeriodicWorkRequest dataRequest = new PeriodicWorkRequest.Builder(
@@ -30,7 +31,7 @@ public class WorkManagerScheduler {
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 DATA_WORK_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 dataRequest
         );
     }
@@ -38,6 +39,7 @@ public class WorkManagerScheduler {
     public static void scheduleHealthAlertWork(Context context) {
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                .setRequiresBatteryNotLow(true)
                 .build();
 
         PeriodicWorkRequest alertRequest = new PeriodicWorkRequest.Builder(
@@ -50,7 +52,7 @@ public class WorkManagerScheduler {
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 ALERT_WORK_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 alertRequest
         );
     }

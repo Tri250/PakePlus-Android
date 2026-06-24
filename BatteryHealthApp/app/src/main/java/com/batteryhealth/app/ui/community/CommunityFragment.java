@@ -93,6 +93,13 @@ public class CommunityFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 待执行回调，避免内存泄漏
+        handler.removeCallbacksAndMessages(null);
+    }
+
     private void loadBatteryDataAndPopulate() {
         ThreadExecutor.execute(() -> {
             try {

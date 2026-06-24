@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BatteryOriginViewModel extends ViewModel {
 
@@ -34,7 +35,15 @@ public class BatteryOriginViewModel extends ViewModel {
     private BatteryDataManager batteryDataManager;
     private Context appContext;
 
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
+
     public BatteryOriginViewModel() {
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     /**
@@ -90,6 +99,7 @@ public class BatteryOriginViewModel extends ViewModel {
         detectionError.postValue(false);
 
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 // 刷新 BatteryDataManager 数据
                 if (batteryDataManager != null) {
@@ -124,6 +134,7 @@ public class BatteryOriginViewModel extends ViewModel {
     }
 
     private void loadHistoryInternal() {
+        if (isCleared.get()) return;
         try {
             BatteryHealthApplication app = BatteryHealthApplication.getInstance();
             if (app == null) return;
@@ -168,6 +179,7 @@ public class BatteryOriginViewModel extends ViewModel {
         }
 
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             String report = buildReportText(result);
             reportText.postValue(report);
         });
@@ -277,6 +289,7 @@ public class BatteryOriginViewModel extends ViewModel {
      */
     public void deleteHistoryRecord(long id) {
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 BatteryHealthApplication app = BatteryHealthApplication.getInstance();
                 if (app == null) return;

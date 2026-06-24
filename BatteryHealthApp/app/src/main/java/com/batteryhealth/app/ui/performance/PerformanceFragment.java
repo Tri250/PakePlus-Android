@@ -26,6 +26,7 @@ import com.batteryhealth.app.ui.viewmodel.PerformanceViewModel;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.PerformanceAnalyzer;
+import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
 import java.util.Locale;
@@ -200,6 +201,13 @@ public class PerformanceFragment extends Fragment {
         stopFpsMonitor();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 待执行回调，避免内存泄漏
+        handler.removeCallbacksAndMessages(null);
+    }
+
     private void startPeriodicUpdate() {
         updateRunnable = new Runnable() {
             @Override
@@ -259,42 +267,51 @@ public class PerformanceFragment extends Fragment {
     // ========== GPU 信息 ==========
 
     private void loadGpuInfo() {
-        if (deviceInfoManager != null) {
-            String gpuInfo = deviceInfoManager.getGpuInfo();
-            tvGpuRenderer.setText(gpuInfo != null && !gpuInfo.isEmpty() ? gpuInfo : "Unknown");
-        } else {
-            tvGpuRenderer.setText("Unknown");
-        }
+        // EGL 检测与文件 IO 移到后台线程，避免阻塞主线程
+        ThreadExecutor.execute(() -> {
+            final String gpuInfo = (deviceInfoManager != null) ? deviceInfoManager.getGpuInfo() : null;
+            final String openglVersion = detectOpenglVersion();
+            final String vulkanVersion = detectVulkanVersion();
 
-        // OpenGL 版本检测（带错误处理）
+            handler.post(() -> {
+                if (!isAdded()) return;
+                tvGpuRenderer.setText(gpuInfo != null && !gpuInfo.isEmpty() ? gpuInfo : "Unknown");
+                tvOpenglVersion.setText(openglVersion);
+                tvVulkanVersion.setText(vulkanVersion);
+            });
+        });
+    }
+
+    /**
+     * OpenGL 版本检测（带错误处理），需在后台线程执行以避免阻塞主线程。
+     */
+    private String detectOpenglVersion() {
         try {
             javax.microedition.khronos.egl.EGL10 egl =
                     (javax.microedition.khronos.egl.EGL10) javax.microedition.khronos.egl.EGLContext.getEGL();
             javax.microedition.khronos.egl.EGLDisplay display =
                     egl.eglGetDisplay(javax.microedition.khronos.egl.EGL10.EGL_DEFAULT_DISPLAY);
             if (display == javax.microedition.khronos.egl.EGL10.EGL_NO_DISPLAY) {
-                tvOpenglVersion.setText("Unknown");
+                return "Unknown";
             } else {
                 int[] version = new int[2];
                 boolean initialized = egl.eglInitialize(display, version);
                 if (!initialized) {
-                    tvOpenglVersion.setText("Unknown");
+                    return "Unknown";
                 } else {
                     try {
                         String glVersion = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_VERSION);
-                        tvOpenglVersion.setText(glVersion != null ? glVersion : "Unknown");
+                        return glVersion != null ? glVersion : "Unknown";
                     } catch (Exception e) {
-                        tvOpenglVersion.setText("Unknown");
+                        return "Unknown";
                     } finally {
                         egl.eglTerminate(display);
                     }
                 }
             }
         } catch (Exception e) {
-            tvOpenglVersion.setText("Unknown");
+            return "Unknown";
         }
-
-        tvVulkanVersion.setText(detectVulkanVersion());
     }
 
     private String detectVulkanVersion() {

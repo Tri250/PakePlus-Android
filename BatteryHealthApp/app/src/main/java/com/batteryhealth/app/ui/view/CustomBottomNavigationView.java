@@ -56,6 +56,14 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     private int baseHeightPx = -1;
     private int bottomInset = 0;
 
+    // onDraw 高频使用的 Paint 与尺寸缓存，避免每帧分配对象造成 GC 抖动
+    private final Paint badgeBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint measurePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Rect measureBounds = new Rect();
+    private float density;
+
     public CustomBottomNavigationView(@NonNull Context context) {
         this(context, null);
     }
@@ -83,6 +91,16 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
         activeColor = getResources().getColor(R.color.ios_blue, getContext().getTheme());
         inactiveColor = getResources().getColor(R.color.ios_tertiary_label, getContext().getTheme());
         badgeColor = getResources().getColor(R.color.red, getContext().getTheme());
+        density = getResources().getDisplayMetrics().density;
+
+        // 预配置复用 Paint，onDraw 中仅动态计算坐标
+        badgeBgPaint.setColor(badgeColor);
+        badgeBgPaint.setStyle(Paint.Style.FILL);
+        badgeDotPaint.setColor(badgeColor);
+        badgeDotPaint.setStyle(Paint.Style.FILL);
+        badgeTextPaint.setColor(Color.WHITE);
+        badgeTextPaint.setTextAlign(Paint.Align.CENTER);
+        measurePaint.setTextSize(density * 5f);
     }
 
     public void setItems(List<NavItem> navItems) {
@@ -224,7 +242,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             // Badge 位置：图标右上角
             float iconCenterX = itemView.getLeft() + icon.getLeft() + icon.getWidth() / 2f;
             float iconTop = itemView.getTop() + icon.getTop();
-            float badgeRadius = getResources().getDisplayMetrics().density * 4f; // 4dp
+            float badgeRadius = density * 4f; // 4dp
 
             if (badge.count > 0) {
                 // 数字 Badge：椭圆背景
@@ -234,35 +252,25 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                 float cx = iconCenterX + icon.getWidth() / 2f - badgeWidth / 2f;
                 float cy = iconTop - badgeHeight / 4f;
 
-                Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                bgPaint.setColor(badgeColor);
                 canvas.drawRoundRect(cx, cy, cx + badgeWidth, cy + badgeHeight,
-                        badgeHeight, badgeHeight, bgPaint);
+                        badgeHeight, badgeHeight, badgeBgPaint);
 
-                Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(badgeRadius * 1.4f);
-                textPaint.setTextAlign(Paint.Align.CENTER);
-                Paint.FontMetrics fm = textPaint.getFontMetrics();
+                badgeTextPaint.setTextSize(badgeRadius * 1.4f);
+                Paint.FontMetrics fm = badgeTextPaint.getFontMetrics();
                 float textY = cy + badgeHeight / 2f - (fm.ascent + fm.descent) / 2f;
-                canvas.drawText(String.valueOf(badge.count), cx + badgeWidth / 2f, textY, textPaint);
+                canvas.drawText(String.valueOf(badge.count), cx + badgeWidth / 2f, textY, badgeTextPaint);
             } else {
                 // 红点 Badge
                 float cx = iconCenterX + icon.getWidth() / 2f - badgeRadius;
                 float cy = iconTop - badgeRadius / 2f;
-                Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                dotPaint.setColor(badgeColor);
-                canvas.drawCircle(cx, cy, badgeRadius, dotPaint);
+                canvas.drawCircle(cx, cy, badgeRadius, badgeDotPaint);
             }
         }
     }
 
     private float measureTextWidth(String text) {
-        Paint paint = new Paint();
-        paint.setTextSize(getResources().getDisplayMetrics().density * 5f);
-        Rect bounds = new Rect();
-        paint.getTextBounds(text, 0, text.length(), bounds);
-        return bounds.width();
+        measurePaint.getTextBounds(text, 0, text.length(), measureBounds);
+        return measureBounds.width();
     }
 
     // ==================== 系统适配 ====================

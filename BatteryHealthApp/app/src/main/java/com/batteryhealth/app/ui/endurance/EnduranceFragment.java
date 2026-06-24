@@ -258,6 +258,13 @@ public class EnduranceFragment extends Fragment {
         stopPeriodicRefresh();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 清理 Handler 待执行回调，避免内存泄漏
+        refreshHandler.removeCallbacksAndMessages(null);
+    }
+
     private android.os.Handler refreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable refreshRunnable;
 

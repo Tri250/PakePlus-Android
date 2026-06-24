@@ -9,7 +9,9 @@ import android.util.Log;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 激活日期检测工具。
@@ -27,6 +29,13 @@ import java.util.Locale;
 public final class ActivationDateHelper {
 
     private ActivationDateHelper() {}
+
+    /**
+     * 检测结果缓存。激活日期在设备生命周期内不变，一次检测后即可复用，
+     * 避免每次调用都执行 100+ 次 Settings/SystemProperty 读取。
+     */
+    private static volatile Result cachedResult;
+    private static volatile List<DetectionLog> cachedLogs;
 
     public static final class Result {
         public final long timestamp;
@@ -50,52 +59,66 @@ public final class ActivationDateHelper {
         if (context == null) {
             return unknown();
         }
+        // 激活日期不变，命中缓存直接返回
+        Result cached = cachedResult;
+        if (cached != null) {
+            return cached;
+        }
         lastDetectionLogs.clear();
         Context app = context.getApplicationContext();
 
         long t = readElectronicWarrantyActivation(app);
-        if (t > 0) return build(t, "electronic_warranty_card", 0.98f);
+        if (t > 0) return finalizeCache(build(t, "electronic_warranty_card", 0.98f));
 
         try {
             long firstBoot = Settings.Global.getLong(app.getContentResolver(), "first_boot_time", -1);
-            if (firstBoot > 0) return build(firstBoot, "system_first_boot_time", 0.95f);
+            if (firstBoot > 0) return finalizeCache(build(firstBoot, "system_first_boot_time", 0.95f));
         } catch (Exception ignored) { }
 
         // Android 16+：首次解锁时间，代表设备首次完成设置向导后的解锁时刻
         try {
             long firstUnlock = Settings.Secure.getLong(app.getContentResolver(), "first_unlock_time", -1);
-            if (firstUnlock > 0) return build(firstUnlock, "first_unlock_time", 0.93f);
+            if (firstUnlock > 0) return finalizeCache(build(firstUnlock, "first_unlock_time", 0.93f));
         } catch (Exception ignored) { }
 
         try {
             DevicePolicyManager dpm = (DevicePolicyManager) app.getSystemService(Context.DEVICE_POLICY_SERVICE);
             if (dpm != null) {
                 long provisioningTime = invokeLongMethod(dpm, "getProvisioningTime");
-                if (provisioningTime > 0) return build(provisioningTime, "device_policy_manager", 0.90f);
+                if (provisioningTime > 0) return finalizeCache(build(provisioningTime, "device_policy_manager", 0.90f));
             }
         } catch (Exception ignored) { }
 
         long gms = packageFirstInstallTime(app, "com.google.android.gms");
-        if (gms > 0) return build(gms, "gms_first_install", 0.85f);
+        if (gms > 0) return finalizeCache(build(gms, "gms_first_install", 0.85f));
 
         long sys = packageFirstInstallTime(app, "android");
-        if (sys > 0) return build(sys, "system_framework_install", 0.80f);
+        if (sys > 0) return finalizeCache(build(sys, "system_framework_install", 0.80f));
 
         long runtimeFirstBoot = systemPropertyLong("ro.runtime.firstboot");
-        if (runtimeFirstBoot > 0) return build(runtimeFirstBoot, "system_first_boot_time", 0.75f);
+        if (runtimeFirstBoot > 0) return finalizeCache(build(runtimeFirstBoot, "system_first_boot_time", 0.75f));
 
         long appInstall = packageFirstInstallTime(app, app.getPackageName());
-        if (appInstall > 0) return build(appInstall, "app_first_install", 0.60f);
+        if (appInstall > 0) return finalizeCache(build(appInstall, "app_first_install", 0.60f));
 
         try {
             File dataDir = app.getDataDir();
             if (dataDir != null) {
                 long lastModified = dataDir.lastModified();
-                if (lastModified > 0) return build(lastModified, "app_data_directory", 0.40f);
+                if (lastModified > 0) return finalizeCache(build(lastModified, "app_data_directory", 0.40f));
             }
         } catch (Exception ignored) { }
 
-        return unknown();
+        return finalizeCache(unknown());
+    }
+
+    /** 将结果与日志写入缓存并返回。 */
+    private static synchronized Result finalizeCache(Result result) {
+        if (cachedResult == null) {
+            cachedResult = result;
+            cachedLogs = new CopyOnWriteArrayList<>(lastDetectionLogs);
+        }
+        return cachedResult;
     }
 
     private static Result unknown() {
@@ -164,7 +187,8 @@ public final class ActivationDateHelper {
         }
     }
 
-    public static java.util.List<DetectionLog> lastDetectionLogs = new java.util.ArrayList<>();
+    // 使用 CopyOnWriteArrayList 保证多线程读取安全；写操作仅在 detect() 内发生
+    public static List<DetectionLog> lastDetectionLogs = new CopyOnWriteArrayList<>();
 
     private static long firstPositive(String key, java.util.concurrent.Callable<Long> supplier) {
         try {

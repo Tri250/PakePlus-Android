@@ -15,6 +15,7 @@ import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PowerViewModel extends ViewModel {
 
@@ -25,12 +26,20 @@ public class PowerViewModel extends ViewModel {
     private final BatteryRepository batteryRepository;
     private final BatteryDataManager batteryDataManager;
 
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
+
     public PowerViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
         batteryRepository = new BatteryRepositoryImpl(app);
         batteryDataManager = batteryRepository instanceof BatteryRepositoryImpl 
                 ? ((BatteryRepositoryImpl) batteryRepository).getBatteryDataManager() 
                 : new BatteryDataManager(app.getApplicationContext());
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     public LiveData<BatteryInfo> getBatteryInfo() {
@@ -48,6 +57,7 @@ public class PowerViewModel extends ViewModel {
     public void refreshData() {
         isLoading.postValue(true);
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
                 if (info != null) {

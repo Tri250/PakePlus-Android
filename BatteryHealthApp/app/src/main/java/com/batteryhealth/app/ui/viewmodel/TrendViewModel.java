@@ -10,6 +10,8 @@ import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.domain.usecase.GetTrendDataUseCase;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * 趋势追踪 ViewModel（v5.0 - 对标国内同类系统完整版）
  *
@@ -27,11 +29,19 @@ public class TrendViewModel extends ViewModel {
 
     private final GetTrendDataUseCase getTrendDataUseCase;
 
+    /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
+    private final AtomicBoolean isCleared = new AtomicBoolean(false);
+
     public TrendViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
         BatteryRepository batteryRepository = new BatteryRepositoryImpl(app);
         getTrendDataUseCase = new GetTrendDataUseCase(batteryRepository);
         currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
+    }
+
+    @Override
+    protected void onCleared() {
+        isCleared.set(true);
     }
 
     public LiveData<GetTrendDataUseCase.Result> getTrendData() {
@@ -57,6 +67,7 @@ public class TrendViewModel extends ViewModel {
         currentRange.setValue(rangeIndex);
         isLoading.postValue(true);
         ThreadExecutor.execute(() -> {
+            if (isCleared.get()) return;
             try {
                 GetTrendDataUseCase.Result result = getTrendDataUseCase.execute(rangeIndex);
                 trendData.postValue(result);

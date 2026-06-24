@@ -1,6 +1,7 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 
@@ -9,7 +10,9 @@ import androidx.room.ColumnInfo;
  * 
  * 存储电池健康度、容量、温度、循环次数等核心指标
  */
-@Entity(tableName = "battery_info")
+@Entity(tableName = "battery_info", indices = {
+    @Index(value = "timestamp")
+})
 public class BatteryInfo {
     
     @PrimaryKey(autoGenerate = true)

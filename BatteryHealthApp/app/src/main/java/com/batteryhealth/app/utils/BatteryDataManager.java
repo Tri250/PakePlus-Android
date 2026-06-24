@@ -76,12 +76,13 @@ public class BatteryDataManager {
     }
 
     private static final int BATTERY_PROP_CYCLE_COUNT = 7;
-    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 24);
-    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 6);
+    // 反射读取 BatteryManager 常量，fallback 使用 AOSP 公开值（CHARGE_FULL=4, CHARGE_COUNTER=1）
+    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 1);
 
     // Android 16 (API 36) 新增常量
-    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 8);
-    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 9);
+    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 6);
+    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
 
     // 设计容量候选
     private static final String[] DESIGN_CAPACITY_PATHS = {

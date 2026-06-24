@@ -19,6 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -40,9 +42,10 @@ public class HealthCheckEngine {
     private static final int POOL_SIZE = 4;
 
     private final List<IHealthChecker> checkers = new CopyOnWriteArrayList<>();
-    private final ExecutorService executor;
+    private ExecutorService executor;
 
-    private volatile boolean running = false;
+    // 使用 AtomicBoolean 替代 volatile boolean，通过 CAS 保证 startCheck 的原子性
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     public interface Callback {
         /** 进度回调：0-100。在任意线程上被调用。 */
@@ -56,12 +59,37 @@ public class HealthCheckEngine {
     }
 
     private HealthCheckEngine() {
-        this.executor = Executors.newFixedThreadPool(POOL_SIZE, r -> {
-            Thread t = new Thread(r, "HealthCheckEngine");
-            t.setDaemon(true);
-            return t;
-        });
         registerDefaultCheckers();
+    }
+
+    /** 懒初始化线程池，shutdown 后可重建。 */
+    private synchronized ExecutorService ensureExecutor() {
+        if (executor == null || executor.isShutdown()) {
+            executor = Executors.newFixedThreadPool(POOL_SIZE, r -> {
+                Thread t = new Thread(r, "HealthCheckEngine");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+        return executor;
+    }
+
+    /**
+     * 关闭内部线程池，释放资源。可在 Application.onTerminate() 中调用。
+     * 关闭后再次调用 startCheck 会自动重建线程池。
+     */
+    public synchronized void shutdown() {
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public static HealthCheckEngine getInstance() {
@@ -96,7 +124,7 @@ public class HealthCheckEngine {
     }
 
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
 
     /**
@@ -106,15 +134,15 @@ public class HealthCheckEngine {
      * @param callback 进度与完成回调；可为 null，但强烈建议提供。
      */
     public void startCheck(final Context context, final Callback callback) {
-        if (running) {
+        // CAS 保证并发调用时只有一个能进入
+        if (!running.compareAndSet(false, true)) {
             if (callback != null) callback.onError("检测正在运行中，请稍候再试。");
             return;
         }
-        running = true;
 
         final Context appCtx = context != null ? context.getApplicationContext() : null;
         if (appCtx == null) {
-            running = false;
+            running.set(false);
             if (callback != null) callback.onError("上下文不可用。");
             return;
         }
@@ -130,13 +158,14 @@ public class HealthCheckEngine {
         final int total = snapshot.size();
         final AtomicInteger done = new AtomicInteger(0);
         final List<HealthCheckResult> collector = new CopyOnWriteArrayList<>();
+        final ExecutorService ex = ensureExecutor();
 
-        executor.execute(new Runnable() {
+        ex.execute(new Runnable() {
             @Override
             public void run() {
                 List<Future<HealthCheckResult>> futures = new ArrayList<>();
                 for (final IHealthChecker checker : snapshot) {
-                    futures.add(executor.submit(new java.util.concurrent.Callable<HealthCheckResult>() {
+                    futures.add(ex.submit(new java.util.concurrent.Callable<HealthCheckResult>() {
                         @Override
                         public HealthCheckResult call() {
                             try {
@@ -173,7 +202,7 @@ public class HealthCheckEngine {
                     }
                 });
 
-                running = false;
+                running.set(false);
                 if (callback != null) {
                     try {
                         callback.onCompleted(collector);

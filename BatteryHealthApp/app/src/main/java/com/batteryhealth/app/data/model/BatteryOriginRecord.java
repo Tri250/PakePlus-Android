@@ -1,13 +1,16 @@
 package com.batteryhealth.app.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 
 /**
  * 电池来源检测记录，用于持久化存储每次检测的结果。
  */
-@Entity(tableName = "battery_origin_record")
+@Entity(tableName = "battery_origin_record", indices = {
+    @Index(value = "timestamp")
+})
 public class BatteryOriginRecord {
 
     @PrimaryKey(autoGenerate = true)

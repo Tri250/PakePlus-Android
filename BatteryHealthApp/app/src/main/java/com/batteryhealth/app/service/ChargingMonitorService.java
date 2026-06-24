@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
@@ -20,6 +21,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
 
 import com.batteryhealth.app.BuildConfigHelper;
@@ -192,7 +194,7 @@ public class ChargingMonitorService extends Service {
         try {
             if (intent != null && "STOP_FOREGROUND".equals(intent.getAction())) {
                 if (foregroundStarted) {
-                    stopForeground(true);
+                    ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
                     foregroundStarted = false;
                 }
                 return START_STICKY;
@@ -227,13 +229,16 @@ public class ChargingMonitorService extends Service {
     private void updateForegroundState() {
         boolean showNotification = isNotificationEnabled();
         if (isCharging && !foregroundStarted && showNotification) {
-            startForeground(NOTIFICATION_ID, buildNotification());
+            // Android 14+ 要求 startForeground 显式指定 foregroundServiceType
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                            | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
             foregroundStarted = true;
         } else if (!isCharging && foregroundStarted) {
-            stopForeground(true);
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
             foregroundStarted = false;
         } else if (isCharging && foregroundStarted && !showNotification) {
-            stopForeground(true);
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
             foregroundStarted = false;
         }
     }
