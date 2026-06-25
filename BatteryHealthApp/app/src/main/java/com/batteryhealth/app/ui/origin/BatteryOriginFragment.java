@@ -130,6 +130,11 @@ public class BatteryOriginFragment extends Fragment {
         if (getActivity() instanceof MainActivity) {
             batteryDataManager = ((MainActivity) getActivity()).getBatteryDataManager();
         }
+        // 如果 MainActivity 还没初始化完成，使用 fallback 创建
+        if (batteryDataManager == null) {
+            Log.d(TAG, "BatteryDataManager from MainActivity is null, creating fallback");
+            batteryDataManager = new BatteryDataManager(requireContext().getApplicationContext());
+        }
         viewModel.initialize(requireContext().getApplicationContext(), batteryDataManager);
     }
 

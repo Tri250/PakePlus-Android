@@ -31,6 +31,12 @@ public class PowerViewModel extends ViewModel {
 
     public PowerViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app == null) {
+            android.util.Log.e("PowerViewModel", "Application instance is null");
+            batteryRepository = null;
+            batteryDataManager = null;
+            return;
+        }
         batteryRepository = new BatteryRepositoryImpl(app);
         batteryDataManager = batteryRepository instanceof BatteryRepositoryImpl 
                 ? ((BatteryRepositoryImpl) batteryRepository).getBatteryDataManager() 

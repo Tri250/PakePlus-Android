@@ -35,6 +35,12 @@ public class PerformanceViewModel extends ViewModel {
 
     public PerformanceViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app == null) {
+            android.util.Log.e("PerformanceViewModel", "Application instance is null");
+            batteryRepository = null;
+            performanceAnalyzer = null;
+            return;
+        }
         batteryRepository = new BatteryRepositoryImpl(app);
         performanceAnalyzer = new PerformanceAnalyzer(app.getApplicationContext());
     }

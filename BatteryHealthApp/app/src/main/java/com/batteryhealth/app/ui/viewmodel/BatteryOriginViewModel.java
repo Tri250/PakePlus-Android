@@ -50,6 +50,10 @@ public class BatteryOriginViewModel extends ViewModel {
      * 初始化检测器和数据管理器。必须在 Fragment onAttach 之后调用。
      */
     public void initialize(Context context, BatteryDataManager dataManager) {
+        if (context == null) {
+            android.util.Log.e("BatteryOriginViewModel", "Context is null in initialize");
+            return;
+        }
         this.appContext = context.getApplicationContext();
         this.batteryDataManager = dataManager;
         this.originDetector = new BatteryOriginDetector(appContext);
@@ -95,6 +99,12 @@ public class BatteryOriginViewModel extends ViewModel {
     }
 
     private void performDetection(boolean forceRefresh) {
+        if (originDetector == null || appContext == null) {
+            android.util.Log.e("BatteryOriginViewModel", "originDetector or appContext is null, cannot detect");
+            detectionError.postValue(true);
+            isDetecting.postValue(false);
+            return;
+        }
         isDetecting.postValue(true);
         detectionError.postValue(false);
 
@@ -121,6 +131,7 @@ public class BatteryOriginViewModel extends ViewModel {
                     loadHistoryInternal();
 
                 } catch (Exception e) {
+                    android.util.Log.e("BatteryOriginViewModel", "Detection error: " + e.getMessage(), e);
                     detectionError.postValue(true);
                 } finally {
                     isDetecting.postValue(false);

@@ -62,6 +62,12 @@ public class EnduranceViewModel extends ViewModel {
 
     public EnduranceViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app == null) {
+            android.util.Log.e("EnduranceViewModel", "Application instance is null");
+            batteryRepository = null;
+            appContext = null;
+            return;
+        }
         batteryRepository = new BatteryRepositoryImpl(app);
         appContext = app.getApplicationContext();
     }
@@ -90,6 +96,10 @@ public class EnduranceViewModel extends ViewModel {
      * 刷新所有续航数据 — ViewModel 为唯一数据源。
      */
     public void refreshData() {
+        if (appContext == null) {
+            android.util.Log.e("EnduranceViewModel", "appContext is null, cannot refresh");
+            return;
+        }
         ThreadExecutor.execute(new Runnable() {
             @Override
             public void run() {

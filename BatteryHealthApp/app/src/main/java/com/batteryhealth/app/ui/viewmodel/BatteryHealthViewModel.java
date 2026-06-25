@@ -35,6 +35,13 @@ public class BatteryHealthViewModel extends ViewModel {
 
     public BatteryHealthViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app == null) {
+            android.util.Log.e("BatteryHealthViewModel", "Application instance is null, using fallback");
+            batteryRepository = null;
+            calculateHealthUseCase = null;
+            batteryDataManager = null;
+            return;
+        }
         DeviceInfoManager deviceInfoManager = new DeviceInfoManager(app.getApplicationContext());
         
         batteryRepository = new BatteryRepositoryImpl(app);
@@ -85,12 +92,22 @@ public class BatteryHealthViewModel extends ViewModel {
             @Override
             public void run() {
                 if (isCleared.get()) return;
+                if (batteryRepository == null) {
+                    android.util.Log.e("BatteryHealthViewModel", "batteryRepository is null, cannot refresh");
+                    postNoDataState();
+                    isLoading.postValue(false);
+                    return;
+                }
                 try {
                     BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
                     if (info != null) {
                         updateHealthInfo(info);
                         batteryInfo.postValue(info);
-                        batterySource.postValue(batteryDataManager.getBatterySourceText());
+                        if (batteryDataManager != null) {
+                            batterySource.postValue(batteryDataManager.getBatterySourceText());
+                        } else {
+                            batterySource.postValue("--");
+                        }
                     } else {
                         postNoDataState();
                     }

@@ -34,6 +34,12 @@ public class TrendViewModel extends ViewModel {
 
     public TrendViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app == null) {
+            android.util.Log.e("TrendViewModel", "Application instance is null");
+            getTrendDataUseCase = null;
+            currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
+            return;
+        }
         BatteryRepository batteryRepository = new BatteryRepositoryImpl(app);
         getTrendDataUseCase = new GetTrendDataUseCase(batteryRepository);
         currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
