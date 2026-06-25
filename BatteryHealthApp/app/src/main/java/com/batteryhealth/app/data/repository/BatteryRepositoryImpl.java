@@ -42,10 +42,18 @@ public class BatteryRepositoryImpl implements BatteryRepository {
 
     @Override
     public BatteryInfo getCurrentBatteryInfo() {
-        batteryDataManager.refreshFromStickyIntent();
-        BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-        batteryInfoLiveData.postValue(info);
-        return info;
+        try {
+            // 确保 sysfs 数据已预热（后台线程异步执行）
+            batteryDataManager.refreshAllDataAsync();
+            BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+            if (info != null) {
+                batteryInfoLiveData.postValue(info);
+            }
+            return info;
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "Error getting current battery info: " + e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override

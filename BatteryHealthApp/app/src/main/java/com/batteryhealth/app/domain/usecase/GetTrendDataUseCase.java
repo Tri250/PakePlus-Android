@@ -322,6 +322,20 @@ public class GetTrendDataUseCase {
         public float remainingMonths = -1;
         public String lifespanPrediction = "";
         public List<String> chargingAdvice;
+
+        /**
+         * 创建一个表示"无数据"的结果对象，避免 UI 永远卡在"检测中"状态。
+         */
+        public static Result empty(int rangeIndex) {
+            Result r = new Result();
+            r.hasData = false;
+            r.rangeIndex = rangeIndex;
+            r.dailyPoints = new java.util.ArrayList<>();
+            r.anomalies = new java.util.ArrayList<>();
+            r.chargingAdvice = new java.util.ArrayList<>();
+            r.lifespanPrediction = "";
+            return r;
+        }
     }
 
     /**

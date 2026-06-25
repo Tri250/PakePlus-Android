@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.provider.Settings;
 
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -106,8 +107,19 @@ public class EnduranceViewModel extends ViewModel {
                 if (isCleared.get()) return;
                 try {
                     // 1. 读取电池基础信息
-                    Intent intent = appContext.registerReceiver(null,
-                            new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                    // Android 14+ 必须使用 ContextCompat.registerReceiver 并指定 RECEIVER_NOT_EXPORTED
+                    // 否则会抛 SecurityException 并被 try-catch 吞掉，导致页面一直"检测中"
+                    Intent intent;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent = ContextCompat.registerReceiver(
+                                appContext, null,
+                                new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                                ContextCompat.RECEIVER_NOT_EXPORTED
+                        );
+                    } else {
+                        intent = appContext.registerReceiver(null,
+                                new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                    }
                     if (intent == null) return;
 
                     int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);

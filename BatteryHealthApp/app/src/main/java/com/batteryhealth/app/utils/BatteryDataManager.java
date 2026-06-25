@@ -1062,10 +1062,11 @@ public class BatteryDataManager {
     public BatteryInfo getCurrentBatteryInfo() {
         if (currentBatteryInfo == null) {
             // 若在主线程调用且缓存为空，不再同步触发 sysfs 读取（避免 ANR），
-            // 改为异步预加载并返回 null，调用方应通过 refreshAllDataAsync() 预热缓存。
+            // 改为异步预加载并返回一个最小化的占位 BatteryInfo，
+            // 确保 UI 不被卡在"检测中"状态。
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 refreshAllDataAsync();
-                return null;
+                return createPlaceholderBatteryInfo();
             }
             synchronized (this) {
                 if (currentBatteryInfo == null) {
@@ -1074,6 +1075,22 @@ public class BatteryDataManager {
             }
         }
         return currentBatteryInfo;
+    }
+
+    /**
+     * 创建一个最小化的占位 BatteryInfo，避免 UI 在主线程访问时一直处于"检测中"。
+     * 数据字段均为 -1 或默认值，Fragment 应仅用于显示"加载中"提示。
+     */
+    private BatteryInfo createPlaceholderBatteryInfo() {
+        BatteryInfo placeholder = new BatteryInfo();
+        placeholder.setTimestamp(System.currentTimeMillis());
+        placeholder.setDeviceModel(android.os.Build.MODEL);
+        placeholder.setDeviceBrand(android.os.Build.BRAND);
+        placeholder.setLevel(-1);
+        placeholder.setStatus(android.os.BatteryManager.BATTERY_STATUS_UNKNOWN);
+        placeholder.setHealthPercentage(-1f);
+        placeholder.setHealthStatus("loading");
+        return placeholder;
     }
 
     public void refreshAllDataAsync() {

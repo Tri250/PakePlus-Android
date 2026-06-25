@@ -27,22 +27,39 @@ public class TrendViewModel extends ViewModel {
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentRange = new MutableLiveData<>();
 
-    private final GetTrendDataUseCase getTrendDataUseCase;
+    private GetTrendDataUseCase getTrendDataUseCase;
 
     /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
     private final AtomicBoolean isCleared = new AtomicBoolean(false);
 
     public TrendViewModel() {
-        BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-        if (app == null) {
-            android.util.Log.e("TrendViewModel", "Application instance is null");
-            getTrendDataUseCase = null;
-            currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
-            return;
+        getTrendDataUseCase = null;
+        try {
+            BatteryHealthApplication app = resolveApplication();
+            if (app != null) {
+                BatteryRepository batteryRepository = new BatteryRepositoryImpl(app);
+                getTrendDataUseCase = new GetTrendDataUseCase(batteryRepository);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("TrendViewModel", "init failed", e);
         }
-        BatteryRepository batteryRepository = new BatteryRepositoryImpl(app);
-        getTrendDataUseCase = new GetTrendDataUseCase(batteryRepository);
         currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
+    }
+
+    private BatteryHealthApplication resolveApplication() {
+        BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+        if (app != null) return app;
+        // 退路：通过反射调用 ActivityThread.currentApplication()
+        try {
+            Class<?> activityThread = Class.forName("android.app.ActivityThread");
+            Object currentApp = activityThread.getMethod("currentApplication").invoke(null);
+            if (currentApp instanceof BatteryHealthApplication) {
+                return (BatteryHealthApplication) currentApp;
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("TrendViewModel", "Reflection fallback failed", t);
+        }
+        return null;
     }
 
     @Override
@@ -77,10 +94,23 @@ public class TrendViewModel extends ViewModel {
             public void run() {
                 if (isCleared.get()) return;
                 try {
+                    if (getTrendDataUseCase == null) {
+                        errorMessage.postValue("趋势模块未初始化，请稍后重试");
+                        trendData.postValue(GetTrendDataUseCase.Result.empty(rangeIndex));
+                        return;
+                    }
                     GetTrendDataUseCase.Result result = getTrendDataUseCase.execute(rangeIndex);
+                    if (result == null) {
+                        result = GetTrendDataUseCase.Result.empty(rangeIndex);
+                    }
                     trendData.postValue(result);
                 } catch (Exception e) {
+                    android.util.Log.e("TrendViewModel", "loadTrendData failed: " + e.getMessage(), e);
                     errorMessage.postValue("加载趋势数据失败: " + e.getMessage());
+                    try {
+                        trendData.postValue(GetTrendDataUseCase.Result.empty(rangeIndex));
+                    } catch (Exception ignored) {
+                    }
                 } finally {
                     isLoading.postValue(false);
                 }
