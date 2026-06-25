@@ -14,6 +14,8 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.google.android.material.card.MaterialCardView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -52,7 +54,7 @@ public class BatteryOriginFragment extends Fragment {
     private Button btnDetect;
     private Button btnShare;
     private TextView tvHistoryEyebrow;
-    private LinearLayout cardHistory;
+    private MaterialCardView cardHistory;
     private LinearLayout containerHistory;
     private TextView tvHistoryEmpty;
 
