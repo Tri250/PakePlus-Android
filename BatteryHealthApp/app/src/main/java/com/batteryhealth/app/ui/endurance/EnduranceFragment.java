@@ -108,52 +108,70 @@ public class EnduranceFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(EnduranceViewModel.class);
 
         // 电量
-        viewModel.getBatteryLevel().observe(getViewLifecycleOwner(), level -> {
-            if (level != null) {
-                tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", level));
+        viewModel.getBatteryLevel().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Integer>() {
+            @Override
+            public void onChanged(Integer level) {
+                if (level != null) {
+                    tvBatteryLevel.setText(String.format(Locale.getDefault(), "%d%%", level));
+                }
             }
         });
 
         // 温度
-        viewModel.getTemperature().observe(getViewLifecycleOwner(), temp -> {
-            if (temp != null) {
-                tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", temp));
+        viewModel.getTemperature().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Float>() {
+            @Override
+            public void onChanged(Float temp) {
+                if (temp != null) {
+                    tvTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", temp));
+                }
             }
         });
 
         // 充电状态
-        viewModel.getIsCharging().observe(getViewLifecycleOwner(), charging -> {
-            if (charging != null) {
-                tvChargingStatus.setText(charging ? "充电中" : "放电中");
-                tvChargingStatus.setTextColor(ContextCompat.getColor(requireContext(),
-                        charging ? R.color.ios_green : R.color.ios_label_primary));
+        viewModel.getIsCharging().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean charging) {
+                if (charging != null) {
+                    tvChargingStatus.setText(charging ? "充电中" : "放电中");
+                    tvChargingStatus.setTextColor(ContextCompat.getColor(requireContext(),
+                            charging ? R.color.ios_green : R.color.ios_label_primary));
+                }
             }
         });
 
         // 放电速率
-        viewModel.getDischargeRate().observe(getViewLifecycleOwner(), rate -> {
-            if (rate != null && rate > 0) {
-                tvDischargeRate.setText(String.format(Locale.getDefault(), "%.1f%%/h", rate));
-            } else {
-                tvDischargeRate.setText("--");
+        viewModel.getDischargeRate().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Float>() {
+            @Override
+            public void onChanged(Float rate) {
+                if (rate != null && rate > 0) {
+                    tvDischargeRate.setText(String.format(Locale.getDefault(), "%.1f%%/h", rate));
+                } else {
+                    tvDischargeRate.setText("--");
+                }
             }
         });
 
         // 放电续航时间
-        viewModel.getEstimatedEnduranceHours().observe(getViewLifecycleOwner(), hours -> {
-            if (hours != null && hours > 0) {
-                tvEstimatedEndurance.setText(formatHours(hours));
-            } else {
-                tvEstimatedEndurance.setText("--");
+        viewModel.getEstimatedEnduranceHours().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Float>() {
+            @Override
+            public void onChanged(Float hours) {
+                if (hours != null && hours > 0) {
+                    tvEstimatedEndurance.setText(formatHours(hours));
+                } else {
+                    tvEstimatedEndurance.setText("--");
+                }
             }
         });
 
         // 充电预估时间
-        viewModel.getEstimatedChargeHours().observe(getViewLifecycleOwner(), hours -> {
-            if (hours != null && hours > 0) {
-                tvEstimatedChargeTime.setText(formatHours(hours));
-            } else {
-                tvEstimatedChargeTime.setText("--");
+        viewModel.getEstimatedChargeHours().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Float>() {
+            @Override
+            public void onChanged(Float hours) {
+                if (hours != null && hours > 0) {
+                    tvEstimatedChargeTime.setText(formatHours(hours));
+                } else {
+                    tvEstimatedChargeTime.setText("--");
+                }
             }
         });
 
@@ -161,85 +179,106 @@ public class EnduranceFragment extends Fragment {
         updateUsedTime();
 
         // 续航等级
-        viewModel.getEnduranceGrade().observe(getViewLifecycleOwner(), grade -> {
-            if (grade != null) {
-                tvEnduranceGrade.setText(grade);
-                // 根据等级设置颜色
-                int color;
-                switch (grade) {
-                    case "续航充裕":
-                    case "续航良好":
-                        color = ContextCompat.getColor(requireContext(), R.color.ios_green);
-                        break;
-                    case "续航一般":
-                        color = ContextCompat.getColor(requireContext(), R.color.ios_orange);
-                        break;
-                    case "续航偏低":
-                    case "电量告急":
-                        color = ContextCompat.getColor(requireContext(), R.color.ios_red);
-                        break;
-                    case "即将充满":
-                    case "充电中":
-                        color = ContextCompat.getColor(requireContext(), R.color.ios_green);
-                        break;
-                    default:
-                        color = ContextCompat.getColor(requireContext(), R.color.ios_label_primary);
-                        break;
+        viewModel.getEnduranceGrade().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<String>() {
+            @Override
+            public void onChanged(String grade) {
+                if (grade != null) {
+                    tvEnduranceGrade.setText(grade);
+                    // 根据等级设置颜色
+                    int color;
+                    switch (grade) {
+                        case "续航充裕":
+                        case "续航良好":
+                            color = ContextCompat.getColor(requireContext(), R.color.ios_green);
+                            break;
+                        case "续航一般":
+                            color = ContextCompat.getColor(requireContext(), R.color.ios_orange);
+                            break;
+                        case "续航偏低":
+                        case "电量告急":
+                            color = ContextCompat.getColor(requireContext(), R.color.ios_red);
+                            break;
+                        case "即将充满":
+                        case "充电中":
+                            color = ContextCompat.getColor(requireContext(), R.color.ios_green);
+                            break;
+                        default:
+                            color = ContextCompat.getColor(requireContext(), R.color.ios_label_primary);
+                            break;
+                    }
+                    tvEnduranceGrade.setTextColor(color);
                 }
-                tvEnduranceGrade.setTextColor(color);
             }
         });
 
         // 续航等级描述
-        viewModel.getEnduranceGradeDescription().observe(getViewLifecycleOwner(), desc -> {
-            if (desc != null) {
-                tvEnduranceGradeDescription.setText(desc);
+        viewModel.getEnduranceGradeDescription().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<String>() {
+            @Override
+            public void onChanged(String desc) {
+                if (desc != null) {
+                    tvEnduranceGradeDescription.setText(desc);
+                }
             }
         });
 
         // 耗电异常提醒
-        viewModel.getIsAbnormalDischarge().observe(getViewLifecycleOwner(), abnormal -> {
-            if (abnormalDischargeWarning != null) {
-                abnormalDischargeWarning.setVisibility(abnormal != null && abnormal ? View.VISIBLE : View.GONE);
+        viewModel.getIsAbnormalDischarge().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean abnormal) {
+                if (abnormalDischargeWarning != null) {
+                    abnormalDischargeWarning.setVisibility(abnormal != null && abnormal ? View.VISIBLE : View.GONE);
+                }
             }
         });
 
         // 耗电排行百分比
-        viewModel.getAnalysisResult().observe(getViewLifecycleOwner(), analysis -> {
-            if (analysis != null && analysis.dataStatus == 2) {
-                tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.screenPowerPercent));
-                tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.systemPowerPercent));
-                tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.appsPowerPercent));
-            } else if (analysis != null && analysis.dataStatus == 1) {
-                tvScreenPower.setText("--");
-                tvSystemPower.setText("--");
-                tvAppsPower.setText("--");
-            } else {
-                tvScreenPower.setText("--");
-                tvSystemPower.setText("--");
-                tvAppsPower.setText("--");
+        viewModel.getAnalysisResult().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<com.batteryhealth.app.utils.BatteryConsumptionAnalyzer.Result>() {
+            @Override
+            public void onChanged(com.batteryhealth.app.utils.BatteryConsumptionAnalyzer.Result analysis) {
+                if (analysis != null && analysis.dataStatus == 2) {
+                    tvScreenPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.screenPowerPercent));
+                    tvSystemPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.systemPowerPercent));
+                    tvAppsPower.setText(String.format(Locale.getDefault(), "%.1f%%", analysis.appsPowerPercent));
+                } else if (analysis != null && analysis.dataStatus == 1) {
+                    tvScreenPower.setText("--");
+                    tvSystemPower.setText("--");
+                    tvAppsPower.setText("--");
+                } else {
+                    tvScreenPower.setText("--");
+                    tvSystemPower.setText("--");
+                    tvAppsPower.setText("--");
+                }
             }
         });
 
         // TOP 耗电应用列表
-        viewModel.getTopConsumers().observe(getViewLifecycleOwner(), consumers -> {
-            renderTopApps(consumers);
+        viewModel.getTopConsumers().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<List<com.batteryhealth.app.utils.BatteryConsumptionAnalyzer.AppConsumption>>() {
+            @Override
+            public void onChanged(List<com.batteryhealth.app.utils.BatteryConsumptionAnalyzer.AppConsumption> consumers) {
+                renderTopApps(consumers);
+            }
         });
 
         // 屏幕亮屏时间
-        viewModel.getScreenOnTimeMs().observe(getViewLifecycleOwner(), ms -> {
-            if (ms != null) {
-                if (ms < 0) {
-                    tvScreenOnTime.setText(getString(R.string.status_no_permission_hint));
-                } else {
-                    tvScreenOnTime.setText(formatDuration(ms));
+        viewModel.getScreenOnTimeMs().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Long>() {
+            @Override
+            public void onChanged(Long ms) {
+                if (ms != null) {
+                    if (ms < 0) {
+                        tvScreenOnTime.setText(getString(R.string.status_no_permission_hint));
+                    } else {
+                        tvScreenOnTime.setText(formatDuration(ms));
+                    }
                 }
             }
         });
 
         // 省电建议
-        viewModel.getPowerSavingTips().observe(getViewLifecycleOwner(), tips -> {
-            renderPowerTips(tips);
+        viewModel.getPowerSavingTips().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<List<String>>() {
+            @Override
+            public void onChanged(List<String> tips) {
+                renderPowerTips(tips);
+            }
         });
     }
 

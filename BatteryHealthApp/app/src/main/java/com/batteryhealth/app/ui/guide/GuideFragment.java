@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import android.content.DialogInterface;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BugReportGuide;
@@ -81,19 +82,25 @@ public class GuideFragment extends Fragment {
 
             filePickerLauncher = registerForActivityResult(
                     new ActivityResultContracts.OpenDocument(),
-                    uri -> {
-                        if (uri != null) {
-                            analyzeBugReport(uri);
+                    new androidx.activity.result.ActivityResultCallback<Uri>() {
+                        @Override
+                        public void onActivityResult(Uri uri) {
+                            if (uri != null) {
+                                analyzeBugReport(uri);
+                            }
                         }
                     }
             );
 
             fallbackPickerLauncher = registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
-                            Uri uri = result.getData().getData();
-                            if (uri != null) analyzeBugReport(uri);
+                    new androidx.activity.result.ActivityResultCallback<androidx.activity.result.ActivityResult>() {
+                        @Override
+                        public void onActivityResult(androidx.activity.result.ActivityResult result) {
+                            if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                                Uri uri = result.getData().getData();
+                                if (uri != null) analyzeBugReport(uri);
+                            }
                         }
                     }
             );
@@ -126,10 +133,30 @@ public class GuideFragment extends Fragment {
         progressBar = view.findViewById(R.id.progress_analysis);
         exportButtonContainer = view.findViewById(R.id.export_button_container);
 
-        btnUpload.setOnClickListener(v -> pickBugReportFile());
-        btnExport.setOnClickListener(v -> exportReport());
-        btnShare.setOnClickListener(v -> shareReport());
-        btnClearHistory.setOnClickListener(v -> showClearHistoryDialog());
+        btnUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickBugReportFile();
+            }
+        });
+        btnExport.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                exportReport();
+            }
+        });
+        btnShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                shareReport();
+            }
+        });
+        btnClearHistory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showClearHistoryDialog();
+            }
+        });
     }
 
     private void pickBugReportFile() {
@@ -161,18 +188,21 @@ public class GuideFragment extends Fragment {
                 tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
             }
 
-            tab.setOnClickListener(v -> {
-                for (int i = 0; i < brandTabContainer.getChildCount(); i++) {
-                    View child = brandTabContainer.getChildAt(i);
-                    child.setActivated(false);
-                    if (child instanceof TextView) {
-                        ((TextView) child).setTextColor(
-                                ContextCompat.getColor(requireContext(), R.color.label_2));
+            tab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    for (int i = 0; i < brandTabContainer.getChildCount(); i++) {
+                        View child = brandTabContainer.getChildAt(i);
+                        child.setActivated(false);
+                        if (child instanceof TextView) {
+                            ((TextView) child).setTextColor(
+                                    ContextCompat.getColor(requireContext(), R.color.label_2));
+                        }
                     }
+                    tab.setActivated(true);
+                    tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+                    loadBrandGuide(guide.brand);
                 }
-                tab.setActivated(true);
-                tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
-                loadBrandGuide(guide.brand);
             });
 
             brandTabContainer.addView(tab);
@@ -249,12 +279,15 @@ public class GuideFragment extends Fragment {
         TextView tvCode = codeView.findViewById(R.id.tv_code);
         tvCode.setText(code);
         tvCode.setTextIsSelectable(true);
-        codeView.setOnClickListener(v -> {
-            ClipboardManager clipboard = (ClipboardManager) requireContext()
-                    .getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("ADB Command", code);
-            clipboard.setPrimaryClip(clip);
-            Toast.makeText(requireContext(), R.string.action_copy_command, Toast.LENGTH_SHORT).show();
+        codeView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ClipboardManager clipboard = (ClipboardManager) requireContext()
+                        .getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("ADB Command", code);
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(requireContext(), R.string.action_copy_command, Toast.LENGTH_SHORT).show();
+            }
         });
         guideContainer.addView(codeView);
     }
@@ -273,26 +306,32 @@ public class GuideFragment extends Fragment {
         BugReportAnalyzer.AnalysisProgressCallback callback =
                 new BugReportAnalyzer.AnalysisProgressCallback() {
             @Override
-            public void onProgress(int step, int totalSteps, String description) {
+            public void onProgress(final int step, final int totalSteps, final String description) {
                 if (isAdded() && getActivity() != null) {
-                    ThreadExecutor.runOnMain(() -> {
-                        if (!isAdded()) return;
-                        int progress = (int) ((step / (float) totalSteps) * 100);
-                        progressBar.setProgress(progress);
-                        tvProgressStatus.setText(description);
+                    ThreadExecutor.runOnMain(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) return;
+                            int progress = (int) ((step / (float) totalSteps) * 100);
+                            progressBar.setProgress(progress);
+                            tvProgressStatus.setText(description);
+                        }
                     });
                 }
             }
 
             @Override
-            public void onFileValidated(boolean valid, String reason) {
+            public void onFileValidated(final boolean valid, final String reason) {
                 if (isAdded() && getActivity() != null) {
-                    ThreadExecutor.runOnMain(() -> {
-                        if (!isAdded()) return;
-                        if (valid) {
-                            tvProgressStatus.setText(R.string.success_file_validated);
-                        } else {
-                            showError(reason);
+                    ThreadExecutor.runOnMain(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) return;
+                            if (valid) {
+                                tvProgressStatus.setText(R.string.success_file_validated);
+                            } else {
+                                showError(reason);
+                            }
                         }
                     });
                 }
@@ -304,61 +343,79 @@ public class GuideFragment extends Fragment {
             }
         };
 
-        ThreadExecutor.execute(() -> {
-            File tempFile = null;
-            try {
-                tempFile = copyUriToTempFile(uri);
-                if (tempFile == null) {
-                    if (isAdded() && getActivity() != null) {
-                        ThreadExecutor.runOnMain(() -> {
-                            if (!isAdded()) return;
-                            showError("文件读取失败，请检查文件权限");
-                        });
-                    }
-                    return;
-                }
-
-                boolean valid = analyzer.validateBugReportFile(tempFile);
-                if (!valid) {
-                    if (isAdded() && getActivity() != null) {
-                        ThreadExecutor.runOnMain(() -> {
-                            if (!isAdded()) return;
-                            showError("文件格式验证失败，请确保文件为有效的 Android bugreport（.zip 或 .txt）");
-                        });
-                    }
-                    return;
-                }
-
-                if (isAdded() && getActivity() != null) {
-                    ThreadExecutor.runOnMain(() -> {
-                        if (!isAdded()) return;
-                        tvProgressStatus.setText(R.string.success_file_validated);
-                    });
-                }
-
-                BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile, callback);
-
-                if (isAdded() && getActivity() != null) {
-                    ThreadExecutor.runOnMain(() -> {
-                        if (!isAdded()) return;
-                        showAnalysisResult(result);
-                        if (historyManager != null) {
-                            historyManager.saveRecord(result);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                File tempFile = null;
+                try {
+                    tempFile = copyUriToTempFile(uri);
+                    if (tempFile == null) {
+                        if (isAdded() && getActivity() != null) {
+                            ThreadExecutor.runOnMain(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!isAdded()) return;
+                                    showError("文件读取失败，请检查文件权限");
+                                }
+                            });
                         }
-                        loadHistory();
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error analyzing bug report: " + e.getMessage(), e);
-                if (isAdded() && getActivity() != null) {
-                    ThreadExecutor.runOnMain(() -> {
-                        if (!isAdded()) return;
-                        showError("分析异常: " + e.getMessage());
-                    });
-                }
-            } finally {
-                if (tempFile != null && tempFile.exists()) {
-                    tempFile.delete();
+                        return;
+                    }
+
+                    boolean valid = analyzer.validateBugReportFile(tempFile);
+                    if (!valid) {
+                        if (isAdded() && getActivity() != null) {
+                            ThreadExecutor.runOnMain(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!isAdded()) return;
+                                    showError("文件格式验证失败，请确保文件为有效的 Android bugreport（.zip 或 .txt）");
+                                }
+                            });
+                        }
+                        return;
+                    }
+
+                    if (isAdded() && getActivity() != null) {
+                        ThreadExecutor.runOnMain(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!isAdded()) return;
+                                tvProgressStatus.setText(R.string.success_file_validated);
+                            }
+                        });
+                    }
+
+                    final BugReportGuide.AnalysisResult result = analyzer.analyze(tempFile, callback);
+
+                    if (isAdded() && getActivity() != null) {
+                        ThreadExecutor.runOnMain(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!isAdded()) return;
+                                showAnalysisResult(result);
+                                if (historyManager != null) {
+                                    historyManager.saveRecord(result);
+                                }
+                                loadHistory();
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error analyzing bug report: " + e.getMessage(), e);
+                    if (isAdded() && getActivity() != null) {
+                        ThreadExecutor.runOnMain(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!isAdded()) return;
+                                showError("分析异常: " + e.getMessage());
+                            }
+                        });
+                    }
+                } finally {
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
                 }
             }
         });
@@ -677,17 +734,23 @@ public class GuideFragment extends Fragment {
             tvSubtitle.setText(detail.toString());
             tvSubtitle.setVisibility(View.VISIBLE);
 
-            itemView.setOnLongClickListener(v -> {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("删除记录")
-                        .setMessage("确定要删除这条分析记录吗？")
-                        .setPositiveButton("删除", (dialog, which) -> {
-                            historyManager.deleteRecord(record.timestamp);
-                            loadHistory();
-                        })
-                        .setNegativeButton("取消", null)
-                        .show();
-                return true;
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    new AlertDialog.Builder(requireContext())
+                            .setTitle("删除记录")
+                            .setMessage("确定要删除这条分析记录吗？")
+                            .setPositiveButton("删除", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    historyManager.deleteRecord(record.timestamp);
+                                    loadHistory();
+                                }
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                    return true;
+                }
             });
 
             historyContainer.addView(itemView);
@@ -698,9 +761,12 @@ public class GuideFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setTitle("清除历史")
                 .setMessage("确定要清除所有分析历史记录吗？此操作不可撤销。")
-                .setPositiveButton("清除", (dialog, which) -> {
-                    historyManager.clearAll();
-                    loadHistory();
+                .setPositiveButton("清除", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        historyManager.clearAll();
+                        loadHistory();
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
