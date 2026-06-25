@@ -502,6 +502,8 @@ public class BatteryDataManager {
             java.util.Set<String> cycleDays = new java.util.HashSet<>();
             boolean wasLow = false;
             boolean wasCharging = false;
+            // 复用 Date 对象，避免循环内频繁分配
+            java.util.Date date = new java.util.Date();
 
             for (BatteryInfo info : records) {
                 int level = info.getLevel();
@@ -509,7 +511,8 @@ public class BatteryDataManager {
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                         || status == BatteryManager.BATTERY_STATUS_FULL;
                 long ts = info.getTimestamp();
-                String day = DAY_FORMAT.get().format(new java.util.Date(ts));
+                date.setTime(ts);
+                String day = DAY_FORMAT.get().format(date);
 
                 if (level < 20) wasLow = true;
                 if (wasLow && isCharging) wasCharging = true;
@@ -739,13 +742,17 @@ public class BatteryDataManager {
                 healthBuffer.remove(0);
             }
             if (healthBuffer.size() < 3) return currentValue;
-            List<Float> sorted = new ArrayList<>(healthBuffer);
-            Collections.sort(sorted);
-            int mid = sorted.size() / 2;
-            if (sorted.size() % 2 == 0) {
-                return (sorted.get(mid - 1) + sorted.get(mid)) / 2f;
+            // 复用预分配数组，避免高频调用时频繁 new ArrayList
+            float[] arr = new float[healthBuffer.size()];
+            for (int i = 0; i < healthBuffer.size(); i++) {
+                arr[i] = healthBuffer.get(i);
             }
-            return sorted.get(mid);
+            java.util.Arrays.sort(arr);
+            int mid = arr.length / 2;
+            if (arr.length % 2 == 0) {
+                return (arr[mid - 1] + arr[mid]) / 2f;
+            }
+            return arr[mid];
         }
     }
 
@@ -863,21 +870,38 @@ public class BatteryDataManager {
         return readSysfsString(SERIAL_PATHS, context.getString(R.string.status_unknown));
     }
 
+    // 缓存反射 Method 对象，避免 getBatteryInfo() 每次调用时重复反射
+    private static volatile Method cachedGetSerialNoArg;
+    private static volatile Method cachedGetSerialWithContext;
+    private static volatile Method cachedGetSerialStatic;
+
     private String tryGetBatterySerial(BatteryManager bm) {
         try {
-            Method m = bm.getClass().getMethod("getBatterySerialNumber");
+            Method m = cachedGetSerialNoArg;
+            if (m == null) {
+                m = bm.getClass().getMethod("getBatterySerialNumber");
+                cachedGetSerialNoArg = m;
+            }
             Object r = m.invoke(bm);
             if (r instanceof String) return (String) r;
         } catch (Exception ignored) {
         }
         try {
-            Method m = bm.getClass().getMethod("getBatterySerialNumber", Context.class);
+            Method m = cachedGetSerialWithContext;
+            if (m == null) {
+                m = bm.getClass().getMethod("getBatterySerialNumber", Context.class);
+                cachedGetSerialWithContext = m;
+            }
             Object r = m.invoke(bm, context);
             if (r instanceof String) return (String) r;
         } catch (Exception ignored) {
         }
         try {
-            Method m = BatteryManager.class.getMethod("getBatterySerialNumber", Context.class);
+            Method m = cachedGetSerialStatic;
+            if (m == null) {
+                m = BatteryManager.class.getMethod("getBatterySerialNumber", Context.class);
+                cachedGetSerialStatic = m;
+            }
             Object r = m.invoke(null, context);
             if (r instanceof String) return (String) r;
         } catch (Exception ignored) {

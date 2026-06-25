@@ -108,6 +108,9 @@ public class BatteryOriginDetector {
     private final Context context;
     private BatteryDataManager batteryDataManager;
 
+    // 缓存反射 Method，避免 detect() 每次调用时重复反射
+    private static volatile Method cachedGetSerialMethod;
+
     public BatteryOriginDetector(Context context) {
         this.context = context;
     }
@@ -299,7 +302,11 @@ public class BatteryOriginDetector {
 
         // getBatterySerialNumber via reflection (API 36+)
         try {
-            Method getSerial = BatteryManager.class.getMethod("getBatterySerialNumber");
+            Method getSerial = cachedGetSerialMethod;
+            if (getSerial == null) {
+                getSerial = BatteryManager.class.getMethod("getBatterySerialNumber");
+                cachedGetSerialMethod = getSerial;
+            }
             Object serialObj = getSerial.invoke(bm);
             if (serialObj instanceof String) {
                 String serial = ((String) serialObj).trim();
