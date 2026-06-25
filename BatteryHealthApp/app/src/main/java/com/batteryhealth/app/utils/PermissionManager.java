@@ -15,33 +15,71 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 权限管理工具类
+ * 权限管理工具类。
+ * 在请求权限前展示用途说明弹窗，避免用户在不理解权限用途时直接拒绝，
+ * 导致 shouldShowRequestPermissionRationale 返回 false 后无法再次引导。
  */
 public class PermissionManager {
 
     public static final int PERMISSION_REQUEST_CODE = 100;
 
     /**
-     * 检查并请求权限
+     * 检查并请求权限。
+     * 在请求前对每个未授予的权限展示用途说明弹窗，
+     * 保证用户在任何 Android 版本下都能了解权限用途。
      */
     public static void checkAndRequestPermissions(Activity activity, String[] permissions) {
         List<String> permissionsToRequest = new ArrayList<>();
+        List<String> permissionsGranted = new ArrayList<>();
 
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(activity, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
+                    == PackageManager.PERMISSION_GRANTED) {
+                permissionsGranted.add(permission);
+            } else {
                 permissionsToRequest.add(permission);
             }
         }
 
-        if (!permissionsToRequest.isEmpty()) {
-            ActivityCompat.requestPermissions(activity,
-                    permissionsToRequest.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+        if (permissionsToRequest.isEmpty()) {
+            // 全部已授予，无需任何操作
+            return;
         }
+
+        // 展示权限用途说明，说明后再请求
+        showPermissionsRationale(activity, permissionsToRequest.toArray(new String[0]));
     }
 
     /**
-     * 处理权限请求结果，对拒绝的权限显示引导对话框
+     * 批量展示权限用途说明弹窗，说明后再请求权限。
+     */
+    private static void showPermissionsRationale(Activity activity, String[] permissions) {
+        StringBuilder sb = new StringBuilder();
+        for (String permission : permissions) {
+            if (android.Manifest.permission.POST_NOTIFICATIONS.equals(permission)) {
+                sb.append("「通知权限」：用于接收充电完成、低电量提醒、电池健康预警等重要通知。\n\n");
+            } else if ("android.permission.READ_PHONE_STATE".equals(permission)) {
+                sb.append("「电话状态权限」：用于读取电池序列号等硬件信息以识别电池型号（非通话功能）。\n\n");
+            } else if ("android.permission.PACKAGE_USAGE_STATS".equals(permission)) {
+                sb.append("「使用情况访问权限」：用于查看各应用的耗电排行和前台运行时长，数据仅本地展示，不会上传。\n\n");
+            } else {
+                sb.append(activity.getString(com.batteryhealth.app.R.string.dialog_permission_message)).append("\n\n");
+            }
+        }
+        // 去掉末尾多余换行
+        String message = sb.toString().trim();
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(com.batteryhealth.app.R.string.dialog_permission_title))
+                .setMessage(message)
+                .setPositiveButton("继续", (dialog, which) -> {
+                    ActivityCompat.requestPermissions(activity, permissions, PERMISSION_REQUEST_CODE);
+                })
+                .setNegativeButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_cancel), null)
+                .show();
+    }
+
+    /**
+     * 处理权限请求结果，对拒绝的权限显示引导对话框。
      */
     public static void handlePermissionResult(Activity activity, String[] permissions,
                                                int[] grantResults) {
@@ -51,7 +89,7 @@ public class PermissionManager {
                 if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
                     showRationaleDialog(activity, permission);
                 } else {
-                    // 用户选择了“不再询问”，引导去设置页
+                    // 用户选择了"不再询问"或系统不建议再次请求，引导去设置页
                     showGoToSettingsDialog(activity);
                 }
                 break;

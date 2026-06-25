@@ -261,7 +261,8 @@ public class EnduranceFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // 清理 Handler 待执行回调，避免内存泄漏
+        // 停止刷新循环并清理 Handler 待执行回调，避免内存泄漏
+        stopPeriodicRefresh();
         refreshHandler.removeCallbacksAndMessages(null);
     }
 
@@ -272,11 +273,14 @@ public class EnduranceFragment extends Fragment {
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
-                if (isAdded()) {
-                    viewModel.refreshData();
-                    updateUsedTime();
-                    refreshHandler.postDelayed(this, 3000);
+                // 仅在 Fragment 可见时继续刷新；不可见时停止循环，避免后台无意义资源消耗
+                if (!isResumed()) {
+                    stopPeriodicRefresh();
+                    return;
                 }
+                viewModel.refreshData();
+                updateUsedTime();
+                refreshHandler.postDelayed(this, 3000);
             }
         };
         refreshHandler.postDelayed(refreshRunnable, 3000);
@@ -285,6 +289,7 @@ public class EnduranceFragment extends Fragment {
     private void stopPeriodicRefresh() {
         if (refreshRunnable != null) {
             refreshHandler.removeCallbacks(refreshRunnable);
+            refreshRunnable = null;
         }
     }
 

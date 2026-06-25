@@ -134,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
                 batteryDataManager = null;
             }
 
+            // 首次启动主动展示隐私政策与用户协议（GDPR / 个人信息保护法合规要求）
+            showPrivacyPolicyIfNeeded();
+
             // 检查权限（统一使用 PermissionManager）
             PermissionManager.checkAndRequestPermissions(this, getRequiredPermissions());
 
@@ -496,6 +499,55 @@ public class MainActivity extends AppCompatActivity {
                         .setNegativeButton(getString(R.string.action_later), null)
                         .show();
             }
+        }
+    }
+
+    private void showPrivacyPolicyIfNeeded() {
+        final String PREFS_PRIVACY = "privacy_policy_prefs";
+        final String PREF_POLICY_ACCEPTED = "policy_accepted";
+        final String PREF_ACCEPTED_VERSION = "accepted_version";
+        final String CURRENT_VERSION = "20260625";
+
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences(PREFS_POLICY, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(PREF_POLICY_ACCEPTED, false)
+                    && CURRENT_VERSION.equals(prefs.getString(PREF_ACCEPTED_VERSION, ""))) {
+                // 已同意过当前版本，无需重复展示
+                return;
+            }
+
+            // 展示隐私政策与用户协议摘要弹窗，引导用户查看完整内容
+            String summary = getString(R.string.privacy_policy_summary);
+            new AlertDialog.Builder(this)
+                    .setTitle("隐私保护提醒")
+                    .setMessage(summary)
+                    .setPositiveButton("同意并继续", (dialog, which) -> {
+                        prefs.edit()
+                                .putBoolean(PREF_POLICY_ACCEPTED, true)
+                                .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
+                                .apply();
+                    })
+                    .setNeutralButton("查看隐私政策", (dialog, which) -> {
+                        prefs.edit()
+                                .putBoolean(PREF_POLICY_ACCEPTED, true)
+                                .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
+                                .apply();
+                        try {
+                            Intent intent = new Intent(this, com.batteryhealth.app.ui.policy.PolicyActivity.class);
+                            intent.putExtra(com.batteryhealth.app.ui.policy.PolicyActivity.EXTRA_TYPE,
+                                    com.batteryhealth.app.ui.policy.PolicyActivity.TYPE_PRIVACY);
+                            startActivity(intent);
+                        } catch (Exception ignored) {}
+                    })
+                    .setNegativeButton("不同意", (dialog, which) -> {
+                        // 用户不同意仍可使用基础功能，但部分功能受限
+                        Snackbar.make(findViewById(android.R.id.content),
+                                "部分功能可能无法正常使用", Snackbar.LENGTH_LONG).show();
+                    })
+                    .setCancelable(false)
+                    .show();
+        } catch (Exception e) {
+            Log.w(TAG, "showPrivacyPolicyIfNeeded failed: " + e.getMessage());
         }
     }
     

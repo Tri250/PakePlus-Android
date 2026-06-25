@@ -144,6 +144,7 @@ public class BatteryHealthFragment extends Fragment {
             tvHealthPercentage.setText("--");
             tvHealthGrade.setText("--");
             tvHealthStatus.setText(getString(R.string.health_unknown));
+            healthRing.setNoData();
         }
     }
 
@@ -182,6 +183,7 @@ public class BatteryHealthFragment extends Fragment {
             content = currentText != null ? currentText.toString() : "";
         }
         if (content.isEmpty() || getString(R.string.status_calculating).equals(content)) {
+            Toast.makeText(requireContext(), R.string.health_check_no_data, Toast.LENGTH_SHORT).show();
             return;
         }
         Intent shareIntent = new Intent(Intent.ACTION_SEND);

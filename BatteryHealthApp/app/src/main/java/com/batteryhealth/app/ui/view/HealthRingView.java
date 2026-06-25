@@ -15,17 +15,21 @@ import androidx.annotation.Nullable;
  * 健康度环形进度视图
  *
  * 使用渐变弧线展示电池健康度百分比，与 Web 端圆环保持一致。
+ * 支持"无数据"状态（灰色虚线圆弧），区分于正常 0% 显示。
  */
 public class HealthRingView extends View {
 
     private final Paint ringPaint;
     private final Paint trackPaint;
+    private final Paint noDataPaint;
     private final RectF rectF = new RectF();
 
     private float progress = 0f; // 0 - 100
     private float strokeWidth = 0f;
     private int startColor = 0xFF32D74B;
     private int endColor = 0xFF66D4CF;
+    /** 无数据状态标志：true 时绘制灰色虚线圆弧，而非 0% 实线弧 */
+    private boolean noData = false;
 
     public HealthRingView(Context context) {
         this(context, null);
@@ -50,11 +54,29 @@ public class HealthRingView extends View {
         trackPaint.setStyle(Paint.Style.STROKE);
         trackPaint.setStrokeWidth(strokeWidth);
         trackPaint.setColor(0x1A000000);
+
+        noDataPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        noDataPaint.setStyle(Paint.Style.STROKE);
+        noDataPaint.setStrokeWidth(strokeWidth);
+        noDataPaint.setColor(0xFFE0E0E0);
+        noDataPaint.setPathEffect(new android.graphics.DashPathEffect(new float[]{8f, 8f}, 0f));
     }
 
     @androidx.annotation.Keep
     public void setProgress(float progress) {
         this.progress = Math.max(0f, Math.min(100f, progress));
+        this.noData = false;
+        invalidate();
+    }
+
+    /**
+     * 设置为"无数据"状态：显示灰色虚线圆弧，而非 0% 实线弧。
+     * 由调用方（BatteryHealthFragment）在健康度获取失败时调用，
+     * 配合上方中央 TextView 显示 "--" 以明确表示"数据不可用"。
+     */
+    public void setNoData() {
+        this.noData = true;
+        this.progress = 0f;
         invalidate();
     }
 
@@ -89,9 +111,14 @@ public class HealthRingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        float sweep = 360f * progress / 100f;
         canvas.drawArc(rectF, 0f, 360f, false, trackPaint);
-        canvas.drawArc(rectF, -90f, sweep, false, ringPaint);
+        if (noData) {
+            // 无数据状态：灰色虚线圆弧（不绘制任何进度弧）
+            canvas.drawArc(rectF, 0f, 360f, false, noDataPaint);
+        } else {
+            float sweep = 360f * progress / 100f;
+            canvas.drawArc(rectF, -90f, sweep, false, ringPaint);
+        }
     }
 
     @Override
