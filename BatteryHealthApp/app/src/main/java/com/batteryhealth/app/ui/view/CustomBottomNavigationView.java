@@ -229,6 +229,10 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        // 获取当前滚动偏移量，补偿 itemView.getLeft() 的相对坐标
+        int scrollX = getScrollX();
+        int scrollY = getScrollY();
+
         // 绘制 Badge
         for (Map.Entry<Integer, Badge> entry : badgeMap.entrySet()) {
             int position = entry.getKey();
@@ -239,10 +243,14 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             ImageView icon = itemView.findViewById(R.id.nav_icon);
             if (icon == null) continue;
 
-            // Badge 位置：图标右上角
-            float iconCenterX = itemView.getLeft() + icon.getLeft() + icon.getWidth() / 2f;
-            float iconTop = itemView.getTop() + icon.getTop();
+            // Badge 位置：图标右上角（补偿 scroll 偏移，保证滚动时 Badge 跟随正确位置）
+            float iconCenterX = itemView.getLeft() - scrollX + icon.getLeft() + icon.getWidth() / 2f;
+            float iconTop = itemView.getTop() - scrollY + icon.getTop();
             float badgeRadius = density * 4f; // 4dp
+
+            // 动态同步 measurePaint 字号，确保文本宽度测量准确
+            float textSize = badgeRadius * 1.4f;
+            measurePaint.setTextSize(textSize);
 
             if (badge.count > 0) {
                 // 数字 Badge：椭圆背景
@@ -255,7 +263,7 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                 canvas.drawRoundRect(cx, cy, cx + badgeWidth, cy + badgeHeight,
                         badgeHeight, badgeHeight, badgeBgPaint);
 
-                badgeTextPaint.setTextSize(badgeRadius * 1.4f);
+                badgeTextPaint.setTextSize(textSize);
                 Paint.FontMetrics fm = badgeTextPaint.getFontMetrics();
                 float textY = cy + badgeHeight / 2f - (fm.ascent + fm.descent) / 2f;
                 canvas.drawText(String.valueOf(badge.count), cx + badgeWidth / 2f, textY, badgeTextPaint);

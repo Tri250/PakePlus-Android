@@ -351,10 +351,13 @@ public class HealthCheckEngine {
 
     /**
      * 生成 CSV 诊断报告；字段分隔符为 ","，首行是表头。
+     * 开头附加 UTF-8 BOM（\uFEFF），确保 Excel 正确识别中文编码。
      */
     public String exportCsv(List<HealthCheckResult> results) {
         if (results == null || results.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
+        // UTF-8 BOM：防止 Excel 打开时中文乱码
+        sb.append('\uFEFF');
         sb.append("\"检测项\",\"分类\",\"状态\",\"数值\",\"单位\",\"严重度\",\"评分\",\"详情\",\"建议\",\"时间戳\"\n");
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         for (HealthCheckResult r : results) {

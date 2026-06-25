@@ -21,6 +21,7 @@ import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
 
@@ -49,19 +50,8 @@ public class CommunityFragment extends Fragment {
             return inflater.inflate(R.layout.fragment_community, container, false);
         } catch (Exception e) {
             Log.e(TAG, "Error inflating layout: " + e.getMessage(), e);
-            return createErrorView(e);
+            return FragmentErrorViewHelper.createErrorView(getContext(), e);
         }
-    }
-
-    private View createErrorView(Exception e) {
-        TextView errorView = new TextView(requireContext());
-        String message = getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage());
-        errorView.setText(message);
-        errorView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_label));
-        errorView.setTextSize(16);
-        errorView.setPadding(40, 100, 40, 40);
-        errorView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.ios_background));
-        return errorView;
     }
 
     @Override

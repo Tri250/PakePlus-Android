@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.HealthCheckResult;
+import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.healthcheck.HealthCheckEngine;
 
 import java.util.ArrayList;
@@ -65,20 +66,8 @@ public class HealthCheckFragment extends Fragment {
             return inflater.inflate(R.layout.fragment_health_check, container, false);
         } catch (Exception e) {
             Log.e(TAG, "onCreateView failed: " + e.getMessage(), e);
-            return createErrorView(e);
+            return FragmentErrorViewHelper.createErrorView(getContext(), e);
         }
-    }
-
-    private View createErrorView(Exception e) {
-        Context ctx = getContext();
-        if (ctx == null) ctx = requireActivity();
-        TextView tv = new TextView(ctx);
-        tv.setText(getString(R.string.error_view_load_failed, e.getClass().getSimpleName(), e.getMessage()));
-        tv.setTextColor(ContextCompat.getColor(ctx, R.color.ios_label));
-        tv.setTextSize(16);
-        tv.setPadding(40, 100, 40, 40);
-        tv.setBackgroundColor(ContextCompat.getColor(ctx, R.color.ios_background));
-        return tv;
     }
 
     @Override
