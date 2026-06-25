@@ -98,6 +98,15 @@
     <string name="label_battery_voltage">电池电压</string>
     <string name="label_battery_source">电池来源</string>
     <string name="label_battery_technology">电池技术</string>
+
+    <!-- Widget strings -->
+    <string name="widget_battery_description">电池概览</string>
+    <string name="widget_charging_description">充电状态</string>
+    <string name="widget_health_description">健康仪表盘</string>
+    <string name="widget_estimated_full">预计充满</string>
+    <string name="widget_minutes_format">%d分钟</string>
+    <string name="widget_hours_minutes_format">%1$d小时%2$d分</string>
+    <string name="widget_click_action">com.batteryhealth.app.widget.action.WIDGET_CLICK</string>
     <string name="label_device_name">设备名称</string>
     <string name="label_device_model">设备型号</string>
     <string name="label_android_version">Android版本</string>
@@ -356,6 +365,7 @@
     <string name="dialog_clear_history_message">确定要清除所有分析历史记录吗？此操作不可撤销。</string>
     <string name="action_confirm">确定</string>
     <string name="action_cancel">取消</string>
+    <string name="action_close">关闭</string>
     <string name="export_success">报告已导出</string>
     <string name="export_failed">导出失败</string>
     <string name="share_failed">分享失败</string>
@@ -363,4 +373,168 @@
     <string name="section_parse_detail">解析详情</string>
     <string name="parse_extracted">已提取: %1$s</string>
     <string name="parse_missing">缺失: %1$s</string>
+
+    <string name="title_settings">设置</string>
+    <string name="settings_notification">通知设置</string>
+    <string name="settings_battery_optimization">电池优化白名单</string>
+    <string name="settings_refresh_rate">刷新频率</string>
+    <string name="settings_data_retention">数据保留期</string>
+    <string name="settings_dark_mode">暗色模式</string>
+    <string name="settings_charge_complete_alert">充电完成提醒</string>
+    <string name="settings_temp_warning">温度预警</string>
+    <string name="settings_temp_warning_summary">阈值 45℃</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本 %1$s</string>
+    <string name="settings_privacy_policy">隐私政策</string>
+    <string name="settings_user_agreement">用户协议</string>
+    <string name="settings_export_data">导出全部数据</string>
+    <string name="settings_clear_cache">清除缓存数据</string>
+
+    <string name="settings_refresh_1s">1 秒</string>
+    <string name="settings_refresh_2s">2 秒</string>
+    <string name="settings_refresh_5s">5 秒</string>
+    <string name="settings_refresh_10s">10 秒</string>
+
+    <string name="settings_retention_7d">7 天</string>
+    <string name="settings_retention_30d">30 天</string>
+    <string name="settings_retention_90d">90 天</string>
+    <string name="settings_retention_forever">永久</string>
+
+    <string name="settings_dark_follow_system">跟随系统</string>
+    <string name="settings_dark_light">浅色</string>
+    <string name="settings_dark_dark">深色</string>
+
+    <string name="dialog_clear_cache_title">清除缓存</string>
+    <string name="dialog_clear_cache_message">确定要清除所有缓存数据吗？此操作不可撤销。</string>
+    <string name="cache_cleared">缓存已清除</string>
+    <string name="export_data_started">数据导出中…</string>
+
+    <string name="onboarding_title_1">电池健康监测</string>
+    <string name="onboarding_desc_1">实时监测电池健康度、循环次数、温度等关键指标，全面掌握电池状态</string>
+    <string name="onboarding_title_2">充电智能分析</string>
+    <string name="onboarding_desc_2">智能识别充电功率、充电阶段，预估充满时间，保护电池健康</string>
+    <string name="onboarding_title_3">数据本地安全</string>
+    <string name="onboarding_desc_3">所有数据本地存储，加密保护隐私，数据导出完全由您掌控</string>
+    <string name="onboarding_skip">跳过</string>
+    <string name="onboarding_next">下一步</string>
+    <string name="onboarding_start">开始使用</string>
+
+    <string name="empty_state_title">暂无数据</string>
+    <string name="empty_state_subtitle">数据加载中，请稍候…</string>
+    <string name="empty_state_action">刷新</string>
+
+    <string name="charging_countdown_format">预计 %1$02d:%2$02d 充满</string>
+    <string name="charging_full">已充满</string>
+    <string name="charging_not_charging">未充电</string>
+
+    <string name="nav_settings">设置</string>
+
+    <!-- ============================== -->
+    <!-- Android 16 新特性字符串 -->
+    <!-- ============================== -->
+    <string name="section_bypass_charging">旁路充电</string>
+    <string name="bypass_charging_active">旁路充电已激活</string>
+    <string name="bypass_charging_inactive">旁路充电未启用</string>
+    <string name="bypass_charging_desc">充电器直接为设备供电，电池不参与充放电，有效降低电池发热和损耗</string>
+    <string name="bypass_charging_benefit">保护电池健康，延长电池寿命，游戏/高性能场景推荐开启</string>
+    <string name="bypass_charging_guide">开启路径因厂商而异：设置 → 电池 → 旁路充电 / 充电保护</string>
+    <string name="bypass_charging_go_settings">去设置</string>
+
+    <string name="section_smart_charging">智能充电</string>
+    <string name="smart_charging_title">智能充电调度</string>
+    <string name="smart_charging_desc">根据您的充电习惯，智能调整充电速率，在您起床前刚好充满</string>
+    <string name="smart_charging_enabled">已启用</string>
+    <string name="smart_charging_disabled">未启用</string>
+    <string name="smart_charging_learning">学习中（约 7 天形成稳定模型）</string>
+    <string name="smart_charging_next_charge">预计下次充电：%1$s</string>
+    <string name="smart_charging_full_time">预计充满时间：%1$s</string>
+    <string name="smart_charging_toggle">智能充电开关</string>
+    <string name="smart_charging_toggle_desc">开启后系统将学习您的充电习惯，优化充电策略</string>
+    <string name="label_smart_charging">智能充电</string>
+    <string name="desc_smart_charging">优化充电策略，延长电池寿命</string>
+
+    <string name="section_app_standby">应用待机分组</string>
+    <string name="standby_bucket_active">活跃 (Active)</string>
+    <string name="standby_bucket_working_set">工作集 (Working Set)</string>
+    <string name="standby_bucket_frequent">常用 (Frequent)</string>
+    <string name="standby_bucket_rare">罕见 (Rare)</string>
+    <string name="standby_bucket_restricted">受限 (Restricted)</string>
+    <string name="standby_bucket_never">从未使用 (Never)</string>
+    <string name="standby_bucket_unknown">未知</string>
+    <string name="standby_bucket_current">当前应用待机分组</string>
+    <string name="standby_bucket_desc_active">正在使用或刚使用，无限制</string>
+    <string name="standby_bucket_desc_working_set">经常使用，轻度限制</string>
+    <string name="standby_bucket_desc_frequent">偶尔使用，中度限制</string>
+    <string name="standby_bucket_desc_rare">很少使用，严格限制</string>
+    <string name="standby_bucket_desc_restricted">系统判定为异常耗电，严格限制</string>
+    <string name="standby_bucket_desc_never">从未使用，最严格限制</string>
+    <string name="standby_bucket_impact">对耗电影响：%1$s</string>
+    <string name="standby_impact_high">高</string>
+    <string name="standby_impact_medium">中</string>
+    <string name="standby_impact_low">低</string>
+    <string name="standby_impact_minimal">极小</string>
+    <string name="standby_go_settings">管理应用待机</string>
+
+    <string name="back_confirm_title">确认退出</string>
+    <string name="back_confirm_settings">确定要离开设置页吗？未保存的更改将会丢失。</string>
+    <string name="back_confirm_report">确定要离开报告页吗？未保存的更改将会丢失。</string>
+
+    <string name="section_ai_insights">AI 电池洞察</string>
+    <string name="ai_insight_daily">今日洞察</string>
+    <string name="ai_insight_tap_expand">点击展开详细分析</string>
+    <string name="ai_insight_type_charging">充电习惯</string>
+    <string name="ai_insight_type_temperature">温度影响</string>
+    <string name="ai_insight_type_capacity">容量趋势</string>
+    <string name="ai_insight_type_usage">使用建议</string>
+    <string name="ai_insight_type_anomaly">异常提醒</string>
+
+    <string name="ai_aging_prediction_title">电池老化速度预测</string>
+    <string name="ai_aging_prediction_desc">基于历史数据预测未来 6 个月健康度走势</string>
+    <string name="ai_aging_prediction_result">预计 6 个月后健康度：%1$.1f%%</string>
+    <string name="ai_aging_rate_normal">老化速度正常</string>
+    <string name="ai_aging_rate_fast">老化速度偏快</string>
+    <string name="ai_aging_rate_slow">老化速度较慢</string>
+
+    <string name="ai_anomaly_title">异常使用模式识别</string>
+    <string name="ai_anomaly_discharge">检测到异常放电速率，建议检查后台应用</string>
+    <string name="ai_anomaly_temperature">检测到持续高温，建议让电池冷却</string>
+    <string name="ai_anomaly_deep_discharge">检测到频繁深度放电，建议避免电量低于 20%</string>
+    <string name="ai_anomaly_none">未检测到异常使用模式</string>
+
+    <string name="ai_charging_advice_title">个性化充电建议</string>
+    <string name="ai_charging_best_time">最佳充电时段：%1$s</string>
+    <string name="ai_charging_ceiling">建议充电上限：%1$d%%</string>
+    <string name="ai_charging_advice_desc">根据您的使用习惯智能推荐</string>
+
+    <string name="ai_replace_title">电池更换时机建议</string>
+    <string name="ai_replace_soon">建议在 %1$d 个月内考虑更换电池</string>
+    <string name="ai_replace_normal">目前电池状态良好，暂无需更换</string>
+    <string name="ai_replace_now">健康度已低于 80%%，建议尽快更换</string>
+
+    <string name="ai_weekly_report_title">每周电池健康报告</string>
+    <string name="ai_weekly_summary">本周总结</string>
+    <string name="ai_weekly_forecast">下周预测</string>
+    <string name="ai_weekly_health_change">健康度变化：%1$.2f%%</string>
+    <string name="ai_weekly_avg_temp">平均温度：%1$.1f°C</string>
+    <string name="ai_weekly_charge_count">充电次数：%1$d 次</string>
+    <string name="ai_weekly_deep_discharge">深度放电：%1$d 次</string>
+
+    <string name="ai_alert_abnormal_discharge_title">放电速率异常</string>
+    <string name="ai_alert_abnormal_discharge_desc">检测到近期放电速率明显偏高，建议检查后台耗电应用</string>
+    <string name="ai_alert_high_temp_title">持续高温告警</string>
+    <string name="ai_alert_high_temp_desc">电池温度持续偏高，建议暂停使用或关闭高耗电应用</string>
+    <string name="ai_alert_bad_habit_title">充电习惯提醒</string>
+    <string name="ai_alert_bad_habit_desc">检测到不良充电习惯，建议优化以延长电池寿命</string>
+
+    <string name="ai_insight_channel_name">AI 电池洞察</string>
+    <string name="ai_insight_channel_description">AI 分析的电池健康预警与建议</string>
+
+    <string name="section_ai_alert">智能预警</string>
+    <string name="ai_alert_enabled">已启用智能预警</string>
+    <string name="ai_alert_disabled">未启用智能预警</string>
+    <string name="ai_alert_desc">基于 AI 分析的异常放电、高温、不良习惯等预警</string>
+
+    <string name="ai_insight_loading">AI 分析中…</string>
+    <string name="ai_insight_today_count">今日 %1$d 条洞察</string>
+    <string name="label_see_more">查看更多</string>
 </resources>

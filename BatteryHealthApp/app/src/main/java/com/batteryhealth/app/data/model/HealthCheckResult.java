@@ -34,12 +34,19 @@ public class HealthCheckResult {
     public static final int FIX_ACTION_BATTERY_SAVER = 6;
     public static final int FIX_ACTION_NETWORK_SETTINGS = 7;
     public static final int FIX_ACTION_ADVICE_ONLY = 8;
+    public static final int FIX_ACTION_DISPLAY_SETTINGS = 9;
+    public static final int FIX_ACTION_BLUETOOTH_SETTINGS = 10;
+    public static final int FIX_ACTION_WIFI_SETTINGS = 11;
+    public static final int FIX_ACTION_ACCOUNT_SYNC_SETTINGS = 12;
+    public static final int FIX_ACTION_SOUND_SETTINGS = 13;
 
     @IntDef({FIX_ACTION_NONE, FIX_ACTION_NOTIFICATION_SETTINGS,
             FIX_ACTION_BATTERY_OPTIMIZATION, FIX_ACTION_POWER_USAGE_DETAILS,
             FIX_ACTION_APPLICATION_DETAILS, FIX_ACTION_CHARGING_LIMIT,
             FIX_ACTION_BATTERY_SAVER, FIX_ACTION_NETWORK_SETTINGS,
-            FIX_ACTION_ADVICE_ONLY})
+            FIX_ACTION_ADVICE_ONLY, FIX_ACTION_DISPLAY_SETTINGS,
+            FIX_ACTION_BLUETOOTH_SETTINGS, FIX_ACTION_WIFI_SETTINGS,
+            FIX_ACTION_ACCOUNT_SYNC_SETTINGS, FIX_ACTION_SOUND_SETTINGS})
     @Retention(RetentionPolicy.SOURCE)
     public @interface FixAction {}
 
@@ -62,6 +69,7 @@ public class HealthCheckResult {
     @FixAction private final int fixAction;
     private final int itemScore; // 单项评分（0-100）
     private final long timestamp;
+    private final java.util.Map<String, String> extraData;
 
     private HealthCheckResult(Builder b) {
         this.id = b.id;
@@ -77,6 +85,7 @@ public class HealthCheckResult {
         this.fixAction = b.fixAction;
         this.itemScore = b.itemScore;
         this.timestamp = b.timestamp > 0 ? b.timestamp : System.currentTimeMillis();
+        this.extraData = b.extraData != null ? new java.util.HashMap<>(b.extraData) : null;
     }
 
     public String getId() { return id; }
@@ -92,6 +101,8 @@ public class HealthCheckResult {
     @FixAction public int getFixAction() { return fixAction; }
     public int getItemScore() { return itemScore; }
     public long getTimestamp() { return timestamp; }
+    public java.util.Map<String, String> getExtraData() { return extraData; }
+    public String getExtraData(String key) { return extraData != null ? extraData.get(key) : null; }
 
     /** 根据严重程度映射颜色资源 ID（供 UI 使用）。 */
     public int toColorRes() {
@@ -117,6 +128,7 @@ public class HealthCheckResult {
         @FixAction private int fixAction = FIX_ACTION_NONE;
         private int itemScore = 100;
         private long timestamp;
+        private java.util.Map<String, String> extraData;
 
         public Builder setId(String id) { this.id = id; return this; }
         public Builder setTitle(String title) { this.title = title; return this; }
@@ -131,6 +143,12 @@ public class HealthCheckResult {
         public Builder setFixAction(@FixAction int action) { this.fixAction = action; return this; }
         public Builder setItemScore(int score) { this.itemScore = Math.max(0, Math.min(100, score)); return this; }
         public Builder setTimestamp(long timestamp) { this.timestamp = timestamp; return this; }
+        public Builder setExtraData(java.util.Map<String, String> data) { this.extraData = data; return this; }
+        public Builder addExtraData(String key, String value) {
+            if (this.extraData == null) this.extraData = new java.util.HashMap<>();
+            this.extraData.put(key, value);
+            return this;
+        }
 
         public HealthCheckResult build() {
             return new HealthCheckResult(this);

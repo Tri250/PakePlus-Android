@@ -132,6 +132,12 @@ public class BatteryInfo {
     @ColumnInfo(name = "battery_source_reason")
     private String batterySourceReason; // 电池来源判定原因
 
+    @ColumnInfo(name = "bypass_charging")
+    private boolean bypassCharging; // 是否处于旁路充电模式
+
+    @ColumnInfo(name = "charging_limit_percent")
+    private int chargingLimitPercent; // 充电限制百分比
+
     public BatteryInfo() {
         this.timestamp = System.currentTimeMillis();
     }
@@ -417,6 +423,22 @@ public class BatteryInfo {
         this.batterySourceReason = batterySourceReason;
     }
 
+    public boolean isBypassCharging() {
+        return bypassCharging;
+    }
+
+    public void setBypassCharging(boolean bypassCharging) {
+        this.bypassCharging = bypassCharging;
+    }
+
+    public int getChargingLimitPercent() {
+        return chargingLimitPercent;
+    }
+
+    public void setChargingLimitPercent(int chargingLimitPercent) {
+        this.chargingLimitPercent = chargingLimitPercent;
+    }
+
     /**
      * 计算充电功率
      */
@@ -532,6 +554,8 @@ public class BatteryInfo {
         snapshot.cycleLossPercent = this.cycleLossPercent;
         snapshot.usageLossPercent = this.usageLossPercent;
         snapshot.batterySourceReason = this.batterySourceReason;
+        snapshot.bypassCharging = this.bypassCharging;
+        snapshot.chargingLimitPercent = this.chargingLimitPercent;
         return snapshot;
     }
 }

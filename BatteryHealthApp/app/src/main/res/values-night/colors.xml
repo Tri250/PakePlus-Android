@@ -85,4 +85,18 @@
     <color name="confidence_high">#30D158</color>
     <color name="confidence_medium">#FF9F0A</color>
     <color name="confidence_low">#FF453A</color>
+
+    <!-- Widget colors (dark) -->
+    <color name="widget_bg">#802C2E33</color>
+    <color name="widget_border">#1AFFFFFF</color>
+    <color name="widget_text_primary">#FFFFFF</color>
+    <color name="widget_text_secondary">#A1A5AD</color>
+    <color name="widget_text_tertiary">#6B6F78</color>
+    <color name="widget_separator">#1AFFFFFF</color>
+    <color name="widget_battery_icon">#0A84FF</color>
+    <color name="widget_ring_bg">#1AFFFFFF</color>
+    <color name="widget_ring_start">#0A84FF</color>
+    <color name="widget_ring_end">#64D2FF</color>
+    <color name="widget_health_ring_start">#30D158</color>
+    <color name="widget_health_ring_end">#66D4CF</color>
 </resources>

@@ -5,6 +5,7 @@ import android.app.Application;
 import dagger.hilt.android.HiltAndroidApp;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -19,6 +20,8 @@ import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.ui.error.ErrorActivity;
 import com.batteryhealth.app.utils.ThreadExecutor;
+
+import com.google.android.material.color.DynamicColors;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -53,13 +56,29 @@ public class BatteryHealthApplication extends Application {
             appStartTime = System.currentTimeMillis();
             mainHandler = new Handler(Looper.getMainLooper());
 
-            // 注册全局未捕获异常处理器，跳转错误兜底页
+            applyDynamicColors();
+
             registerUncaughtExceptionHandler();
 
-            // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
             startDatabaseInitAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 应用 Material You 动态颜色（仅 Android 12+）
+     * 低版本自动 fallback 到主题中定义的静态颜色
+     */
+    private void applyDynamicColors() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                DynamicColors.applyToActivitiesIfAvailable(this,
+                        R.style.Theme_BatteryHealthApp);
+                Log.d(TAG, "Dynamic colors applied (API " + Build.VERSION.SDK_INT + ")");
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to apply dynamic colors: " + e.getMessage());
         }
     }
 
@@ -144,7 +163,7 @@ public class BatteryHealthApplication extends Application {
                             "battery_health_db"
                     )
                     .openHelperFactory(factory)
-                    .addMigrations(AppDatabase.MIGRATION_4_5)
+                    .addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
                     // 仅在降级时破坏性重建，升级必须走 Migration，避免用户数据丢失
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build();
@@ -181,7 +200,7 @@ public class BatteryHealthApplication extends Application {
                                 AppDatabase.class,
                                 "battery_health_db"
                         )
-                        .addMigrations(AppDatabase.MIGRATION_4_5)
+                        .addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
                         .fallbackToDestructiveMigrationOnDowngrade()
                         .build();
             } catch (Exception e2) {

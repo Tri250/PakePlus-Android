@@ -26,6 +26,7 @@ public class TrendViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentRange = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentChartType = new MutableLiveData<>();
 
     private GetTrendDataUseCase getTrendDataUseCase;
 
@@ -44,6 +45,7 @@ public class TrendViewModel extends ViewModel {
             android.util.Log.e("TrendViewModel", "init failed", e);
         }
         currentRange.setValue(GetTrendDataUseCase.RANGE_30D);
+        currentChartType.setValue(GetTrendDataUseCase.CHART_TYPE_HEALTH);
     }
 
     private BatteryHealthApplication resolveApplication() {
@@ -81,6 +83,10 @@ public class TrendViewModel extends ViewModel {
 
     public LiveData<Integer> getCurrentRange() {
         return currentRange;
+    }
+
+    public LiveData<Integer> getCurrentChartType() {
+        return currentChartType;
     }
 
     /**
@@ -126,6 +132,16 @@ public class TrendViewModel extends ViewModel {
             return;
         }
         loadTrendData(rangeIndex);
+    }
+
+    /**
+     * 切换图表类型
+     */
+    public void switchChartType(int chartType) {
+        if (currentChartType.getValue() != null && currentChartType.getValue() == chartType) {
+            return;
+        }
+        currentChartType.setValue(chartType);
     }
 
     /**

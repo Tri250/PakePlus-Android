@@ -25,6 +25,7 @@ import com.batteryhealth.app.data.model.DeviceConfig;
 import com.batteryhealth.app.ui.community.CommunityFragment;
 import com.batteryhealth.app.ui.guide.GuideFragment;
 import com.batteryhealth.app.ui.viewmodel.DeviceConfigViewModel;
+import com.batteryhealth.app.utils.AdaptiveChargingManager;
 import com.batteryhealth.app.utils.DeviceConfigQuery;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
@@ -47,8 +48,9 @@ public class DeviceConfigFragment extends Fragment {
             tvBatteryCapacityConfig, tvStorageEncryption,
             tvVersionAssessment, tvSecurityAssessment,
             tvPerformanceAssessment, tvSuggestions;
-    private Switch switchHealthAlert;
+    private Switch switchHealthAlert, switchSmartCharging;
     private DeviceConfigQuery configQuery;
+    private AdaptiveChargingManager adaptiveChargingManager;
 
     private DeviceConfigViewModel viewModel;
 
@@ -93,8 +95,10 @@ public class DeviceConfigFragment extends Fragment {
         tvPerformanceAssessment = view.findViewById(R.id.tv_performance_assessment);
         tvSuggestions = view.findViewById(R.id.tv_suggestions);
         switchHealthAlert = view.findViewById(R.id.switch_health_alert);
+        switchSmartCharging = view.findViewById(R.id.switch_smart_charging);
 
         configQuery = new DeviceConfigQuery(requireContext().getApplicationContext());
+        adaptiveChargingManager = new AdaptiveChargingManager(requireContext().getApplicationContext());
 
         // 预警开关：同时读写 BatteryMonitorService 使用的 SharedPreferences，确保开关生效
         SharedPreferences servicePrefs = requireContext().getSharedPreferences(PREFS_BATTERY_HEALTH, Context.MODE_PRIVATE);
@@ -108,6 +112,12 @@ public class DeviceConfigFragment extends Fragment {
             // 同步写入两个 SharedPreferences，确保 BatteryMonitorService 能读取
             servicePrefs.edit().putBoolean(PREF_ALERT_ENABLED, isChecked).apply();
             configPrefs.edit().putBoolean(PREF_HEALTH_ALERT, isChecked).apply();
+        });
+
+        // 智能充电开关
+        switchSmartCharging.setChecked(adaptiveChargingManager.isEnabled());
+        switchSmartCharging.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            adaptiveChargingManager.setEnabled(isChecked);
         });
 
         // 二级入口：社区

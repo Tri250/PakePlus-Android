@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.ui.viewmodel.EnduranceViewModel;
+import com.batteryhealth.app.utils.AppStandbyManager;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.UiAnimationHelper;
@@ -46,6 +47,9 @@ public class EnduranceFragment extends Fragment {
 
     // 穿戴设备区域（整体隐藏）
     private View wearableSection;
+    private TextView tvStandbyBucketName, tvStandbyBucketImpact;
+    private View btnManageStandby;
+    private AppStandbyManager appStandbyManager;
 
     private EnduranceViewModel viewModel;
 
@@ -96,6 +100,20 @@ public class EnduranceFragment extends Fragment {
         containerPowerTips = view.findViewById(R.id.container_power_tips);
 
         abnormalDischargeWarning = view.findViewById(R.id.abnormal_discharge_warning);
+
+        tvStandbyBucketName = view.findViewById(R.id.tv_standby_bucket_name);
+        tvStandbyBucketImpact = view.findViewById(R.id.tv_standby_bucket_impact);
+        btnManageStandby = view.findViewById(R.id.btn_manage_standby);
+
+        appStandbyManager = new AppStandbyManager(requireContext().getApplicationContext());
+
+        if (btnManageStandby != null) {
+            btnManageStandby.setOnClickListener(v -> {
+                if (appStandbyManager != null) {
+                    appStandbyManager.openUsageAccessSettings();
+                }
+            });
+        }
 
         // 穿戴设备区域整体隐藏（无实际蓝牙/GMS集成，避免用户困惑）
         wearableSection = view.findViewById(R.id.section_wearable);
@@ -293,6 +311,7 @@ public class EnduranceFragment extends Fragment {
         // 定期刷新数据（每3秒）
         viewModel.refreshData();
         startPeriodicRefresh();
+        updateAppStandbyUI();
     }
 
     @Override
@@ -470,5 +489,25 @@ public class EnduranceFragment extends Fragment {
 
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    private void updateAppStandbyUI() {
+        if (appStandbyManager == null || !isAdded()) return;
+        if (tvStandbyBucketName == null || tvStandbyBucketImpact == null) return;
+
+        try {
+            int bucket = appStandbyManager.getCurrentAppStandbyBucket();
+            String bucketName = appStandbyManager.getBucketName(bucket);
+            String bucketDesc = appStandbyManager.getBucketDescription(bucket);
+            String impact = appStandbyManager.getImpactLevel(bucket);
+            int color = appStandbyManager.getBucketColor(bucket);
+
+            tvStandbyBucketName.setText(bucketName + " - " + bucketDesc);
+            tvStandbyBucketImpact.setText(impact);
+            tvStandbyBucketImpact.setTextColor(color);
+
+        } catch (Exception e) {
+            Log.d(TAG, "updateAppStandbyUI failed: " + e.getMessage());
+        }
     }
 }

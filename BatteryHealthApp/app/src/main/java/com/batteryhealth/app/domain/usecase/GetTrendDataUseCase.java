@@ -29,6 +29,12 @@ public class GetTrendDataUseCase {
     public static final int RANGE_90D = 2;
     public static final int RANGE_180D = 3;
 
+    public static final int CHART_TYPE_HEALTH = 0;
+    public static final int CHART_TYPE_TEMPERATURE = 1;
+    public static final int CHART_TYPE_CYCLE = 2;
+
+    public static final float HIGH_TEMP_THRESHOLD = 40f;
+
     private static final long[] RANGE_MS = {
             7L * 24 * 60 * 60 * 1000,
             30L * 24 * 60 * 60 * 1000,
@@ -61,6 +67,9 @@ public class GetTrendDataUseCase {
         List<DailyPoint> dailyPoints = aggregateByDay(history, now, rangeIndex);
         result.dailyPoints = dailyPoints;
 
+        // 构建温度点列表
+        result.temperaturePoints = buildTempPoints(dailyPoints);
+
         // 统计计算
         calculateStats(result, history, dailyPoints);
 
@@ -79,12 +88,14 @@ public class GetTrendDataUseCase {
     private void buildEmptyDailyPoints(Result result, int rangeIndex) {
         List<DailyPoint> points = new ArrayList<>();
         result.dailyPoints = points;
+        result.temperaturePoints = new ArrayList<>();
         result.initialHealth = -1;
         result.currentHealth = -1;
         result.totalDecay = 0;
         result.monthlyDecay = 0;
         result.avgTemperature = -1;
         result.maxTemperature = -1;
+        result.minTemperature = -1;
         result.recordCount = 0;
         result.dataSpanDays = 0;
     }
@@ -102,9 +113,11 @@ public class GetTrendDataUseCase {
         float dayTempSum = 0;
         int dayTempCount = 0;
         float dayMaxTemp = Float.MIN_VALUE;
+        float dayMinTemp = Float.MAX_VALUE;
         int dayCycleSum = 0;
         int dayCycleCount = 0;
         long dayTimestamp = 0;
+        int dayRecordCount = 0;
 
         for (BatteryInfo info : history) {
             float health = info.getHealthPercentage();
@@ -121,8 +134,10 @@ public class GetTrendDataUseCase {
                 dp.dayKey = dayStart;
                 dp.health = dayHealthCount > 0 ? dayHealthSum / dayHealthCount : -1;
                 dp.avgTemperature = dayTempCount > 0 ? dayTempSum / dayTempCount : -1;
-                dp.maxTemperature = dayMaxTemp;
+                dp.maxTemperature = dayMaxTemp > Float.MIN_VALUE ? dayMaxTemp : -1;
+                dp.minTemperature = dayMinTemp < Float.MAX_VALUE ? dayMinTemp : -1;
                 dp.cycleCount = dayCycleCount > 0 ? dayCycleSum / dayCycleCount : -1;
+                dp.recordCount = dayRecordCount;
                 points.add(dp);
 
                 dayHealthSum = 0;
@@ -130,19 +145,23 @@ public class GetTrendDataUseCase {
                 dayTempSum = 0;
                 dayTempCount = 0;
                 dayMaxTemp = Float.MIN_VALUE;
+                dayMinTemp = Float.MAX_VALUE;
                 dayCycleSum = 0;
                 dayCycleCount = 0;
+                dayRecordCount = 0;
             }
 
             dayStart = currentDay;
             dayTimestamp = info.getTimestamp();
             dayHealthSum += health;
             dayHealthCount++;
+            dayRecordCount++;
             float temp = info.getTemperature();
             if (temp > 0) {
                 dayTempSum += temp;
                 dayTempCount++;
                 if (temp > dayMaxTemp) dayMaxTemp = temp;
+                if (temp < dayMinTemp) dayMinTemp = temp;
             }
             if (info.getCycleCount() >= 0) {
                 dayCycleSum += info.getCycleCount();
@@ -157,12 +176,32 @@ public class GetTrendDataUseCase {
             dp.dayKey = dayStart;
             dp.health = dayHealthSum / dayHealthCount;
             dp.avgTemperature = dayTempCount > 0 ? dayTempSum / dayTempCount : -1;
-            dp.maxTemperature = dayMaxTemp;
+            dp.maxTemperature = dayMaxTemp > Float.MIN_VALUE ? dayMaxTemp : -1;
+            dp.minTemperature = dayMinTemp < Float.MAX_VALUE ? dayMinTemp : -1;
             dp.cycleCount = dayCycleCount > 0 ? dayCycleSum / dayCycleCount : -1;
+            dp.recordCount = dayRecordCount;
             points.add(dp);
         }
 
         return points;
+    }
+
+    /**
+     * 从每日聚合数据构建温度点列表
+     */
+    private List<DailyTempPoint> buildTempPoints(List<DailyPoint> dailyPoints) {
+        List<DailyTempPoint> tempPoints = new ArrayList<>();
+        for (DailyPoint dp : dailyPoints) {
+            if (dp.avgTemperature > 0) {
+                DailyTempPoint tp = new DailyTempPoint();
+                tp.date = dp.timestamp;
+                tp.avgTemp = dp.avgTemperature;
+                tp.maxTemp = dp.maxTemperature;
+                tp.minTemp = dp.minTemperature;
+                tempPoints.add(tp);
+            }
+        }
+        return tempPoints;
     }
 
     private void calculateStats(Result result, List<BatteryInfo> history, List<DailyPoint> dailyPoints) {
@@ -198,17 +237,20 @@ public class GetTrendDataUseCase {
         // 温度统计
         float sumTemp = 0;
         float maxTemp = Float.MIN_VALUE;
+        float minTemp = Float.MAX_VALUE;
         int validTempCount = 0;
         for (BatteryInfo info : history) {
             float temp = info.getTemperature();
             if (temp > 0) {
                 sumTemp += temp;
                 if (temp > maxTemp) maxTemp = temp;
+                if (temp < minTemp) minTemp = temp;
                 validTempCount++;
             }
         }
         result.avgTemperature = validTempCount > 0 ? sumTemp / validTempCount : -1;
         result.maxTemperature = maxTemp > Float.MIN_VALUE ? maxTemp : -1;
+        result.minTemperature = minTemp < Float.MAX_VALUE ? minTemp : -1;
         result.recordCount = history.size();
     }
 
@@ -310,12 +352,14 @@ public class GetTrendDataUseCase {
         public boolean hasData;
         public int rangeIndex;
         public List<DailyPoint> dailyPoints;
+        public List<DailyTempPoint> temperaturePoints;
         public float initialHealth = -1;
         public float currentHealth = -1;
         public float totalDecay;
         public float monthlyDecay;
         public float avgTemperature = -1;
         public float maxTemperature = -1;
+        public float minTemperature = -1;
         public int recordCount;
         public int dataSpanDays;
         public List<Anomaly> anomalies;
@@ -331,9 +375,11 @@ public class GetTrendDataUseCase {
             r.hasData = false;
             r.rangeIndex = rangeIndex;
             r.dailyPoints = new java.util.ArrayList<>();
+            r.temperaturePoints = new java.util.ArrayList<>();
             r.anomalies = new java.util.ArrayList<>();
             r.chargingAdvice = new java.util.ArrayList<>();
             r.lifespanPrediction = "";
+            r.minTemperature = -1;
             return r;
         }
     }
@@ -350,6 +396,16 @@ public class GetTrendDataUseCase {
         public float minTemperature;
         public float cycleCount;
         public int recordCount;
+    }
+
+    /**
+     * 每日温度数据点
+     */
+    public static class DailyTempPoint {
+        public long date;
+        public float avgTemp;
+        public float maxTemp;
+        public float minTemp;
     }
 
     /**

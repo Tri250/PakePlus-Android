@@ -76,6 +76,11 @@
             android:exported="false"
             android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
 
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BatteryHealthApp.NoActionBar" />
+
         <!-- 电池监测服务 -->
         <service
             android:name=".service.BatteryMonitorService"
@@ -100,6 +105,60 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- 电池概览 Widget (4x1) -->
+        <receiver
+            android:name=".ui.widget.BatteryWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.batteryhealth.app.widget.action.UPDATE_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_battery_info" />
+        </receiver>
+
+        <!-- 充电状态 Widget (2x2) -->
+        <receiver
+            android:name=".ui.widget.ChargingWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.batteryhealth.app.widget.action.UPDATE_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_charging" />
+        </receiver>
+
+        <!-- 健康仪表盘 Widget (2x2) -->
+        <receiver
+            android:name=".ui.widget.HealthWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.batteryhealth.app.widget.action.UPDATE_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_health" />
+        </receiver>
 
     </application>
 </manifest>

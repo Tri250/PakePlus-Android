@@ -24,6 +24,7 @@ import com.batteryhealth.app.domain.usecase.GetTrendDataUseCase;
 import com.batteryhealth.app.ui.viewmodel.TrendViewModel;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -31,6 +32,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -60,11 +62,12 @@ public class TrendFragment extends Fragment {
 
     private LineChart lineChart;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
-    private TextView tvAvgTemperature, tvMaxTemperature, tvRecordCount, tvDataSpan;
+    private TextView tvAvgTemperature, tvMaxTemperature, tvMinTemperature, tvRecordCount, tvDataSpan;
     private TextView tvRemainingMonths, tvLifespanPrediction;
     private TextView tvSubtitle;
-    private ChipGroup chipGroupRange;
+    private ChipGroup chipGroupRange, chipGroupChartType;
     private View sectionAnomalies, cardAnomalies, sectionChargingAdvice, cardChargingAdvice;
+    private View sectionTempStats, cardTempStats;
     private LinearLayout anomalyList, adviceList;
 
     private TrendViewModel viewModel;
@@ -119,18 +122,102 @@ public class TrendFragment extends Fragment {
         tvMonthlyDecay = view.findViewById(R.id.tv_monthly_decay);
         tvAvgTemperature = view.findViewById(R.id.tv_avg_temperature);
         tvMaxTemperature = view.findViewById(R.id.tv_max_temperature);
+        tvMinTemperature = null;
         tvRecordCount = view.findViewById(R.id.tv_record_count);
         tvDataSpan = view.findViewById(R.id.tv_data_span);
         tvRemainingMonths = view.findViewById(R.id.tv_remaining_months);
         tvLifespanPrediction = view.findViewById(R.id.tv_lifespan_prediction);
         tvSubtitle = view.findViewById(R.id.tv_subtitle);
         chipGroupRange = view.findViewById(R.id.chip_group_range);
+        chipGroupChartType = null;
         sectionAnomalies = view.findViewById(R.id.section_anomalies);
         cardAnomalies = view.findViewById(R.id.card_anomalies);
         sectionChargingAdvice = view.findViewById(R.id.section_charging_advice);
         cardChargingAdvice = view.findViewById(R.id.card_charging_advice);
+        sectionTempStats = null;
+        cardTempStats = null;
         anomalyList = view.findViewById(R.id.anomaly_list);
         adviceList = view.findViewById(R.id.advice_list);
+
+        buildChartTypeChipGroup(view);
+    }
+
+    private void buildChartTypeChipGroup(View view) {
+        try {
+            Context ctx = getContext();
+            if (ctx == null) return;
+
+            ChipGroup chartTypeGroup = new ChipGroup(ctx);
+            chartTypeGroup.setSingleSelection(true);
+            chartTypeGroup.setSelectionRequired(true);
+            chartTypeGroup.setChipSpacingHorizontal(dpToPxTrend(6));
+            chipGroupChartType = chartTypeGroup;
+
+            Chip chipHealth = new Chip(ctx);
+            chipHealth.setId(View.generateViewId());
+            chipHealth.setText("健康度");
+            chipHealth.setTextSize(13f);
+            chipHealth.setCheckable(true);
+            chipHealth.setChecked(true);
+            chartTypeGroup.addView(chipHealth);
+            final int chipHealthId = chipHealth.getId();
+
+            Chip chipTemp = new Chip(ctx);
+            chipTemp.setId(View.generateViewId());
+            chipTemp.setText("温度");
+            chipTemp.setTextSize(13f);
+            chipTemp.setCheckable(true);
+            chartTypeGroup.addView(chipTemp);
+            final int chipTempId = chipTemp.getId();
+
+            Chip chipCycle = new Chip(ctx);
+            chipCycle.setId(View.generateViewId());
+            chipCycle.setText("循环次数");
+            chipCycle.setTextSize(13f);
+            chipCycle.setCheckable(true);
+            chartTypeGroup.addView(chipCycle);
+            final int chipCycleId = chipCycle.getId();
+
+            chartTypeGroup.setOnCheckedChangeListener(new ChipGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(ChipGroup group, int checkedId) {
+                    int chartType;
+                    if (checkedId == chipHealthId) {
+                        chartType = GetTrendDataUseCase.CHART_TYPE_HEALTH;
+                    } else if (checkedId == chipTempId) {
+                        chartType = GetTrendDataUseCase.CHART_TYPE_TEMPERATURE;
+                    } else if (checkedId == chipCycleId) {
+                        chartType = GetTrendDataUseCase.CHART_TYPE_CYCLE;
+                    } else {
+                        chartType = GetTrendDataUseCase.CHART_TYPE_HEALTH;
+                    }
+                    if (viewModel != null) {
+                        viewModel.switchChartType(chartType);
+                    }
+                    if (currentTrendResult != null) {
+                        updateChart(currentTrendResult);
+                    }
+                }
+            });
+
+            View cardChart = view.findViewById(R.id.card_chart);
+            if (cardChart != null && cardChart.getParent() instanceof ViewGroup) {
+                ViewGroup parent = (ViewGroup) cardChart.getParent();
+                int idx = parent.indexOfChild(cardChart);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(0, 0, 0, dpToPxTrend(12));
+                chartTypeGroup.setLayoutParams(lp);
+                parent.addView(chartTypeGroup, idx);
+            }
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "buildChartTypeChipGroup error", e);
+        }
+    }
+
+    private int dpToPxTrend(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
     /**
@@ -318,9 +405,26 @@ public class TrendFragment extends Fragment {
                 ? String.format(Locale.getDefault(), "%.1f°C", result.avgTemperature) : "--");
         tvMaxTemperature.setText(result.maxTemperature > 0
                 ? String.format(Locale.getDefault(), "%.1f°C", result.maxTemperature) : "--");
+        if (tvMinTemperature != null) {
+            tvMinTemperature.setText(result.minTemperature > 0
+                    ? String.format(Locale.getDefault(), "%.1f°C", result.minTemperature) : "--");
+        }
         tvRecordCount.setText(String.valueOf(result.recordCount));
         tvDataSpan.setText(result.dataSpanDays > 0
                 ? String.format(Locale.getDefault(), "%d天", result.dataSpanDays) : "--");
+
+        updateTempStatsCard(result);
+    }
+
+    private void updateTempStatsCard(GetTrendDataUseCase.Result result) {
+        if (sectionTempStats == null || cardTempStats == null) return;
+        if (result.temperaturePoints == null || result.temperaturePoints.isEmpty()) {
+            sectionTempStats.setVisibility(View.GONE);
+            cardTempStats.setVisibility(View.GONE);
+            return;
+        }
+        sectionTempStats.setVisibility(View.VISIBLE);
+        cardTempStats.setVisibility(View.VISIBLE);
     }
 
     private void updateLifespan(GetTrendDataUseCase.Result result) {
@@ -398,60 +502,63 @@ public class TrendFragment extends Fragment {
             return;
         }
 
-        List<Entry> healthEntries = new ArrayList<>();
-        List<Entry> tempEntries = new ArrayList<>();
+        int chartType = GetTrendDataUseCase.CHART_TYPE_HEALTH;
+        if (viewModel != null && viewModel.getCurrentChartType().getValue() != null) {
+            chartType = viewModel.getCurrentChartType().getValue();
+        }
 
         long minTs = dailyPoints.get(0).timestamp;
         long maxTs = dailyPoints.get(dailyPoints.size() - 1).timestamp;
         long tsRange = maxTs - minTs;
 
-        for (int i = 0; i < dailyPoints.size(); i++) {
-            GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(i);
-            float x;
-            if (tsRange > 0 && dailyPoints.size() > 1) {
-                x = (dp.timestamp - minTs) / (float) tsRange;
-            } else {
-                x = i;
-            }
-            if (dp.health >= 0) {
-                healthEntries.add(new Entry(x, dp.health));
-            }
-            if (dp.avgTemperature > 0) {
-                tempEntries.add(new Entry(x, dp.avgTemperature));
-            }
+        YAxis leftAxis = lineChart.getAxisLeft();
+        YAxis rightAxis = lineChart.getAxisRight();
+
+        leftAxis.removeAllLimitLines();
+        rightAxis.removeAllLimitLines();
+
+        List<ILineDataSet> dataSets = new ArrayList<>();
+
+        switch (chartType) {
+            case GetTrendDataUseCase.CHART_TYPE_TEMPERATURE:
+                dataSets.addAll(buildTemperatureDataSets(dailyPoints, minTs, tsRange));
+                leftAxis.setEnabled(false);
+                rightAxis.setEnabled(true);
+                rightAxis.setAxisMinimum(0f);
+                rightAxis.setAxisMaximum(60f);
+                addHighTempLimitLine(rightAxis);
+                break;
+
+            case GetTrendDataUseCase.CHART_TYPE_CYCLE:
+                dataSets.add(buildCycleDataSet(dailyPoints, minTs, tsRange));
+                leftAxis.setEnabled(true);
+                rightAxis.setEnabled(false);
+                leftAxis.setAxisMinimum(0f);
+                leftAxis.setAxisMaximum(calculateMaxCycle(dailyPoints) * 1.2f);
+                break;
+
+            case GetTrendDataUseCase.CHART_TYPE_HEALTH:
+            default:
+                dataSets.add(buildHealthDataSet(dailyPoints, minTs, tsRange));
+                LineDataSet tempDataSet = buildTempOverlayDataSet(dailyPoints, minTs, tsRange);
+                if (tempDataSet != null) {
+                    dataSets.add(tempDataSet);
+                }
+                leftAxis.setEnabled(true);
+                rightAxis.setEnabled(tempDataSet != null);
+                leftAxis.setAxisMinimum(0f);
+                leftAxis.setAxisMaximum(100f);
+                rightAxis.setAxisMinimum(0f);
+                rightAxis.setAxisMaximum(60f);
+                if (tempDataSet != null) {
+                    addHighTempLimitLine(rightAxis);
+                }
+                break;
         }
 
-        // 健康度数据集
-        LineDataSet healthDataSet = new LineDataSet(healthEntries, "");
-        healthDataSet.setDrawCircles(true);
-        healthDataSet.setCircleRadius(3f);
-        healthDataSet.setCircleColor(chartMainColor);
-        healthDataSet.setDrawValues(false);
-        healthDataSet.setLineWidth(3f);
-        healthDataSet.setColor(chartMainColor);
-        healthDataSet.setDrawFilled(true);
-        healthDataSet.setFillColor(chartFillColor);
-        healthDataSet.setFillAlpha(40);
-        healthDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        healthDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-        // 温度数据集
-        LineDataSet tempDataSet = new LineDataSet(tempEntries, "");
-        tempDataSet.setDrawCircles(false);
-        tempDataSet.setDrawValues(false);
-        tempDataSet.setLineWidth(2f);
-        tempDataSet.setColor(chartTempColor);
-        tempDataSet.setDrawFilled(true);
-        tempDataSet.setFillColor(chartTempFillColor);
-        tempDataSet.setFillAlpha(20);
-        tempDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        tempDataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
-        tempDataSet.enableDashedLine(8f, 4f, 0f);
-
-        LineData lineData = new LineData(healthDataSet, tempDataSet);
+        LineData lineData = new LineData(dataSets);
         lineChart.setData(lineData);
 
-        // X轴日期格式化
         XAxis xAxis = lineChart.getXAxis();
         if (tsRange > 0 && dailyPoints.size() >= 2) {
             final long finalMinTs = minTs;
@@ -473,6 +580,171 @@ public class TrendFragment extends Fragment {
         lineChart.invalidate();
     }
 
+    private float calculateMaxCycle(List<GetTrendDataUseCase.DailyPoint> dailyPoints) {
+        float maxCycle = 0;
+        for (GetTrendDataUseCase.DailyPoint dp : dailyPoints) {
+            if (dp.cycleCount > maxCycle) maxCycle = dp.cycleCount;
+        }
+        return Math.max(maxCycle, 100f);
+    }
+
+    private void addHighTempLimitLine(YAxis axis) {
+        LimitLine highTempLine = new LimitLine(GetTrendDataUseCase.HIGH_TEMP_THRESHOLD, "");
+        highTempLine.setLineWidth(1f);
+        highTempLine.setLineColor(Color.parseColor("#FF3B30"));
+        highTempLine.enableDashedLine(6f, 4f, 0f);
+        axis.addLimitLine(highTempLine);
+    }
+
+    private LineDataSet buildHealthDataSet(List<GetTrendDataUseCase.DailyPoint> dailyPoints,
+                                            long minTs, long tsRange) {
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < dailyPoints.size(); i++) {
+            GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(i);
+            float x = getXValue(dp.timestamp, minTs, tsRange, i, dailyPoints.size());
+            if (dp.health >= 0) {
+                entries.add(new Entry(x, dp.health));
+            }
+        }
+        LineDataSet dataSet = new LineDataSet(entries, "");
+        dataSet.setDrawCircles(true);
+        dataSet.setCircleRadius(3f);
+        dataSet.setCircleColor(chartMainColor);
+        dataSet.setDrawValues(false);
+        dataSet.setLineWidth(3f);
+        dataSet.setColor(chartMainColor);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(chartFillColor);
+        dataSet.setFillAlpha(40);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        return dataSet;
+    }
+
+    private LineDataSet buildTempOverlayDataSet(List<GetTrendDataUseCase.DailyPoint> dailyPoints,
+                                                 long minTs, long tsRange) {
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < dailyPoints.size(); i++) {
+            GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(i);
+            float x = getXValue(dp.timestamp, minTs, tsRange, i, dailyPoints.size());
+            if (dp.avgTemperature > 0) {
+                entries.add(new Entry(x, dp.avgTemperature));
+            }
+        }
+        if (entries.isEmpty()) return null;
+        LineDataSet dataSet = new LineDataSet(entries, "");
+        dataSet.setDrawCircles(false);
+        dataSet.setDrawValues(false);
+        dataSet.setLineWidth(2f);
+        dataSet.setColor(chartTempColor);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(chartTempFillColor);
+        dataSet.setFillAlpha(20);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+        dataSet.enableDashedLine(8f, 4f, 0f);
+        return dataSet;
+    }
+
+    private List<ILineDataSet> buildTemperatureDataSets(List<GetTrendDataUseCase.DailyPoint> dailyPoints,
+                                                          long minTs, long tsRange) {
+        List<ILineDataSet> sets = new ArrayList<>();
+
+        List<Entry> avgEntries = new ArrayList<>();
+        List<Entry> maxEntries = new ArrayList<>();
+        List<Entry> minEntries = new ArrayList<>();
+
+        for (int i = 0; i < dailyPoints.size(); i++) {
+            GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(i);
+            float x = getXValue(dp.timestamp, minTs, tsRange, i, dailyPoints.size());
+            if (dp.avgTemperature > 0) {
+                avgEntries.add(new Entry(x, dp.avgTemperature));
+            }
+            if (dp.maxTemperature > 0) {
+                maxEntries.add(new Entry(x, dp.maxTemperature));
+            }
+            if (dp.minTemperature > 0) {
+                minEntries.add(new Entry(x, dp.minTemperature));
+            }
+        }
+
+        if (!maxEntries.isEmpty()) {
+            LineDataSet maxSet = new LineDataSet(maxEntries, "");
+            maxSet.setDrawCircles(false);
+            maxSet.setDrawValues(false);
+            maxSet.setLineWidth(1.5f);
+            maxSet.setColor(Color.parseColor("#FF9F0A"));
+            maxSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            maxSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            maxSet.enableDashedLine(4f, 3f, 0f);
+            sets.add(maxSet);
+        }
+
+        if (!minEntries.isEmpty()) {
+            LineDataSet minSet = new LineDataSet(minEntries, "");
+            minSet.setDrawCircles(false);
+            minSet.setDrawValues(false);
+            minSet.setLineWidth(1.5f);
+            minSet.setColor(Color.parseColor("#64D2FF"));
+            minSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            minSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            minSet.enableDashedLine(4f, 3f, 0f);
+            sets.add(minSet);
+        }
+
+        if (!avgEntries.isEmpty()) {
+            LineDataSet avgSet = new LineDataSet(avgEntries, "");
+            avgSet.setDrawCircles(true);
+            avgSet.setCircleRadius(2.5f);
+            avgSet.setCircleColor(chartTempColor);
+            avgSet.setDrawValues(false);
+            avgSet.setLineWidth(2.5f);
+            avgSet.setColor(chartTempColor);
+            avgSet.setDrawFilled(true);
+            avgSet.setFillColor(chartTempFillColor);
+            avgSet.setFillAlpha(30);
+            avgSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            avgSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            sets.add(avgSet);
+        }
+
+        return sets;
+    }
+
+    private LineDataSet buildCycleDataSet(List<GetTrendDataUseCase.DailyPoint> dailyPoints,
+                                           long minTs, long tsRange) {
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < dailyPoints.size(); i++) {
+            GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(i);
+            float x = getXValue(dp.timestamp, minTs, tsRange, i, dailyPoints.size());
+            if (dp.cycleCount >= 0) {
+                entries.add(new Entry(x, dp.cycleCount));
+            }
+        }
+        int cycleColor = Color.parseColor("#30D158");
+        LineDataSet dataSet = new LineDataSet(entries, "");
+        dataSet.setDrawCircles(true);
+        dataSet.setCircleRadius(3f);
+        dataSet.setCircleColor(cycleColor);
+        dataSet.setDrawValues(false);
+        dataSet.setLineWidth(2.5f);
+        dataSet.setColor(cycleColor);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(cycleColor);
+        dataSet.setFillAlpha(25);
+        dataSet.setMode(LineDataSet.Mode.LINEAR);
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        return dataSet;
+    }
+
+    private float getXValue(long timestamp, long minTs, long tsRange, int index, int totalCount) {
+        if (tsRange > 0 && totalCount > 1) {
+            return (timestamp - minTs) / (float) tsRange;
+        } else {
+            return index;
+        }
+    }
+
     private void showNoDataState() {
         tvInitialHealth.setText("--");
         tvCurrentHealth.setText("--");
@@ -480,6 +752,7 @@ public class TrendFragment extends Fragment {
         tvMonthlyDecay.setText("--");
         tvAvgTemperature.setText("--");
         tvMaxTemperature.setText("--");
+        if (tvMinTemperature != null) tvMinTemperature.setText("--");
         tvRecordCount.setText("--");
         tvDataSpan.setText("--");
         tvRemainingMonths.setText("--");
@@ -489,6 +762,8 @@ public class TrendFragment extends Fragment {
         cardAnomalies.setVisibility(View.GONE);
         sectionChargingAdvice.setVisibility(View.GONE);
         cardChargingAdvice.setVisibility(View.GONE);
+        if (sectionTempStats != null) sectionTempStats.setVisibility(View.GONE);
+        if (cardTempStats != null) cardTempStats.setVisibility(View.GONE);
 
         List<Entry> entries = new ArrayList<>();
         LineDataSet dataSet = new LineDataSet(entries, "");

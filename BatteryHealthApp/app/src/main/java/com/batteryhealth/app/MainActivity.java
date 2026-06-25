@@ -41,6 +41,7 @@ import com.batteryhealth.app.ui.origin.BatteryOriginFragment;
 import com.batteryhealth.app.ui.performance.PerformanceFragment;
 import com.batteryhealth.app.ui.power.ChargingHistoryFragment;
 import com.batteryhealth.app.ui.power.PowerFragment;
+import com.batteryhealth.app.ui.settings.SettingsFragment;
 import com.batteryhealth.app.ui.trend.TrendFragment;
 import com.batteryhealth.app.ui.view.CustomBottomNavigationView;
 import com.batteryhealth.app.data.model.BatteryInfo;
@@ -85,11 +86,20 @@ public class MainActivity extends AppCompatActivity {
     // 跟踪前台状态（替代废弃的 getRunningAppProcesses API）
     private static final AtomicBoolean isAppInForeground = new AtomicBoolean(false);
     
+    private static final String PREFS_NAME = "app_prefs";
+    private static final String KEY_ONBOARDING_COMPLETED = "onboarding_completed";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         try {
+            if (!isOnboardingCompleted()) {
+                startOnboarding();
+                finish();
+                return;
+            }
+
             setContentView(R.layout.activity_main);
 
             // Android 15+ 强制 edge-to-edge
@@ -264,6 +274,8 @@ public class MainActivity extends AppCompatActivity {
                         return new HealthCheckFragment();
                     case 6:
                         return new DeviceConfigFragment();
+                    case 7:
+                        return new SettingsFragment();
                     default:
                         return new BatteryHealthFragment();
                 }
@@ -271,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 7;
+                return 8;
             }
         });
 
@@ -324,6 +336,7 @@ public class MainActivity extends AppCompatActivity {
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_origin), R.drawable.ic_battery));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_health_check), R.drawable.ic_battery_alert));
         navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_config), R.drawable.ic_device));
+        navItems.add(new CustomBottomNavigationView.NavItem(getString(R.string.nav_settings), R.drawable.ic_settings));
 
         bottomNavigation.setItems(navItems);
         bottomNavigation.setOnItemSelectedListener(position -> {
@@ -540,5 +553,15 @@ public class MainActivity extends AppCompatActivity {
      */
     public DeviceInfoManager getDeviceInfoManager() {
         return deviceInfoManager;
+    }
+
+    private boolean isOnboardingCompleted() {
+        android.content.SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false);
+    }
+
+    private void startOnboarding() {
+        Intent intent = new Intent(this, OnboardingActivity.class);
+        startActivity(intent);
     }
 }

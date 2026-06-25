@@ -11,6 +11,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.data.model.BatteryOriginRecord;
+import com.batteryhealth.app.data.model.HealthCheckHistory;
 
 /**
  * Room数据库主类
@@ -23,15 +24,17 @@ import com.batteryhealth.app.data.model.BatteryOriginRecord;
  *  v5：为所有时间序列表添加 timestamp 索引，并为高频查询字段
  *      (performance_data.app_package / has_issue, power_history.session_id)
  *      添加索引，避免全表扫描。
+ *  v6：新增 health_check_history 表（自检历史记录）
  */
 @Database(
     entities = {
         BatteryInfo.class,
         PerformanceData.class,
         PowerHistory.class,
-        BatteryOriginRecord.class
+        BatteryOriginRecord.class,
+        HealthCheckHistory.class
     },
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters({Converters.class})
@@ -41,6 +44,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract PerformanceDataDao performanceDataDao();
     public abstract PowerHistoryDao powerHistoryDao();
     public abstract BatteryOriginRecordDao batteryOriginRecordDao();
+    public abstract HealthCheckHistoryDao healthCheckHistoryDao();
 
     /**
      * v4 → v5 迁移：为已有表补充索引。
@@ -65,6 +69,23 @@ public abstract class AppDatabase extends RoomDatabase {
                     "CREATE INDEX IF NOT EXISTS `index_power_history_session_id` ON `power_history`(`session_id`)");
             database.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_battery_origin_record_timestamp` ON `battery_origin_record`(`timestamp`)");
+        }
+    };
+
+    public static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `health_check_history` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`timestamp` INTEGER NOT NULL, " +
+                    "`overall_score` INTEGER NOT NULL, " +
+                    "`total_checks` INTEGER, " +
+                    "critical_count INTEGER, " +
+                    " warning_count INTEGER, info_count INTEGER, good_count INTEGER, " +
+                    "results_json TEXT, summary TEXT)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_health_check_history_timestamp` ON `health_check_history`(`timestamp`)");
         }
     };
 }

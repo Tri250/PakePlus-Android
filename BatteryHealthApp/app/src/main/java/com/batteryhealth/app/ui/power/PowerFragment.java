@@ -37,6 +37,7 @@ import com.batteryhealth.app.utils.ChargeProtocolDetector;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.ThreadExecutor;
 import com.batteryhealth.app.utils.UiAnimationHelper;
+import com.batteryhealth.app.utils.AdaptiveChargingManager;
 import com.batteryhealth.app.ui.viewmodel.PowerViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -60,6 +61,11 @@ public class PowerFragment extends Fragment {
     private TextView tvVoltage, tvCurrent, tvChargeStage, tvTemperature, tvBatteryLevel, tvEstimatedFull;
     private TextView tvChargeCount, tvAvgPower, tvTotalChargeTime, tvTotalCharged;
     private LineChart chartPower;
+    private View cardBypassCharging;
+    private TextView tvBypassStatus, tvBypassGoSettings;
+    private View sectionBypassCharging;
+    private AdaptiveChargingManager adaptiveChargingManager;
+    private TextView tvSmartChargingStatus, tvSmartChargingNext, tvSmartChargingFullTime;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
@@ -119,6 +125,21 @@ public class PowerFragment extends Fragment {
         tvTotalCharged = view.findViewById(R.id.tv_total_charged);
         chartPower = view.findViewById(R.id.chart_power);
         initChart();
+
+        // 智能充电卡片
+        tvSmartChargingStatus = view.findViewById(R.id.tv_smart_charging_status);
+        tvSmartChargingNext = view.findViewById(R.id.tv_smart_charging_next);
+        tvSmartChargingFullTime = view.findViewById(R.id.tv_smart_charging_full_time);
+
+        // 旁路充电卡片
+        cardBypassCharging = view.findViewById(R.id.card_bypass_charging);
+        tvBypassStatus = view.findViewById(R.id.tv_bypass_status);
+        tvBypassGoSettings = view.findViewById(R.id.tv_bypass_go_settings);
+        sectionBypassCharging = view.findViewById(R.id.section_bypass_charging);
+
+        if (tvBypassGoSettings != null) {
+            tvBypassGoSettings.setOnClickListener(v -> openBatterySettings());
+        }
 
         // 充电历史入口
         View historyEntry = view.findViewById(R.id.card_charging_history_entry);
@@ -182,6 +203,8 @@ public class PowerFragment extends Fragment {
         if (batteryDataManager == null) {
             batteryDataManager = new BatteryDataManager(requireContext());
         }
+
+        adaptiveChargingManager = new AdaptiveChargingManager(requireContext().getApplicationContext());
 
         // 初始化 ViewModel
         viewModel = new ViewModelProvider(this).get(PowerViewModel.class);
@@ -367,8 +390,99 @@ public class PowerFragment extends Fragment {
             if (isCharging && watt > 0) {
                 addChartPoint(watt);
             }
+
+            // 旁路充电状态更新
+            updateBypassChargingUI(info);
+
+            // 智能充电状态更新
+            updateSmartChargingUI(info);
         } catch (Exception e) {
             android.util.Log.e("PowerFragment", "updateUI failed", e);
+        }
+    }
+
+    private void updateBypassChargingUI(BatteryInfo info) {
+        if (cardBypassCharging == null || sectionBypassCharging == null) return;
+        try {
+            boolean isBypass = info.isBypassCharging();
+            if (isBypass) {
+                sectionBypassCharging.setVisibility(View.VISIBLE);
+                cardBypassCharging.setVisibility(View.VISIBLE);
+                if (tvBypassStatus != null) {
+                    tvBypassStatus.setText(R.string.bypass_charging_active);
+                    tvBypassStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.ios_green));
+                }
+            } else {
+                sectionBypassCharging.setVisibility(View.GONE);
+                cardBypassCharging.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            android.util.Log.d("PowerFragment", "updateBypassChargingUI failed: " + e.getMessage());
+        }
+    }
+
+    private void updateSmartChargingUI(BatteryInfo info) {
+        if (adaptiveChargingManager == null) return;
+        if (tvSmartChargingStatus == null || tvSmartChargingNext == null || tvSmartChargingFullTime == null) return;
+        try {
+            boolean enabled = adaptiveChargingManager.isEnabled();
+            boolean modelReady = adaptiveChargingManager.isModelReady();
+
+            if (!enabled) {
+                tvSmartChargingStatus.setText(R.string.smart_charging_disabled);
+                tvSmartChargingNext.setText("--");
+                tvSmartChargingFullTime.setText("--");
+            } else if (!modelReady) {
+                int learnDays = adaptiveChargingManager.getLearnDays();
+                tvSmartChargingStatus.setText(String.format(Locale.getDefault(), "%s (%d/7天)",
+                        getString(R.string.smart_charging_learning), learnDays));
+                tvSmartChargingNext.setText(getString(R.string.smart_charging_learning));
+                tvSmartChargingFullTime.setText("--");
+            } else {
+                tvSmartChargingStatus.setText(R.string.smart_charging_enabled);
+
+                ThreadExecutor.execute(() -> {
+                    long nextCharge = adaptiveChargingManager.predictNextChargeTime();
+                    int durationMin = adaptiveChargingManager.predictChargeDuration(info.getLevel(), 100);
+
+                    if (isAdded() && getActivity() != null) {
+                        requireActivity().runOnUiThread(() -> {
+                            if (nextCharge > 0) {
+                                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
+                                tvSmartChargingNext.setText(sdf.format(new java.util.Date(nextCharge)));
+                            } else {
+                                tvSmartChargingNext.setText("--");
+                            }
+
+                            if (durationMin > 0) {
+                                int hours = durationMin / 60;
+                                int mins = durationMin % 60;
+                                tvSmartChargingFullTime.setText(String.format(Locale.getDefault(), "%d小时%d分", hours, mins));
+                            } else {
+                                tvSmartChargingFullTime.setText("--");
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (Exception e) {
+            android.util.Log.d("PowerFragment", "updateSmartChargingUI failed: " + e.getMessage());
+        }
+    }
+
+    private void openBatterySettings() {
+        try {
+            Intent intent = new Intent(android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ex) {
+                android.util.Log.d("PowerFragment", "Cannot open settings: " + ex.getMessage());
+            }
         }
     }
 

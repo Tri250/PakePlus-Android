@@ -69,4 +69,31 @@ public class BatteryOriginRecord {
 
     @ColumnInfo(name = "source_tag")
     public String sourceTag;
+
+    @ColumnInfo(name = "chemistry_type")
+    public String chemistryType;
+
+    @ColumnInfo(name = "chemistry_name")
+    public String chemistryName;
+
+    @ColumnInfo(name = "serial_format_valid")
+    public boolean serialFormatValid;
+
+    @ColumnInfo(name = "manufacturer_from_serial")
+    public String manufacturerFromSerial;
+
+    @ColumnInfo(name = "production_date_precise")
+    public String productionDatePrecise;
+
+    @ColumnInfo(name = "confidence_breakdown_json")
+    public String confidenceBreakdownJson;
+
+    @ColumnInfo(name = "detection_failed")
+    public boolean detectionFailed;
+
+    @ColumnInfo(name = "failure_reason")
+    public String failureReason;
+
+    @ColumnInfo(name = "failure_guide")
+    public String failureGuide;
 }

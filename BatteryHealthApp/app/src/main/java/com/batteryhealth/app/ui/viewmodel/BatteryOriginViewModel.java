@@ -11,16 +11,20 @@ import androidx.lifecycle.ViewModel;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.model.BatteryOriginRecord;
+import com.batteryhealth.app.utils.BatteryChemistryDetector;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.BatteryOriginDetector;
+import com.batteryhealth.app.utils.BatterySerialValidator;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BatteryOriginViewModel extends ViewModel {
@@ -30,6 +34,14 @@ public class BatteryOriginViewModel extends ViewModel {
     private final MutableLiveData<List<BatteryOriginRecord>> historyRecords = new MutableLiveData<>();
     private final MutableLiveData<String> reportText = new MutableLiveData<>();
     private final MutableLiveData<Boolean> detectionError = new MutableLiveData<>(false);
+
+    private final MutableLiveData<BatteryChemistryDetector.ChemistryResult> chemistryResult = new MutableLiveData<>();
+    private final MutableLiveData<BatterySerialValidator.SerialValidationResult> serialValidation = new MutableLiveData<>();
+    private final MutableLiveData<Map<String, Integer>> confidenceBreakdown = new MutableLiveData<>();
+    private final MutableLiveData<String> preciseManufactureDate = new MutableLiveData<>();
+    private final MutableLiveData<BatteryOriginRecord> selectedHistoryRecord = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> showHistoryDetail = new MutableLiveData<>(false);
+    private final MutableLiveData<String> failureGuide = new MutableLiveData<>();
 
     private BatteryOriginDetector originDetector;
     private BatteryDataManager batteryDataManager;
@@ -82,6 +94,34 @@ public class BatteryOriginViewModel extends ViewModel {
         return detectionError;
     }
 
+    public LiveData<BatteryChemistryDetector.ChemistryResult> getChemistryResult() {
+        return chemistryResult;
+    }
+
+    public LiveData<BatterySerialValidator.SerialValidationResult> getSerialValidation() {
+        return serialValidation;
+    }
+
+    public LiveData<Map<String, Integer>> getConfidenceBreakdown() {
+        return confidenceBreakdown;
+    }
+
+    public LiveData<String> getPreciseManufactureDate() {
+        return preciseManufactureDate;
+    }
+
+    public LiveData<BatteryOriginRecord> getSelectedHistoryRecord() {
+        return selectedHistoryRecord;
+    }
+
+    public LiveData<Boolean> getShowHistoryDetail() {
+        return showHistoryDetail;
+    }
+
+    public LiveData<String> getFailureGuide() {
+        return failureGuide;
+    }
+
     /**
      * 自动检测：在页面首次进入时调用。
      */
@@ -102,18 +142,19 @@ public class BatteryOriginViewModel extends ViewModel {
         if (originDetector == null || appContext == null) {
             android.util.Log.e("BatteryOriginViewModel", "originDetector or appContext is null, cannot detect");
             detectionError.postValue(true);
+            failureGuide.postValue("初始化失败，请重启应用后重试");
             isDetecting.postValue(false);
             return;
         }
         isDetecting.postValue(true);
         detectionError.postValue(false);
+        failureGuide.postValue("");
 
         ThreadExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 if (isCleared.get()) return;
                 try {
-                    // 刷新 BatteryDataManager 数据
                     if (batteryDataManager != null) {
                         if (forceRefresh) {
                             batteryDataManager.refreshFromStickyIntent();
@@ -124,15 +165,18 @@ public class BatteryOriginViewModel extends ViewModel {
                     BatteryOriginDetector.OriginResult result = originDetector.detect();
                     originResult.postValue(result);
 
-                    // 持久化检测结果
-                    saveResult(result);
+                    analyzeChemistry();
+                    validateSerialNumber(result.serialNumber);
+                    calculateConfidenceBreakdown(result);
+                    extractPreciseManufactureDate(result);
 
-                    // 刷新历史记录
+                    saveResult(result);
                     loadHistoryInternal();
 
                 } catch (Exception e) {
                     android.util.Log.e("BatteryOriginViewModel", "Detection error: " + e.getMessage(), e);
                     detectionError.postValue(true);
+                    failureGuide.postValue(generateFailureGuide(e));
                 } finally {
                     isDetecting.postValue(false);
                 }
@@ -320,11 +364,130 @@ public class BatteryOriginViewModel extends ViewModel {
                     AppDatabase db = app.getDatabase();
                     if (db == null) return;
                     db.batteryOriginRecordDao().deleteOlderThan(id + 1);
-                    // Reload
                     loadHistoryInternal();
                 } catch (Exception ignored) {
                 }
             }
         });
+    }
+
+    public void selectHistoryRecord(BatteryOriginRecord record) {
+        selectedHistoryRecord.postValue(record);
+        showHistoryDetail.postValue(true);
+    }
+
+    public void closeHistoryDetail() {
+        showHistoryDetail.postValue(false);
+    }
+
+    private void analyzeChemistry() {
+        if (appContext == null) return;
+        try {
+            BatteryChemistryDetector.ChemistryResult result =
+                    BatteryChemistryDetector.detect(appContext);
+            chemistryResult.postValue(result);
+        } catch (Exception e) {
+            android.util.Log.e("BatteryOriginViewModel", "Chemistry analysis error: " + e.getMessage());
+        }
+    }
+
+    private void validateSerialNumber(String serialNumber) {
+        if (serialNumber == null || serialNumber.isEmpty()) {
+            serialValidation.postValue(null);
+            return;
+        }
+        try {
+            BatterySerialValidator.SerialValidationResult result =
+                    BatterySerialValidator.validate(serialNumber);
+            serialValidation.postValue(result);
+        } catch (Exception e) {
+            android.util.Log.e("BatteryOriginViewModel", "Serial validation error: " + e.getMessage());
+        }
+    }
+
+    private void calculateConfidenceBreakdown(BatteryOriginDetector.OriginResult result) {
+        Map<String, Integer> breakdown = new HashMap<>();
+
+        if (result.serialNumber != null && result.serialNumber.length() >= 8) {
+            breakdown.put("序列号", 20);
+        } else {
+            breakdown.put("序列号", 5);
+        }
+
+        if (result.manufacturer != null && !result.manufacturer.isEmpty()) {
+            breakdown.put("厂商信息", 15);
+        } else {
+            breakdown.put("厂商信息", 3);
+        }
+
+        if (result.manufactureDate != null && !result.manufactureDate.isEmpty()) {
+            breakdown.put("生产日期", 15);
+        } else {
+            breakdown.put("生产日期", 5);
+        }
+
+        if (result.oemInfo != null && !result.oemInfo.isEmpty()) {
+            breakdown.put("出厂标识", 20);
+        } else {
+            breakdown.put("出厂标识", 5);
+        }
+
+        if (result.designCapacity > 0 && result.currentCapacity > 0) {
+            breakdown.put("容量数据", 15);
+        } else if (result.designCapacity > 0) {
+            breakdown.put("容量数据", 10);
+        } else {
+            breakdown.put("容量数据", 3);
+        }
+
+        if (result.healthStatus != null && !result.healthStatus.isEmpty()) {
+            breakdown.put("健康状态", 10);
+        } else {
+            breakdown.put("健康状态", 3);
+        }
+
+        if (result.cycleCount != null && !result.cycleCount.isEmpty()) {
+            breakdown.put("循环次数", 5);
+        } else {
+            breakdown.put("循环次数", 2);
+        }
+
+        confidenceBreakdown.postValue(breakdown);
+    }
+
+    private void extractPreciseManufactureDate(BatteryOriginDetector.OriginResult result) {
+        if (result == null) return;
+
+        String serial = result.serialNumber;
+        if (serial != null && !serial.isEmpty()) {
+            BatterySerialValidator.SerialValidationResult validation =
+                    BatterySerialValidator.validate(serial);
+            if (validation != null && validation.productionDate != null) {
+                preciseManufactureDate.postValue(validation.productionDate);
+                return;
+            }
+        }
+
+        if (result.manufactureDate != null && !result.manufactureDate.isEmpty()) {
+            preciseManufactureDate.postValue(result.manufactureDate);
+        } else {
+            preciseManufactureDate.postValue("--");
+        }
+    }
+
+    private String generateFailureGuide(Exception e) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("检测失败，建议尝试以下操作：\n\n");
+        sb.append("1. 确保手机已插入充电器并等待30秒后重试\n");
+        sb.append("2. 重启手机后再次尝试检测\n");
+        sb.append("3. 检查是否授予了应用必要的权限\n");
+        sb.append("4. 部分机型因系统限制可能无法读取完整数据\n");
+
+        if (e != null && e.getMessage() != null) {
+            sb.append("\n错误信息：").append(e.getMessage());
+        }
+
+        sb.append("\n\n如问题持续，请联系客服获取帮助。");
+        return sb.toString();
     }
 }

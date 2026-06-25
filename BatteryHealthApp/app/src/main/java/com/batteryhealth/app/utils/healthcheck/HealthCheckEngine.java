@@ -115,6 +115,12 @@ public class HealthCheckEngine {
         checkers.add(new NotificationPermissionChecker());
         checkers.add(new BatteryOptimizationChecker());
         checkers.add(new NetworkHealthChecker());
+        checkers.add(new ScreenBrightnessChecker());
+        checkers.add(new BluetoothChecker());
+        checkers.add(new WifiChecker());
+        checkers.add(new MobileNetworkChecker());
+        checkers.add(new SyncChecker());
+        checkers.add(new VibrationChecker());
     }
 
     /** 注册自定义检测项；引擎会在下次检测时使用。 */
@@ -275,7 +281,6 @@ public class HealthCheckEngine {
                 pi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 return pi;
             case HealthCheckResult.FIX_ACTION_CHARGING_LIMIT:
-                // 系统无统一的充电限制页面；回退到电池设置页。
                 Intent batt = new Intent(Intent.ACTION_POWER_USAGE_SUMMARY);
                 batt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 return batt;
@@ -285,6 +290,16 @@ public class HealthCheckEngine {
                 return new Intent(Settings.ACTION_WIRELESS_SETTINGS);
             case HealthCheckResult.FIX_ACTION_APPLICATION_DETAILS:
                 return buildAppDetailsIntent(pkg);
+            case HealthCheckResult.FIX_ACTION_DISPLAY_SETTINGS:
+                return new Intent(Settings.ACTION_DISPLAY_SETTINGS);
+            case HealthCheckResult.FIX_ACTION_BLUETOOTH_SETTINGS:
+                return new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+            case HealthCheckResult.FIX_ACTION_WIFI_SETTINGS:
+                return new Intent(Settings.ACTION_WIFI_SETTINGS);
+            case HealthCheckResult.FIX_ACTION_ACCOUNT_SYNC_SETTINGS:
+                return new Intent(Settings.ACTION_SYNC_SETTINGS);
+            case HealthCheckResult.FIX_ACTION_SOUND_SETTINGS:
+                return new Intent(Settings.ACTION_SOUND_SETTINGS);
             default:
                 return buildAppDetailsIntent(pkg);
         }
@@ -355,5 +370,123 @@ public class HealthCheckEngine {
     private static String escapeCsv(String raw) {
         if (raw == null) return "";
         return raw.replace("\"", "\"\"");
+    }
+
+    public int getCriticalCount(List<HealthCheckResult> results) {
+        int count = 0;
+        if (results == null) return 0;
+        for (HealthCheckResult r : results) {
+            if (r.getSeverity() == HealthCheckResult.SEVERITY_CRITICAL) count++;
+        }
+        return count;
+    }
+
+    public int getWarningCount(List<HealthCheckResult> results) {
+        int count = 0;
+        if (results == null) return 0;
+        for (HealthCheckResult r : results) {
+            if (r.getSeverity() == HealthCheckResult.SEVERITY_WARNING) count++;
+        }
+        return count;
+    }
+
+    public int getInfoCount(List<HealthCheckResult> results) {
+        int count = 0;
+        if (results == null) return 0;
+        for (HealthCheckResult r : results) {
+            if (r.getSeverity() == HealthCheckResult.SEVERITY_INFO) count++;
+        }
+        return count;
+    }
+
+    public int getGoodCount(List<HealthCheckResult> results) {
+        int count = 0;
+        if (results == null) return 0;
+        for (HealthCheckResult r : results) {
+            if (r.getSeverity() == HealthCheckResult.SEVERITY_GOOD) count++;
+        }
+        return count;
+    }
+
+    public int getRepairableCount(List<HealthCheckResult> results) {
+        int count = 0;
+        if (results == null) return 0;
+        for (HealthCheckResult r : results) {
+            if (r.isRepairable()) count++;
+        }
+        return count;
+    }
+
+    public String generateTextReport(List<HealthCheckResult> results) {
+        if (results == null || results.isEmpty()) return "";
+
+        StringBuilder sb = new StringBuilder();
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+
+        sb.append("═══════════════════════════════════\n");
+        sb.append("       电池健康自检报告\n");
+        sb.append("═══════════════════════════════════\n\n");
+        sb.append("生成时间：").append(fmt.format(new Date())).append("\n");
+        sb.append("检测项目：").append(results.size()).append(" 项\n");
+        sb.append("综合评分：").append(getOverallScore(results)).append(" 分\n\n");
+
+        int critical = getCriticalCount(results);
+        int warning = getWarningCount(results);
+        int info = getInfoCount(results);
+        int good = getGoodCount(results);
+
+        sb.append("───────────────────────────────────\n");
+        sb.append("问题统计\n");
+        sb.append("───────────────────────────────────\n");
+        sb.append("严重问题：").append(critical).append(" 项\n");
+        sb.append("警告问题：").append(warning).append(" 项\n");
+        sb.append("提示信息：").append(info).append(" 项\n");
+        sb.append("状态良好：").append(good).append(" 项\n\n");
+
+        sb.append("───────────────────────────────────\n");
+        sb.append("详细结果\n");
+        sb.append("───────────────────────────────────\n\n");
+
+        for (int i = 0; i < results.size(); i++) {
+            HealthCheckResult r = results.get(i);
+            sb.append(String.format("%d. %s [%s]\n", i + 1, r.getTitle(),
+                    severityLabel(r.getSeverity())));
+            sb.append("   状态：").append(r.getStatus()).append("\n");
+            if (r.getValue() != null && !r.getValue().isEmpty()) {
+                sb.append("   数值：").append(r.getValue());
+                if (r.getUnit() != null && !r.getUnit().isEmpty()) {
+                    sb.append(r.getUnit());
+                }
+                sb.append("\n");
+            }
+            sb.append("   评分：").append(r.getItemScore()).append(" 分\n");
+            sb.append("   说明：").append(r.getDescription()).append("\n");
+            sb.append("   建议：").append(r.getAdvice()).append("\n\n");
+        }
+
+        sb.append("═══════════════════════════════════\n");
+        sb.append("  报告由电池健康助手生成\n");
+        sb.append("═══════════════════════════════════\n");
+
+        return sb.toString();
+    }
+
+    public String generateSummary(List<HealthCheckResult> results) {
+        if (results == null || results.isEmpty()) return "";
+        int score = getOverallScore(results);
+        int critical = getCriticalCount(results);
+        int warning = getWarningCount(results);
+        int total = results.size();
+
+        if (score >= 90) {
+            return String.format("电池状态非常好！综合评分 %d 分，%d 项检测全部通过。", score, total);
+        } else if (score >= 75) {
+            return String.format("电池状态良好。综合评分 %d 分，有 %d 项警告建议优化。", score, warning);
+        } else if (score >= 60) {
+            return String.format("电池状态一般。综合评分 %d 分，有 %d 项警告和 %d 项严重问题需要关注。",
+                    score, warning, critical);
+        } else {
+            return String.format("电池状态较差！综合评分 %d 分，有 %d 项严重问题需要立即处理。", score, critical);
+        }
     }
 }

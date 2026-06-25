@@ -311,6 +311,12 @@ public class BatteryDataManager {
 
             // 14. 系统健康
             info.setSystemHealth(intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN));
+
+            // 15. 旁路充电检测（Android 16 / ColorOS 16 特性）
+            info.setBypassCharging(isBypassCharging());
+
+            // 16. 充电限制百分比
+            info.setChargingLimitPercent(getChargingLimitPercent());
         } catch (Exception e) {
             Log.e(TAG, "Failed to build complete battery info", e);
             // 返回已收集的部分数据，避免 UI 完全空白

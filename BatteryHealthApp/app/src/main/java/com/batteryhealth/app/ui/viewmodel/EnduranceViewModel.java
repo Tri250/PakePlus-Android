@@ -18,11 +18,15 @@ import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ScenarioEndurancePredictor;
+import com.batteryhealth.app.utils.StandbyPowerAnalyzer;
 import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -53,7 +57,17 @@ public class EnduranceViewModel extends ViewModel {
 
     // 屏幕亮屏时间
     private final MutableLiveData<Long> screenOnTimeMs = new MutableLiveData<>();
+    private final MutableLiveData<Long> screenOffTimeMs = new MutableLiveData<>();
     private final MutableLiveData<Boolean> hasUsageAccess = new MutableLiveData<>();
+
+    // 待机耗电分析
+    private final MutableLiveData<StandbyPowerAnalyzer.StandbyAnalysisResult> standbyAnalysis = new MutableLiveData<>();
+
+    // 多场景续航预测
+    private final MutableLiveData<Map<String, ScenarioEndurancePredictor.ScenarioPrediction>> scenarioPredictions = new MutableLiveData<>();
+
+    // 耗电异常检测
+    private final MutableLiveData<List<BatteryConsumptionAnalyzer.AppConsumption>> abnormalConsumers = new MutableLiveData<>();
 
     private final BatteryRepository batteryRepository;
     private Context appContext;
@@ -91,7 +105,11 @@ public class EnduranceViewModel extends ViewModel {
     public LiveData<List<BatteryConsumptionAnalyzer.AppConsumption>> getTopConsumers() { return topConsumers; }
     public LiveData<List<String>> getPowerSavingTips() { return powerSavingTips; }
     public LiveData<Long> getScreenOnTimeMs() { return screenOnTimeMs; }
+    public LiveData<Long> getScreenOffTimeMs() { return screenOffTimeMs; }
     public LiveData<Boolean> getHasUsageAccess() { return hasUsageAccess; }
+    public LiveData<StandbyPowerAnalyzer.StandbyAnalysisResult> getStandbyAnalysis() { return standbyAnalysis; }
+    public LiveData<Map<String, ScenarioEndurancePredictor.ScenarioPrediction>> getScenarioPredictions() { return scenarioPredictions; }
+    public LiveData<List<BatteryConsumptionAnalyzer.AppConsumption>> getAbnormalConsumers() { return abnormalConsumers; }
 
     /**
      * 刷新所有续航数据 — ViewModel 为唯一数据源。
@@ -170,8 +188,8 @@ public class EnduranceViewModel extends ViewModel {
                     enduranceGradeDescription.postValue(gradeDesc);
 
                     // 6. 耗电异常提醒
-                    boolean abnormal = !charging && rate > 15f;
-                    isAbnormalDischarge.postValue(abnormal);
+                    boolean isAbnormal = !charging && rate > 15f;
+                    isAbnormalDischarge.postValue(isAbnormal);
 
                     // 7. 屏幕亮屏时间
                     boolean hasAccess = BatteryConsumptionAnalyzer.hasUsageAccess(appContext);
@@ -179,13 +197,34 @@ public class EnduranceViewModel extends ViewModel {
                     if (hasAccess) {
                         long screenTime = queryScreenOnTime();
                         screenOnTimeMs.postValue(screenTime);
+                        screenOffTimeMs.postValue(Math.max(0, 24 * 60 * 60 * 1000L - screenTime));
                     } else {
                         screenOnTimeMs.postValue(-1L);
+                        screenOffTimeMs.postValue(-1L);
                     }
 
                     // 8. 省电建议
                     List<String> tips = generatePowerSavingTips(batteryPct, rate, tempC, charging, analysis);
                     powerSavingTips.postValue(tips);
+
+                    // 9. 待机耗电分析
+                    StandbyPowerAnalyzer.StandbyAnalysisResult standbyResult =
+                            StandbyPowerAnalyzer.analyze(appContext);
+                    standbyAnalysis.postValue(standbyResult);
+
+                    // 10. 多场景续航预测
+                    if (!charging && batteryPct > 0) {
+                        Map<String, ScenarioEndurancePredictor.ScenarioPrediction> predictions =
+                                ScenarioEndurancePredictor.predictAll(appContext, batteryPct);
+                        scenarioPredictions.postValue(predictions);
+                    } else {
+                        scenarioPredictions.postValue(new HashMap<>());
+                    }
+
+                    // 11. 耗电异常检测
+                    List<BatteryConsumptionAnalyzer.AppConsumption> abnormal =
+                            detectAbnormalConsumers(analysis);
+                    abnormalConsumers.postValue(abnormal);
 
                 } catch (Exception e) {
                     android.util.Log.e("EnduranceViewModel", "Error refreshing: " + e.getMessage());
@@ -447,5 +486,21 @@ public class EnduranceViewModel extends ViewModel {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private List<BatteryConsumptionAnalyzer.AppConsumption> detectAbnormalConsumers(
+            BatteryConsumptionAnalyzer.Result analysis) {
+        List<BatteryConsumptionAnalyzer.AppConsumption> abnormal = new ArrayList<>();
+        if (analysis == null || analysis.topConsumers == null) {
+            return abnormal;
+        }
+
+        for (BatteryConsumptionAnalyzer.AppConsumption app : analysis.topConsumers) {
+            if (app.percent > 20) {
+                abnormal.add(app);
+            }
+        }
+
+        return abnormal;
     }
 }

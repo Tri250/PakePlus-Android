@@ -445,6 +445,122 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Section eyebrow: AI 洞察 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_ai_insights"
+            android:textAppearance="@style/WebSectionEyebrow"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- AI Insights card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_ai_insights"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_margin_bottom"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_ai_insight_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ai_insight_loading"
+                            android:textAppearance="@style/WebCardHeader"
+                            android:textColor="@color/primary" />
+
+                        <TextView
+                            android:id="@+id/tv_ai_insight_short"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/ai_insight_loading"
+                            android:textAppearance="@style/iOSBody.Secondary"
+                            android:textColor="@color/label_2" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_ai_insight_more"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_see_more"
+                        android:textSize="12sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                </LinearLayout>
+
+                <View style="@style/iOSSeparator" />
+
+                <TextView
+                    android:id="@+id/tv_ai_insight_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:text="@string/ai_insight_loading"
+                    android:textAppearance="@style/WebListValue"
+                    android:textColor="@color/label_2"
+                    android:visibility="gone" />
+
+                <View style="@style/iOSSeparator"
+                    android:id="@+id/separator_ai_detail"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    style="@style/iOSListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/ai_insight_today_count"
+                        android:textAppearance="@style/WebListLabel" />
+
+                    <TextView
+                        android:id="@+id/tv_ai_insight_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textAppearance="@style/WebListValue" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Section eyebrow: 健康报告 -->
         <TextView
             android:layout_width="wrap_content"
