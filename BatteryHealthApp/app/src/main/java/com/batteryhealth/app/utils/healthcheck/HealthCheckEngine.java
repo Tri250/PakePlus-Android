@@ -48,6 +48,11 @@ public class HealthCheckEngine {
     // 使用 AtomicBoolean 替代 volatile boolean，通过 CAS 保证 startCheck 的原子性
     private final AtomicBoolean running = new AtomicBoolean(false);
 
+    // 当前轮次的回调订阅者列表：支持多个 Fragment 同时订阅同一轮检测结果。
+    // 修复场景：用户在自检进行中切走再切回，新 Fragment 的 onViewCreated 自动触发 startCheck，
+    // 旧实现直接 return 导致新 Fragment 永远收不到 onCompleted；改为订阅后即可在 engine 完成时一并通知。
+    private final List<Callback> activeCallbacks = new CopyOnWriteArrayList<>();
+
     public interface Callback {
         /** 进度回调：0-100。在任意线程上被调用。 */
         void onProgress(int percent);
@@ -133,18 +138,32 @@ public class HealthCheckEngine {
      *
      * @param context 应用上下文；内部会转成 getApplicationContext()。
      * @param callback 进度与完成回调；可为 null，但强烈建议提供。
+     *                 若 engine 已在运行，本次 callback 会被加入订阅列表，
+     *                 在当前轮次完成后一并收到 onCompleted/onError。
      */
     public void startCheck(final Context context, final Callback callback) {
-        // CAS 保证并发调用时只有一个能进入
+        // 已在运行：直接订阅当前轮次，不再 onError 拒绝（避免切回 Tab 的新 Fragment 永远收不到结果）
+        if (running.get()) {
+            if (callback != null) activeCallbacks.add(callback);
+            return;
+        }
+        // CAS 保证并发调用时只有一个能进入新一轮
         if (!running.compareAndSet(false, true)) {
-            if (callback != null) callback.onError("检测正在运行中，请稍候再试。");
+            // CAS 失败说明刚被其他线程抢入，按订阅处理
+            if (callback != null) activeCallbacks.add(callback);
             return;
         }
 
+        if (callback != null) activeCallbacks.add(callback);
+
         final Context appCtx = context != null ? context.getApplicationContext() : null;
         if (appCtx == null) {
-            running.set(false);
-            if (callback != null) callback.onError("上下文不可用。");
+            try {
+                notifyError("上下文不可用。");
+            } finally {
+                activeCallbacks.clear();
+                running.set(false);
+            }
             return;
         }
 
@@ -164,61 +183,89 @@ public class HealthCheckEngine {
         ex.execute(new Runnable() {
             @Override
             public void run() {
-                List<Future<HealthCheckResult>> futures = new ArrayList<>();
-                for (final IHealthChecker checker : snapshot) {
-                    futures.add(ex.submit(new java.util.concurrent.Callable<HealthCheckResult>() {
-                        @Override
-                        public HealthCheckResult call() {
-                            try {
-                                HealthCheckResult result = checker.check(appCtx);
-                                return result != null ? result : buildFallbackResult(checker.getName(), checker.getCategory());
-                            } catch (Throwable t) {
-                                return buildFallbackResult(checker.getName(), checker.getCategory());
+                try {
+                    List<Future<HealthCheckResult>> futures = new ArrayList<>();
+                    for (final IHealthChecker checker : snapshot) {
+                        futures.add(ex.submit(new java.util.concurrent.Callable<HealthCheckResult>() {
+                            @Override
+                            public HealthCheckResult call() {
+                                try {
+                                    HealthCheckResult result = checker.check(appCtx);
+                                    return result != null ? result : buildFallbackResult(checker.getName(), checker.getCategory());
+                                } catch (Throwable t) {
+                                    return buildFallbackResult(checker.getName(), checker.getCategory());
+                                }
                             }
-                        }
-                    }));
-                }
+                        }));
+                    }
 
-                // futures 与 snapshot 顺序一一对应；按索引取 checker 以便超时时构建兜底结果
-                for (int idx = 0; idx < futures.size(); idx++) {
-                    Future<HealthCheckResult> future = futures.get(idx);
-                    IHealthChecker checker = snapshot.get(idx);
-                    try {
-                        // 限制单个 Checker 最多阻塞 5 秒，避免一项卡死导致整个自检流程不返回
-                        HealthCheckResult result = future.get(5, TimeUnit.SECONDS);
-                        if (result != null) collector.add(result);
-                    } catch (TimeoutException te) {
-                        // 超时则中断该任务并用兜底结果填充，保证自检流程可继续
-                        future.cancel(true);
-                        collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
-                    } catch (Exception ignored) {
-                    } finally {
-                        int current = done.incrementAndGet();
-                        if (callback != null) {
-                            try {
-                                callback.onProgress(total > 0 ? (current * 100 / total) : 100);
-                            } catch (Throwable ignored) {}
+                    // futures 与 snapshot 顺序一一对应；按索引取 checker 以便超时时构建兜底结果
+                    for (int idx = 0; idx < futures.size(); idx++) {
+                        Future<HealthCheckResult> future = futures.get(idx);
+                        IHealthChecker checker = snapshot.get(idx);
+                        try {
+                            // 限制单个 Checker 最多阻塞 5 秒，避免一项卡死导致整个自检流程不返回
+                            HealthCheckResult result = future.get(5, TimeUnit.SECONDS);
+                            if (result != null) collector.add(result);
+                        } catch (TimeoutException te) {
+                            // 超时则中断该任务并用兜底结果填充，保证自检流程可继续
+                            future.cancel(true);
+                            collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
+                        } catch (Exception ignored) {
+                        } finally {
+                            int current = done.incrementAndGet();
+                            notifyProgress(total > 0 ? (current * 100 / total) : 100);
                         }
                     }
-                }
 
-                Collections.sort(collector, new Comparator<HealthCheckResult>() {
-                    @Override
-                    public int compare(HealthCheckResult a, HealthCheckResult b) {
-                        return Integer.compare(severityRank(a), severityRank(b)) != 0
-                                ? -Integer.compare(severityRank(a), severityRank(b)) // 严重的在前
-                                : Integer.compare(a.getItemScore(), b.getItemScore());
-                    }
-                });
+                    Collections.sort(collector, new Comparator<HealthCheckResult>() {
+                        @Override
+                        public int compare(HealthCheckResult a, HealthCheckResult b) {
+                            return Integer.compare(severityRank(a), severityRank(b)) != 0
+                                    ? -Integer.compare(severityRank(a), severityRank(b)) // 严重的在前
+                                    : Integer.compare(a.getItemScore(), b.getItemScore());
+                        }
+                    });
 
-                running.set(false);
-                if (callback != null) {
-                    try {
-                        callback.onCompleted(collector);
-                    } catch (Throwable ignored) {}
+                    notifyCompleted(collector);
+                } catch (Throwable t) {
+                    // 兜底：外层 Runnable 抛异常时也必须通知订阅者并释放 running，否则自检永久瘫痪
+                    notifyError("检测异常：" + (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName()));
+                } finally {
+                    activeCallbacks.clear();
+                    running.set(false);
                 }
             }
         });
+    }
+
+    /** 广播进度给所有当前订阅者。 */
+    private void notifyProgress(int percent) {
+        for (Callback cb : activeCallbacks) {
+            try { cb.onProgress(percent); } catch (Throwable ignored) {}
+        }
+    }
+
+    /** 广播完成结果给所有当前订阅者。 */
+    private void notifyCompleted(List<HealthCheckResult> results) {
+        for (Callback cb : activeCallbacks) {
+            try { cb.onCompleted(results); } catch (Throwable ignored) {}
+        }
+    }
+
+    /** 广播错误给所有当前订阅者。 */
+    private void notifyError(String message) {
+        for (Callback cb : activeCallbacks) {
+            try { cb.onError(message); } catch (Throwable ignored) {}
+        }
+    }
+
+    /**
+     * 取消订阅当前轮次的回调；用于 Fragment 销毁时避免回调持有已销毁视图导致泄漏。
+     * 不会中断正在进行的检测。
+     */
+    public void removeCallback(Callback callback) {
+        if (callback != null) activeCallbacks.remove(callback);
     }
 
     /** 综合评分：按各项 itemScore 的加权平均，其中严重项扣分权重更高。 */

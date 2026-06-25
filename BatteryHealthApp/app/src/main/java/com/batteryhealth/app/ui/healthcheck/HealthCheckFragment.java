@@ -54,6 +54,8 @@ public class HealthCheckFragment extends Fragment {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private HealthCheckEngine engine;
     private List<HealthCheckResult> lastResults = new ArrayList<>();
+    // 保存当前订阅的 callback 引用，Fragment 销毁时调用 removeCallback 避免泄漏
+    private HealthCheckEngine.Callback pendingCallback;
 
     @Nullable
     @Override
@@ -114,33 +116,47 @@ public class HealthCheckFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        // 取消订阅 engine 回调，避免持有已销毁 Fragment 视图导致泄漏
+        if (engine != null && pendingCallback != null) {
+            engine.removeCallback(pendingCallback);
+            pendingCallback = null;
+        }
         // 清理 Handler 待执行回调，避免内存泄漏
         mainHandler.removeCallbacksAndMessages(null);
     }
 
     private void startCheck() {
         if (engine == null) return;
-        if (engine.isRunning()) return;
 
-        tvActionCheck.setEnabled(false);
-        tvActionCheck.setText(R.string.health_check_action_checking);
-        if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
-        if (tvScanningStatus != null) {
-            tvScanningStatus.setVisibility(View.VISIBLE);
-            tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
-        }
-        // 综合评分先重置
-        tvOverallScore.setText("--");
-        tvOverallLabel.setText(R.string.health_check_label_running);
-        if (progressOverall != null) {
-            progressOverall.setProgress(0);
+        // 仅在新触发一轮检测时重置 UI；若 engine 已在运行，本次调用会订阅当前轮次，
+        // 保持已有进度显示不重置，避免用户看到进度突然跳回 0%。
+        boolean isNewRun = !engine.isRunning();
+        if (isNewRun) {
+            tvActionCheck.setEnabled(false);
+            tvActionCheck.setText(R.string.health_check_action_checking);
+            if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
+            if (tvScanningStatus != null) {
+                tvScanningStatus.setVisibility(View.VISIBLE);
+                tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
+            }
+            // 综合评分先重置
+            tvOverallScore.setText("--");
+            tvOverallLabel.setText(R.string.health_check_label_running);
+            if (progressOverall != null) {
+                progressOverall.setProgress(0);
+            }
         }
 
         Context ctx = requireContext().getApplicationContext();
-        engine.startCheck(ctx, new HealthCheckEngine.Callback() {
+        // 若上一次 callback 尚未清理（理论不会发生，保险起见），先移除
+        if (pendingCallback != null && engine != null) {
+            engine.removeCallback(pendingCallback);
+        }
+        pendingCallback = new HealthCheckEngine.Callback() {
             @Override
             public void onProgress(final int percent) {
                 mainHandler.post(() -> {
+                    if (!isAdded()) return;
                     if (tvScanningStatus != null) {
                         tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", percent));
                     }
@@ -149,17 +165,25 @@ public class HealthCheckFragment extends Fragment {
 
             @Override
             public void onCompleted(final List<HealthCheckResult> results) {
-                mainHandler.post(() -> renderResults(results));
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
+                    renderResults(results);
+                });
             }
 
             @Override
             public void onError(final String message) {
                 mainHandler.post(() -> {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    if (!isAdded()) return;
+                    Context c = getContext();
+                    if (c != null) {
+                        Toast.makeText(c, message, Toast.LENGTH_SHORT).show();
+                    }
                     finishCheckingUI();
                 });
             }
-        });
+        };
+        engine.startCheck(ctx, pendingCallback);
     }
 
     private void renderResults(List<HealthCheckResult> results) {
