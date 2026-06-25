@@ -9,113 +9,54 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace 'com.batteryhealth.app'
-    compileSdk 36
-    buildToolsVersion '36.0.0'
+    namespace = 'com.batteryhealth.app'
+    compileSdk = 36
 
     defaultConfig {
-        applicationId "com.batteryhealth.app"
-        minSdk 24
-        targetSdk 36
-        versionCode 60
-        versionName "5.0.0"
+        applicationId = "com.batteryhealth.app"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 60
+        versionName = "5.0.0"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // 性能优化配置
-        resConfigs "zh"
+        resourceConfigurations += ["zh"]
 
         // 仅支持ARM架构，减少APK体积；同时启用16KB页面大小支持（Android 16要求）
         // 注意：若后续接入NDK库，需在 externalNativeBuild { cmake {} } 中
         // 传递 -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON 并提供 CMakeLists.txt
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
-        }
-    }
-
-    // 签名配置 - 从 keystore.properties 读取；若文件不存在或 keystore 文件无效则回退到 debug 签名
-    // 仅用于本地编译验证，正式发版前必须提供真实的 keystore.properties
-    signingConfigs {
-        release {
-            def storeFilePath = keystoreProperties['storeFile'] ?: 'release-keystore.jks'
-            def releaseStoreFile = rootProject.file(storeFilePath)
-            if (keystorePropertiesFile.exists() && releaseStoreFile.exists()) {
-                storeFile releaseStoreFile
-                storePassword keystoreProperties['storePassword'] ?: ''
-                keyAlias keystoreProperties['keyAlias'] ?: ''
-                keyPassword keystoreProperties['keyPassword'] ?: ''
-            } else {
-                if (!keystorePropertiesFile.exists()) {
-                    println "Warning: keystore.properties not found, release signing falls back to debug keystore."
-                } else if (!releaseStoreFile.exists()) {
-                    println "Warning: release keystore file not found at ${releaseStoreFile.absolutePath}, release signing falls back to debug keystore."
-                }
-                storeFile android.signingConfigs.debug.storeFile
-                storePassword android.signingConfigs.debug.storePassword
-                keyAlias android.signingConfigs.debug.keyAlias
-                keyPassword android.signingConfigs.debug.keyPassword
-            }
-        }
-        debug {
-            // Debug 使用默认调试签名
-        }
+        // ndk {
+        //     abiFilters 'armeabi-v7a', 'arm64-v8a'
+        // }
     }
 
     buildTypes {
         release {
             // 启用混淆和资源压缩，减小 APK 体积并提升安全性
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            debuggable false
-            signingConfig signingConfigs.release
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles(getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro')
+            debuggable = false
             // Release构建优化：移除无用资源、压缩代码
-            crunchPngs true
-            zipAlignEnabled true
+            crunchPngs = true
+            zipAlignEnabled = true
         }
 
         debug {
-            minifyEnabled false
-            debuggable true
-            signingConfig signingConfigs.debug
+            minifyEnabled = false
+            debuggable = true
         }
     }
 
-    lintOptions {
-        abortOnError false
-        checkReleaseBuilds true
-        // Release构建时检查关键问题
-        fatal 'NewApi', 'InlinedApi'
-        warning 'UnusedResources', 'HardcodedText'
-    }
-
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    // 禁用JDK镜像转换
-    tasks.withType(JavaCompile) {
-        options.fork = false
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     buildFeatures {
-        viewBinding true
-        buildConfig true
-    }
-
-    // 打包选项
-    packagingOptions {
-        pickFirst '**/libc++_shared.so'
-        pickFirst '**/libjsc.so'
-        // Android 16 要求所有 .so 文件按 16KB 边界对齐
-        jniLibs.useLegacyPackaging = false
-        // 排除重复/无用文件
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/LICENSE'
-        exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/NOTICE'
-        exclude 'META-INF/NOTICE.txt'
+        buildConfig = true
     }
 }
 
