@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -178,10 +179,18 @@ public class HealthCheckEngine {
                     }));
                 }
 
-                for (Future<HealthCheckResult> future : futures) {
+                // futures 与 snapshot 顺序一一对应；按索引取 checker 以便超时时构建兜底结果
+                for (int idx = 0; idx < futures.size(); idx++) {
+                    Future<HealthCheckResult> future = futures.get(idx);
+                    IHealthChecker checker = snapshot.get(idx);
                     try {
-                        HealthCheckResult result = future.get();
+                        // 限制单个 Checker 最多阻塞 5 秒，避免一项卡死导致整个自检流程不返回
+                        HealthCheckResult result = future.get(5, TimeUnit.SECONDS);
                         if (result != null) collector.add(result);
+                    } catch (TimeoutException te) {
+                        // 超时则中断该任务并用兜底结果填充，保证自检流程可继续
+                        future.cancel(true);
+                        collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
                     } catch (Exception ignored) {
                     } finally {
                         int current = done.incrementAndGet();

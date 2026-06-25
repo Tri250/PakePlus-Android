@@ -14,6 +14,7 @@ import androidx.room.Room;
 import com.batteryhealth.app.data.database.AppDatabase;
 import com.batteryhealth.app.data.database.DatabaseEncryptionHelper;
 import com.batteryhealth.app.data.model.BatteryInfo;
+import com.batteryhealth.app.data.model.BatteryOriginRecord;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.ui.error.ErrorActivity;
@@ -57,8 +58,29 @@ public class BatteryHealthApplication extends Application {
 
             // 在后台线程初始化数据库，避免阻塞主线程导致 ANR
             startDatabaseInitAsync();
+
+            // 接通 WorkManager 调度：作为前台服务被系统杀死（Doze/后台限制）时的兜底采集与预警。
+            // 早期版本未接通调度，导致 BatteryDataWorker / HealthAlertWorker 永远不执行。
+            scheduleBackgroundWork();
         } catch (Exception e) {
-            Log.e(TAG, "Error in Application onCreate: " + e.getMessage(), e);
+            Log.e(TAG, "Error in Application.onCreate: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 注册 WorkManager 周期任务。
+     * - BatteryDataWorker：每 15 分钟兜底采集一次电池数据（WorkManager 最小周期限制）。
+     * - HealthAlertWorker：每小时检查一次健康度衰减（与 BatteryMonitorService 互斥触发）。
+     *
+     * 注意：使用 KEEP 策略，重复调用不会创建新任务；进度受数据库初始化完成与否不影响。
+     */
+    private void scheduleBackgroundWork() {
+        try {
+            com.batteryhealth.app.data.worker.WorkManagerScheduler.scheduleBatteryDataWork(this);
+            com.batteryhealth.app.data.worker.WorkManagerScheduler.scheduleHealthAlertWork(this);
+            Log.d(TAG, "WorkManager scheduled: battery data + health alert");
+        } catch (Exception e) {
+            Log.w(TAG, "WorkManager schedule failed (will retry on next launch): " + e.getMessage());
         }
     }
 
@@ -221,6 +243,17 @@ public class BatteryHealthApplication extends Application {
                 for (PowerHistory history : snapshot.powerHistoryList) {
                     history.setId(0);
                     db.powerHistoryDao().insert(history);
+                }
+            }
+            // 恢复电池溯源记录表（与 DatabaseEncryptionHelper.DatabaseSnapshot 对齐，
+            // 避免老用户从明文库升级到加密库时丢失溯源历史）
+            if (snapshot.originRecordList != null) {
+                for (BatteryOriginRecord record : snapshot.originRecordList) {
+                    try {
+                        db.batteryOriginRecordDao().insert(record);
+                    } catch (Exception e) {
+                        Log.w(TAG, "Skip one origin record during restore: " + e.getMessage());
+                    }
                 }
             }
         });

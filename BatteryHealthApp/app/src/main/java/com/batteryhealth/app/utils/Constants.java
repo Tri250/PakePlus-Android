@@ -37,8 +37,17 @@ public final class Constants {
     }
 
     public static class Notification {
-        public static final String CHANNEL_ID = "battery_health_alert";
-        public static final int ALERT_NOTIFICATION_ID = 1001;
+        /**
+         * 健康预警渠道 ID，与 BatteryMonitorService / HealthAlertWorker 对齐。
+         * 注意：早期版本使用 "battery_health_alert"，已统一为 "battery_health_alert_channel"。
+         */
+        public static final String CHANNEL_ID = "battery_health_alert_channel";
+        /**
+         * 健康预警通知 ID，与 HealthAlertWorker 对齐。
+         * 注意：早期版本使用 1001 会与 BatteryMonitorService 前台通知撞号，
+         * 已改为 1005 避免 ForegroundServiceDidNotStartInTimeException。
+         */
+        public static final int ALERT_NOTIFICATION_ID = 1005;
     }
 
     public static class Charging {

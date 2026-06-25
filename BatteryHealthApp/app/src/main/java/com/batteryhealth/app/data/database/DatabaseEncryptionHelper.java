@@ -113,14 +113,18 @@ public class DatabaseEncryptionHelper {
                     plainDb.performanceDataDao().getAll();
             List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList =
                     plainDb.powerHistoryDao().getAll();
+            // 同步迁移电池溯源记录表，避免老用户从明文库升级到加密库时丢失溯源历史
+            List<com.batteryhealth.app.data.model.BatteryOriginRecord> originRecordList =
+                    safeGetAllOriginRecords(plainDb);
 
             if (com.batteryhealth.app.BuildConfigHelper.isDebugMode()) {
                 Log.d(TAG, "Migrating plain database: battery=" + batteryInfoList.size()
                         + ", performance=" + performanceDataList.size()
-                        + ", power=" + powerHistoryList.size());
+                        + ", power=" + powerHistoryList.size()
+                        + ", origin=" + originRecordList.size());
             }
 
-            return new DatabaseSnapshot(batteryInfoList, performanceDataList, powerHistoryList);
+            return new DatabaseSnapshot(batteryInfoList, performanceDataList, powerHistoryList, originRecordList);
         } catch (Exception e) {
             Log.e(TAG, "Failed to read plain database: " + e.getMessage(), e);
             return null;
@@ -253,19 +257,45 @@ public class DatabaseEncryptionHelper {
     }
 
     /**
+     * 安全读取明文库的电池溯源记录表。
+     * 老版本明文库可能尚未创建 battery_origin_record 表，读取会抛 SQLException，
+     * 此处捕获异常并返回空列表，避免阻塞整个加密迁移流程。
+     */
+    private static List<com.batteryhealth.app.data.model.BatteryOriginRecord> safeGetAllOriginRecords(
+            AppDatabase plainDb) {
+        try {
+            return plainDb.batteryOriginRecordDao().getAll();
+        } catch (Exception e) {
+            Log.w(TAG, "Origin record table not present in plain DB, skipping: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
      * 明文数据库数据快照
      */
     public static class DatabaseSnapshot {
         public final List<com.batteryhealth.app.data.model.BatteryInfo> batteryInfoList;
         public final List<com.batteryhealth.app.data.model.PerformanceData> performanceDataList;
         public final List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList;
+        /** 电池溯源记录（v4+ 新增） */
+        public final List<com.batteryhealth.app.data.model.BatteryOriginRecord> originRecordList;
 
         public DatabaseSnapshot(List<com.batteryhealth.app.data.model.BatteryInfo> batteryInfoList,
                                 List<com.batteryhealth.app.data.model.PerformanceData> performanceDataList,
-                                List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList) {
+                                List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList,
+                                List<com.batteryhealth.app.data.model.BatteryOriginRecord> originRecordList) {
             this.batteryInfoList = batteryInfoList;
             this.performanceDataList = performanceDataList;
             this.powerHistoryList = powerHistoryList;
+            this.originRecordList = originRecordList;
+        }
+
+        /** 兼容旧调用方（仅用于编译期向后兼容） */
+        public DatabaseSnapshot(List<com.batteryhealth.app.data.model.BatteryInfo> batteryInfoList,
+                                List<com.batteryhealth.app.data.model.PerformanceData> performanceDataList,
+                                List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList) {
+            this(batteryInfoList, performanceDataList, powerHistoryList, new java.util.ArrayList<>());
         }
     }
 }

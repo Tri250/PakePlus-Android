@@ -47,6 +47,23 @@ public class BatteryOriginDetector {
 
     private static final String TAG = "BatteryOriginDetector";
 
+    /**
+     * 反射读取 BatteryManager Android 16+ 隐藏常量，fallback 与 BatteryDataManager 保持一致。
+     * 避免硬编码 8/9 在不同 OEM ROM 上可能错位。
+     */
+    private static final int BATTERY_PROP_BATTERY_HEALTH =
+            getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 6);
+    private static final int BATTERY_PROP_CHARGE_FULL_DESIGN =
+            getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
+
+    private static int getBatteryIntConstant(String name, int fallback) {
+        try {
+            return BatteryManager.class.getField(name).getInt(null);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
     // Primary battery sysfs paths (most common first)
     private static final String[] BATTERY_SYSFS_PATHS = {
             "/sys/class/power_supply/battery",
@@ -249,9 +266,9 @@ public class BatteryOriginDetector {
             return false;
         }
 
-        // BATTERY_PROPERTY_BATTERY_HEALTH (API 36+)
+        // BATTERY_PROPERTY_BATTERY_HEALTH (API 36+) — 反射取常量，与 BatteryDataManager 对齐
         try {
-            int healthProp = bm.getIntProperty(8); // BATTERY_PROPERTY_BATTERY_HEALTH = 8
+            int healthProp = bm.getIntProperty(BATTERY_PROP_BATTERY_HEALTH);
             if (healthProp > 0) {
                 String healthStr = healthIntToString(healthProp);
                 if (healthStr != null) {
@@ -264,9 +281,9 @@ public class BatteryOriginDetector {
             Log.w(TAG, "BATTERY_PROPERTY_BATTERY_HEALTH 读取失败", e);
         }
 
-        // BATTERY_PROPERTY_CHARGE_FULL_DESIGN (API 36+)
+        // BATTERY_PROPERTY_CHARGE_FULL_DESIGN (API 36+) — 反射取常量，与 BatteryDataManager 对齐
         try {
-            long designCap = bm.getLongProperty(9); // BATTERY_PROPERTY_CHARGE_FULL_DESIGN = 9
+            long designCap = bm.getLongProperty(BATTERY_PROP_CHARGE_FULL_DESIGN);
             if (designCap > 0) {
                 // BatteryManager 返回值单位为 μAh，转换为 mAh
                 int designMah = (int) (designCap > 100000 ? designCap / 1000 : designCap);

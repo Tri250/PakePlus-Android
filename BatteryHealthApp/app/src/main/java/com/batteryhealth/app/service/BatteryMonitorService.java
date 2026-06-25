@@ -54,7 +54,10 @@ public class BatteryMonitorService extends Service {
     private static final String TAG = "BatteryMonitorService";
     private static final String CHANNEL_ID = "battery_monitor_channel";
     private static final int NOTIFICATION_ID = 1001;
-    private static final long UPDATE_INTERVAL = 5000; // 5秒更新一次
+    /** 充电时高频采集间隔 */
+    private static final long UPDATE_INTERVAL_CHARGING = 5000; // 5秒
+    /** 非充电时降频，避免 sysfs 高频读取造成耗电与 IO 压力 */
+    private static final long UPDATE_INTERVAL_DISCHARGING = 30000; // 30秒
     private static final long SAVE_INTERVAL = 300000; // 5分钟保存一次到数据库
     private static final long DATA_CLEANUP_INTERVAL = 86400000; // 24小时清理一次旧数据
 
@@ -131,7 +134,12 @@ public class BatteryMonitorService extends Service {
             }
 
             if (handler != null) {
-                handler.postDelayed(this, UPDATE_INTERVAL);
+                // 自适应采集频率：充电时 5s 高频（用于实时显示），非充电时 30s 降频（减少耗电）。
+                // 早期版本无论充电与否均 5s 轮询 sysfs，非充电场景下持续高频读取造成明显耗电。
+                long interval = batteryDataManager != null && batteryDataManager.isCharging()
+                        ? UPDATE_INTERVAL_CHARGING
+                        : UPDATE_INTERVAL_DISCHARGING;
+                handler.postDelayed(this, interval);
             }
         }
     };

@@ -214,33 +214,27 @@ public class BatteryConsumptionAnalyzer {
                     if (currentAvg == 0 || currentAvg == Integer.MIN_VALUE) {
                         currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                     }
-                    // 获取电池电量和电压
+                    // 获取电池电量百分比
                     int level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                    int voltageMicroV = 0;
+
+                    // 电压必须从系统 sticky intent 读取（EXTRA_VOLTAGE 单位 mV）。
+                    // 注：AOSP BatteryManager 公开常量中并无 BATTERY_PROPERTY_VOLTAGE，
+                    //     错误使用 getIntProperty(2) 实际会取到 BATTERY_PROPERTY_CURRENT_NOW（电流）。
+                    int voltageMv = 0;
                     try {
-                        // BATTERY_PROPERTY_VOLTAGE = 2 (hidden constant)
-                        voltageMicroV = bm.getIntProperty(2);
+                        Intent batteryIntent = context.registerReceiver(null,
+                                new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                        if (batteryIntent != null) {
+                            voltageMv = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
+                            // 部分国产设备返回 µV
+                            if (voltageMv > 10000) voltageMv = voltageMv / 1000;
+                        }
                     } catch (Throwable ignored) {}
 
-                    if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && level >= 0) {
-                        // 电压必须从系统读取，无有效电压时跳过估算而非使用假设值
-                        if (voltageMicroV <= 0) {
-                            // 尝试从 BatteryManager.EXTRA_VOLTAGE 获取（sticky intent）
-                            try {
-                                Intent batteryIntent = context.registerReceiver(null,
-                                        new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                                if (batteryIntent != null) {
-                                    voltageMicroV = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
-                                }
-                            } catch (Throwable ignored) {}
-                        }
-                        if (voltageMicroV <= 0) {
-                            // 无法获取真实电压，跳过本次估算
-                            return buildResult(capacity, -1, consumers, hasUsageAccess);
-                        }
-                        double voltageV = voltageMicroV / 1_000_000.0;
-                        double currentMa = Math.abs(currentAvg / 1000.0); // µA → mA
-                        double powerMw = currentMa * voltageV; // mW
+                    if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && level >= 0 && voltageMv > 0) {
+                        double voltageV = voltageMv / 1000.0;               // mV → V
+                        double currentMa = Math.abs(currentAvg / 1000.0);   // µA → mA
+                        double powerMw = currentMa * voltageV;              // mW
                         double energyMwh = capacity * voltageV * (level / 100.0); // mWh
                         if (powerMw > 0) {
                             hours = energyMwh / powerMw;
@@ -300,16 +294,52 @@ public class BatteryConsumptionAnalyzer {
                 screenPct, systemPct, appsPct, dataStatus);
     }
 
+    /**
+     * 反射读取 BatteryManager 公开常量，取不到则使用 AOSP fallback 值。
+     * AOSP 公开常量（android.os.BatteryManager）：
+     *   BATTERY_PROPERTY_CHARGE_COUNTER       = 1
+     *   BATTERY_PROPERTY_CURRENT_NOW          = 2
+     *   BATTERY_PROPERTY_CURRENT_AVERAGE      = 3
+     *   BATTERY_PROPERTY_CAPACITY             = 4
+     *   BATTERY_PROPERTY_CHARGE_FULL          = 4（注意：与 CAPACITY 同值，需反射区分）
+     *   BATTERY_PROPERTY_ENERGY_COUNTER       = 5
+     *   BATTERY_PROPERTY_BATTERY_HEALTH       = 6（Android 16+）
+     *   BATTERY_PROPERTY_CHARGE_FULL_DESIGN   = 7（Android 16+，与 BatteryDataManager 对齐）
+     * 早期硬编码常量 25 是错误的， getIntProperty(25) 会读取不存在的属性返回 Integer.MIN_VALUE。
+     */
+    private static final int BATTERY_PROP_CHARGE_FULL =
+            getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+    private static final int BATTERY_PROP_CHARGE_FULL_DESIGN =
+            getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
+
+    private static int getBatteryIntConstant(String name, int fallback) {
+        try {
+            return BatteryManager.class.getField(name).getInt(null);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
     private static int readBatteryCapacityMah(Context context) {
         try {
             BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (bm != null) {
-                int micro = bm.getIntProperty(25); // BATTERY_PROPERTY_CHARGE_FULL
-                if (micro > 1000) return micro / 1000;
-                // API 36+: 尝试 BATTERY_PROPERTY_CHARGE_FULL_DESIGN (9) 作为回退
+                // 优先取当前满充容量（FCC），单位 µAh
                 try {
-                    int designMicro = bm.getIntProperty(9);
-                    if (designMicro > 1000) return designMicro / 1000;
+                    int micro = bm.getIntProperty(BATTERY_PROP_CHARGE_FULL);
+                    if (micro != Integer.MIN_VALUE && micro > 1000) {
+                        // µAh → mAh
+                        if (micro >= 1_000_000) return micro / 1000;
+                        if (micro >= 1000) return micro;
+                    }
+                } catch (Throwable ignored) {}
+                // API 36+: 回退到设计容量（BATTERY_PROPERTY_CHARGE_FULL_DESIGN）
+                try {
+                    int designMicro = bm.getIntProperty(BATTERY_PROP_CHARGE_FULL_DESIGN);
+                    if (designMicro != Integer.MIN_VALUE && designMicro > 1000) {
+                        if (designMicro >= 1_000_000) return designMicro / 1000;
+                        if (designMicro >= 1000) return designMicro;
+                    }
                 } catch (Throwable ignored) {}
             }
         } catch (Exception ignored) {}

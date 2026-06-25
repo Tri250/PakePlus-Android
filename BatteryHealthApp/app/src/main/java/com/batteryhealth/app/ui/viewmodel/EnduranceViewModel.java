@@ -60,6 +60,21 @@ public class EnduranceViewModel extends ViewModel {
     /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
     private final AtomicBoolean isCleared = new AtomicBoolean(false);
 
+    /**
+     * 反射读取 BatteryManager 隐藏常量 BATTERY_PROPERTY_CHARGE_FULL（AOSP 公开值 = 4）。
+     * 注：与 BATTERY_PROPERTY_CAPACITY 在 AOSP 中数值相同（均为 4），但反射字段名不同。
+     * 早期硬编码 getIntProperty(24) 是错误的，会读到不存在的属性。
+     */
+    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+
+    private static int getBatteryIntConstant(String name, int fallback) {
+        try {
+            return BatteryManager.class.getField(name).getInt(null);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
     public EnduranceViewModel() {
         BatteryHealthApplication app = BatteryHealthApplication.getInstance();
         batteryRepository = new BatteryRepositoryImpl(app);
@@ -190,9 +205,11 @@ public class EnduranceViewModel extends ViewModel {
                     currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                 }
                 if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE) {
-                    int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                    // 优先取当前满充容量（FCC），单位 µAh
+                    int capacityMicroAh = bm.getIntProperty(BATTERY_PROP_CHARGE_FULL);
+                    // 回退到充电计数
                     if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                        capacityMicroAh = bm.getIntProperty(24);
+                        capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
                     }
                     int capacityMah = -1;
                     if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;

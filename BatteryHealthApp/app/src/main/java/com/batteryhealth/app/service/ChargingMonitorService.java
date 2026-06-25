@@ -719,6 +719,9 @@ public class ChargingMonitorService extends Service {
 
     /**
      * 保存功率历史记录（调用方已在后台线程时可直接执行，否则提交到 executor）
+     *
+     * 同时清理 30 天前的旧数据，避免 power_history 表无限增长。
+     * 早期版本未调用 deleteOlderThan，长期运行会导致数据库膨胀。
      */
     private void savePowerHistory(PowerHistory history) {
         Runnable saveTask = () -> {
@@ -728,6 +731,9 @@ public class ChargingMonitorService extends Service {
                 com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
                 if (db != null) {
                     db.powerHistoryDao().insert(history);
+                    // 清理 30 天前的旧数据，避免长期运行后表无限增长
+                    long cutoff = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
+                    db.powerHistoryDao().deleteOlderThan(cutoff);
                     if (BuildConfigHelper.isDebugMode()) {
                         Log.d(TAG, "Power history saved: " + history.getPower() + "W");
                     }
@@ -788,13 +794,22 @@ public class ChargingMonitorService extends Service {
 
         String content;
         if (isCharging && history != null) {
+            // strings.xml: "充电中 %1$d%% · %2$.1fW · %3$s"
+            // 参数顺序必须与占位符顺序一致：电量(int) → 功率(float) → 类型(String)。
+            // 早期版本顺序错位（power→%1$d 会导致 float 传 %d 抛 IllegalFormatConversionException），
+            // 已修正。
             content = String.format(
                     getString(R.string.charging_monitor_notification_content_charging),
-                    history.getPower(),
                     history.getBatteryLevel(),
+                    history.getPower(),
                     history.getChargeTypeDescription());
         } else {
-            content = getString(R.string.charging_monitor_notification_content_idle);
+            // strings.xml: "未充电 · 电量 %1$d%%"，需要传入电量参数。
+            // 早期版本未传参，导致通知显示字面量 "%1$d%%"。
+            int idleLevel = cachedLevel > 0 ? cachedLevel : (history != null ? history.getBatteryLevel() : 0);
+            content = String.format(
+                    getString(R.string.charging_monitor_notification_content_idle),
+                    idleLevel);
         }
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)

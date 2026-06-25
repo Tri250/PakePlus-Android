@@ -26,18 +26,20 @@ public class BatteryDataWorker extends Worker {
         try {
             BatteryHealthApplication app = BatteryHealthApplication.getInstance();
             BatteryRepository repository = new BatteryRepositoryImpl(app);
-            
+
             BatteryDataManager dataManager = ((BatteryRepositoryImpl) repository).getBatteryDataManager();
             dataManager.refreshFromStickyIntent();
-            
+
             BatteryInfo info = dataManager.getCurrentBatteryInfo();
             if (info != null) {
                 repository.saveBatteryInfo(info);
             }
-            
-            long retentionCutoff = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
+
+            // 数据保留期与 BatteryMonitorService 对齐：45 天。
+            // 早期版本为 180 天，会导致 battery_info 表无限增长且与前台服务策略冲突。
+            long retentionCutoff = System.currentTimeMillis() - 45L * 24 * 60 * 60 * 1000;
             repository.deleteOlderThan(retentionCutoff);
-            
+
             return Result.success();
         } catch (Exception e) {
             android.util.Log.e(TAG, "Error saving battery data: " + e.getMessage());
