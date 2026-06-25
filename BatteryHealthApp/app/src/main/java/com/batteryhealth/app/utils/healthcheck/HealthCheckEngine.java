@@ -65,10 +65,13 @@ public class HealthCheckEngine {
     /** 懒初始化线程池，shutdown 后可重建。 */
     private synchronized ExecutorService ensureExecutor() {
         if (executor == null || executor.isShutdown()) {
-            executor = Executors.newFixedThreadPool(POOL_SIZE, r -> {
-                Thread t = new Thread(r, "HealthCheckEngine");
-                t.setDaemon(true);
-                return t;
+            executor = Executors.newFixedThreadPool(POOL_SIZE, new java.util.concurrent.ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "HealthCheckEngine");
+                    t.setDaemon(true);
+                    return t;
+                }
             });
         }
         return executor;

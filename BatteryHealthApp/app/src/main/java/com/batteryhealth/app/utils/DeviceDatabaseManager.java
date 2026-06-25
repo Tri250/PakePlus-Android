@@ -39,11 +39,14 @@ public class DeviceDatabaseManager {
 
     private DeviceDatabaseManager(final Context context) {
         // 在后台线程异步加载，避免 Application.onCreate 阻塞主线程
-        new Thread(() -> {
-            try {
-                loadDatabase(context);
-            } finally {
-                loadLatch.countDown();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    loadDatabase(context);
+                } finally {
+                    loadLatch.countDown();
+                }
             }
         }, "DeviceDbLoader").start();
     }

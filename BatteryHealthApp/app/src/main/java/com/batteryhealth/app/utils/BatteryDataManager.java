@@ -65,7 +65,12 @@ public class BatteryDataManager {
 
     // ThreadLocal SimpleDateFormat 避免热点路径频繁创建
     private static final ThreadLocal<java.text.SimpleDateFormat> DAY_FORMAT =
-            ThreadLocal.withInitial(() -> new java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault()));
+            new ThreadLocal<java.text.SimpleDateFormat>() {
+                @Override
+                protected java.text.SimpleDateFormat initialValue() {
+                    return new java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+                }
+            };
 
     public BatteryDataManager(Context context) {
         this.context = context.getApplicationContext();
@@ -1072,7 +1077,12 @@ public class BatteryDataManager {
     }
 
     public void refreshAllDataAsync() {
-        ThreadExecutor.execute(this::refreshFromStickyIntent);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                refreshFromStickyIntent();
+            }
+        });
     }
 
     public void setUsageDays(int days) {

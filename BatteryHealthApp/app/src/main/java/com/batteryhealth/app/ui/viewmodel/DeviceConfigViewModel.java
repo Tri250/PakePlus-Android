@@ -38,9 +38,12 @@ public class DeviceConfigViewModel extends ViewModel {
             DeviceInfoManager deviceInfoManager = new DeviceInfoManager(app.getApplicationContext());
             deviceRepository = new DeviceRepositoryImpl(deviceInfoManager);
 
-            deviceInfoManager.setActivationInfoListener(activation -> {
-                if (activation != null) {
-                    usageDays.postValue(activation.usageDays);
+            deviceInfoManager.setActivationInfoListener(new com.batteryhealth.app.utils.DeviceInfoManager.ActivationInfoListener() {
+                @Override
+                public void onActivationInfoReady(com.batteryhealth.app.utils.DeviceInfoManager.ActivationInfo activation) {
+                    if (activation != null) {
+                        usageDays.postValue(activation.usageDays);
+                    }
                 }
             });
         } catch (Exception e) {
@@ -77,19 +80,22 @@ public class DeviceConfigViewModel extends ViewModel {
             return;
         }
         isLoading.postValue(true);
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                DeviceConfig config = deviceRepository.getDeviceConfig();
-                deviceConfig.postValue(config);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    DeviceConfig config = deviceRepository.getDeviceConfig();
+                    deviceConfig.postValue(config);
 
-                int days = deviceRepository.getUsageDays();
-                usageDays.postValue(days);
-            } catch (Exception e) {
-                android.util.Log.e(TAG, "Error loading config: " + e.getMessage(), e);
-                errorMessage.postValue("配置信息加载失败: " + e.getMessage());
-            } finally {
-                isLoading.postValue(false);
+                    int days = deviceRepository.getUsageDays();
+                    usageDays.postValue(days);
+                } catch (Exception e) {
+                    android.util.Log.e(TAG, "Error loading config: " + e.getMessage(), e);
+                    errorMessage.postValue("配置信息加载失败: " + e.getMessage());
+                } finally {
+                    isLoading.postValue(false);
+                }
             }
         });
     }

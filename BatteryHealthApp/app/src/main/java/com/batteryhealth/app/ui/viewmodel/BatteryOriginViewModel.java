@@ -98,30 +98,33 @@ public class BatteryOriginViewModel extends ViewModel {
         isDetecting.postValue(true);
         detectionError.postValue(false);
 
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                // 刷新 BatteryDataManager 数据
-                if (batteryDataManager != null) {
-                    if (forceRefresh) {
-                        batteryDataManager.refreshFromStickyIntent();
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    // 刷新 BatteryDataManager 数据
+                    if (batteryDataManager != null) {
+                        if (forceRefresh) {
+                            batteryDataManager.refreshFromStickyIntent();
+                        }
+                        originDetector.setBatteryDataManager(batteryDataManager);
                     }
-                    originDetector.setBatteryDataManager(batteryDataManager);
+
+                    BatteryOriginDetector.OriginResult result = originDetector.detect();
+                    originResult.postValue(result);
+
+                    // 持久化检测结果
+                    saveResult(result);
+
+                    // 刷新历史记录
+                    loadHistoryInternal();
+
+                } catch (Exception e) {
+                    detectionError.postValue(true);
+                } finally {
+                    isDetecting.postValue(false);
                 }
-
-                BatteryOriginDetector.OriginResult result = originDetector.detect();
-                originResult.postValue(result);
-
-                // 持久化检测结果
-                saveResult(result);
-
-                // 刷新历史记录
-                loadHistoryInternal();
-
-            } catch (Exception e) {
-                detectionError.postValue(true);
-            } finally {
-                isDetecting.postValue(false);
             }
         });
     }
@@ -130,7 +133,12 @@ public class BatteryOriginViewModel extends ViewModel {
      * 加载历史检测记录
      */
     public void loadHistory() {
-        ThreadExecutor.execute(this::loadHistoryInternal);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                loadHistoryInternal();
+            }
+        });
     }
 
     private void loadHistoryInternal() {
@@ -178,10 +186,13 @@ public class BatteryOriginViewModel extends ViewModel {
             return;
         }
 
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            String report = buildReportText(result);
-            reportText.postValue(report);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                String report = buildReportText(result);
+                reportText.postValue(report);
+            }
         });
     }
 
@@ -287,18 +298,21 @@ public class BatteryOriginViewModel extends ViewModel {
     /**
      * 删除历史记录
      */
-    public void deleteHistoryRecord(long id) {
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                BatteryHealthApplication app = BatteryHealthApplication.getInstance();
-                if (app == null) return;
-                AppDatabase db = app.getDatabase();
-                if (db == null) return;
-                db.batteryOriginRecordDao().deleteOlderThan(id + 1);
-                // Reload
-                loadHistoryInternal();
-            } catch (Exception ignored) {
+    public void deleteHistoryRecord(final long id) {
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    BatteryHealthApplication app = BatteryHealthApplication.getInstance();
+                    if (app == null) return;
+                    AppDatabase db = app.getDatabase();
+                    if (db == null) return;
+                    db.batteryOriginRecordDao().deleteOlderThan(id + 1);
+                    // Reload
+                    loadHistoryInternal();
+                } catch (Exception ignored) {
+                }
             }
         });
     }

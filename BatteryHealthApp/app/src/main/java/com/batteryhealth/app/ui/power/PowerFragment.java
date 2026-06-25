@@ -276,22 +276,30 @@ public class PowerFragment extends Fragment {
         if (activity == null) return;
         final BatteryHealthApplication app = (BatteryHealthApplication) activity.getApplication();
 
-        ThreadExecutor.execute(() -> {
-            try {
-                batteryDataManager.refreshFromStickyIntent();
-                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                if (info != null && isAdded()) {
-                    TodayChargeStats stats = queryTodayChargeStats(app);
-                    // 从 Service 获取智能充电阶段
-                    String chargingPhase = null;
-                    if (chargingService != null && serviceBound) {
-                        chargingPhase = chargingService.getCurrentChargingPhaseDescription();
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    batteryDataManager.refreshFromStickyIntent();
+                    BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                    if (info != null && isAdded()) {
+                        TodayChargeStats stats = queryTodayChargeStats(app);
+                        // 从 Service 获取智能充电阶段
+                        String chargingPhase = null;
+                        if (chargingService != null && serviceBound) {
+                            chargingPhase = chargingService.getCurrentChargingPhaseDescription();
+                        }
+                        final String phase = chargingPhase;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateUI(info, stats, phase);
+                            }
+                        });
                     }
-                    final String phase = chargingPhase;
-                    handler.post(() -> updateUI(info, stats, phase));
+                } catch (Exception e) {
+                    // 静默处理
                 }
-            } catch (Exception e) {
-                // 静默处理
             }
         });
     }
@@ -370,27 +378,33 @@ public class PowerFragment extends Fragment {
     private void loadHistoricalChart() {
         // 在主线程获取 Application 引用，避免在后台线程调用 requireActivity()
         final BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
-        ThreadExecutor.execute(() -> {
-            try {
-                if (app == null) return;
-                var db = app.getDatabase();
-                if (db == null) return;
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (app == null) return;
+                    com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                    if (db == null) return;
 
-                // 加载最近30分钟的功率数据
-                long since = System.currentTimeMillis() - 30 * 60 * 1000;
-                List<PowerHistory> histories = db.powerHistoryDao().getSince(since);
-                if (histories != null && !histories.isEmpty() && isAdded()) {
-                    handler.post(() -> {
-                        if (!isAdded()) return;
-                        List<Entry> entries = new ArrayList<>();
-                        for (int i = 0; i < histories.size(); i++) {
-                            entries.add(new Entry(i, histories.get(i).getPower()));
-                        }
-                        updateChart(entries);
-                    });
+                    // 加载最近30分钟的功率数据
+                    long since = System.currentTimeMillis() - 30 * 60 * 1000;
+                    final List<PowerHistory> histories = db.powerHistoryDao().getSince(since);
+                    if (histories != null && !histories.isEmpty() && isAdded()) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!isAdded()) return;
+                                List<Entry> entries = new ArrayList<>();
+                                for (int i = 0; i < histories.size(); i++) {
+                                    entries.add(new Entry(i, histories.get(i).getPower()));
+                                }
+                                updateChart(entries);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    // 静默处理
                 }
-            } catch (Exception e) {
-                // 静默处理
             }
         });
     }
@@ -464,7 +478,7 @@ public class PowerFragment extends Fragment {
         TodayChargeStats stats = new TodayChargeStats();
         try {
             if (app == null) return stats;
-            var db = app.getDatabase();
+            com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
             if (db == null) return stats;
 
             Calendar cal = Calendar.getInstance();

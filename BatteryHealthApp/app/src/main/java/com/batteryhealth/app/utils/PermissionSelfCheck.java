@@ -12,6 +12,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -226,8 +227,11 @@ public class PermissionSelfCheck {
         new AlertDialog.Builder(activity)
                 .setTitle("权限自检")
                 .setMessage(message.toString())
-                .setPositiveButton("立即修复", (dialog, which) -> {
-                    fixPermissions(activity, status);
+                .setPositiveButton("立即修复", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        fixPermissions(activity, status);
+                    }
                 })
                 .setNegativeButton("稍后", null)
                 .setCancelable(false)

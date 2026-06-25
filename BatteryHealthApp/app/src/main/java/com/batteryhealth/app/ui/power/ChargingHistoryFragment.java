@@ -97,85 +97,96 @@ public class ChargingHistoryFragment extends Fragment {
     private void loadData() {
         // 在主线程获取 Application 引用，避免在后台线程调用 requireActivity()
         final BatteryHealthApplication app = (BatteryHealthApplication) requireActivity().getApplication();
-        ThreadExecutor.execute(() -> {
-            try {
-                if (app == null) return;
-                var db = app.getDatabase();
-                if (db == null) return;
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (app == null) return;
+                    com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
+                    if (db == null) return;
 
-                // 计算时间范围
-                long startTime = getPeriodStartTime();
-                List<PowerHistory> records = db.powerHistoryDao().getSince(startTime);
-                if (records == null) records = new ArrayList<>();
+                    // 计算时间范围
+                    long startTime = getPeriodStartTime();
+                    List<PowerHistory> records = db.powerHistoryDao().getSince(startTime);
+                    if (records == null) records = new ArrayList<>();
 
-                // 按会话分组
-                Map<String, List<PowerHistory>> sessionMap = new LinkedHashMap<>();
-                for (PowerHistory r : records) {
-                    String sid = r.getSessionId();
-                    if (sid == null || sid.isEmpty()) sid = "unknown_" + r.getTimestamp();
-                    if (!sessionMap.containsKey(sid)) {
-                        sessionMap.put(sid, new ArrayList<>());
+                    // 按会话分组
+                    Map<String, List<PowerHistory>> sessionMap = new LinkedHashMap<>();
+                    for (PowerHistory r : records) {
+                        String sid = r.getSessionId();
+                        if (sid == null || sid.isEmpty()) sid = "unknown_" + r.getTimestamp();
+                        if (!sessionMap.containsKey(sid)) {
+                            sessionMap.put(sid, new ArrayList<>());
+                        }
+                        sessionMap.get(sid).add(r);
                     }
-                    sessionMap.get(sid).add(r);
-                }
 
-                // 统计数据
-                int totalSessions = sessionMap.size();
-                float totalEnergyWh = 0;
-                float totalPowerSum = 0;
-                int powerCount = 0;
+                    // 统计数据
+                    final int totalSessions = sessionMap.size();
+                    float totalEnergyWh = 0;
+                    float totalPowerSum = 0;
+                    int powerCount = 0;
 
-                List<ChargingSessionSummary> summaries = new ArrayList<>();
-                for (Map.Entry<String, List<PowerHistory>> entry : sessionMap.entrySet()) {
-                    List<PowerHistory> sessionRecords = entry.getValue();
-                    if (sessionRecords.isEmpty()) continue;
+                    List<ChargingSessionSummary> summaries = new ArrayList<>();
+                    for (Map.Entry<String, List<PowerHistory>> entry : sessionMap.entrySet()) {
+                        List<PowerHistory> sessionRecords = entry.getValue();
+                        if (sessionRecords.isEmpty()) continue;
 
-                    ChargingSessionSummary summary = new ChargingSessionSummary();
-                    summary.sessionId = entry.getKey();
-                    summary.startTime = sessionRecords.get(0).getTimestamp();
-                    summary.endTime = sessionRecords.get(sessionRecords.size() - 1).getTimestamp();
-                    summary.duration = summary.endTime - summary.startTime;
-                    summary.startLevel = sessionRecords.get(0).getBatteryLevel();
-                    summary.endLevel = sessionRecords.get(sessionRecords.size() - 1).getBatteryLevel();
-                    summary.maxPower = 0;
-                    float powerSum = 0;
-                    for (PowerHistory r : sessionRecords) {
-                        if (r.getPower() > summary.maxPower) summary.maxPower = r.getPower();
-                        powerSum += r.getPower();
+                        ChargingSessionSummary summary = new ChargingSessionSummary();
+                        summary.sessionId = entry.getKey();
+                        summary.startTime = sessionRecords.get(0).getTimestamp();
+                        summary.endTime = sessionRecords.get(sessionRecords.size() - 1).getTimestamp();
+                        summary.duration = summary.endTime - summary.startTime;
+                        summary.startLevel = sessionRecords.get(0).getBatteryLevel();
+                        summary.endLevel = sessionRecords.get(sessionRecords.size() - 1).getBatteryLevel();
+                        summary.maxPower = 0;
+                        float powerSum = 0;
+                        for (PowerHistory r : sessionRecords) {
+                            if (r.getPower() > summary.maxPower) summary.maxPower = r.getPower();
+                            powerSum += r.getPower();
+                        }
+                        summary.avgPower = sessionRecords.size() > 0 ? powerSum / sessionRecords.size() : 0;
+                        summary.chargeType = sessionRecords.get(sessionRecords.size() - 1).getChargeType();
+                        summary.phase = sessionRecords.get(sessionRecords.size() - 1).getChargingPhase();
+
+                        // 估算充电能量 (Wh) = 平均功率 × 时长(小时)
+                        totalEnergyWh += summary.avgPower * (summary.duration / (1000f * 60 * 60));
+                        totalPowerSum += powerSum;
+                        powerCount += sessionRecords.size();
+
+                        summaries.add(summary);
                     }
-                    summary.avgPower = sessionRecords.size() > 0 ? powerSum / sessionRecords.size() : 0;
-                    summary.chargeType = sessionRecords.get(sessionRecords.size() - 1).getChargeType();
-                    summary.phase = sessionRecords.get(sessionRecords.size() - 1).getChargingPhase();
 
-                    // 估算充电能量 (Wh) = 平均功率 × 时长(小时)
-                    totalEnergyWh += summary.avgPower * (summary.duration / (1000f * 60 * 60));
-                    totalPowerSum += powerSum;
-                    powerCount += sessionRecords.size();
-
-                    summaries.add(summary);
-                }
-
-                // 按时间倒序
-                Collections.sort(summaries, (a, b) -> Long.compare(b.startTime, a.startTime));
-
-                float finalTotalEnergyWh = totalEnergyWh;
-                float finalAvgPower = powerCount > 0 ? totalPowerSum / powerCount : 0;
-
-                if (isAdded()) {
-                    handler.post(() -> {
-                        if (!isAdded()) return;
-                        // 更新统计
-                        tvTotalSessions.setText(String.format(Locale.getDefault(), "%d 次", totalSessions));
-                        tvTotalEnergy.setText(String.format(Locale.getDefault(), "%.1f Wh", finalTotalEnergyWh));
-                        tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", finalAvgPower));
-                        tvPeriodLabel.setText(getPeriodLabel());
-
-                        // 渲染历史列表
-                        renderHistoryList(summaries);
+                    // 按时间倒序
+                    Collections.sort(summaries, new Comparator<ChargingSessionSummary>() {
+                        @Override
+                        public int compare(ChargingSessionSummary a, ChargingSessionSummary b) {
+                            return Long.compare(b.startTime, a.startTime);
+                        }
                     });
+
+                    final float finalTotalEnergyWh = totalEnergyWh;
+                    final float finalAvgPower = powerCount > 0 ? totalPowerSum / powerCount : 0;
+
+                    if (isAdded()) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!isAdded()) return;
+                                // 更新统计
+                                tvTotalSessions.setText(String.format(Locale.getDefault(), "%d 次", totalSessions));
+                                tvTotalEnergy.setText(String.format(Locale.getDefault(), "%.1f Wh", finalTotalEnergyWh));
+                                tvAvgPower.setText(String.format(Locale.getDefault(), "%.1f W", finalAvgPower));
+                                tvPeriodLabel.setText(getPeriodLabel());
+
+                                // 渲染历史列表
+                                renderHistoryList(summaries);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    // 静默处理
                 }
-            } catch (Exception e) {
-                // 静默处理
             }
         });
     }

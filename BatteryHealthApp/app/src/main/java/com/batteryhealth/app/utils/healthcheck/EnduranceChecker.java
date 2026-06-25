@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
@@ -79,7 +80,10 @@ public class EnduranceChecker implements IHealthChecker {
                         int voltageMv = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) : 0;
                         int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
                         if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                            capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_FULL);
+                            // BATTERY_PROPERTY_CHARGE_FULL 仅在 API 34+ 可用，低版本回退
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                capacityMicroAh = bm.getIntProperty(7); // BATTERY_PROPERTY_CHARGE_FULL = 7
+                            }
                         }
 
                         if (currentAvg != 0 && currentAvg != Integer.MIN_VALUE && pct > 0) {

@@ -44,9 +44,12 @@ public class BatteryHealthViewModel extends ViewModel {
                 ? ((BatteryRepositoryImpl) batteryRepository).getBatteryDataManager() 
                 : new BatteryDataManager(app.getApplicationContext());
         
-        deviceInfoManager.setActivationInfoListener(activation -> {
-            if (batteryDataManager != null) {
-                batteryDataManager.setUsageDays(activation.usageDays);
+        deviceInfoManager.setActivationInfoListener(new com.batteryhealth.app.utils.DeviceInfoManager.ActivationInfoListener() {
+            @Override
+            public void onActivationInfoReady(com.batteryhealth.app.utils.DeviceInfoManager.ActivationInfo activation) {
+                if (batteryDataManager != null) {
+                    batteryDataManager.setUsageDays(activation.usageDays);
+                }
             }
         });
     }
@@ -78,22 +81,25 @@ public class BatteryHealthViewModel extends ViewModel {
 
     public void refreshData() {
         isLoading.postValue(true);
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
-                if (info != null) {
-                    updateHealthInfo(info);
-                    batteryInfo.postValue(info);
-                    batterySource.postValue(batteryDataManager.getBatterySourceText());
-                } else {
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
+                    if (info != null) {
+                        updateHealthInfo(info);
+                        batteryInfo.postValue(info);
+                        batterySource.postValue(batteryDataManager.getBatterySourceText());
+                    } else {
+                        postNoDataState();
+                    }
+                } catch (Exception e) {
+                    android.util.Log.e("BatteryHealthViewModel", "Error refreshing data: " + e.getMessage(), e);
                     postNoDataState();
+                } finally {
+                    isLoading.postValue(false);
                 }
-            } catch (Exception e) {
-                android.util.Log.e("BatteryHealthViewModel", "Error refreshing data: " + e.getMessage(), e);
-                postNoDataState();
-            } finally {
-                isLoading.postValue(false);
             }
         });
     }

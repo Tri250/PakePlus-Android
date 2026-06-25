@@ -128,7 +128,12 @@ public class BugReportAnalyzer {
     // SimpleDateFormat 非线程安全，使用 ThreadLocal 保证多线程下解析正确。
     // 即使当前调用方仅在单一后台线程使用，ThreadLocal 也能防御未来并发调用。
     private static final ThreadLocal<SimpleDateFormat> TIMESTAMP_SDF =
-            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()));
+            new ThreadLocal<SimpleDateFormat>() {
+                @Override
+                protected SimpleDateFormat initialValue() {
+                    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                }
+            };
 
     public interface AnalysisProgressCallback {
         void onProgress(int step, int totalSteps, String description);

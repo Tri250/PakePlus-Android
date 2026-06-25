@@ -163,20 +163,23 @@ public class TrendFragment extends Fragment {
     }
 
     private void setupChipGroup() {
-        chipGroupRange.setOnCheckedChangeListener((group, checkedId) -> {
-            int rangeIndex;
-            if (checkedId == R.id.chip_7d) {
-                rangeIndex = GetTrendDataUseCase.RANGE_7D;
-            } else if (checkedId == R.id.chip_30d) {
-                rangeIndex = GetTrendDataUseCase.RANGE_30D;
-            } else if (checkedId == R.id.chip_90d) {
-                rangeIndex = GetTrendDataUseCase.RANGE_90D;
-            } else if (checkedId == R.id.chip_180d) {
-                rangeIndex = GetTrendDataUseCase.RANGE_180D;
-            } else {
-                rangeIndex = GetTrendDataUseCase.RANGE_30D;
+        chipGroupRange.setOnCheckedChangeListener(new com.google.android.material.chip.ChipGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(com.google.android.material.chip.ChipGroup group, int checkedId) {
+                int rangeIndex;
+                if (checkedId == R.id.chip_7d) {
+                    rangeIndex = GetTrendDataUseCase.RANGE_7D;
+                } else if (checkedId == R.id.chip_30d) {
+                    rangeIndex = GetTrendDataUseCase.RANGE_30D;
+                } else if (checkedId == R.id.chip_90d) {
+                    rangeIndex = GetTrendDataUseCase.RANGE_90D;
+                } else if (checkedId == R.id.chip_180d) {
+                    rangeIndex = GetTrendDataUseCase.RANGE_180D;
+                } else {
+                    rangeIndex = GetTrendDataUseCase.RANGE_30D;
+                }
+                viewModel.switchRange(rangeIndex);
             }
-            viewModel.switchRange(rangeIndex);
         });
     }
 
@@ -236,10 +239,18 @@ public class TrendFragment extends Fragment {
     }
 
     private void observeViewModel() {
-        viewModel.getTrendData().observe(getViewLifecycleOwner(), this::updateUI);
+        viewModel.getTrendData().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<GetTrendDataUseCase.Result>() {
+            @Override
+            public void onChanged(GetTrendDataUseCase.Result result) {
+                updateUI(result);
+            }
+        });
 
-        viewModel.getIsLoading().observe(getViewLifecycleOwner(), loading -> {
-            // 可扩展：显示/隐藏加载指示器
+        viewModel.getIsLoading().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean loading) {
+                // 可扩展：显示/隐藏加载指示器
+            }
         });
     }
 

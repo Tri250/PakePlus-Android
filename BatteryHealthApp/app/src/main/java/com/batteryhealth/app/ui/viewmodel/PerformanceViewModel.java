@@ -60,44 +60,47 @@ public class PerformanceViewModel extends ViewModel {
      */
     public void refreshData() {
         isLoading.postValue(true);
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                // 系统级指标
-                int cpu = performanceAnalyzer.getCpuUsage();
-                int memory = performanceAnalyzer.getMemoryUsage();
-                int storage = performanceAnalyzer.getStorageUsage();
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    // 系统级指标
+                    int cpu = performanceAnalyzer.getCpuUsage();
+                    int memory = performanceAnalyzer.getMemoryUsage();
+                    int storage = performanceAnalyzer.getStorageUsage();
 
-                cpuUsage.postValue(cpu);
-                memoryUsage.postValue(memory);
-                storageUsage.postValue(storage);
+                    cpuUsage.postValue(cpu);
+                    memoryUsage.postValue(memory);
+                    storageUsage.postValue(storage);
 
-                // 多维加权性能评分
-                PerformanceAnalyzer.PerformanceScoreResult scoreResult =
-                        performanceAnalyzer.calculatePerformanceScore();
-                performanceScore.postValue(scoreResult);
+                    // 多维加权性能评分
+                    PerformanceAnalyzer.PerformanceScoreResult scoreResult =
+                            performanceAnalyzer.calculatePerformanceScore();
+                    performanceScore.postValue(scoreResult);
 
-                // 应用级指标
-                appCpuUsage.postValue(performanceAnalyzer.getAppCpuUsage());
-                appMemoryUsage.postValue(performanceAnalyzer.getAppMemoryUsage());
-                foregroundServiceRunning.postValue(performanceAnalyzer.isForegroundServiceRunning());
+                    // 应用级指标
+                    appCpuUsage.postValue(performanceAnalyzer.getAppCpuUsage());
+                    appMemoryUsage.postValue(performanceAnalyzer.getAppMemoryUsage());
+                    foregroundServiceRunning.postValue(performanceAnalyzer.isForegroundServiceRunning());
 
-                // ANR 分析
-                anrResult.postValue(scoreResult.anrResult);
+                    // ANR 分析
+                    anrResult.postValue(scoreResult.anrResult);
 
-                // 动态性能建议
-                List<String> suggestions = performanceAnalyzer.generateDynamicSuggestions(scoreResult);
-                performanceSuggestions.postValue(suggestions);
+                    // 动态性能建议
+                    List<String> suggestions = performanceAnalyzer.generateDynamicSuggestions(scoreResult);
+                    performanceSuggestions.postValue(suggestions);
 
-                // 持久化性能数据到 Room
-                savePerformanceData(cpu, memory, storage, scoreResult.totalScore);
+                    // 持久化性能数据到 Room
+                    savePerformanceData(cpu, memory, storage, scoreResult.totalScore);
 
-            } catch (Exception e) {
-                android.util.Log.e("PerformanceViewModel", "Error refreshing data: " + e.getMessage());
-                cpuUsage.postValue(-1);
-                memoryUsage.postValue(-1);
-            } finally {
-                isLoading.postValue(false);
+                } catch (Exception e) {
+                    android.util.Log.e("PerformanceViewModel", "Error refreshing data: " + e.getMessage());
+                    cpuUsage.postValue(-1);
+                    memoryUsage.postValue(-1);
+                } finally {
+                    isLoading.postValue(false);
+                }
             }
         });
     }

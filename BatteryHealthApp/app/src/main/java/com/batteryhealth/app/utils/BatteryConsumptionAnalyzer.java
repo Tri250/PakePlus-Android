@@ -174,7 +174,12 @@ public class BatteryConsumptionAnalyzer {
             }
 
             // 排序、计算百分比
-            Collections.sort(temp, (a, b) -> Long.compare(b.consumedUah, a.consumedUah));
+            Collections.sort(temp, new java.util.Comparator<TempStat>() {
+                @Override
+                public int compare(TempStat a, TempStat b) {
+                    return Long.compare(b.consumedUah, a.consumedUah);
+                }
+            });
             int top = Math.min(5, temp.size());
             PackageManager pm = context.getPackageManager();
             for (int i = 0; i < top; i++) {

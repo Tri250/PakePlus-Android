@@ -75,7 +75,12 @@ public class CommunityFragment extends Fragment {
             containerPosts = view.findViewById(R.id.community_posts_container);
             btnShareTip = view.findViewById(R.id.btn_share_tip);
 
-            btnShareTip.setOnClickListener(v -> shareTip());
+            btnShareTip.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    shareTip();
+                }
+            });
 
             // 从 MainActivity 获取共享的 BatteryDataManager
             if (getActivity() instanceof MainActivity) {
@@ -101,15 +106,23 @@ public class CommunityFragment extends Fragment {
     }
 
     private void loadBatteryDataAndPopulate() {
-        ThreadExecutor.execute(() -> {
-            try {
-                batteryDataManager.refreshFromStickyIntent();
-                BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
-                if (info != null && isAdded()) {
-                    handler.post(() -> populateContent(info));
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    batteryDataManager.refreshFromStickyIntent();
+                    final BatteryInfo info = batteryDataManager.getCurrentBatteryInfo();
+                    if (info != null && isAdded()) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                populateContent(info);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error loading battery data: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading battery data: " + e.getMessage());
             }
         });
     }

@@ -165,9 +165,12 @@ public class UiAnimationHelper {
         ValueAnimator animator = ValueAnimator.ofFloat(start, target);
         animator.setDuration(NUMBER_DURATION);
         animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.addUpdateListener(a -> {
-            float value = (float) a.getAnimatedValue();
-            textView.setText(String.format(Locale.getDefault(), format, value));
+        animator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(android.animation.ValueAnimator a) {
+                float value = (float) a.getAnimatedValue();
+                textView.setText(String.format(Locale.getDefault(), format, value));
+            }
         });
         animator.start();
     }
@@ -200,9 +203,12 @@ public class UiAnimationHelper {
         ValueAnimator animator = ValueAnimator.ofInt(start, target);
         animator.setDuration(NUMBER_DURATION);
         animator.setInterpolator(EASE_OUT_CUBIC);
-        animator.addUpdateListener(a -> {
-            int value = (int) a.getAnimatedValue();
-            textView.setText(String.format(Locale.getDefault(), format, value));
+        animator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(android.animation.ValueAnimator a) {
+                int value = (int) a.getAnimatedValue();
+                textView.setText(String.format(Locale.getDefault(), format, value));
+            }
         });
         animator.start();
     }
@@ -262,12 +268,17 @@ public class UiAnimationHelper {
                 .scaleY(1.04f)
                 .setDuration(220L)
                 .setInterpolator(SPRING)
-                .withEndAction(() -> view.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(280L)
-                        .setInterpolator(EASE_OUT_CUBIC)
-                        .start())
+                .withEndAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        view.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(280L)
+                                .setInterpolator(EASE_OUT_CUBIC)
+                                .start();
+                    }
+                })
                 .start();
     }
 }

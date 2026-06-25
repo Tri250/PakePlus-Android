@@ -56,20 +56,22 @@ public class PowerViewModel extends ViewModel {
 
     public void refreshData() {
         isLoading.postValue(true);
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
-                if (info != null) {
-                    batteryInfo.postValue(info);
-                    
-                    float power = info.getChargingPower();
-                    chargeType.postValue(getChargeTypeLabel(power));
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
+                    if (info != null) {
+                        batteryInfo.postValue(info);
+                        float power = info.getChargingPower();
+                        chargeType.postValue(getChargeTypeLabel(power));
+                    }
+                } catch (Exception e) {
+                    android.util.Log.e("PowerViewModel", "Error refreshing data: " + e.getMessage());
+                } finally {
+                    isLoading.postValue(false);
                 }
-            } catch (Exception e) {
-                android.util.Log.e("PowerViewModel", "Error refreshing data: " + e.getMessage());
-            } finally {
-                isLoading.postValue(false);
             }
         });
     }

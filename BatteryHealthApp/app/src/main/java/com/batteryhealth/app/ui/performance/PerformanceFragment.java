@@ -16,6 +16,8 @@ import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -108,74 +110,101 @@ public class PerformanceFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(PerformanceViewModel.class);
 
         // 系统级指标
-        viewModel.getCpuUsage().observe(getViewLifecycleOwner(), cpu -> {
-            if (cpu != null && cpu >= 0) {
-                tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpu));
-                UiAnimationHelper.animateProgressBar(progressCpu, cpu);
+        viewModel.getCpuUsage().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Integer>() {
+            @Override
+            public void onChanged(Integer cpu) {
+                if (cpu != null && cpu >= 0) {
+                    tvCpuUsage.setText(String.format(Locale.getDefault(), "%d%%", cpu));
+                    UiAnimationHelper.animateProgressBar(progressCpu, cpu);
+                }
             }
         });
 
-        viewModel.getMemoryUsage().observe(getViewLifecycleOwner(), memory -> {
-            if (memory != null && memory >= 0) {
-                tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memory));
-                UiAnimationHelper.animateProgressBar(progressMemory, memory);
+        viewModel.getMemoryUsage().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Integer>() {
+            @Override
+            public void onChanged(Integer memory) {
+                if (memory != null && memory >= 0) {
+                    tvMemoryUsage.setText(String.format(Locale.getDefault(), "%d%%", memory));
+                    UiAnimationHelper.animateProgressBar(progressMemory, memory);
+                }
             }
         });
 
-        viewModel.getStorageUsage().observe(getViewLifecycleOwner(), storage -> {
-            if (storage != null && storage >= 0) {
-                tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storage));
-                UiAnimationHelper.animateProgressBar(progressStorage, storage);
+        viewModel.getStorageUsage().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Integer>() {
+            @Override
+            public void onChanged(Integer storage) {
+                if (storage != null && storage >= 0) {
+                    tvStorageUsage.setText(String.format(Locale.getDefault(), "%d%%", storage));
+                    UiAnimationHelper.animateProgressBar(progressStorage, storage);
+                }
             }
         });
 
         // 多维加权性能评分
-        viewModel.getPerformanceScore().observe(getViewLifecycleOwner(), scoreResult -> {
-            if (scoreResult != null) {
-                tvPerformanceScore.setText(String.format(Locale.getDefault(), "%d %s",
-                        scoreResult.totalScore, scoreResult.grade));
-                UiAnimationHelper.animateProgressBar(progressScore, scoreResult.totalScore);
+        viewModel.getPerformanceScore().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<PerformanceAnalyzer.PerformanceScoreResult>() {
+            @Override
+            public void onChanged(PerformanceAnalyzer.PerformanceScoreResult scoreResult) {
+                if (scoreResult != null) {
+                    tvPerformanceScore.setText(String.format(Locale.getDefault(), "%d %s",
+                            scoreResult.totalScore, scoreResult.grade));
+                    UiAnimationHelper.animateProgressBar(progressScore, scoreResult.totalScore);
+                }
             }
         });
 
         // 应用级指标
-        viewModel.getAppCpuUsage().observe(getViewLifecycleOwner(), appCpu -> {
-            if (appCpu != null) {
-                tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", appCpu));
+        viewModel.getAppCpuUsage().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Float>() {
+            @Override
+            public void onChanged(Float appCpu) {
+                if (appCpu != null) {
+                    tvAppCpu.setText(String.format(Locale.getDefault(), "%.1f%%", appCpu));
+                }
             }
         });
 
-        viewModel.getAppMemoryUsage().observe(getViewLifecycleOwner(), appMem -> {
-            if (appMem != null) {
-                tvAppMemory.setText(formatSize(appMem));
+        viewModel.getAppMemoryUsage().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Long>() {
+            @Override
+            public void onChanged(Long appMem) {
+                if (appMem != null) {
+                    tvAppMemory.setText(formatSize(appMem));
+                }
             }
         });
 
-        viewModel.getForegroundServiceRunning().observe(getViewLifecycleOwner(), running -> {
-            if (running != null) {
-                tvForegroundService.setText(running
-                        ? getString(R.string.status_running)
-                        : getString(R.string.status_not_running));
+        viewModel.getForegroundServiceRunning().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean running) {
+                if (running != null) {
+                    tvForegroundService.setText(running
+                            ? getString(R.string.status_running)
+                            : getString(R.string.status_not_running));
+                }
             }
         });
 
         // ANR 分析
-        viewModel.getAnrResult().observe(getViewLifecycleOwner(), anrResult -> {
-            if (anrResult != null) {
-                tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
-                tvAnrSeverity.setText(anrResult.severity);
-                tvAnrMessage.setText(anrResult.message);
+        viewModel.getAnrResult().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<PerformanceAnalyzer.AnrAnalysisResult>() {
+            @Override
+            public void onChanged(PerformanceAnalyzer.AnrAnalysisResult anrResult) {
+                if (anrResult != null) {
+                    tvAnrCount.setText(String.valueOf(anrResult.ourAppAnrs));
+                    tvAnrSeverity.setText(anrResult.severity);
+                    tvAnrMessage.setText(anrResult.message);
+                }
             }
         });
 
         // 动态性能建议
-        viewModel.getPerformanceSuggestions().observe(getViewLifecycleOwner(), suggestions -> {
-            if (suggestions != null && !suggestions.isEmpty()) {
-                StringBuilder builder = new StringBuilder();
-                for (String tip : suggestions) {
-                    builder.append(tip).append("\n");
+        viewModel.getPerformanceSuggestions().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<List<String>>() {
+            @Override
+            public void onChanged(List<String> suggestions) {
+                if (suggestions != null && !suggestions.isEmpty()) {
+                    StringBuilder builder = new StringBuilder();
+                    for (String tip : suggestions) {
+                        builder.append(tip).append("\n");
+                    }
+                    tvPerformanceTips.setText(builder.toString().trim());
                 }
-                tvPerformanceTips.setText(builder.toString().trim());
             }
         });
     }
@@ -278,17 +307,23 @@ public class PerformanceFragment extends Fragment {
 
     private void loadGpuInfo() {
         // EGL 检测与文件 IO 移到后台线程，避免阻塞主线程
-        ThreadExecutor.execute(() -> {
-            final String gpuInfo = (deviceInfoManager != null) ? deviceInfoManager.getGpuInfo() : null;
-            final String openglVersion = detectOpenglVersion();
-            final String vulkanVersion = detectVulkanVersion();
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                final String gpuInfo = (deviceInfoManager != null) ? deviceInfoManager.getGpuInfo() : null;
+                final String openglVersion = detectOpenglVersion();
+                final String vulkanVersion = detectVulkanVersion();
 
-            handler.post(() -> {
-                if (!isAdded()) return;
-                tvGpuRenderer.setText(gpuInfo != null && !gpuInfo.isEmpty() ? gpuInfo : "Unknown");
-                tvOpenglVersion.setText(openglVersion);
-                tvVulkanVersion.setText(vulkanVersion);
-            });
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isAdded()) return;
+                        tvGpuRenderer.setText(gpuInfo != null && !gpuInfo.isEmpty() ? gpuInfo : "Unknown");
+                        tvOpenglVersion.setText(openglVersion);
+                        tvVulkanVersion.setText(vulkanVersion);
+                    }
+                });
+            }
         });
     }
 

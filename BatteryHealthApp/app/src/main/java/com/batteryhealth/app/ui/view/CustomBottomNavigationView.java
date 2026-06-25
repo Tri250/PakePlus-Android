@@ -133,9 +133,12 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
             label.setText(item.label);
             TooltipCompat.setTooltipText(view, item.label);
 
-            view.setOnClickListener(v -> {
-                if (listener != null && position != selectedPosition) {
-                    listener.onItemSelected(position);
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (listener != null && position != selectedPosition) {
+                        listener.onItemSelected(position);
+                    }
                 }
             });
 
@@ -171,11 +174,16 @@ public class CustomBottomNavigationView extends HorizontalScrollView {
                         .scaleX(1.15f)
                         .scaleY(1.15f)
                         .setDuration(150)
-                        .withEndAction(() -> icon.animate()
-                                .scaleX(1.0f)
-                                .scaleY(1.0f)
-                                .setDuration(150)
-                                .start())
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                icon.animate()
+                                        .scaleX(1.0f)
+                                        .scaleY(1.0f)
+                                        .setDuration(150)
+                                        .start();
+                            }
+                        })
                         .start();
                 label.setAlpha(1.0f);
             } else {

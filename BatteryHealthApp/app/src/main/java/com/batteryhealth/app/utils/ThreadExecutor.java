@@ -40,13 +40,16 @@ public final class ThreadExecutor {
      *
      * @param task 后台任务
      */
-    public static void execute(Runnable task) {
+    public static void execute(final Runnable task) {
         if (shutdown || task == null) return;
-        IO_EXECUTOR.execute(() -> {
-            try {
-                task.run();
-            } catch (Exception e) {
-                android.util.Log.e("ThreadExecutor", "IO task failed", e);
+        IO_EXECUTOR.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    android.util.Log.e("ThreadExecutor", "IO task failed", e);
+                }
             }
         });
     }
@@ -58,31 +61,42 @@ public final class ThreadExecutor {
      * @param callback 主线程回调（可能为 null）
      * @param <T>     结果类型
      */
-    public static <T> void executeWithCallback(Task<T> task, MainCallback<T> callback) {
+    public static <T> void executeWithCallback(final Task<T> task, final MainCallback<T> callback) {
         if (shutdown || task == null) {
             if (callback != null) {
-                MAIN_HANDLER.post(() -> callback.onError(new IllegalStateException("ThreadExecutor is shutdown")));
+                MAIN_HANDLER.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onError(new IllegalStateException("ThreadExecutor is shutdown"));
+                    }
+                });
             }
             return;
         }
-        IO_EXECUTOR.execute(() -> {
-            T result = null;
-            Exception error = null;
-            try {
-                result = task.run();
-            } catch (Exception e) {
-                error = e;
-            }
-            if (callback != null) {
-                final T finalResult = result;
-                final Exception finalError = error;
-                MAIN_HANDLER.post(() -> {
-                    if (finalError != null) {
-                        callback.onError(finalError);
-                    } else {
-                        callback.onSuccess(finalResult);
-                    }
-                });
+        IO_EXECUTOR.execute(new Runnable() {
+            @Override
+            public void run() {
+                T result = null;
+                Exception error = null;
+                try {
+                    result = task.run();
+                } catch (Exception e) {
+                    error = e;
+                }
+                if (callback != null) {
+                    final T finalResult = result;
+                    final Exception finalError = error;
+                    MAIN_HANDLER.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (finalError != null) {
+                                callback.onError(finalError);
+                            } else {
+                                callback.onSuccess(finalResult);
+                            }
+                        }
+                    });
+                }
             }
         });
     }
@@ -169,8 +183,12 @@ public final class ThreadExecutor {
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
             t.setPriority(Thread.NORM_PRIORITY);
-            t.setUncaughtExceptionHandler((thread, ex) ->
-                    android.util.Log.e("ThreadExecutor", "Uncaught in " + thread.getName(), ex));
+            t.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread thread, Throwable ex) {
+                    android.util.Log.e("ThreadExecutor", "Uncaught in " + thread.getName(), ex);
+                }
+            });
             return t;
         }
     }

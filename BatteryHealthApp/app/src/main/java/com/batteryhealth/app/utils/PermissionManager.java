@@ -1,6 +1,7 @@
 package com.batteryhealth.app.utils;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -68,9 +69,12 @@ public class PermissionManager {
         new AlertDialog.Builder(activity)
                 .setTitle(activity.getString(com.batteryhealth.app.R.string.dialog_permission_title))
                 .setMessage(message)
-                .setPositiveButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_retry), (dialog, which) -> {
-                    ActivityCompat.requestPermissions(activity,
-                            new String[]{permission}, PERMISSION_REQUEST_CODE);
+                .setPositiveButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_retry), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ActivityCompat.requestPermissions(activity,
+                                new String[]{permission}, PERMISSION_REQUEST_CODE);
+                    }
                 })
                 .setNegativeButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_cancel), null)
                 .show();
@@ -80,10 +84,13 @@ public class PermissionManager {
         new AlertDialog.Builder(activity)
                 .setTitle(activity.getString(com.batteryhealth.app.R.string.dialog_permission_denied_title))
                 .setMessage(activity.getString(com.batteryhealth.app.R.string.dialog_permission_denied_message))
-                .setPositiveButton(activity.getString(com.batteryhealth.app.R.string.action_go_settings), (dialog, which) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    intent.setData(Uri.parse("package:" + activity.getPackageName()));
-                    activity.startActivity(intent);
+                .setPositiveButton(activity.getString(com.batteryhealth.app.R.string.action_go_settings), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        intent.setData(Uri.parse("package:" + activity.getPackageName()));
+                        activity.startActivity(intent);
+                    }
                 })
                 .setNegativeButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_cancel), null)
                 .show();

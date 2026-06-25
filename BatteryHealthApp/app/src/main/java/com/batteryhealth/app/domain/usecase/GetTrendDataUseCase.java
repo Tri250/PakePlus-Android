@@ -333,7 +333,9 @@ public class GetTrendDataUseCase {
         public float health;
         public float avgTemperature;
         public float maxTemperature;
+        public float minTemperature;
         public float cycleCount;
+        public int recordCount;
     }
 
     /**

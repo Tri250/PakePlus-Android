@@ -88,24 +88,56 @@ public class BatteryHealthFragment extends Fragment {
         btnMonthlyReport = view.findViewById(R.id.btn_monthly_report);
         tvReportSummary = view.findViewById(R.id.tv_report_summary);
 
-        btnWeeklyReport.setOnClickListener(v -> generateReport(true));
-        btnMonthlyReport.setOnClickListener(v -> generateReport(false));
+        btnWeeklyReport.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                generateReport(true);
+            }
+        });
+        btnMonthlyReport.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                generateReport(false);
+            }
+        });
 
         // 长按报告区域可分享
-        tvReportSummary.setOnLongClickListener(v -> {
-            shareReport();
-            return true;
+        tvReportSummary.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                shareReport();
+                return true;
+            }
         });
     }
 
     private void initViewModel() {
         viewModel = new ViewModelProvider(this).get(BatteryHealthViewModel.class);
         
-        viewModel.getBatteryInfo().observe(getViewLifecycleOwner(), this::updateUI);
-        viewModel.getHealthGrade().observe(getViewLifecycleOwner(), grade -> 
-                tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade)));
-        viewModel.getHealthStatus().observe(getViewLifecycleOwner(), tvHealthStatus::setText);
-        viewModel.getBatterySource().observe(getViewLifecycleOwner(), tvBatterySource::setText);
+        viewModel.getBatteryInfo().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<com.batteryhealth.app.data.model.BatteryInfo>() {
+            @Override
+            public void onChanged(com.batteryhealth.app.data.model.BatteryInfo info) {
+                updateUI(info);
+            }
+        });
+        viewModel.getHealthGrade().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<String>() {
+            @Override
+            public void onChanged(String grade) {
+                tvHealthGrade.setText(String.format(Locale.getDefault(), "等级 %s", grade));
+            }
+        });
+        viewModel.getHealthStatus().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<String>() {
+            @Override
+            public void onChanged(String status) {
+                tvHealthStatus.setText(status);
+            }
+        });
+        viewModel.getBatterySource().observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<String>() {
+            @Override
+            public void onChanged(String source) {
+                tvBatterySource.setText(source);
+            }
+        });
     }
 
     private void animateEntry(View view) {
@@ -152,20 +184,26 @@ public class BatteryHealthFragment extends Fragment {
         btnWeeklyReport.setEnabled(false);
         btnMonthlyReport.setEnabled(false);
 
-        ThreadExecutor.execute(() -> {
-            BatteryReportGenerator.Report report = weekly
-                    ? reportGenerator.generateWeeklyReport()
-                    : reportGenerator.generateMonthlyReport();
-            lastReport = report;
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                BatteryReportGenerator.Report report = weekly
+                        ? reportGenerator.generateWeeklyReport()
+                        : reportGenerator.generateMonthlyReport();
+                lastReport = report;
 
-            String summary = formatReportSummary(report);
-            if (isAdded() && getActivity() != null) {
-                ThreadExecutor.runOnMain(() -> {
-                    if (!isAdded()) return;
-                    tvReportSummary.setText(summary);
-                    btnWeeklyReport.setEnabled(true);
-                    btnMonthlyReport.setEnabled(true);
-                });
+                final String summary = formatReportSummary(report);
+                if (isAdded() && getActivity() != null) {
+                    ThreadExecutor.runOnMain(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isAdded()) return;
+                            tvReportSummary.setText(summary);
+                            btnWeeklyReport.setEnabled(true);
+                            btnMonthlyReport.setEnabled(true);
+                        }
+                    });
+                }
             }
         });
     }

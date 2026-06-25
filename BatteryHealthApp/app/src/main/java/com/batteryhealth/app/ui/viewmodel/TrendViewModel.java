@@ -63,18 +63,21 @@ public class TrendViewModel extends ViewModel {
     /**
      * 加载指定时间范围的趋势数据
      */
-    public void loadTrendData(int rangeIndex) {
+    public void loadTrendData(final int rangeIndex) {
         currentRange.setValue(rangeIndex);
         isLoading.postValue(true);
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                GetTrendDataUseCase.Result result = getTrendDataUseCase.execute(rangeIndex);
-                trendData.postValue(result);
-            } catch (Exception e) {
-                errorMessage.postValue("加载趋势数据失败: " + e.getMessage());
-            } finally {
-                isLoading.postValue(false);
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    GetTrendDataUseCase.Result result = getTrendDataUseCase.execute(rangeIndex);
+                    trendData.postValue(result);
+                } catch (Exception e) {
+                    errorMessage.postValue("加载趋势数据失败: " + e.getMessage());
+                } finally {
+                    isLoading.postValue(false);
+                }
             }
         });
     }

@@ -73,7 +73,12 @@ public class BugReportHistoryManager {
      */
     public void deleteRecord(long timestamp) {
         List<HistoryRecord> records = getRecords();
-        records.removeIf(r -> r.timestamp == timestamp);
+        java.util.Iterator<HistoryRecord> it = records.iterator();
+        while (it.hasNext()) {
+            if (it.next().timestamp == timestamp) {
+                it.remove();
+            }
+        }
         saveRecords(records);
     }
 

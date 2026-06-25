@@ -121,7 +121,13 @@ public class DeviceInfoManager {
         this.activationInfoListener = listener;
         if (cachedConfig != null && listener != null) {
             ActivationInfo info = collectActivationInfo();
-            mainHandler.post(() -> listener.onActivationInfoReady(info));
+            final ActivationInfo finalInfo = info;
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    listener.onActivationInfoReady(finalInfo);
+                }
+            });
         }
     }
 
@@ -167,13 +173,26 @@ public class DeviceInfoManager {
             callback.onConfigLoaded(cachedConfig);
             return;
         }
-        executor.submit(() -> {
-            try {
-                DeviceConfig config = buildDeviceConfig();
-                mainHandler.post(() -> callback.onConfigLoaded(config));
-            } catch (Exception e) {
-                Log.e(TAG, "Error building device config async", e);
-                mainHandler.post(() -> callback.onConfigLoadFailed(e));
+        executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final DeviceConfig config = buildDeviceConfig();
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onConfigLoaded(config);
+                        }
+                    });
+                } catch (final Exception e) {
+                    Log.e(TAG, "Error building device config async", e);
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onConfigLoadFailed(e);
+                        }
+                    });
+                }
             }
         });
     }
@@ -839,7 +858,13 @@ public class DeviceInfoManager {
             info.setUnknown();
         }
         if (activationInfoListener != null) {
-            mainHandler.post(() -> activationInfoListener.onActivationInfoReady(info));
+            final ActivationInfo finalInfo = info;
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    activationInfoListener.onActivationInfoReady(finalInfo);
+                }
+            });
         }
         return info;
     }
@@ -1181,8 +1206,11 @@ public class DeviceInfoManager {
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r, namePrefix + "-" + threadNumber.getAndIncrement());
-            t.setUncaughtExceptionHandler((thread, ex) -> {
-                Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+            t.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread thread, Throwable ex) {
+                    Log.e("NamedThreadFactory", "Uncaught exception in thread " + thread.getName(), ex);
+                }
             });
             return t;
         }

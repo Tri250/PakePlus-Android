@@ -328,7 +328,12 @@ public class PerformanceAnalyzer {
         // 方式1：直接读取 /data/system/anr/（需要 root 或系统权限）
         File anrDir = new File(Environment.getDataDirectory(), "system/anr");
         if (anrDir.exists() && anrDir.isDirectory() && anrDir.canRead()) {
-            File[] anrFiles = anrDir.listFiles((dir, name) -> name.startsWith("traces"));
+            File[] anrFiles = anrDir.listFiles(new java.io.FilenameFilter() {
+                @Override
+                public boolean accept(java.io.File dir, String name) {
+                    return name.startsWith("traces");
+                }
+            });
             if (anrFiles != null && anrFiles.length > 0) {
                 int totalAnrs = 0;
                 int ourAppAnrs = 0;

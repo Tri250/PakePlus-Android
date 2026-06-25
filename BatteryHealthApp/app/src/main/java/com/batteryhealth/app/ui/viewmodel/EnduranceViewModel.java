@@ -90,81 +90,84 @@ public class EnduranceViewModel extends ViewModel {
      * 刷新所有续航数据 — ViewModel 为唯一数据源。
      */
     public void refreshData() {
-        ThreadExecutor.execute(() -> {
-            if (isCleared.get()) return;
-            try {
-                // 1. 读取电池基础信息
-                Intent intent = appContext.registerReceiver(null,
-                        new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                if (intent == null) return;
+        ThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (isCleared.get()) return;
+                try {
+                    // 1. 读取电池基础信息
+                    Intent intent = appContext.registerReceiver(null,
+                            new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                    if (intent == null) return;
 
-                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-                int batteryPct = (int) ((level / (float) scale) * 100);
-                int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-                boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING
-                        || status == BatteryManager.BATTERY_STATUS_FULL;
-                int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
-                float tempC = temp / 10f;
+                    int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                    int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                    int batteryPct = (int) ((level / (float) scale) * 100);
+                    int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                    boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING
+                            || status == BatteryManager.BATTERY_STATUS_FULL;
+                    int temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
+                    float tempC = temp / 10f;
 
-                batteryLevel.postValue(batteryPct);
-                temperature.postValue(tempC);
-                isCharging.postValue(charging);
+                    batteryLevel.postValue(batteryPct);
+                    temperature.postValue(tempC);
+                    isCharging.postValue(charging);
 
-                // 2. 执行耗电分析
-                BatteryConsumptionAnalyzer.Result analysis =
-                        BatteryConsumptionAnalyzer.analyze(appContext, 24 * 60 * 60 * 1000L);
-                analysisResult.postValue(analysis);
+                    // 2. 执行耗电分析
+                    BatteryConsumptionAnalyzer.Result analysis =
+                            BatteryConsumptionAnalyzer.analyze(appContext, 24 * 60 * 60 * 1000L);
+                    analysisResult.postValue(analysis);
 
-                // TOP 耗电应用
-                if (analysis != null && analysis.topConsumers != null && !analysis.topConsumers.isEmpty()) {
-                    topConsumers.postValue(analysis.topConsumers);
-                } else {
-                    topConsumers.postValue(new ArrayList<>());
+                    // TOP 耗电应用
+                    if (analysis != null && analysis.topConsumers != null && !analysis.topConsumers.isEmpty()) {
+                        topConsumers.postValue(analysis.topConsumers);
+                    } else {
+                        topConsumers.postValue(new ArrayList<>());
+                    }
+
+                    // 3. 计算真实放电速率
+                    float rate = calculateDischargeRate(batteryPct, charging, analysis);
+                    dischargeRate.postValue(rate);
+
+                    // 4. 计算续航/充电时间
+                    if (charging) {
+                        float chargeHours = calculateChargeTime(batteryPct, analysis);
+                        estimatedChargeHours.postValue(chargeHours);
+                        estimatedEnduranceHours.postValue(0f);
+                    } else {
+                        float enduranceHours = calculateEnduranceHours(batteryPct, rate, analysis);
+                        estimatedEnduranceHours.postValue(enduranceHours);
+                        estimatedChargeHours.postValue(0f);
+                    }
+
+                    // 5. 续航等级评估
+                    float enduranceForGrade = charging ? 0f : (estimatedEnduranceHours.getValue() != null ? estimatedEnduranceHours.getValue() : 0f);
+                    String grade = assessEnduranceGrade(batteryPct, rate, charging);
+                    String gradeDesc = assessEnduranceDescription(grade);
+                    enduranceGrade.postValue(grade);
+                    enduranceGradeDescription.postValue(gradeDesc);
+
+                    // 6. 耗电异常提醒
+                    boolean abnormal = !charging && rate > 15f;
+                    isAbnormalDischarge.postValue(abnormal);
+
+                    // 7. 屏幕亮屏时间
+                    boolean hasAccess = BatteryConsumptionAnalyzer.hasUsageAccess(appContext);
+                    hasUsageAccess.postValue(hasAccess);
+                    if (hasAccess) {
+                        long screenTime = queryScreenOnTime();
+                        screenOnTimeMs.postValue(screenTime);
+                    } else {
+                        screenOnTimeMs.postValue(-1L);
+                    }
+
+                    // 8. 省电建议
+                    List<String> tips = generatePowerSavingTips(batteryPct, rate, tempC, charging, analysis);
+                    powerSavingTips.postValue(tips);
+
+                } catch (Exception e) {
+                    android.util.Log.e("EnduranceViewModel", "Error refreshing: " + e.getMessage());
                 }
-
-                // 3. 计算真实放电速率
-                float rate = calculateDischargeRate(batteryPct, charging, analysis);
-                dischargeRate.postValue(rate);
-
-                // 4. 计算续航/充电时间
-                if (charging) {
-                    float chargeHours = calculateChargeTime(batteryPct, analysis);
-                    estimatedChargeHours.postValue(chargeHours);
-                    estimatedEnduranceHours.postValue(0f);
-                } else {
-                    float enduranceHours = calculateEnduranceHours(batteryPct, rate, analysis);
-                    estimatedEnduranceHours.postValue(enduranceHours);
-                    estimatedChargeHours.postValue(0f);
-                }
-
-                // 5. 续航等级评估
-                float enduranceForGrade = charging ? 0f : (estimatedEnduranceHours.getValue() != null ? estimatedEnduranceHours.getValue() : 0f);
-                String grade = assessEnduranceGrade(batteryPct, rate, charging);
-                String gradeDesc = assessEnduranceDescription(grade);
-                enduranceGrade.postValue(grade);
-                enduranceGradeDescription.postValue(gradeDesc);
-
-                // 6. 耗电异常提醒
-                boolean abnormal = !charging && rate > 15f;
-                isAbnormalDischarge.postValue(abnormal);
-
-                // 7. 屏幕亮屏时间
-                boolean hasAccess = BatteryConsumptionAnalyzer.hasUsageAccess(appContext);
-                hasUsageAccess.postValue(hasAccess);
-                if (hasAccess) {
-                    long screenTime = queryScreenOnTime();
-                    screenOnTimeMs.postValue(screenTime);
-                } else {
-                    screenOnTimeMs.postValue(-1L);
-                }
-
-                // 8. 省电建议
-                List<String> tips = generatePowerSavingTips(batteryPct, rate, tempC, charging, analysis);
-                powerSavingTips.postValue(tips);
-
-            } catch (Exception e) {
-                android.util.Log.e("EnduranceViewModel", "Error refreshing: " + e.getMessage());
             }
         });
     }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -71,21 +72,27 @@ public class ErrorActivity extends AppCompatActivity {
         String details = buildDetails(throwableClass, stackTrace);
         tvDetails.setText(details);
 
-        btnDetails.setOnClickListener(v -> {
-            if (scrollDetails.getVisibility() == ScrollView.GONE) {
-                scrollDetails.setVisibility(ScrollView.VISIBLE);
-                btnDetails.setText(R.string.error_hide_details);
-            } else {
-                scrollDetails.setVisibility(ScrollView.GONE);
-                btnDetails.setText(R.string.error_view_details);
+        btnDetails.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (scrollDetails.getVisibility() == ScrollView.GONE) {
+                    scrollDetails.setVisibility(ScrollView.VISIBLE);
+                    btnDetails.setText(R.string.error_hide_details);
+                } else {
+                    scrollDetails.setVisibility(ScrollView.GONE);
+                    btnDetails.setText(R.string.error_view_details);
+                }
             }
         });
 
-        btnRestart.setOnClickListener(v -> {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+        btnRestart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ErrorActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
         });
     }
 
