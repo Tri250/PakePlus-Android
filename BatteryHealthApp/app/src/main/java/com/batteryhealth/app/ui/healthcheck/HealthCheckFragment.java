@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -220,10 +221,19 @@ public class HealthCheckFragment extends Fragment {
         try {
             Context ctx = getContext();
             if (ctx == null) return;
+
+            // 1. 复制到剪贴板
             ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText("health-check-report", csv));
             }
+
+            // 2. 同时弹出分享 Intent，让用户可发送到微信/邮件等
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, csv);
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_report_title)));
+
             Toast.makeText(ctx, getString(R.string.health_check_export_success), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();

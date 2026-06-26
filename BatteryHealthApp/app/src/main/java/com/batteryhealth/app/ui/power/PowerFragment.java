@@ -183,8 +183,9 @@ public class PowerFragment extends Fragment {
             batteryDataManager = new BatteryDataManager(requireContext());
         }
 
-        // 初始化 ViewModel
+        // 初始化 ViewModel 并观察充电类型（作为 ChargeProtocolDetector 的回退）
         viewModel = new ViewModelProvider(this).get(PowerViewModel.class);
+        viewModel.refreshData();
 
         // 绑定 ChargingMonitorService
         bindChargingService();
@@ -320,7 +321,13 @@ public class PowerFragment extends Fragment {
             } else if (batteryDataManager.isNearOfficialFastCharge(watt)) {
                 powerType = protocolResult.primary;
             } else {
-                powerType = batteryDataManager.getPowerLevelLabel(watt);
+                // 优先使用 ViewModel 基于充电状态的判定（解决功率为0但实际在充电的误判问题）
+                String vmChargeType = viewModel.getChargeType().getValue();
+                if (vmChargeType != null && !vmChargeType.equals("未充电")) {
+                    powerType = vmChargeType;
+                } else {
+                    powerType = batteryDataManager.getPowerLevelLabel(watt);
+                }
             }
             tvPowerType.setText(powerType);
             UiAnimationHelper.animateProgressBar(progressCharge, batteryPct);

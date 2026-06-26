@@ -182,6 +182,10 @@ public class EnduranceViewModel extends ViewModel {
 
             } catch (Exception e) {
                 android.util.Log.e("EnduranceViewModel", "Error refreshing: " + e.getMessage());
+                // 异常时确保 UI 不卡在加载态
+                isAbnormalDischarge.postValue(false);
+                enduranceGrade.postValue("--");
+                enduranceGradeDescription.postValue("数据刷新失败");
             }
         });
     }

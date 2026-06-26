@@ -62,9 +62,10 @@ public class PowerViewModel extends ViewModel {
                 BatteryInfo info = batteryRepository.getCurrentBatteryInfo();
                 if (info != null) {
                     batteryInfo.postValue(info);
-                    
+
                     float power = info.getChargingPower();
-                    chargeType.postValue(getChargeTypeLabel(power));
+                    boolean charging = info.isCharging();
+                    chargeType.postValue(getChargeTypeLabel(power, charging));
                 }
             } catch (Exception e) {
                 android.util.Log.e("PowerViewModel", "Error refreshing data: " + e.getMessage());
@@ -74,12 +75,14 @@ public class PowerViewModel extends ViewModel {
         });
     }
 
-    private String getChargeTypeLabel(float power) {
+    private String getChargeTypeLabel(float power, boolean isCharging) {
         if (power >= 100) return "超级快充";
         if (power >= 60) return "极速快充";
         if (power >= 30) return "快充";
         if (power >= 10) return "普通充电";
         if (power > 0) return "慢速充电";
+        // 功率读取为 0 但正在充电，说明电流/电压读取失败，不应显示"未充电"
+        if (isCharging) return "充电中";
         return "未充电";
     }
 

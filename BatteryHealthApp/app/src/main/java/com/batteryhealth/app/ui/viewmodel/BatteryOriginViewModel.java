@@ -120,6 +120,7 @@ public class BatteryOriginViewModel extends ViewModel {
 
             } catch (Exception e) {
                 detectionError.postValue(true);
+                android.util.Log.e("BatteryOriginViewModel", "Detection failed: " + e.getMessage(), e);
             } finally {
                 isDetecting.postValue(false);
             }

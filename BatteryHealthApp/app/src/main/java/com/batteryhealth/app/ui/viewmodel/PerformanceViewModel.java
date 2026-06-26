@@ -96,6 +96,7 @@ public class PerformanceViewModel extends ViewModel {
                 android.util.Log.e("PerformanceViewModel", "Error refreshing data: " + e.getMessage());
                 cpuUsage.postValue(-1);
                 memoryUsage.postValue(-1);
+                storageUsage.postValue(-1);
             } finally {
                 isLoading.postValue(false);
             }
