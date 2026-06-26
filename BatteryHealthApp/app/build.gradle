@@ -121,6 +121,27 @@ android {
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
     }
+
+    // 单元测试配置 - 生成 XML 报告和覆盖率
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+            all {
+                // 测试 JVM 参数：启用断言、UTF-8 编码、合理堆大小
+                jvmArgs '-ea', '-Dfile.encoding=UTF-8', '-Xmx2048m'
+                // 测试事件监听器：生成详细报告
+                testLogging {
+                    events 'started', 'passed', 'skipped', 'failed', 'standardError'
+                    showStandardStreams = false
+                    showExceptions = true
+                    showCauses = true
+                    showStackTraces = true
+                    exceptionFormat = 'full'
+                }
+            }
+        }
+    }
 }
 
 dependencies {
@@ -179,8 +200,28 @@ dependencies {
     // WorkManager
     implementation 'androidx.work:work-runtime:2.9.1'
 
-    // 测试依赖
+    // 测试依赖 - 单元测试
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-inline:5.14.2'
+    testImplementation 'org.robolectric:robolectric:4.13'
+    testImplementation 'androidx.test:core:1.5.0'
+    testImplementation 'androidx.test.ext:junit:1.1.5'
+    testImplementation 'androidx.arch.core:core-testing:2.2.0'
+    testImplementation 'androidx.room:room-testing:2.6.1'
+    testImplementation 'androidx.work:work-testing:2.9.1'
+    testImplementation 'androidx.lifecycle:lifecycle-runtime-testing:2.8.7'
+    testImplementation 'net.bytebuddy:byte-buddy:1.15.4'
+    testImplementation 'org.awaitility:awaitility:4.2.2'
+
+    // 测试依赖 - 仪器测试
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.5.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.2.0'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+    androidTestImplementation 'androidx.work:work-testing:2.9.1'
+    androidTestImplementation 'androidx.room:room-testing:2.6.1'
 }
