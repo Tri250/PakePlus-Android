@@ -271,6 +271,16 @@ public class GetTrendDataUseCaseTest {
         }
 
         @Override
+        public androidx.lifecycle.LiveData<BatteryInfo> observeBatteryInfo() {
+            return null;
+        }
+
+        @Override
+        public BatteryInfo getCurrentBatteryInfo() {
+            return history.isEmpty() ? null : history.get(history.size() - 1);
+        }
+
+        @Override
         public void saveBatteryInfo(BatteryInfo info) {}
 
         @Override
@@ -285,22 +295,29 @@ public class GetTrendDataUseCaseTest {
         }
 
         @Override
-        public List<BatteryInfo> getAll() {
-            return new ArrayList<>(history);
+        public int getHistoryCountSince(long timestamp) {
+            int count = 0;
+            for (BatteryInfo info : history) {
+                if (info.getTimestamp() >= timestamp) count++;
+            }
+            return count;
         }
 
         @Override
-        public BatteryInfo getLatest() {
-            return history.isEmpty() ? null : history.get(history.size() - 1);
+        public float getAverageHealthSince(long timestamp) {
+            float sum = 0f;
+            int count = 0;
+            for (BatteryInfo info : history) {
+                if (info.getTimestamp() >= timestamp && info.getHealthPercentage() >= 0) {
+                    sum += info.getHealthPercentage();
+                    count++;
+                }
+            }
+            return count == 0 ? -1f : sum / count;
         }
 
         @Override
         public void deleteOlderThan(long timestamp) {}
-
-        @Override
-        public int getCount() {
-            return history.size();
-        }
 
         @Override
         public void savePerformanceData(com.batteryhealth.app.data.model.PerformanceData data) {}

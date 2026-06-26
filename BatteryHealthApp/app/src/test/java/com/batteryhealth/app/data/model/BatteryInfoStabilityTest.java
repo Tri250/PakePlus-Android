@@ -39,8 +39,7 @@ public class BatteryInfoStabilityTest {
         info.setCurrentCapacity(4200);
         info.setCycleCount(150);
         info.setHealthPercentage(93.3f);
-        info.setCharging(true);
-        info.setChargingState(true);
+        info.setStatus(2); // BATTERY_STATUS_CHARGING -> isCharging() returns true
         info.setTechnology("Li-poly");
         info.setTimestamp(System.currentTimeMillis());
 
@@ -53,7 +52,6 @@ public class BatteryInfoStabilityTest {
         assertEquals(150, info.getCycleCount());
         assertEquals(93.3f, info.getHealthPercentage(), 0.001f);
         assertTrue(info.isCharging());
-        assertTrue(info.isChargingState());
         assertEquals("Li-poly", info.getTechnology());
     }
 
@@ -151,7 +149,8 @@ public class BatteryInfoStabilityTest {
                 info.setCurrentCapacity(4200);
                 info.setCycleCount(i);
                 info.setHealthPercentage(95f - (i % 30));
-                info.setCharging(i % 2 == 0);
+                // status 偶数(2) -> 充电中，奇数(3) -> 放电中
+                info.setStatus(i % 2 == 0 ? 2 : 3);
                 info.setTechnology("Li-poly");
                 info.setTimestamp(System.currentTimeMillis() + i);
                 infos[i] = info;

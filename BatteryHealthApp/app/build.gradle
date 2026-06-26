@@ -11,7 +11,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'com.batteryhealth.app'
     compileSdk 36
-    buildToolsVersion '36.0.0'
+    buildToolsVersion '35.0.0'
 
     defaultConfig {
         applicationId "com.batteryhealth.app"

@@ -70,8 +70,9 @@ public class WorkerStabilityTest {
         try {
             Class<?> cls = Class.forName("com.batteryhealth.app.data.worker.WorkManagerScheduler");
             // 验证关键方法存在
-            cls.getMethod("scheduleAll", Context.class);
-            cls.getMethod("cancelAll", Context.class);
+            cls.getMethod("scheduleBatteryDataWork", Context.class);
+            cls.getMethod("scheduleHealthAlertWork", Context.class);
+            cls.getMethod("cancelAllWork", Context.class);
         } catch (NoSuchMethodException e) {
             fail("Required method not found: " + e.getMessage());
         } catch (ClassNotFoundException e) {
@@ -83,7 +84,7 @@ public class WorkerStabilityTest {
     public void testWorkManagerScheduler_invokeSchedule() {
         try {
             Class<?> cls = Class.forName("com.batteryhealth.app.data.worker.WorkManagerScheduler");
-            java.lang.reflect.Method schedule = cls.getMethod("scheduleAll", Context.class);
+            java.lang.reflect.Method schedule = cls.getMethod("scheduleBatteryDataWork", Context.class);
             schedule.invoke(null, appContext);
             // 验证 WorkManager 已就绪
             assertNotNull(WorkManager.getInstance(appContext));
@@ -96,7 +97,7 @@ public class WorkerStabilityTest {
     public void testWorkManagerScheduler_invokeCancel() {
         try {
             Class<?> cls = Class.forName("com.batteryhealth.app.data.worker.WorkManagerScheduler");
-            java.lang.reflect.Method cancel = cls.getMethod("cancelAll", Context.class);
+            java.lang.reflect.Method cancel = cls.getMethod("cancelAllWork", Context.class);
             cancel.invoke(null, appContext);
         } catch (Exception e) {
             // 同样不让测试失败
@@ -108,7 +109,7 @@ public class WorkerStabilityTest {
         // 多次调用应幂等
         try {
             Class<?> cls = Class.forName("com.batteryhealth.app.data.worker.WorkManagerScheduler");
-            java.lang.reflect.Method schedule = cls.getMethod("scheduleAll", Context.class);
+            java.lang.reflect.Method schedule = cls.getMethod("scheduleBatteryDataWork", Context.class);
             for (int i = 0; i < 5; i++) {
                 schedule.invoke(null, appContext);
             }
@@ -123,7 +124,7 @@ public class WorkerStabilityTest {
         long elapsed = TestUtils.measureExecutionTime("WorkManagerScheduler.schedule", () -> {
             try {
                 Class<?> cls = Class.forName("com.batteryhealth.app.data.worker.WorkManagerScheduler");
-                java.lang.reflect.Method schedule = cls.getMethod("scheduleAll", Context.class);
+                java.lang.reflect.Method schedule = cls.getMethod("scheduleBatteryDataWork", Context.class);
                 schedule.invoke(null, appContext);
             } catch (Exception e) {
                 throw new RuntimeException(e);

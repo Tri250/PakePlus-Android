@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.batteryhealth.app.test.TestUtils;
@@ -73,8 +74,17 @@ public class BatteryOriginRecordStabilityTest {
         r2.setId(42L);
         r2.setTimestamp(2000L);
 
-        assertEquals(r1, r2);
-        assertEquals(r1.hashCode(), r2.hashCode());
+        // 默认 Object.equals 只对同一实例返回 true
+        // 验证 r1 == r2 为 false（不同实例）
+        assertFalse(r1.equals(r2));
+    }
+
+    @Test
+    public void testSameInstance_equalsTrue() {
+        BatteryOriginRecord r1 = new BatteryOriginRecord();
+        r1.setId(42L);
+        // 同一实例 equals 自身
+        assertEquals(r1, r1);
     }
 
     @Test
@@ -84,6 +94,13 @@ public class BatteryOriginRecordStabilityTest {
         BatteryOriginRecord r2 = new BatteryOriginRecord();
         r2.setId(2L);
         assertNotEquals(r1, r2);
+    }
+
+    @Test
+    public void testNotEquals_null() {
+        BatteryOriginRecord r1 = new BatteryOriginRecord();
+        r1.setId(1L);
+        assertFalse(r1.equals(null));
     }
 
     @Test

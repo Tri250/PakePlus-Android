@@ -1,11 +1,7 @@
 package com.batteryhealth.app.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import android.util.Log;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

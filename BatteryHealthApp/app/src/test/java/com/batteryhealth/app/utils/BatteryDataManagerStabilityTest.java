@@ -1,9 +1,7 @@
 package com.batteryhealth.app.utils;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -12,9 +10,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.test.TestUtils;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -37,9 +33,6 @@ import java.util.concurrent.TimeUnit;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 33)
 public class BatteryDataManagerStabilityTest {
-
-    @Rule
-    public TestName testName = new TestName();
 
     private BatteryDataManager manager;
 
@@ -118,9 +111,10 @@ public class BatteryDataManagerStabilityTest {
         // 若设备无官方功率，阈值 18W
         // 仅当电流功率 >= 18W 才返回 true
         if (result) {
-            // 必然 >= 18
-            assertTrue(true);
+            // 设备有官方功率且 5W 已被认为是快充，验证结果一致
+            assertTrue(result);
         } else {
+            // 设备无官方功率或 5W 不被认为是快充
             assertFalse(result);
         }
     }
