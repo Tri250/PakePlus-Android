@@ -978,24 +978,24 @@ public class BatteryOriginDetector {
          */
         public BatteryOriginRecord toRecord() {
             BatteryOriginRecord record = new BatteryOriginRecord();
-            record.timestamp = System.currentTimeMillis();
-            record.isOriginal = this.isOriginal;
-            record.confidence = this.confidence;
-            record.conclusion = this.conclusion;
-            record.manufacturer = this.manufacturer;
-            record.manufactureDate = this.manufactureDate;
-            record.serialNumber = this.serialNumber;
-            record.oemInfo = this.oemInfo;
-            record.technology = this.technology;
-            record.healthStatus = this.healthStatus;
-            record.cycleCount = this.cycleCount;
-            record.designCapacity = this.designCapacity;
-            record.currentCapacity = this.currentCapacity;
-            record.batteryInfoRaw = this.batteryInfo;
-            record.deviceBrand = this.brand;
-            record.deviceModel = this.model;
-            record.detectionMethodsJson = this.detectionMethodsJson;
-            record.sourceTag = this.sourceTag;
+            record.setTimestamp(System.currentTimeMillis());
+            record.setOriginal(this.isOriginal);
+            record.setConfidence(this.confidence);
+            record.setConclusion(this.conclusion);
+            record.setManufacturer(this.manufacturer);
+            record.setManufactureDate(this.manufactureDate);
+            record.setSerialNumber(this.serialNumber);
+            record.setOemInfo(this.oemInfo);
+            record.setTechnology(this.technology);
+            record.setHealthStatus(this.healthStatus);
+            record.setCycleCount(this.cycleCount);
+            record.setDesignCapacity(this.designCapacity);
+            record.setCurrentCapacity(this.currentCapacity);
+            record.setBatteryInfoRaw(this.batteryInfo);
+            record.setDeviceBrand(this.brand);
+            record.setDeviceModel(this.model);
+            record.setDetectionMethodsJson(this.detectionMethodsJson);
+            record.setSourceTag(this.sourceTag);
             return record;
         }
     }

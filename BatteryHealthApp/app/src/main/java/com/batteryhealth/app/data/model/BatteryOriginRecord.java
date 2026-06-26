@@ -14,59 +14,117 @@ import androidx.room.ColumnInfo;
 public class BatteryOriginRecord {
 
     @PrimaryKey(autoGenerate = true)
-    public long id;
+    private long id;
 
     @ColumnInfo(name = "timestamp")
-    public long timestamp;
+    private long timestamp;
 
     @ColumnInfo(name = "is_original")
-    public boolean isOriginal;
+    private boolean isOriginal;
 
     @ColumnInfo(name = "confidence")
-    public int confidence;
+    private int confidence;
 
     @ColumnInfo(name = "conclusion")
-    public String conclusion;
+    private String conclusion;
 
     @ColumnInfo(name = "manufacturer")
-    public String manufacturer;
+    private String manufacturer;
 
     @ColumnInfo(name = "manufacture_date")
-    public String manufactureDate;
+    private String manufactureDate;
 
     @ColumnInfo(name = "serial_number")
-    public String serialNumber;
+    private String serialNumber;
 
     @ColumnInfo(name = "oem_info")
-    public String oemInfo;
+    private String oemInfo;
 
     @ColumnInfo(name = "technology")
-    public String technology;
+    private String technology;
 
     @ColumnInfo(name = "health_status")
-    public String healthStatus;
+    private String healthStatus;
 
     @ColumnInfo(name = "cycle_count")
-    public String cycleCount;
+    private String cycleCount;
 
     @ColumnInfo(name = "design_capacity")
-    public int designCapacity;
+    private int designCapacity;
 
     @ColumnInfo(name = "current_capacity")
-    public int currentCapacity;
+    private int currentCapacity;
 
     @ColumnInfo(name = "battery_info_raw")
-    public String batteryInfoRaw;
+    private String batteryInfoRaw;
 
     @ColumnInfo(name = "device_brand")
-    public String deviceBrand;
+    private String deviceBrand;
 
     @ColumnInfo(name = "device_model")
-    public String deviceModel;
+    private String deviceModel;
 
     @ColumnInfo(name = "detection_methods_json")
-    public String detectionMethodsJson;
+    private String detectionMethodsJson;
 
     @ColumnInfo(name = "source_tag")
-    public String sourceTag;
+    private String sourceTag;
+
+    // Getters and Setters
+    public long getId() { return id; }
+    public void setId(long id) { this.id = id; }
+
+    public long getTimestamp() { return timestamp; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public boolean isOriginal() { return isOriginal; }
+    public void setOriginal(boolean original) { isOriginal = original; }
+
+    public int getConfidence() { return confidence; }
+    public void setConfidence(int confidence) { this.confidence = confidence; }
+
+    public String getConclusion() { return conclusion; }
+    public void setConclusion(String conclusion) { this.conclusion = conclusion; }
+
+    public String getManufacturer() { return manufacturer; }
+    public void setManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
+
+    public String getManufactureDate() { return manufactureDate; }
+    public void setManufactureDate(String manufactureDate) { this.manufactureDate = manufactureDate; }
+
+    public String getSerialNumber() { return serialNumber; }
+    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
+
+    public String getOemInfo() { return oemInfo; }
+    public void setOemInfo(String oemInfo) { this.oemInfo = oemInfo; }
+
+    public String getTechnology() { return technology; }
+    public void setTechnology(String technology) { this.technology = technology; }
+
+    public String getHealthStatus() { return healthStatus; }
+    public void setHealthStatus(String healthStatus) { this.healthStatus = healthStatus; }
+
+    public String getCycleCount() { return cycleCount; }
+    public void setCycleCount(String cycleCount) { this.cycleCount = cycleCount; }
+
+    public int getDesignCapacity() { return designCapacity; }
+    public void setDesignCapacity(int designCapacity) { this.designCapacity = designCapacity; }
+
+    public int getCurrentCapacity() { return currentCapacity; }
+    public void setCurrentCapacity(int currentCapacity) { this.currentCapacity = currentCapacity; }
+
+    public String getBatteryInfoRaw() { return batteryInfoRaw; }
+    public void setBatteryInfoRaw(String batteryInfoRaw) { this.batteryInfoRaw = batteryInfoRaw; }
+
+    public String getDeviceBrand() { return deviceBrand; }
+    public void setDeviceBrand(String deviceBrand) { this.deviceBrand = deviceBrand; }
+
+    public String getDeviceModel() { return deviceModel; }
+    public void setDeviceModel(String deviceModel) { this.deviceModel = deviceModel; }
+
+    public String getDetectionMethodsJson() { return detectionMethodsJson; }
+    public void setDetectionMethodsJson(String detectionMethodsJson) { this.detectionMethodsJson = detectionMethodsJson; }
+
+    public String getSourceTag() { return sourceTag; }
+    public void setSourceTag(String sourceTag) { this.sourceTag = sourceTag; }
 }

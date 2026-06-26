@@ -36,6 +36,9 @@ public interface BatteryOriginRecordDao {
     @Query("DELETE FROM battery_origin_record WHERE timestamp < :timestamp")
     void deleteOlderThan(long timestamp);
 
+    @Query("DELETE FROM battery_origin_record WHERE id = :id")
+    int deleteById(long id);
+
     @Query("DELETE FROM battery_origin_record")
     void deleteAll();
 }

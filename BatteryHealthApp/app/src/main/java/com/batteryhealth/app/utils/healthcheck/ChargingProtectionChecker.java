@@ -99,7 +99,7 @@ public class ChargingProtectionChecker implements IHealthChecker {
                     adviceBuilder.append("请立即停止充电，关闭高耗电应用，取下保护壳散热，待温度降至 35°C 以下再继续充电。");
                     statusText = "危险";
                 } else if (tempC >= TEMP_CHARGING_WARNING) {
-                    if (worstSeverity < HealthCheckResult.SEVERITY_WARNING) {
+                    if (worstSeverity <= HealthCheckResult.SEVERITY_GOOD) {
                         worstSeverity = HealthCheckResult.SEVERITY_WARNING;
                     }
                     score = Math.min(score, 55);
@@ -113,7 +113,7 @@ public class ChargingProtectionChecker implements IHealthChecker {
 
             // 2. 过充检测：100% 仍充电
             if (batteryPct >= 100 && status == BatteryManager.BATTERY_STATUS_CHARGING) {
-                if (worstSeverity < HealthCheckResult.SEVERITY_WARNING) {
+                if (worstSeverity <= HealthCheckResult.SEVERITY_INFO) {
                     worstSeverity = HealthCheckResult.SEVERITY_WARNING;
                 }
                 score = Math.min(score, 60);
@@ -127,7 +127,7 @@ public class ChargingProtectionChecker implements IHealthChecker {
             // 3. 异常电流检测
             if (powerW > 0 && powerW < 2.0f && batteryPct < 90) {
                 // 电量低但功率极低，可能是充电器/数据线问题
-                if (worstSeverity < HealthCheckResult.SEVERITY_INFO) {
+                if (worstSeverity <= HealthCheckResult.SEVERITY_GOOD) {
                     worstSeverity = HealthCheckResult.SEVERITY_INFO;
                 }
                 score = Math.min(score, 65);

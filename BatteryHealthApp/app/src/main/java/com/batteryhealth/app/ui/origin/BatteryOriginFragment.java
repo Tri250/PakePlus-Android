@@ -315,12 +315,12 @@ public class BatteryOriginFragment extends Fragment {
             leftPart.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
             TextView tvTime = new TextView(requireContext());
-            tvTime.setText(viewModel.formatRecordTime(record.timestamp));
+            tvTime.setText(viewModel.formatRecordTime(record.getTimestamp()));
             tvTime.setTextSize(13);
             tvTime.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_2));
 
             TextView tvConclusion = new TextView(requireContext());
-            tvConclusion.setText(record.conclusion != null ? record.conclusion : "--");
+            tvConclusion.setText(record.getConclusion() != null ? record.getConclusion() : "--");
             tvConclusion.setTextSize(12);
             tvConclusion.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
             tvConclusion.setMaxLines(1);
@@ -330,7 +330,7 @@ public class BatteryOriginFragment extends Fragment {
 
             // 右侧：原装/非原装 + 置信度
             TextView tvBadge = new TextView(requireContext());
-            if (record.isOriginal) {
+            if (record.isOriginal()) {
                 tvBadge.setText(getString(R.string.result_original));
                 tvBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.confidence_high));
             } else {
@@ -341,7 +341,7 @@ public class BatteryOriginFragment extends Fragment {
             tvBadge.setTypeface(null, android.graphics.Typeface.BOLD);
 
             TextView tvConf = new TextView(requireContext());
-            tvConf.setText(String.format(Locale.getDefault(), "%d%%", record.confidence));
+            tvConf.setText(String.format(Locale.getDefault(), "%d%%", record.getConfidence()));
             tvConf.setTextSize(12);
             tvConf.setTextColor(ContextCompat.getColor(requireContext(), R.color.label_3));
 

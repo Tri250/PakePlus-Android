@@ -285,7 +285,7 @@ public class BatteryOriginViewModel extends ViewModel {
     }
 
     /**
-     * 删除历史记录
+     * 删除指定历史记录
      */
     public void deleteHistoryRecord(long id) {
         ThreadExecutor.execute(() -> {
@@ -295,7 +295,7 @@ public class BatteryOriginViewModel extends ViewModel {
                 if (app == null) return;
                 AppDatabase db = app.getDatabase();
                 if (db == null) return;
-                db.batteryOriginRecordDao().deleteOlderThan(id + 1);
+                db.batteryOriginRecordDao().deleteById(id);
                 // Reload
                 loadHistoryInternal();
             } catch (Exception e) {
