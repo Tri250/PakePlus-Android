@@ -11,6 +11,8 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.LinearLayout;
+import android.app.AlertDialog;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -59,6 +61,7 @@ public class TrendFragment extends Fragment {
     private static final String TAG = "TrendFragment";
 
     private LineChart lineChart;
+    private ProgressBar progressLoading;
     private TextView tvInitialHealth, tvCurrentHealth, tvTotalDecay, tvMonthlyDecay;
     private TextView tvAvgTemperature, tvMaxTemperature, tvRecordCount, tvDataSpan;
     private TextView tvRemainingMonths, tvLifespanPrediction;
@@ -110,6 +113,7 @@ public class TrendFragment extends Fragment {
 
     private void initViews(View view) {
         lineChart = view.findViewById(R.id.line_chart);
+        progressLoading = view.findViewById(R.id.progress_loading);
         tvInitialHealth = view.findViewById(R.id.tv_initial_health);
         tvCurrentHealth = view.findViewById(R.id.tv_current_health);
         tvTotalDecay = view.findViewById(R.id.tv_total_decay);
@@ -216,15 +220,41 @@ public class TrendFragment extends Fragment {
         rightAxis.setAxisMinimum(0f);
         rightAxis.setAxisMaximum(60f);
 
-        // 数据点点击回调
+        // 数据点点击回调：显示数据点详情弹窗
         lineChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, Highlight h) {
-                // 可扩展：显示数据点详情弹窗
+                if (e == null || h == null) return;
+                // 从 DailyPoint 列表中找到对应索引的原始数据
+                int dataIndex = (int) h.getX();
+                List<GetTrendDataUseCase.DailyPoint> dailyPoints =
+                        viewModel.getTrendData().getValue() != null
+                        ? viewModel.getTrendData().getValue().dailyPoints : null;
+                if (dailyPoints == null || dataIndex < 0 || dataIndex >= dailyPoints.size()) return;
+
+                GetTrendDataUseCase.DailyPoint dp = dailyPoints.get(dataIndex);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String dateStr = sdf.format(new Date(dp.timestamp));
+                StringBuilder detail = new StringBuilder();
+                detail.append("日期：").append(dateStr).append("\n");
+                if (dp.health >= 0) {
+                    detail.append("健康度：").append(String.format(Locale.getDefault(), "%.1f%%", dp.health)).append("\n");
+                }
+                if (dp.avgTemperature > 0) {
+                    detail.append("平均温度：").append(String.format(Locale.getDefault(), "%.1f°C", dp.avgTemperature)).append("\n");
+                }
+                if (dp.maxTemperature > 0) {
+                    detail.append("最高温度：").append(String.format(Locale.getDefault(), "%.1f°C", dp.maxTemperature)).append("\n");
+                }
+                if (dp.cycleCount >= 0) {
+                    detail.append("充电次数：").append(dp.cycleCount).append(" 次");
+                }
+                showDataPointDetailDialog(detail.toString().trim());
             }
 
             @Override
             public void onNothingSelected() {
+                // 用户取消选择，无需操作
             }
         });
     }
@@ -233,7 +263,9 @@ public class TrendFragment extends Fragment {
         viewModel.getTrendData().observe(getViewLifecycleOwner(), this::updateUI);
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), loading -> {
-            // 可扩展：显示/隐藏加载指示器
+            if (progressLoading != null) {
+                progressLoading.setVisibility(loading != null && loading ? View.VISIBLE : View.GONE);
+            }
         });
     }
 
@@ -486,5 +518,17 @@ public class TrendFragment extends Fragment {
         lineChart.setData(lineData);
         lineChart.setNoDataText(getString(R.string.health_check_no_data));
         lineChart.invalidate();
+    }
+
+    /**
+     * 显示数据点详情弹窗
+     */
+    private void showDataPointDetailDialog(String detail) {
+        if (detail == null || detail.isEmpty() || getContext() == null) return;
+        new AlertDialog.Builder(requireContext())
+                .setTitle("数据详情")
+                .setMessage(detail)
+                .setPositiveButton("确定", null)
+                .show();
     }
 }

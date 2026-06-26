@@ -7,10 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.batteryhealth.app.BatteryHealthApplication;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
-import com.batteryhealth.app.data.repository.DeviceRepositoryImpl;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
-import com.batteryhealth.app.domain.repository.DeviceRepository;
-import com.batteryhealth.app.domain.usecase.CalculateHealthUseCase;
 import com.batteryhealth.app.utils.BatteryDataManager;
 import com.batteryhealth.app.utils.DeviceInfoManager;
 import com.batteryhealth.app.utils.ThreadExecutor;
@@ -27,7 +24,6 @@ public class BatteryHealthViewModel extends ViewModel {
     private final MutableLiveData<String> batterySource = new MutableLiveData<>();
 
     private final BatteryRepository batteryRepository;
-    private final CalculateHealthUseCase calculateHealthUseCase;
     private final BatteryDataManager batteryDataManager;
 
     /** 标记 ViewModel 是否已销毁，用于取消后台任务回调 */
@@ -38,8 +34,6 @@ public class BatteryHealthViewModel extends ViewModel {
         DeviceInfoManager deviceInfoManager = new DeviceInfoManager(app.getApplicationContext());
         
         batteryRepository = new BatteryRepositoryImpl(app);
-        DeviceRepository deviceRepository = new DeviceRepositoryImpl(deviceInfoManager);
-        calculateHealthUseCase = new CalculateHealthUseCase(batteryRepository, deviceRepository);
         batteryDataManager = batteryRepository instanceof BatteryRepositoryImpl 
                 ? ((BatteryRepositoryImpl) batteryRepository).getBatteryDataManager() 
                 : new BatteryDataManager(app.getApplicationContext());

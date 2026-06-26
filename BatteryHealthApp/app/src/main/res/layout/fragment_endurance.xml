@@ -539,13 +539,13 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 智能穿戴区域（整体隐藏，无蓝牙/GMS集成） -->
+        <!-- 智能穿戴区域（穿戴功能开发中） -->
         <LinearLayout
             android:id="@+id/section_wearable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -569,77 +569,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="@drawable/bg_card">
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp">
 
-                    <LinearLayout
-                        style="@style/iOSListItem"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="48dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/label_wearable_status"
-                            android:textAppearance="@style/WebListLabel" />
-
-                        <TextView
-                            android:id="@+id/tv_wearable_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/WebListValue" />
-
-                    </LinearLayout>
-
-                    <View style="@style/iOSSeparator" />
-
-                    <LinearLayout
-                        style="@style/iOSListItem"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/label_wearable_battery"
-                            android:textAppearance="@style/WebListLabel" />
-
-                        <TextView
-                            android:id="@+id/tv_wearable_battery"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/WebListValue" />
-
-                    </LinearLayout>
-
-                    <View style="@style/iOSSeparator" />
-
-                    <LinearLayout
-                        style="@style/iOSListItem"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/label_wearable_endurance"
-                            android:textAppearance="@style/WebListLabel" />
-
-                        <TextView
-                            android:id="@+id/tv_wearable_endurance"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="--"
-                            android:textAppearance="@style/WebListValue" />
-
-                    </LinearLayout>
+                        android:text="@string/hint_wearable_pending"
+                        android:textAppearance="@style/WebListValue"
+                        android:textColor="@color/label_2" />
 
                 </LinearLayout>
 

@@ -226,7 +226,9 @@ public class EnduranceViewModel extends ViewModel {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.w("EnduranceViewModel", "calculateDischargeRate: battery service query failed - " + e.getClass().getSimpleName());
+        }
 
         return 0f;
     }
@@ -259,14 +261,18 @@ public class EnduranceViewModel extends ViewModel {
                     // 电压优先用 EXTRA_VOLTAGE（毫伏），避免 BatteryManager 属性 ID 语义不统一
                     Intent bi = appContext.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                     if (bi != null) voltageMicroV = bi.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
-                } catch (Throwable ignored) {}
+                } catch (Throwable e) {
+                    android.util.Log.d("EnduranceViewModel", "sticky battery intent read failed: " + e.getClass().getSimpleName());
+                }
                 // 若 sticky intent 读取失败，再用 BatteryManager 属性尝试
                 if (voltageMicroV <= 0) {
                     try {
                         // BatteryManager 属性 ID 2 的语义在不同设备/HAL 实现上不一致，
                         // 仅作为 EXTRA_VOLTAGE 的兜底，不应作为主路径
                         voltageMicroV = bm.getIntProperty(2) * 1000; // getIntProperty 返回毫伏，需转微伏
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable e) {
+                        android.util.Log.d("EnduranceViewModel", "getIntProperty(2) for voltage failed: " + e.getClass().getSimpleName());
+                    }
                 }
 
                 // 容量回退：getIntProperty(24) 是早期错误写法（AOSP 不存在此属性），
@@ -284,7 +290,9 @@ public class EnduranceViewModel extends ViewModel {
                             br.close();
                             if (line != null) capacityMicroAh = Integer.parseInt(line.trim());
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable e) {
+                        android.util.Log.d("EnduranceViewModel", "sysfs charge_full read failed (endurance): " + e.getClass().getSimpleName());
+                    }
                 }
                 int capacityMah = -1;
                 if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;
@@ -298,7 +306,9 @@ public class EnduranceViewModel extends ViewModel {
                     if (powerMw > 0) return (float) (energyMwh / powerMw);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.w("EnduranceViewModel", "calculateEnduranceHours: battery manager query failed - " + e.getClass().getSimpleName());
+        }
 
         return 0f;
     }
@@ -313,7 +323,9 @@ public class EnduranceViewModel extends ViewModel {
                 long remainingMs = Settings.Global.getLong(
                         appContext.getContentResolver(), "battery_estimated_remaining_time_ms", -1);
                 if (remainingMs > 0) return remainingMs / 3600000f;
-            } catch (Throwable ignored) {}
+            } catch (Throwable e) {
+                android.util.Log.d("EnduranceViewModel", "battery_estimated_remaining_time_ms read failed: " + e.getClass().getSimpleName());
+            }
         }
 
         // 方式2：基于充电电流和剩余容量计算
@@ -341,7 +353,9 @@ public class EnduranceViewModel extends ViewModel {
                             br.close();
                             if (line != null) capacityMicroAh = Integer.parseInt(line.trim());
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable e) {
+                        android.util.Log.d("EnduranceViewModel", "sysfs charge_full read failed: " + e.getClass().getSimpleName());
+                    }
                 }
                 int capacityMah = -1;
                 if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;
@@ -356,7 +370,9 @@ public class EnduranceViewModel extends ViewModel {
                     return Math.max(0.1f, hours);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.w("EnduranceViewModel", "calculateChargeTime: all estimation methods failed - " + e.getClass().getSimpleName());
+        }
 
         return 0f;
     }

@@ -37,10 +37,9 @@ public class PerformanceFragment extends Fragment {
 
     private TextView tvCpuUsage, tvMemoryUsage, tvPerformanceScore, tvStorageUsage;
     private ProgressBar progressCpu, progressMemory, progressScore, progressStorage;
-    private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService;
+    private TextView tvAppCpu, tvAppMemory, tvRuntime, tvForegroundService, tvFrameRate;
     private TextView tvGpuRenderer, tvOpenglVersion, tvVulkanVersion;
     private TextView tvAnrCount, tvAnrSeverity, tvAnrMessage, tvPerformanceTips;
-    private TextView tvPerformanceGrade;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
@@ -49,7 +48,6 @@ public class PerformanceFragment extends Fragment {
 
     // FPS 监控
     private Choreographer.FrameCallback fpsFrameCallback;
-    private long lastFrameTimeNanos = 0;
     private int frameCount = 0;
     private float currentFps = 0;
     private long fpsCalculationStartNanos = 0;
@@ -99,9 +97,7 @@ public class PerformanceFragment extends Fragment {
         tvAnrSeverity = view.findViewById(R.id.tv_anr_severity);
         tvAnrMessage = view.findViewById(R.id.tv_anr_message);
         tvPerformanceTips = view.findViewById(R.id.tv_performance_tips);
-
-        // 性能评分等级（复用 tvPerformanceScore 所在行的左侧空间）
-        tvPerformanceGrade = new TextView(requireContext());
+        tvFrameRate = view.findViewById(R.id.tv_frame_rate);
     }
 
     private void initViewModel() {
@@ -248,6 +244,13 @@ public class PerformanceFragment extends Fragment {
                     currentFps = frameCount * 1_000_000_000f / elapsedNanos;
                     frameCount = 0;
                     fpsCalculationStartNanos = frameTimeNanos;
+                    // 同步到 UI
+                    final float fps = currentFps;
+                    handler.post(() -> {
+                        if (tvFrameRate != null) {
+                            tvFrameRate.setText(String.format(Locale.getDefault(), "%.0f fps", fps));
+                        }
+                    });
                 }
                 if (isAdded()) {
                     Choreographer.getInstance().postFrameCallback(this);

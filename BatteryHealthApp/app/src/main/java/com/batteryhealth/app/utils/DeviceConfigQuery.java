@@ -89,27 +89,6 @@ public class DeviceConfigQuery {
         return getFirstInstallTime();
     }
 
-    private long parseDateFromBuild(String buildDate) {
-        SimpleDateFormat[] formats = {
-                new SimpleDateFormat("yyyyMMdd", Locale.getDefault()),
-                new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
-                new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault())
-        };
-
-        for (SimpleDateFormat format : formats) {
-            try {
-                String dateStr = buildDate.replaceAll("[^0-9.]", "");
-                if (dateStr.length() >= 8) {
-                    dateStr = dateStr.substring(0, 8);
-                    Date date = format.parse(dateStr);
-                    if (date != null) return date.getTime();
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return -1;
-    }
-
     public long getDaysUsed() {
         long activationDate = getDeviceActivationDate();
         if (activationDate <= 0) return 0;

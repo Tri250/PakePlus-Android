@@ -154,12 +154,6 @@ public class PerformanceAnalyzer {
      */
     private int calculateSocScore() {
         String cpu = Build.HARDWARE.toLowerCase(Locale.ROOT);
-        // 尝试从 DeviceInfoManager 获取更精确的处理器名
-        try {
-            DeviceInfoManager dim = new DeviceInfoManager(context);
-            DeviceConfigQuery dcq = new DeviceConfigQuery(context);
-            // 使用 Build.HARDWARE 作为回退
-        } catch (Exception ignored) {}
 
         // Flagship
         if (cpu.contains("sm8") || cpu.contains("sdm8") || cpu.contains("snapdragon 8")
@@ -535,7 +529,9 @@ public class PerformanceAnalyzer {
                     return new long[]{utime, stime};
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.d("PerformanceAnalyzer", "readProcessCpuTimes failed: " + e.getClass().getSimpleName());
+        }
         return null;
     }
 
@@ -550,7 +546,9 @@ public class PerformanceAnalyzer {
                 }
                 return times;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.d("PerformanceAnalyzer", "readSystemCpuTimesInternal failed: " + e.getClass().getSimpleName());
+        }
         return null;
     }
 

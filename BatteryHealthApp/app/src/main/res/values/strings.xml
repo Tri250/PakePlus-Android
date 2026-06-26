@@ -63,6 +63,7 @@
     <string name="label_anr_message">分析结果</string>
     <string name="section_power_ranking">耗电排行</string>
     <string name="section_wearable">智能穿戴</string>
+    <string name="hint_wearable_pending">穿戴设备电池管理功能开发中，敬请期待</string>
     <string name="label_screen_power">屏幕耗电</string>
     <string name="label_system_power">系统耗电</string>
     <string name="label_apps_power">应用耗电</string>
@@ -121,6 +122,7 @@
     <string name="label_app_memory">本应用内存</string>
     <string name="label_runtime">运行时间</string>
     <string name="label_foreground_service">前台服务</string>
+    <string name="label_frame_rate">帧率</string>
     <string name="label_gpu_renderer">GPU渲染器</string>
     <string name="label_opengl_version">OpenGL版本</string>
     <string name="label_vulkan_version">Vulkan版本</string>

@@ -95,9 +95,6 @@ public class EnduranceFragment extends Fragment {
 
         // 穿戴设备区域整体隐藏（无实际蓝牙/GMS集成，避免用户困惑）
         wearableSection = view.findViewById(R.id.section_wearable);
-        if (wearableSection != null) {
-            wearableSection.setVisibility(View.GONE);
-        }
     }
 
     private void initViewModel() {

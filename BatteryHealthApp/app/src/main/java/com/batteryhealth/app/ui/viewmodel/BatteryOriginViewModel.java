@@ -298,7 +298,8 @@ public class BatteryOriginViewModel extends ViewModel {
                 db.batteryOriginRecordDao().deleteOlderThan(id + 1);
                 // Reload
                 loadHistoryInternal();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                android.util.Log.e("BatteryOriginViewModel", "deleteHistoryRecord failed: " + e.getClass().getSimpleName());
             }
         });
     }
