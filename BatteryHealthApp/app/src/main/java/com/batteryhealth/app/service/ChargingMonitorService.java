@@ -564,7 +564,8 @@ public class ChargingMonitorService extends Service {
                 String line = reader.readLine();
                 if (line != null && !line.trim().isEmpty()) {
                     long currentRaw = Long.parseLong(line.trim());
-                    long absCurrent = Math.abs(currentRaw);
+                    // Long.MIN_VALUE 的绝对值仍为负数（溢出），需特殊处理
+                    long absCurrent = (currentRaw == Long.MIN_VALUE) ? Long.MAX_VALUE : Math.abs(currentRaw);
                     // sysfs current_now 通常返回 µA
                     if (absCurrent > 100000) {
                         return absCurrent / 1000000.0f; // µA → A

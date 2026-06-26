@@ -399,11 +399,13 @@ public class BugReportAnalyzer {
         Matcher serialMatcher = RE_SERIAL_BATTERY.matcher(section);
         if (serialMatcher.find()) {
             String serial = serialMatcher.group(1);
+            // 脱敏处理
+            String masked = anonymize(serial);
             if (result.deviceInfo != null) {
-                result.deviceInfo.serialNumber = serial;
+                result.deviceInfo.serialNumber = masked;
             }
             result.batteryEvents.add(new BatteryEvent(
-                    System.currentTimeMillis(), "序列号", "Bugreport 记录序列号: " + serial));
+                    System.currentTimeMillis(), "序列号", "Bugreport 记录序列号: " + masked));
         }
 
         // Parse manufacturing date from battery section
@@ -704,10 +706,12 @@ public class BugReportAnalyzer {
         if (serialnoMatcher.find()) {
             String sn = serialnoMatcher.group(1);
             if (sn != null && !sn.isEmpty() && !"unknown".equalsIgnoreCase(sn) && !"0".equals(sn)) {
+                // 脱敏处理
+                String masked = anonymize(sn);
                 result.batteryEvents.add(new BatteryEvent(
-                        extractTimestamp(line), "设备序列号", "Bugreport 记录序列号: " + sn));
+                        extractTimestamp(line), "设备序列号", "Bugreport 记录序列号: " + masked));
                 if (result.deviceInfo != null && (result.deviceInfo.serialNumber == null || result.deviceInfo.serialNumber.isEmpty())) {
-                    result.deviceInfo.serialNumber = sn;
+                    result.deviceInfo.serialNumber = masked;
                 }
             }
             return;
@@ -718,10 +722,12 @@ public class BugReportAnalyzer {
         if (serialMatcher.find()) {
             String sn = serialMatcher.group(1);
             if (sn != null && !sn.isEmpty() && !"unknown".equalsIgnoreCase(sn) && !"0".equals(sn)) {
+                // 脱敏处理
+                String masked = anonymize(sn);
                 result.batteryEvents.add(new BatteryEvent(
-                        extractTimestamp(line), "设备序列号", "Bugreport 记录序列号: " + sn));
+                        extractTimestamp(line), "设备序列号", "Bugreport 记录序列号: " + masked));
                 if (result.deviceInfo != null && (result.deviceInfo.serialNumber == null || result.deviceInfo.serialNumber.isEmpty())) {
-                    result.deviceInfo.serialNumber = sn;
+                    result.deviceInfo.serialNumber = masked;
                 }
             }
             return;
@@ -731,12 +737,26 @@ public class BugReportAnalyzer {
         Matcher imeiMatcher = RE_IMEI.matcher(line);
         if (imeiMatcher.find()) {
             String imei = imeiMatcher.group(1);
+            // 脱敏处理：仅显示前3位和后3位，中间用*替代，防止隐私泄露
+            String masked = anonymize(imei);
             result.batteryEvents.add(new BatteryEvent(
-                    extractTimestamp(line), "IMEI", "Bugreport 记录 IMEI: " + imei));
+                    extractTimestamp(line), "IMEI", "Bugreport 记录 IMEI: " + masked));
             if (result.deviceInfo != null && (result.deviceInfo.serialNumber == null || result.deviceInfo.serialNumber.isEmpty())) {
-                result.deviceInfo.serialNumber = imei;
+                result.deviceInfo.serialNumber = masked;
             }
         }
+    }
+
+    /**
+     * 脱敏敏感标识符：IMEI/序列号等仅显示前3位和后3位，中间用*替代。
+     * 保留用于电池识别，但不暴露完整隐私信息。
+     */
+    private static String anonymize(String value) {
+        if (value == null || value.length() <= 6) {
+            return value != null && !value.isEmpty() ? "****" : value;
+        }
+        int len = value.length();
+        return value.substring(0, 3) + "****" + value.substring(len - 3);
     }
 
     private void parseVoltageCurrent(String line, AnalysisResult result) {

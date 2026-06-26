@@ -116,6 +116,7 @@ public class HealthCheckEngine {
         checkers.add(new MemoryHealthChecker());
         checkers.add(new StorageHealthChecker());
         checkers.add(new NotificationPermissionChecker());
+        checkers.add(new PermissionHealthChecker());
         checkers.add(new BatteryOptimizationChecker());
         checkers.add(new NetworkHealthChecker());
     }
@@ -342,6 +343,9 @@ public class HealthCheckEngine {
             case HealthCheckResult.FIX_ACTION_NETWORK_SETTINGS:
                 return new Intent(Settings.ACTION_WIRELESS_SETTINGS);
             case HealthCheckResult.FIX_ACTION_APPLICATION_DETAILS:
+                return buildAppDetailsIntent(pkg);
+            case HealthCheckResult.FIX_ACTION_PERMISSION_SETTINGS:
+                // 引导到应用详情页，用户可在其中检查所有权限项
                 return buildAppDetailsIntent(pkg);
             default:
                 return buildAppDetailsIntent(pkg);

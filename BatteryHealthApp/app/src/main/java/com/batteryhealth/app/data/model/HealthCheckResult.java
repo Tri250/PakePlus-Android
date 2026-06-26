@@ -34,12 +34,13 @@ public class HealthCheckResult {
     public static final int FIX_ACTION_BATTERY_SAVER = 6;
     public static final int FIX_ACTION_NETWORK_SETTINGS = 7;
     public static final int FIX_ACTION_ADVICE_ONLY = 8;
+    public static final int FIX_ACTION_PERMISSION_SETTINGS = 9;
 
     @IntDef({FIX_ACTION_NONE, FIX_ACTION_NOTIFICATION_SETTINGS,
             FIX_ACTION_BATTERY_OPTIMIZATION, FIX_ACTION_POWER_USAGE_DETAILS,
             FIX_ACTION_APPLICATION_DETAILS, FIX_ACTION_CHARGING_LIMIT,
             FIX_ACTION_BATTERY_SAVER, FIX_ACTION_NETWORK_SETTINGS,
-            FIX_ACTION_ADVICE_ONLY})
+            FIX_ACTION_ADVICE_ONLY, FIX_ACTION_PERMISSION_SETTINGS})
     @Retention(RetentionPolicy.SOURCE)
     public @interface FixAction {}
 
