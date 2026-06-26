@@ -48,15 +48,15 @@ public class BatteryDataManager {
 
     private final Context context;
     private final DeviceDatabaseManager deviceDb;
-    private BatteryOriginDetector originDetector;
+    private volatile BatteryOriginDetector originDetector;
     private ActivationDateHelper.Result activation;
 
     private volatile BatteryInfo currentBatteryInfo;
     private int usageDays = -1;
 
-    private String chargingStatusText;
-    private String healthSourceText;
-    private String batterySourceText;
+    private volatile String chargingStatusText;
+    private volatile String healthSourceText;
+    private volatile String batterySourceText;
 
     // 中值滤波缓冲
     private final List<Float> healthBuffer = new ArrayList<>();

@@ -22,22 +22,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class ThreadExecutor {
 
+    private static final ThreadExecutor INSTANCE = new ThreadExecutor();
+
     private ThreadExecutor() {}
 
+    /** 获取单例 */
+    public static ThreadExecutor getInstance() {
+        return INSTANCE;
+    }
+
     /** IO 线程池（磁盘读取、数据库操作、sysfs 采集） */
-    private static final ExecutorService IO_EXECUTOR =
+    private final ExecutorService ioExecutor =
             Executors.newFixedThreadPool(4, new NamedThreadFactory("App-IO"));
 
     /** 主线程 Handler */
-    private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     /**
      * 在 IO 线程执行任务。
      *
      * @param task 后台任务
      */
-    public static void execute(Runnable task) {
-        IO_EXECUTOR.execute(() -> {
+    public void execute(Runnable task) {
+        ioExecutor.execute(() -> {
             try {
                 task.run();
             } catch (Exception e) {
@@ -53,8 +60,8 @@ public final class ThreadExecutor {
      * @param callback 主线程回调（可能为 null）
      * @param <T>     结果类型
      */
-    public static <T> void executeWithCallback(Task<T> task, MainCallback<T> callback) {
-        IO_EXECUTOR.execute(() -> {
+    public <T> void executeWithCallback(Task<T> task, MainCallback<T> callback) {
+        ioExecutor.execute(() -> {
             T result = null;
             Exception error = null;
             try {
@@ -65,7 +72,7 @@ public final class ThreadExecutor {
             if (callback != null) {
                 final T finalResult = result;
                 final Exception finalError = error;
-                MAIN_HANDLER.post(() -> {
+                mainHandler.post(() -> {
                     if (finalError != null) {
                         callback.onError(finalError);
                     } else {
@@ -79,19 +86,66 @@ public final class ThreadExecutor {
     /**
      * 在主线程执行。
      */
-    public static void runOnMain(Runnable runnable) {
+    public void runOnMain(Runnable runnable) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             runnable.run();
         } else {
-            MAIN_HANDLER.post(runnable);
+            mainHandler.post(runnable);
         }
     }
 
     /**
      * 在主线程延迟执行。
      */
+    public void runOnMainDelayed(Runnable runnable, long delayMillis) {
+        mainHandler.postDelayed(runnable, delayMillis);
+    }
+
+    /**
+     * 关闭线程池，释放资源。应用退出时调用。
+     */
+    public void shutdown() {
+        ioExecutor.shutdown();
+    }
+
+    // ========== 静态便捷方法（向后兼容） ==========
+
+    /** 静态便捷方法：在 IO 线程执行任务 */
+    public static void execute(Runnable task) {
+        INSTANCE.__execute(task);
+    }
+
+    /** 静态便捷方法：在 IO 线程执行任务，完成后回调主线程 */
+    public static <T> void executeWithCallback(Task<T> task, MainCallback<T> callback) {
+        INSTANCE.__executeWithCallback(task, callback);
+    }
+
+    /** 静态便捷方法：在主线程执行 */
+    public static void runOnMain(Runnable runnable) {
+        INSTANCE.__runOnMain(runnable);
+    }
+
+    /** 静态便捷方法：在主线程延迟执行 */
     public static void runOnMainDelayed(Runnable runnable, long delayMillis) {
-        MAIN_HANDLER.postDelayed(runnable, delayMillis);
+        INSTANCE.__runOnMainDelayed(runnable, delayMillis);
+    }
+
+    // ========== 实例方法（内部实现） ==========
+
+    private void __execute(Runnable task) {
+        execute(task);
+    }
+
+    private <T> void __executeWithCallback(Task<T> task, MainCallback<T> callback) {
+        executeWithCallback(task, callback);
+    }
+
+    private void __runOnMain(Runnable runnable) {
+        runOnMain(runnable);
+    }
+
+    private void __runOnMainDelayed(Runnable runnable, long delayMillis) {
+        runOnMainDelayed(runnable, delayMillis);
     }
 
     /** 后台任务接口 */

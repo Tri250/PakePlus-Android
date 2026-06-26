@@ -19,6 +19,7 @@ import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.data.model.PowerHistory;
 import com.batteryhealth.app.ui.error.ErrorActivity;
 import com.batteryhealth.app.utils.ThreadExecutor;
+import com.batteryhealth.app.utils.healthcheck.HealthCheckEngine;
 
 import net.sqlcipher.database.SupportFactory;
 
@@ -371,6 +372,14 @@ public class BatteryHealthApplication extends Application {
         // 关闭 DeviceInfoManager 的 ExecutorService（仅在模拟器中生效）
         if (deviceInfoManager != null) {
             deviceInfoManager.shutdown();
+        }
+        // 关闭 HealthCheckEngine 线程池
+        HealthCheckEngine.getInstance().shutdown();
+        // 关闭 ThreadExecutor 线程池
+        ThreadExecutor.getInstance().shutdown();
+        // 关闭数据库连接
+        if (database != null && database.isOpen()) {
+            database.close();
         }
     }
 

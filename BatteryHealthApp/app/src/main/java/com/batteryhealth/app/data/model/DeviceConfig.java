@@ -416,7 +416,9 @@ public class DeviceConfig {
      * 获取完整型号名
      */
     public String getFullModelName() {
-        return String.format("%s %s", getFormattedBrand(), model);
+        String brandStr = getFormattedBrand();
+        String modelStr = model != null ? model : "Unknown";
+        return String.format("%s %s", brandStr, modelStr);
     }
     
     /**

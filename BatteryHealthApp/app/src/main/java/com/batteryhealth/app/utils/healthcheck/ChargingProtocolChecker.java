@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
+
+import androidx.core.content.ContextCompat;
 
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryDataManager;
@@ -26,7 +29,14 @@ public class ChargingProtocolChecker implements IHealthChecker {
     public HealthCheckResult check(Context context) {
         try {
             Context appCtx = context.getApplicationContext();
-            Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            Intent battery;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                battery = ContextCompat.registerReceiver(
+                        appCtx, null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                        ContextCompat.RECEIVER_NOT_EXPORTED);
+            } else {
+                battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            }
             int plugged = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) : -1;
             BatteryDataManager manager = new BatteryDataManager(appCtx);
             com.batteryhealth.app.data.model.BatteryInfo info = manager.getBatteryInfo();

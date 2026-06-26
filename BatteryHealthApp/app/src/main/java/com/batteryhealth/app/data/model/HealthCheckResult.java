@@ -1,6 +1,10 @@
 package com.batteryhealth.app.data.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -12,7 +16,7 @@ import java.lang.annotation.RetentionPolicy;
  * 每个 {@code HealthCheckResult} 描述了一个可独立判定的检查项（如电池
  * 健康度、充电协议、通知权限等）的当前状态与建议。
  */
-public class HealthCheckResult {
+public class HealthCheckResult implements Parcelable {
 
     /** 严重程度：数值越大越严重，0 为正常。 */
     public static final int SEVERITY_GOOD = 0;
@@ -78,6 +82,56 @@ public class HealthCheckResult {
         this.fixAction = b.fixAction;
         this.itemScore = b.itemScore;
         this.timestamp = b.timestamp > 0 ? b.timestamp : System.currentTimeMillis();
+    }
+
+    protected HealthCheckResult(@NonNull Parcel in) {
+        this.id = in.readString();
+        this.title = in.readString();
+        this.category = in.readString();
+        this.severity = in.readInt();
+        this.status = in.readString();
+        this.value = in.readString();
+        this.unit = in.readString();
+        this.description = in.readString();
+        this.advice = in.readString();
+        this.repairable = in.readByte() != 0;
+        this.fixAction = in.readInt();
+        this.itemScore = in.readInt();
+        this.timestamp = in.readLong();
+    }
+
+    public static final Creator<HealthCheckResult> CREATOR = new Creator<HealthCheckResult>() {
+        @Override
+        public HealthCheckResult createFromParcel(Parcel in) {
+            return new HealthCheckResult(in);
+        }
+
+        @Override
+        public HealthCheckResult[] newArray(int size) {
+            return new HealthCheckResult[size];
+        }
+    };
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeString(id);
+        dest.writeString(title);
+        dest.writeString(category);
+        dest.writeInt(severity);
+        dest.writeString(status);
+        dest.writeString(value);
+        dest.writeString(unit);
+        dest.writeString(description);
+        dest.writeString(advice);
+        dest.writeByte((byte) (repairable ? 1 : 0));
+        dest.writeInt(fixAction);
+        dest.writeInt(itemScore);
+        dest.writeLong(timestamp);
     }
 
     public String getId() { return id; }
