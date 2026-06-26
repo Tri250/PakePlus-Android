@@ -33,17 +33,32 @@ public class PerformanceHealthChecker implements IHealthChecker {
 
     @Override
     public HealthCheckResult check(Context context) {
-        float cpuPct = readCpuUsage();
-        float memoryPct = readMemoryUsage(context);
-        float storagePct = readStorageUsage();
+        boolean cpuFailed = false;
+        boolean memoryFailed = false;
+        boolean storageFailed = false;
 
-        // 三项加权综合评分，越高越好
-        float weighted = 0.4f * (100f - cpuPct) + 0.3f * (100f - memoryPct) + 0.3f * (100f - storagePct);
+        float cpuPct = readCpuUsage();
+        if (cpuPct < 0) { cpuFailed = true; cpuPct = 0f; }
+        float memoryPct = readMemoryUsage(context);
+        if (memoryPct < 0) { memoryFailed = true; memoryPct = 0f; }
+        float storagePct = readStorageUsage();
+        if (storagePct < 0) { storageFailed = true; storagePct = 0f; }
+
+        boolean anyFailed = cpuFailed || memoryFailed || storageFailed;
+
+        // 三项加权综合评分，越高越好；读取失败的项目贡献为 0
+        float weighted = 0.4f * (cpuFailed ? 0f : (100f - cpuPct))
+                       + 0.3f * (memoryFailed ? 0f : (100f - memoryPct))
+                       + 0.3f * (storageFailed ? 0f : (100f - storagePct));
+        if (anyFailed) {
+            // 有数据缺失时降低评分基准
+            weighted *= 0.8f;
+        }
 
         int severity;
         String status;
         String advice;
-        int score = (int) weighted;
+        int score = Math.round(weighted);
         if (weighted >= 70f) {
             severity = HealthCheckResult.SEVERITY_GOOD;
             status = "良好";
@@ -63,9 +78,18 @@ public class PerformanceHealthChecker implements IHealthChecker {
         }
 
         StringBuilder desc = new StringBuilder();
-        desc.append("CPU 瞬时负载：").append(String.format("%.0f%%", cpuPct)).append("；");
-        desc.append("内存使用率：").append(String.format("%.0f%%", memoryPct)).append("；");
-        desc.append("存储使用率：").append(String.format("%.0f%%", storagePct)).append("。");
+        if (!cpuFailed) {
+            desc.append("CPU 瞬时负载：").append(String.format("%.0f%%", cpuPct)).append("；");
+        }
+        if (!memoryFailed) {
+            desc.append("内存使用率：").append(String.format("%.0f%%", memoryPct)).append("；");
+        }
+        if (!storageFailed) {
+            desc.append("存储使用率：").append(String.format("%.0f%%", storagePct)).append("。");
+        }
+        if (anyFailed) {
+            desc.append("（部分数据读取失败，分数仅供参考）");
+        }
 
         return new HealthCheckResult.Builder()
                 .setId("performance_health")
@@ -86,9 +110,9 @@ public class PerformanceHealthChecker implements IHealthChecker {
             BufferedReader br = new BufferedReader(new FileReader("/proc/stat"));
             String line = br.readLine();
             br.close();
-            if (line == null) return 0f;
+            if (line == null) return -1f;
             String[] parts = line.split("\\s+");
-            if (parts.length < 5) return 0f;
+            if (parts.length < 5) return -1f;
             long user = Long.parseLong(parts[1]);
             long nice = Long.parseLong(parts[2]);
             long system = Long.parseLong(parts[3]);
@@ -96,10 +120,10 @@ public class PerformanceHealthChecker implements IHealthChecker {
             long iowait = parts.length > 5 ? Long.parseLong(parts[5]) : 0L;
             long total = user + nice + system + idle + iowait;
             long nonIdle = user + nice + system;
-            if (total <= 0) return 0f;
+            if (total <= 0) return -1f;
             return Math.min(100f, nonIdle * 100f / total);
         } catch (Exception e) {
-            return 20f; // 读取失败时返回保守值
+            return -1f; // 读取失败返回 -1，由调用方标记并调整评分
         }
     }
 
@@ -107,14 +131,14 @@ public class PerformanceHealthChecker implements IHealthChecker {
         try {
             ActivityManager am = (ActivityManager) context.getApplicationContext()
                     .getSystemService(Context.ACTIVITY_SERVICE);
-            if (am == null) return 40f;
+            if (am == null) return -1f;
             ActivityManager.MemoryInfo info = new ActivityManager.MemoryInfo();
             am.getMemoryInfo(info);
-            if (info.totalMem <= 0) return 40f;
+            if (info.totalMem <= 0) return -1f;
             float usedPct = (1f - (float) info.availMem / info.totalMem) * 100f;
             return Math.min(100f, Math.max(0f, usedPct));
         } catch (Exception e) {
-            return 40f;
+            return -1f;
         }
     }
 
@@ -123,11 +147,11 @@ public class PerformanceHealthChecker implements IHealthChecker {
             StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
             long totalBytes = stat.getTotalBytes();
             long availBytes = stat.getAvailableBytes();
-            if (totalBytes <= 0) return 40f;
+            if (totalBytes <= 0) return -1f;
             float usedPct = (1f - (float) availBytes / totalBytes) * 100f;
             return Math.min(100f, Math.max(0f, usedPct));
         } catch (Exception e) {
-            return 40f;
+            return -1f;
         }
     }
 }

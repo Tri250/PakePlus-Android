@@ -211,7 +211,12 @@ public class HealthCheckEngine {
                             // 超时则中断该任务并用兜底结果填充，保证自检流程可继续
                             future.cancel(true);
                             collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
-                        } catch (Exception ignored) {
+                        } catch (Exception e) {
+                            // 非超时异常（InterruptedException / ExecutionException 等）也用兜底结果填充，
+                            // 避免该 checker 从结果列表中静默消失导致 UI 少一项
+                            android.util.Log.w("HealthCheckEngine",
+                                    "Checker '" + checker.getName() + "' threw: " + e.getClass().getSimpleName());
+                            collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
                         } finally {
                             int current = done.incrementAndGet();
                             notifyProgress(total > 0 ? (current * 100 / total) : 100);

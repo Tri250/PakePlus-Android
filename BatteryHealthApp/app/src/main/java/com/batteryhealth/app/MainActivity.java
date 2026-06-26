@@ -509,7 +509,7 @@ public class MainActivity extends AppCompatActivity {
         final String CURRENT_VERSION = "20260625";
 
         try {
-            android.content.SharedPreferences prefs = getSharedPreferences(PREFS_POLICY, Context.MODE_PRIVATE);
+            android.content.SharedPreferences prefs = getSharedPreferences(PREFS_PRIVACY, Context.MODE_PRIVATE);
             if (prefs.getBoolean(PREF_POLICY_ACCEPTED, false)
                     && CURRENT_VERSION.equals(prefs.getString(PREF_ACCEPTED_VERSION, ""))) {
                 // 已同意过当前版本，无需重复展示

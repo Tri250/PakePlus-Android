@@ -63,9 +63,11 @@ public class EnduranceViewModel extends ViewModel {
     /**
      * 反射读取 BatteryManager 隐藏常量 BATTERY_PROPERTY_CHARGE_FULL（AOSP 公开值 = 4）。
      * 注：与 BATTERY_PROPERTY_CAPACITY 在 AOSP 中数值相同（均为 4），但反射字段名不同。
-     * 早期硬编码 getIntProperty(24) 是错误的，会读到不存在的属性。
+     * 早期硬编码 getIntProperty(24) 是错误的，AOSP 不存在此属性值。
      */
     private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+    /** CHARGE_COUNTER 的 AOSP 公开值 = 1，与 BatteryDataManager.getChargeCounterMah() 逻辑一致 */
+    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 1);
 
     private static int getBatteryIntConstant(String name, int fallback) {
         try {
@@ -253,15 +255,36 @@ public class EnduranceViewModel extends ViewModel {
                     currentAvg = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
                 }
                 int voltageMicroV = 0;
-                try { voltageMicroV = bm.getIntProperty(2); } catch (Throwable ignored) {}
-                if (voltageMicroV <= 0) {
+                try {
+                    // 电压优先用 EXTRA_VOLTAGE（毫伏），避免 BatteryManager 属性 ID 语义不统一
                     Intent bi = appContext.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                     if (bi != null) voltageMicroV = bi.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
+                } catch (Throwable ignored) {}
+                // 若 sticky intent 读取失败，再用 BatteryManager 属性尝试
+                if (voltageMicroV <= 0) {
+                    try {
+                        // BatteryManager 属性 ID 2 的语义在不同设备/HAL 实现上不一致，
+                        // 仅作为 EXTRA_VOLTAGE 的兜底，不应作为主路径
+                        voltageMicroV = bm.getIntProperty(2) * 1000; // getIntProperty 返回毫伏，需转微伏
+                    } catch (Throwable ignored) {}
                 }
 
-                int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                // 容量回退：getIntProperty(24) 是早期错误写法（AOSP 不存在此属性），
+                // 正确做法是使用反射读取 CHARGE_COUNTER（=1），与 BatteryDataManager 逻辑一致
+                int capacityMicroAh = bm.getIntProperty(BATTERY_PROP_CHARGE_COUNTER);
                 if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                    capacityMicroAh = bm.getIntProperty(24);
+                    // 反射失败时尝试 sysfs 回退（与 BatteryDataManager.getChargeCounterMah 等价）
+                    try {
+                        String fccPath = "/sys/class/power_supply/battery/charge_full";
+                        java.io.File f = new java.io.File(fccPath);
+                        if (f.exists() && f.canRead()) {
+                            java.io.BufferedReader br = new java.io.BufferedReader(
+                                    new java.io.FileReader(f));
+                            String line = br.readLine();
+                            br.close();
+                            if (line != null) capacityMicroAh = Integer.parseInt(line.trim());
+                        }
+                    } catch (Throwable ignored) {}
                 }
                 int capacityMah = -1;
                 if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;
@@ -305,9 +328,20 @@ public class EnduranceViewModel extends ViewModel {
                 int chargingCurrentMa = Math.abs(currentAvg / 1000);
                 if (chargingCurrentMa <= 0) return 0f;
 
-                int capacityMicroAh = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                int capacityMicroAh = bm.getIntProperty(BATTERY_PROP_CHARGE_COUNTER);
                 if (capacityMicroAh == Integer.MIN_VALUE || capacityMicroAh == 0) {
-                    capacityMicroAh = bm.getIntProperty(24);
+                    // 反射失败时尝试 sysfs 回退（与 BatteryDataManager.getChargeCounterMah 等价）
+                    try {
+                        String fccPath = "/sys/class/power_supply/battery/charge_full";
+                        java.io.File f = new java.io.File(fccPath);
+                        if (f.exists() && f.canRead()) {
+                            java.io.BufferedReader br = new java.io.BufferedReader(
+                                    new java.io.FileReader(f));
+                            String line = br.readLine();
+                            br.close();
+                            if (line != null) capacityMicroAh = Integer.parseInt(line.trim());
+                        }
+                    } catch (Throwable ignored) {}
                 }
                 int capacityMah = -1;
                 if (capacityMicroAh > 100000) capacityMah = capacityMicroAh / 1000;

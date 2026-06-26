@@ -31,18 +31,40 @@ public class ChargeProtocolDetector {
     public static final class Result {
         public final String primary;        // 主要协议
         public final String secondary;      // 次要协议
-        public final String detail;         // 详情描述
+        public final String detail;         // 详情描述（包含原始 sysfs 读取值）
         public final float powerW;          // 当前功率
         public final boolean fastCharging;  // 是否快充
         public final boolean bypassCharging;// 旁路供电
 
-        public Result(String primary, String secondary, String detail, float powerW, boolean fastCharging, boolean bypassCharging) {
+        // 以下字段为 sysfs 原始读取值，便于调用方判断数据可信度
+        public final String rawChargeType;      // /sys/class/power_supply/battery/charge_type
+        public final String rawQuickChargeType;  // /sys/class/power_supply/battery/quick_charge_type
+        public final String rawPdType;           // /sys/class/power_supply/usb/pd_type
+        public final String rawUfcsType;         // /sys/class/power_supply/usb/ufcs_type
+        public final String rawChargeProtocol;   // /sys/class/power_supply/battery/charge_protocol
+
+        public Result(String primary, String secondary, String detail, float powerW,
+                       boolean fastCharging, boolean bypassCharging,
+                       String rawChargeType, String rawQuickChargeType,
+                       String rawPdType, String rawUfcsType, String rawChargeProtocol) {
             this.primary = primary;
             this.secondary = secondary;
             this.detail = detail;
             this.powerW = powerW;
             this.fastCharging = fastCharging;
             this.bypassCharging = bypassCharging;
+            this.rawChargeType = rawChargeType != null ? rawChargeType : "";
+            this.rawQuickChargeType = rawQuickChargeType != null ? rawQuickChargeType : "";
+            this.rawPdType = rawPdType != null ? rawPdType : "";
+            this.rawUfcsType = rawUfcsType != null ? rawUfcsType : "";
+            this.rawChargeProtocol = rawChargeProtocol != null ? rawChargeProtocol : "";
+        }
+
+        /** 兼容旧调用方（无需 sysfs 原始值的场景） */
+        public Result(String primary, String secondary, String detail, float powerW,
+                       boolean fastCharging, boolean bypassCharging) {
+            this(primary, secondary, detail, powerW, fastCharging, bypassCharging,
+                    "", "", "", "", "");
         }
     }
 
@@ -51,8 +73,7 @@ public class ChargeProtocolDetector {
      */
     public static Result detect(Context context, float currentPowerW) {
         // 1. 读取 sysfs
-        StringBuilder details = new StringBuilder();
-        String primary = readFileTrim("/sys/class/power_supply/battery/charge_type");
+        String chargeTypeSysfs = readFileTrim("/sys/class/power_supply/battery/charge_type");
         String adapterType = readFileTrim("/sys/class/power_supply/usb/typec_mode");
         String currentType = readFileTrim("/sys/class/power_supply/battery/constant_charge_current_max");
         String quickChargeType = readFileTrim("/sys/class/power_supply/battery/quick_charge_type");
@@ -168,15 +189,35 @@ public class ChargeProtocolDetector {
             }
         }
 
+        // 拼装详情描述：将 sysfs 原始读取值加入 detail，便于调用方判断数据来源可信度
+        StringBuilder detailBuilder = new StringBuilder();
         if (currentPowerW > 0) {
-            details.append(String.format("%.1f W", currentPowerW));
+            detailBuilder.append(String.format("%.1f W", currentPowerW));
         }
         if (adapterType != null && !adapterType.isEmpty()) {
-            if (details.length() > 0) details.append(" · ");
-            details.append("USB ").append(adapterType);
+            if (detailBuilder.length() > 0) detailBuilder.append(" · ");
+            detailBuilder.append("USB ").append(adapterType);
+        }
+        // 追加 sysfs 原始值（协议类型由系统主动报告时最可信）
+        if (chargeProtocol != null && !chargeProtocol.isEmpty()) {
+            if (detailBuilder.length() > 0) detailBuilder.append(" · ");
+            detailBuilder.append("协议:").append(chargeProtocol);
+        }
+        if (quickChargeType != null && !quickChargeType.isEmpty()) {
+            if (detailBuilder.length() > 0) detailBuilder.append(" · ");
+            detailBuilder.append("QC:").append(quickChargeType);
+        }
+        if (pdType != null && !pdType.isEmpty()) {
+            if (detailBuilder.length() > 0) detailBuilder.append(" · ");
+            detailBuilder.append("PD:").append(pdType);
+        }
+        if (ufcsType != null && !ufcsType.isEmpty()) {
+            if (detailBuilder.length() > 0) detailBuilder.append(" · ");
+            detailBuilder.append("UFCS:").append(ufcsType);
         }
 
-        return new Result(result, secondary, details.toString(), currentPowerW, fast, bypass);
+        return new Result(result, secondary, detailBuilder.toString(), currentPowerW, fast, bypass,
+                chargeTypeSysfs, quickChargeType, pdType, ufcsType, chargeProtocol);
     }
 
     private static String readFileTrim(String path) {

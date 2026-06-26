@@ -381,8 +381,8 @@ public class PerformanceAnalyzer {
         result.hasAnr = false;
         result.totalAnrs = 0;
         result.ourAppAnrs = 0;
-        result.message = "无 ANR 记录（非 root 设备无法读取系统 ANR 日志，可通过指南页上传 BugReport 分析）";
-        result.severity = "正常";
+        result.message = "ANR 检测结果未知（非 root 设备无法读取系统 ANR 日志，建议通过指南页上传 BugReport 进行分析）";
+        result.severity = "未知";
         return result;
     }
 
