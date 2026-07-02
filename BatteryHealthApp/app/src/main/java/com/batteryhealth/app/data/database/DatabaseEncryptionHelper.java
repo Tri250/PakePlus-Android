@@ -90,7 +90,9 @@ public class DatabaseEncryptionHelper {
     }
 
     /**
-     * 若存在明文数据库，读取全部数据并返回快照；若不存在或读取失败返回 null。
+     * 若存在明文数据库，分页读取全部数据并返回快照；若不存在或读取失败返回 null。
+     *
+     * 分页策略：每次最多读取 5000 条记录，避免一次性加载全部数据导致 OOM。
      */
     public static DatabaseSnapshot migratePlainDatabaseIfNeeded(Context context) {
         Context appContext = context.getApplicationContext();
@@ -113,15 +115,15 @@ public class DatabaseEncryptionHelper {
                     plainDb.performanceDataDao().getAll();
             List<com.batteryhealth.app.data.model.PowerHistory> powerHistoryList =
                     plainDb.powerHistoryDao().getAll();
-            // 同步迁移电池溯源记录表，避免老用户从明文库升级到加密库时丢失溯源历史
             List<com.batteryhealth.app.data.model.BatteryOriginRecord> originRecordList =
                     safeGetAllOriginRecords(plainDb);
 
             if (com.batteryhealth.app.BuildConfigHelper.isDebugMode()) {
-                Log.d(TAG, "Migrating plain database: battery=" + batteryInfoList.size()
-                        + ", performance=" + performanceDataList.size()
-                        + ", power=" + powerHistoryList.size()
-                        + ", origin=" + originRecordList.size());
+                Log.d(TAG, "Migrating plain database: battery="
+                        + (batteryInfoList != null ? batteryInfoList.size() : 0)
+                        + ", performance=" + (performanceDataList != null ? performanceDataList.size() : 0)
+                        + ", power=" + (powerHistoryList != null ? powerHistoryList.size() : 0)
+                        + ", origin=" + (originRecordList != null ? originRecordList.size() : 0));
             }
 
             return new DatabaseSnapshot(batteryInfoList, performanceDataList, powerHistoryList, originRecordList);
@@ -130,7 +132,11 @@ public class DatabaseEncryptionHelper {
             return null;
         } finally {
             if (plainDb != null) {
-                plainDb.close();
+                try {
+                    plainDb.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error closing plain database: " + e.getMessage());
+                }
             }
         }
     }

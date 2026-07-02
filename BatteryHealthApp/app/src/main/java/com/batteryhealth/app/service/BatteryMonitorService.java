@@ -61,6 +61,9 @@ public class BatteryMonitorService extends Service {
     private static final long SAVE_INTERVAL = 300000; // 5分钟保存一次到数据库
     private static final long DATA_CLEANUP_INTERVAL = 86400000; // 24小时清理一次旧数据
 
+    // PendingIntent 请求码，确保不与 MainActivity 中的请求码冲突
+    private static final int PENDING_INTENT_RESTART_BATTERY = 0xB4A7_1001;
+
     // 健康度衰减预警配置
     private static final String HEALTH_ALERT_CHANNEL_ID = "battery_health_alert_channel";
     private static final int HEALTH_ALERT_NOTIFICATION_ID = 1002;
@@ -256,12 +259,12 @@ public class BatteryMonitorService extends Service {
                 PendingIntent pendingIntent;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     pendingIntent = PendingIntent.getForegroundService(
-                            this, 1, restartIntent,
+                            this, PENDING_INTENT_RESTART_BATTERY, restartIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
                 } else {
                     pendingIntent = PendingIntent.getService(
-                            this, 1, restartIntent,
+                            this, PENDING_INTENT_RESTART_BATTERY, restartIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
                 }
@@ -409,6 +412,7 @@ public class BatteryMonitorService extends Service {
         if (prefs == null) {
             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         }
+        if (prefs == null) return;
 
         boolean enabled = prefs.getBoolean(PREF_ALERT_ENABLED, true);
         if (!enabled) {

@@ -1,7 +1,9 @@
 package com.batteryhealth.app.data.worker;
 
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 
@@ -11,6 +13,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.batteryhealth.app.BatteryHealthApplication;
+import com.batteryhealth.app.MainActivity;
 import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.repository.BatteryRepositoryImpl;
@@ -154,11 +157,21 @@ public class HealthAlertWorker extends Worker {
                     .setContentText(content)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(content))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setAutoCancel(true);
+                    .setAutoCancel(true)
+                    .setContentIntent(createPendingIntent());
 
             notificationManager.notify(NOTIFICATION_ID, builder.build());
         } catch (Exception e) {
             android.util.Log.e(TAG, "Failed to send health alert notification", e);
         }
+    }
+
+    private PendingIntent createPendingIntent() {
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(
+                getApplicationContext(), 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
     }
 }

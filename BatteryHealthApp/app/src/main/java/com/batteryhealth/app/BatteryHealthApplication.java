@@ -1,9 +1,7 @@
 package com.batteryhealth.app;
 
 import android.app.Application;
-
-import dagger.hilt.android.HiltAndroidApp;
-import android.content.Context;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
@@ -86,6 +84,9 @@ public class BatteryHealthApplication extends Application {
 
     /**
      * 注册全局未捕获异常处理器，所有未处理异常都会跳转到 ErrorActivity。
+     *
+     * 注意：崩溃可能发生在任意线程，startActivity 必须在主线程执行。
+     * 使用 FLAG_ACTIVITY_NEW_TASK 确保从非 Activity 上下文也能启动。
      */
     private void registerUncaughtExceptionHandler() {
         Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
@@ -97,12 +98,33 @@ public class BatteryHealthApplication extends Application {
                         getString(R.string.error_crash_message),
                         throwable
                 );
-                startActivity(intent);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                // 确保在主线程启动 Activity，避免 WindowManager$BadTokenException
+                if (Looper.myLooper() == Looper.getMainLooper()) {
+                    startActivity(intent);
+                } else {
+                    // 使用 PendingIntent 从非主线程启动 Activity，避免直接调用 startActivity 的线程安全问题
+                    PendingIntent pendingIntent = PendingIntent.getActivity(
+                            this, 0, intent,
+                            PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                    try {
+                        pendingIntent.send();
+                    } catch (PendingIntent.CanceledException pe) {
+                        Log.e(TAG, "Failed to send PendingIntent for ErrorActivity", pe);
+                    }
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Failed to start ErrorActivity", e);
             } finally {
                 if (defaultHandler != null) {
                     defaultHandler.uncaughtException(thread, throwable);
+                }
+                // 短暂延迟，给 PendingIntent 发送和渲染留出时间
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ignored) {
                 }
                 android.os.Process.killProcess(android.os.Process.myPid());
                 System.exit(1);
@@ -129,32 +151,20 @@ public class BatteryHealthApplication extends Application {
     }
     
     /**
-     * 初始化Room数据库（启用SQLCipher加密）
+     * 初始化Room数据库（启用SQLCipher加密）。
+     *
+     * 策略：先尝试加密数据库，失败则回退到明文，最后回退到内存数据库。
+     * 所有耗时操作在后台线程（DbInitThread）中执行，不会阻塞主线程。
      */
     private void initDatabase() {
         boolean plainBackupCreated = false;
         DatabaseEncryptionHelper.DatabaseSnapshot snapshot = null;
         try {
-            // 1. 若存在旧版明文数据库，在后台线程导出数据并重命名为备份，避免阻塞主线程
-            final DatabaseEncryptionHelper.DatabaseSnapshot[] snapshotHolder =
-                    new DatabaseEncryptionHelper.DatabaseSnapshot[1];
-            final boolean[] backupCreatedHolder = new boolean[1];
-            final CountDownLatch readLatch = new CountDownLatch(1);
-            new Thread(() -> {
-                try {
-                    snapshotHolder[0] = DatabaseEncryptionHelper.migratePlainDatabaseIfNeeded(this);
-                    if (snapshotHolder[0] != null) {
-                        backupCreatedHolder[0] = DatabaseEncryptionHelper.renamePlainDatabaseToBackup(this);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error migrating plain database: " + e.getMessage(), e);
-                } finally {
-                    readLatch.countDown();
-                }
-            }).start();
-            readLatch.await(30, TimeUnit.SECONDS);
-            snapshot = snapshotHolder[0];
-            plainBackupCreated = backupCreatedHolder[0];
+            // 1. 若存在旧版明文数据库，在同一线程中导出数据并重命名为备份
+            snapshot = DatabaseEncryptionHelper.migratePlainDatabaseIfNeeded(this);
+            if (snapshot != null) {
+                plainBackupCreated = DatabaseEncryptionHelper.renamePlainDatabaseToBackup(this);
+            }
 
             // 2. 使用 SQLCipher 创建加密数据库
             byte[] passphrase = DatabaseEncryptionHelper.getPassphrase(this);
@@ -172,21 +182,11 @@ public class BatteryHealthApplication extends Application {
 
             // 3. 将历史数据恢复到加密数据库，成功后删除备份
             if (snapshot != null) {
-                final CountDownLatch restoreLatch = new CountDownLatch(1);
-                final boolean[] restoreSuccess = {true};
-                new Thread(() -> {
-                    try {
-                        restoreSnapshot(database, snapshotHolder[0]);
-                    } catch (Exception e) {
-                        restoreSuccess[0] = false;
-                        Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);
-                    } finally {
-                        restoreLatch.countDown();
-                    }
-                }).start();
-                boolean restored = restoreLatch.await(60, TimeUnit.SECONDS) && restoreSuccess[0];
-                if (restored) {
+                try {
+                    restoreSnapshot(database, snapshot);
                     DatabaseEncryptionHelper.deletePlainDatabaseBackup(this);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error restoring database snapshot: " + e.getMessage(), e);
                 }
             }
         } catch (Exception e) {

@@ -295,38 +295,37 @@ public class ChargingMonitorService extends Service {
     }
 
     /**
-     * 检查充电状态
+     * 检查充电状态（在后台线程执行，避免主线程阻塞）。
      */
     private void checkChargingStatus() {
-        Intent batteryStatus = getBatteryIntent();
-        if (batteryStatus != null) {
-            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            boolean nowCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                        status == BatteryManager.BATTERY_STATUS_FULL;
+        if (executor != null) {
+            executor.submit(() -> {
+                Intent batteryStatus = getBatteryIntent();
+                if (batteryStatus != null) {
+                    int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                    boolean nowCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                                status == BatteryManager.BATTERY_STATUS_FULL;
 
-            if (nowCharging) {
-                // 注意：isCharging 由 startChargingSession() 内部设置，
-                // 不要在外层先设置 isCharging，否则 startChargingSession() 会因
-                // 入口检查 "if (isCharging) return;" 而直接返回（死代码问题）
-                startChargingSession();
-            } else if (isCharging) {
-                // 之前在充电，现在拔掉
-                endChargingSession();
-            }
+                    // isCharging 由 startChargingSession()/endChargingSession() 内部设置，
+                    // 不要在外层先设置 isCharging，否则 startChargingSession() 会因
+                    // 入口检查 "if (isCharging) return;" 而直接返回（死代码问题）
+                    if (nowCharging) {
+                        startChargingSession();
+                    } else if (isCharging) {
+                        endChargingSession();
+                    }
+                }
+            });
         }
     }
 
     /**
-     * 安全获取电池sticky intent（兼容Android 13+ 废弃 API）
+     * 安全获取电池sticky intent（兼容所有 Android 版本，避免废弃 API）。
      */
     private Intent getBatteryIntent() {
         try {
             IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                return ContextCompat.registerReceiver(this, null, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
-            } else {
-                return registerReceiver(null, filter);
-            }
+            return ContextCompat.registerReceiver(this, null, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
         } catch (Exception e) {
             Log.e(TAG, "Error getting battery intent: " + e.getMessage());
             return null;
@@ -788,39 +787,44 @@ public class ChargingMonitorService extends Service {
      * 构建通知
      */
     private Notification buildNotification(PowerHistory history) {
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_IMMUTABLE
-        );
+        try {
+            Intent intent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            );
 
-        String content;
-        if (isCharging && history != null) {
-            // strings.xml: "充电中 %1$d%% · %2$.1fW · %3$s"
-            // 参数顺序必须与占位符顺序一致：电量(int) → 功率(float) → 类型(String)。
-            // 早期版本顺序错位（power→%1$d 会导致 float 传 %d 抛 IllegalFormatConversionException），
-            // 已修正。
-            content = String.format(
-                    getString(R.string.charging_monitor_notification_content_charging),
-                    history.getBatteryLevel(),
-                    history.getPower(),
-                    history.getChargeTypeDescription());
-        } else {
-            // strings.xml: "未充电 · 电量 %1$d%%"，需要传入电量参数。
-            // 早期版本未传参，导致通知显示字面量 "%1$d%%"。
-            int idleLevel = cachedLevel > 0 ? cachedLevel : (history != null ? history.getBatteryLevel() : 0);
-            content = String.format(
-                    getString(R.string.charging_monitor_notification_content_idle),
-                    idleLevel);
+            String content;
+            if (isCharging && history != null && history.getBatteryLevel() >= 0) {
+                // strings.xml: "充电中 %1$d%% · %2$.1fW · %3$s"
+                content = String.format(
+                        getString(R.string.charging_monitor_notification_content_charging),
+                        history.getBatteryLevel(),
+                        history.getPower(),
+                        history.getChargeTypeDescription());
+            } else {
+                // strings.xml: "未充电 · 电量 %1$d%%"
+                int idleLevel = cachedLevel > 0 ? cachedLevel : (history != null ? history.getBatteryLevel() : 0);
+                content = String.format(
+                        getString(R.string.charging_monitor_notification_content_idle),
+                        Math.max(0, idleLevel));
+            }
+
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle(getString(R.string.charging_monitor_notification_title))
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(isCharging)
+                    .setOnlyAlertOnce(true)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error building notification: " + e.getMessage());
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle(getString(R.string.charging_monitor_notification_title))
+                    .setContentText(getString(R.string.status_not_charging_short))
+                    .setSmallIcon(R.drawable.ic_charging)
+                    .build();
         }
-
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(getString(R.string.charging_monitor_notification_title))
-                .setContentText(content)
-                .setSmallIcon(R.drawable.ic_charging)
-                .setContentIntent(pendingIntent)
-                .setOngoing(isCharging)
-                .setOnlyAlertOnce(true)
-                .build();
     }
 
     /**

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * WorkManager 周期任务调度器。
  *
  * 注意：WorkManager 最小周期为 15 分钟，传入小于 15 分钟的值会被系统静默提升到 15 分钟。
- * 早期版本传 5 分钟实际会变成 15 分钟，但语义不一致，已统一为 15 分钟。
+ * flex 必须小于 repeatInterval，且 flex=0 时任务将在严格周期边界执行。
  */
 public class WorkManagerScheduler {
 
@@ -23,7 +23,7 @@ public class WorkManagerScheduler {
 
     /**
      * 调度电池数据采集周期任务。
-     * - 周期：15 分钟（WorkManager 最小周期），flex 5 分钟。
+     * - 周期：15 分钟（WorkManager 最小周期），flex 0 分钟确保不低于 15 分钟最小间隔。
      * - 约束：无需网络，电池电量非低。
      * - KEEP 策略：重复调用不会创建新任务。
      *
@@ -40,7 +40,7 @@ public class WorkManagerScheduler {
         PeriodicWorkRequest dataRequest = new PeriodicWorkRequest.Builder(
                 BatteryDataWorker.class,
                 15, TimeUnit.MINUTES,
-                5, TimeUnit.MINUTES
+                0, TimeUnit.MINUTES
         )
                 .setConstraints(constraints)
                 .build();

@@ -493,7 +493,10 @@ public class BatteryDataManager {
                     (com.batteryhealth.app.BatteryHealthApplication) context.getApplicationContext();
             if (app == null) return -1;
             com.batteryhealth.app.data.database.AppDatabase db = app.getDatabase();
-            if (db == null) return -1;
+            if (db == null) {
+                Log.d(TAG, "estimateCycleCountFromHistory: database not ready, skipping");
+                return -1;
+            }
 
             long startTime = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000;
             List<BatteryInfo> records = db.batteryInfoDao().getSince(startTime);
@@ -1070,14 +1073,17 @@ public class BatteryDataManager {
     }
 
     public BatteryInfo getCurrentBatteryInfo() {
-        if (currentBatteryInfo == null) {
+        BatteryInfo info = currentBatteryInfo;
+        if (info == null) {
             synchronized (this) {
-                if (currentBatteryInfo == null) {
+                info = currentBatteryInfo;
+                if (info == null) {
                     refreshFromStickyIntent();
+                    info = currentBatteryInfo;
                 }
             }
         }
-        return currentBatteryInfo;
+        return info;
     }
 
     public void refreshAllDataAsync() {

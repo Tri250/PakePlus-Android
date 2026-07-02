@@ -9,6 +9,7 @@ import com.batteryhealth.app.data.model.BatteryInfo;
 import com.batteryhealth.app.data.model.PerformanceData;
 import com.batteryhealth.app.domain.repository.BatteryRepository;
 import com.batteryhealth.app.utils.BatteryDataManager;
+import com.batteryhealth.app.utils.ThreadExecutor;
 
 import java.util.List;
 
@@ -50,15 +51,16 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void saveBatteryInfo(BatteryInfo info) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            BatteryInfo snapshot = info.copy();
+            ThreadExecutor.execute(() -> {
                 try {
-                    info.setId(0);
-                    info.setTimestamp(System.currentTimeMillis());
-                    db.batteryInfoDao().insert(info);
+                    snapshot.setId(0);
+                    snapshot.setTimestamp(System.currentTimeMillis());
+                    db.batteryInfoDao().insert(snapshot);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving battery info: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 
@@ -105,13 +107,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void deleteOlderThan(long timestamp) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            ThreadExecutor.execute(() -> {
                 try {
                     db.batteryInfoDao().deleteOlderThan(timestamp);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error deleting old data: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 
@@ -123,13 +125,13 @@ public class BatteryRepositoryImpl implements BatteryRepository {
     public void savePerformanceData(PerformanceData data) {
         AppDatabase db = getDatabase();
         if (db != null) {
-            new Thread(() -> {
+            ThreadExecutor.execute(() -> {
                 try {
                     db.performanceDataDao().insert(data);
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "Error saving performance data: " + e.getMessage());
                 }
-            }).start();
+            });
         }
     }
 }

@@ -138,7 +138,10 @@ public class MainActivity extends AppCompatActivity {
             showPrivacyPolicyIfNeeded();
 
             // 检查权限（统一使用 PermissionManager）
-            PermissionManager.checkAndRequestPermissions(this, getRequiredPermissions());
+            String[] requiredPermissions = getRequiredPermissions();
+            if (requiredPermissions.length > 0) {
+                PermissionManager.checkAndRequestPermissions(this, requiredPermissions);
+            }
 
             // 检查通知权限并提示
             checkNotificationPermissionAndPrompt();
@@ -519,15 +522,15 @@ public class MainActivity extends AppCompatActivity {
             // 展示隐私政策与用户协议摘要弹窗，引导用户查看完整内容
             String summary = getString(R.string.privacy_policy_summary);
             new AlertDialog.Builder(this)
-                    .setTitle("隐私保护提醒")
+                    .setTitle(getString(R.string.privacy_policy_title))
                     .setMessage(summary)
-                    .setPositiveButton("同意并继续", (dialog, which) -> {
+                    .setPositiveButton(getString(R.string.privacy_policy_agree), (dialog, which) -> {
                         prefs.edit()
                                 .putBoolean(PREF_POLICY_ACCEPTED, true)
                                 .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
                                 .apply();
                     })
-                    .setNeutralButton("查看隐私政策", (dialog, which) -> {
+                    .setNeutralButton(getString(R.string.privacy_policy_view), (dialog, which) -> {
                         prefs.edit()
                                 .putBoolean(PREF_POLICY_ACCEPTED, true)
                                 .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
@@ -539,10 +542,10 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(intent);
                         } catch (Exception ignored) {}
                     })
-                    .setNegativeButton("不同意", (dialog, which) -> {
+                    .setNegativeButton(getString(R.string.privacy_policy_disagree), (dialog, which) -> {
                         // 用户不同意仍可使用基础功能，但部分功能受限
                         Snackbar.make(findViewById(android.R.id.content),
-                                "部分功能可能无法正常使用", Snackbar.LENGTH_LONG).show();
+                                getString(R.string.privacy_policy_limited), Snackbar.LENGTH_LONG).show();
                     })
                     .setCancelable(false)
                     .show();
