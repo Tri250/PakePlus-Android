@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -247,12 +246,7 @@ public class HealthCheckFragment extends Fragment {
         try {
             Context ctx = getContext();
             if (ctx == null) return;
-            ClipboardManager cm;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                cm = (ClipboardManager) ctx.getSystemService(ClipboardManager.class);
-            } else {
-                cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-            }
+            ClipboardManager cm = (ClipboardManager) ctx.getSystemService(ClipboardManager.class);
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText("health-check-report", csv));
             }

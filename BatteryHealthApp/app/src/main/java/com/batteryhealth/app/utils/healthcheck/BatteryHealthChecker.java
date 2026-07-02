@@ -87,7 +87,7 @@ public class BatteryHealthChecker implements IHealthChecker {
                 desc.append("累计循环次数：").append(cycleCount).append("次。");
             }
             if (info != null && info.getBatterySource() != null) {
-                desc.append("电池来源判定：").append(mapBatterySource(info.getBatterySource())).append("。");
+                desc.append("电池来源判定：").append(mapBatterySourceText(context, info.getBatterySource())).append("。");
             }
 
             return builder
@@ -115,12 +115,21 @@ public class BatteryHealthChecker implements IHealthChecker {
         }
     }
 
-    private static String mapBatterySource(String source) {
-        if (source == null) return "未知";
+    private static String mapBatterySourceText(Context context, String source) {
+        if (source == null) return context.getString(R.string.status_unknown);
         switch (source) {
-            case "original": return "原装";
-            case "third_party": return "第三方";
-            default: return "无法验证";
+            case "original": return context.getString(R.string.battery_source_original);
+            case "third_party": return context.getString(R.string.battery_source_third_party);
+            default: return context.getString(R.string.battery_source_unverifiable);
+        }
+    }
+
+    private static String mapBatterySource(String source) {
+        if (source == null) return "unknown";
+        switch (source) {
+            case "original": return "original";
+            case "third_party": return "third_party";
+            default: return "unverified";
         }
     }
 }

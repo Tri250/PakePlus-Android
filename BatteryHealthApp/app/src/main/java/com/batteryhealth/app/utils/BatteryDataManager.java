@@ -76,13 +76,39 @@ public class BatteryDataManager {
     }
 
     private static final int BATTERY_PROP_CYCLE_COUNT = 7;
-    // 反射读取 BatteryManager 常量，fallback 使用 AOSP 公开值（CHARGE_FULL=4, CHARGE_COUNTER=1）
-    private static final int BATTERY_PROP_CHARGE_FULL = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
-    private static final int BATTERY_PROP_CHARGE_COUNTER = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 1);
+    // 反射读取 BatteryManager 常量，延迟加载避免类初始化时阻塞主线程
+    private static volatile Integer sBatteryPropChargeFull;
+    private static volatile Integer sBatteryPropChargeCounter;
+    private static volatile Integer sBatteryPropBatteryHealth;
+    private static volatile Integer sBatteryPropChargeFullDesign;
 
-    // Android 16 (API 36) 新增常量
-    private static final int BATTERY_PROPERTY_BATTERY_HEALTH = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 6);
-    private static final int BATTERY_PROPERTY_CHARGE_FULL_DESIGN = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
+    private static int getBatteryPropChargeFull() {
+        if (sBatteryPropChargeFull == null) {
+            sBatteryPropChargeFull = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL", 4);
+        }
+        return sBatteryPropChargeFull;
+    }
+
+    private static int getBatteryPropChargeCounter() {
+        if (sBatteryPropChargeCounter == null) {
+            sBatteryPropChargeCounter = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_COUNTER", 1);
+        }
+        return sBatteryPropChargeCounter;
+    }
+
+    private static int getBatteryPropBatteryHealth() {
+        if (sBatteryPropBatteryHealth == null) {
+            sBatteryPropBatteryHealth = getBatteryIntConstant("BATTERY_PROPERTY_BATTERY_HEALTH", 6);
+        }
+        return sBatteryPropBatteryHealth;
+    }
+
+    private static int getBatteryPropChargeFullDesign() {
+        if (sBatteryPropChargeFullDesign == null) {
+            sBatteryPropChargeFullDesign = getBatteryIntConstant("BATTERY_PROPERTY_CHARGE_FULL_DESIGN", 7);
+        }
+        return sBatteryPropChargeFullDesign;
+    }
 
     // 设计容量候选
     private static final String[] DESIGN_CAPACITY_PATHS = {
@@ -382,7 +408,7 @@ public class BatteryDataManager {
             BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 try {
-                    int designMicroAh = batteryManager.getIntProperty(BATTERY_PROPERTY_CHARGE_FULL_DESIGN);
+                    int designMicroAh = batteryManager.getIntProperty(getBatteryPropChargeFullDesign());
                     if (designMicroAh != Integer.MIN_VALUE && designMicroAh > 1000) {
                         if (sourceHolder != null) sourceHolder[0] = "android16_native_design";
                         // µAh → mAh
@@ -415,7 +441,7 @@ public class BatteryDataManager {
     private int getFullCapacity(BatteryManager batteryManager) {
         if (batteryManager != null) {
             try {
-                int microAh = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_FULL);
+                int microAh = batteryManager.getIntProperty(getBatteryPropChargeFull());
                 if (microAh != Integer.MIN_VALUE && microAh > 1000) {
                     if (microAh >= 1_000_000 && microAh <= 10_000_000) return microAh / 1000;
                     if (microAh >= 1000 && microAh <= 10000) return microAh;
@@ -443,7 +469,7 @@ public class BatteryDataManager {
     private int getChargeCounterMah(BatteryManager batteryManager) {
         if (batteryManager != null) {
             try {
-                int raw = batteryManager.getIntProperty(BATTERY_PROP_CHARGE_COUNTER);
+                int raw = batteryManager.getIntProperty(getBatteryPropChargeCounter());
                 if (raw != Integer.MIN_VALUE && raw != 0) {
                     int abs = Math.abs(raw);
                     if (abs > 100_000) return abs / 1000;
@@ -660,7 +686,7 @@ public class BatteryDataManager {
             BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 try {
-                    int nativeHealth = batteryManager.getIntProperty(BATTERY_PROPERTY_BATTERY_HEALTH);
+                    int nativeHealth = batteryManager.getIntProperty(getBatteryPropBatteryHealth());
                     if (nativeHealth != Integer.MIN_VALUE && nativeHealth >= 0 && nativeHealth <= 100) {
                         r.healthPercentage = nativeHealth;
                         r.sourceTag = "android16_native_health";
@@ -873,17 +899,23 @@ public class BatteryDataManager {
         return readSysfsString(SERIAL_PATHS, context.getString(R.string.status_unknown));
     }
 
-    // 缓存反射 Method 对象，避免 getBatteryInfo() 每次调用时重复反射
+    // 缓存反射 Method 对象，使用 volatile + synchronized 保证线程安全
     private static volatile Method cachedGetSerialNoArg;
     private static volatile Method cachedGetSerialWithContext;
     private static volatile Method cachedGetSerialStatic;
+    private static final Object SERIAL_REFLECT_LOCK = new Object();
 
     private String tryGetBatterySerial(BatteryManager bm) {
         try {
             Method m = cachedGetSerialNoArg;
             if (m == null) {
-                m = bm.getClass().getMethod("getBatterySerialNumber");
-                cachedGetSerialNoArg = m;
+                synchronized (SERIAL_REFLECT_LOCK) {
+                    m = cachedGetSerialNoArg;
+                    if (m == null) {
+                        m = bm.getClass().getMethod("getBatterySerialNumber");
+                        cachedGetSerialNoArg = m;
+                    }
+                }
             }
             Object r = m.invoke(bm);
             if (r instanceof String) return (String) r;
@@ -892,8 +924,13 @@ public class BatteryDataManager {
         try {
             Method m = cachedGetSerialWithContext;
             if (m == null) {
-                m = bm.getClass().getMethod("getBatterySerialNumber", Context.class);
-                cachedGetSerialWithContext = m;
+                synchronized (SERIAL_REFLECT_LOCK) {
+                    m = cachedGetSerialWithContext;
+                    if (m == null) {
+                        m = bm.getClass().getMethod("getBatterySerialNumber", Context.class);
+                        cachedGetSerialWithContext = m;
+                    }
+                }
             }
             Object r = m.invoke(bm, context);
             if (r instanceof String) return (String) r;
@@ -902,8 +939,13 @@ public class BatteryDataManager {
         try {
             Method m = cachedGetSerialStatic;
             if (m == null) {
-                m = BatteryManager.class.getMethod("getBatterySerialNumber", Context.class);
-                cachedGetSerialStatic = m;
+                synchronized (SERIAL_REFLECT_LOCK) {
+                    m = cachedGetSerialStatic;
+                    if (m == null) {
+                        m = BatteryManager.class.getMethod("getBatterySerialNumber", Context.class);
+                        cachedGetSerialStatic = m;
+                    }
+                }
             }
             Object r = m.invoke(null, context);
             if (r instanceof String) return (String) r;
@@ -917,20 +959,16 @@ public class BatteryDataManager {
     // region sysfs 工具
 
     /**
-     * 安全获取电池 sticky intent（兼容 Android 13+ 废弃 API）。
-     * 使用 ContextCompat.registerReceiver 替代 registerReceiver(null, ...)。
+     * 安全获取电池 sticky intent（兼容所有 Android 版本，避免废弃 API）。
+     * 统一使用 ContextCompat.registerReceiver，在所有版本上行为一致。
      */
     private Intent getBatteryStickyIntent() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                return ContextCompat.registerReceiver(
-                        context, null,
-                        new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-                        ContextCompat.RECEIVER_NOT_EXPORTED
-                );
-            } else {
-                return context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            }
+            return ContextCompat.registerReceiver(
+                    context, null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED
+            );
         } catch (Exception e) {
             Log.e(TAG, "Error getting battery sticky intent: " + e.getMessage());
             return null;

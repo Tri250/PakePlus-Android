@@ -2,6 +2,7 @@ package com.batteryhealth.app.utils.healthcheck;
 
 import android.content.Context;
 
+import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
@@ -41,11 +42,11 @@ public class ChargingLimitChecker implements IHealthChecker {
             if (limit > 100 || limit <= 0) {
                 return builder
                         .setSeverity(HealthCheckResult.SEVERITY_INFO)
-                        .setStatus("未检测到")
+                        .setStatus(appCtx.getString(R.string.status_undetected))
                         .setValue("--")
                         .setUnit("%")
-                        .setDescription("当前 ROM 未提供统一的充电限制读取接口。")
-                        .setAdvice("可在系统「电池」设置中查找「智能充电/优化充电」开关手动开启，保持 80% 充电上限能显著延长电池寿命。")
+                        .setDescription(appCtx.getString(R.string.charging_limit_no_api))
+                        .setAdvice(appCtx.getString(R.string.charging_limit_no_api_advice))
                         .setItemScore(75)
                         .build();
             }
@@ -53,11 +54,11 @@ public class ChargingLimitChecker implements IHealthChecker {
             if (limit < 100) {
                 return builder
                         .setSeverity(HealthCheckResult.SEVERITY_GOOD)
-                        .setStatus("已启用")
+                        .setStatus(appCtx.getString(R.string.status_enabled))
                         .setValue(String.valueOf(limit))
                         .setUnit("%")
-                        .setDescription("当前已启用智能充电限制（上限 " + limit + "%），有利于延长电池化学寿命。")
-                        .setAdvice("保持当前设置即可；若即将外出需要更长续航，可临时取消限制。")
+                        .setDescription(appCtx.getString(R.string.charging_limit_enabled_desc, limit))
+                        .setAdvice(appCtx.getString(R.string.charging_limit_enabled_advice))
                         .setItemScore(100)
                         .build();
             }
@@ -69,13 +70,13 @@ public class ChargingLimitChecker implements IHealthChecker {
             int score;
             if (healthPct > 0 && healthPct < 80f) {
                 severity = HealthCheckResult.SEVERITY_WARNING;
-                status = "未启用";
-                advice = "电池健康度已有下降，强烈建议开启智能充电限制至 80%。";
+                status = appCtx.getString(R.string.status_disabled);
+                advice = appCtx.getString(R.string.charging_limit_disabled_advice_low_health);
                 score = 55;
             } else {
                 severity = HealthCheckResult.SEVERITY_INFO;
-                status = "未启用";
-                advice = "建议开启智能充电限制至 80%，长期保持电池化学健康。";
+                status = appCtx.getString(R.string.status_disabled);
+                advice = appCtx.getString(R.string.charging_limit_disabled_advice);
                 score = 70;
             }
 
@@ -84,23 +85,24 @@ public class ChargingLimitChecker implements IHealthChecker {
                     .setStatus(status)
                     .setValue(String.valueOf(limit))
                     .setUnit("%")
-                    .setDescription("系统未启用智能充电限制。长期满电充电会加速电解液分解。")
+                    .setDescription(appCtx.getString(R.string.charging_limit_disabled_desc))
                     .setAdvice(advice)
                     .setRepairable(true)
                     .setFixAction(HealthCheckResult.FIX_ACTION_CHARGING_LIMIT)
                     .setItemScore(score)
                     .build();
         } catch (Exception e) {
+            Context appCtx = context.getApplicationContext();
             return new HealthCheckResult.Builder()
                     .setId("charging_limit")
                     .setTitle(getName())
                     .setCategory(getCategory())
                     .setSeverity(HealthCheckResult.SEVERITY_INFO)
-                    .setStatus("读取失败")
+                    .setStatus(appCtx.getString(R.string.status_read_failed))
                     .setValue("--")
                     .setUnit("")
-                    .setDescription("读取充电限制状态失败：" + e.getMessage())
-                    .setAdvice("请稍后重试。")
+                    .setDescription(appCtx.getString(R.string.charging_limit_error_desc, e.getMessage()))
+                    .setAdvice(appCtx.getString(R.string.health_check_retry_later))
                     .setItemScore(55)
                     .build();
         }
