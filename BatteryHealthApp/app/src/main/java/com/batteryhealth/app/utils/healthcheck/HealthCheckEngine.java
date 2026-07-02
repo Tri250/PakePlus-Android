@@ -57,6 +57,11 @@ public class HealthCheckEngine {
         /** 进度回调：0-100。在任意线程上被调用。 */
         void onProgress(int percent);
 
+        /** 进度回调：附带当前正在检测的项名称，用于前端展示更友好的扫描状态。 */
+        default void onProgress(int percent, String currentItemName) {
+            onProgress(percent);
+        }
+
         /** 所有检测完成时回调。结果列表按 priority 升序排序。 */
         void onCompleted(List<HealthCheckResult> results);
 
@@ -204,6 +209,8 @@ public class HealthCheckEngine {
                     for (int idx = 0; idx < futures.size(); idx++) {
                         Future<HealthCheckResult> future = futures.get(idx);
                         IHealthChecker checker = snapshot.get(idx);
+                        // 每轮开始前先通知：当前正在检测的项名称
+                        notifyProgress((idx * 100) / total, checker.getName());
                         try {
                             // 限制单个 Checker 最多阻塞 5 秒，避免一项卡死导致整个自检流程不返回
                             HealthCheckResult result = future.get(5, TimeUnit.SECONDS);
@@ -220,7 +227,7 @@ public class HealthCheckEngine {
                             collector.add(buildFallbackResult(checker.getName(), checker.getCategory()));
                         } finally {
                             int current = done.incrementAndGet();
-                            notifyProgress(total > 0 ? (current * 100 / total) : 100);
+                            notifyProgress(total > 0 ? (current * 100 / total) : 100, checker.getName());
                         }
                     }
 
@@ -247,8 +254,14 @@ public class HealthCheckEngine {
 
     /** 广播进度给所有当前订阅者。 */
     private void notifyProgress(int percent) {
+        notifyProgress(percent, "");
+    }
+
+    private void notifyProgress(int percent, String currentItemName) {
         for (Callback cb : activeCallbacks) {
-            try { cb.onProgress(percent); } catch (Throwable ignored) {}
+            try {
+                cb.onProgress(percent, currentItemName != null ? currentItemName : "");
+            } catch (Throwable ignored) {}
         }
     }
 
@@ -274,23 +287,26 @@ public class HealthCheckEngine {
         if (callback != null) activeCallbacks.remove(callback);
     }
 
-    /** 综合评分：按各项 itemScore 的加权平均，其中严重项扣分权重更高。 */
+    /** 综合评分：按各项 itemScore 的加权平均，其中严重项扣分权重更高。
+     *  逻辑：以 GOOD(正常) 为基准权重 1，INFO 轻微下调，WARNING 显著放大，
+     *  CRITICAL 再次加倍，确保单项严重问题不会淹没在大量正常项中。 */
     public int getOverallScore(List<HealthCheckResult> results) {
         if (results == null || results.isEmpty()) return 0;
         float sum = 0f;
         float weightSum = 0f;
         for (HealthCheckResult r : results) {
-            float weight = 1f;
+            float weight;
             switch (r.getSeverity()) {
-                case HealthCheckResult.SEVERITY_CRITICAL: weight = 3f; break;
-                case HealthCheckResult.SEVERITY_WARNING: weight = 2f; break;
-                case HealthCheckResult.SEVERITY_INFO: weight = 1.5f; break;
-                default: weight = 1f; break;
+                case HealthCheckResult.SEVERITY_CRITICAL: weight = 5f; break;
+                case HealthCheckResult.SEVERITY_WARNING:  weight = 2.5f; break;
+                case HealthCheckResult.SEVERITY_INFO:     weight = 0.8f; break;
+                default:                                   weight = 1f; break;
             }
             sum += r.getItemScore() * weight;
             weightSum += weight;
         }
-        return weightSum > 0 ? Math.round(sum / weightSum) : 0;
+        int score = weightSum > 0 ? Math.round(sum / weightSum) : 0;
+        return Math.max(0, Math.min(100, score));
     }
 
     /**

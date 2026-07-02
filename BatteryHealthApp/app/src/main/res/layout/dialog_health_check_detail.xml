@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <View
+            android:id="@+id/view_dialog_severity"
+            android:layout_width="6dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="14dp"
+            android:background="@color/ios_green" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_dialog_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ios_label"
+                android:textAppearance="@style/iOSBody"
+                android:textSize="18sp"
+                android:lineSpacingExtra="2dp" />
+
+            <TextView
+                android:id="@+id/tv_dialog_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/ios_secondary_label"
+                android:textAppearance="@style/iOSBody.Secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_dialog_score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ios_label"
+            android:textAppearance="@style/iOSBody"
+            android:textSize="16sp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_dialog_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:textColor="@color/ios_label"
+        android:textAppearance="@style/iOSBody"
+        android:textSize="15sp"
+        android:lineSpacingExtra="4dp" />
+
+    <TextView
+        android:id="@+id/tv_dialog_advice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:textColor="@color/ios_blue"
+        android:textAppearance="@style/iOSBody"
+        android:textSize="15sp"
+        android:lineSpacingExtra="4dp"
+        android:background="@drawable/bg_advice_panel"
+        android:padding="12dp" />
+</LinearLayout>

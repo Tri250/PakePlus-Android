@@ -208,6 +208,14 @@
     <string name="privacy_policy_disagree">不同意</string>
     <string name="privacy_policy_limited">部分功能可能无法正常使用</string>
     <string name="health_check_action_checking">检测中…</string>
+    <string name="health_check_scan_status">检测中 %1$d%% · %2$s</string>
+    <string name="health_check_score_format">评分 %1$d</string>
+    <string name="health_check_empty_title">暂无检测数据</string>
+    <string name="health_check_empty_desc">点击「开始检测」即可对电池、充电、性能、权限等 14 项指标进行全面检查。</string>
+    <string name="health_check_export_share">分享</string>
+    <string name="health_check_share_subject">电池自检报告</string>
+    <string name="health_check_share_title">分享报告</string>
+    <string name="health_check_share_failed">分享失败</string>
     <string name="error_crash_title">应用崩溃</string>
     <string name="error_crash_message">应用发生异常，请重启</string>
     <string name="status_init_failed">初始化失败</string>

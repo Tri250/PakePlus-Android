@@ -1,9 +1,15 @@
 package com.batteryhealth.app.ui.healthcheck;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -29,6 +35,7 @@ import com.batteryhealth.app.R;
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.FragmentErrorViewHelper;
 import com.batteryhealth.app.utils.healthcheck.HealthCheckEngine;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +58,7 @@ public class HealthCheckFragment extends Fragment {
     private ProgressBar progressScanning;
     private TextView tvScanningStatus;
     private RecyclerView recyclerResults;
+    private LinearLayout layoutEmptyState;
 
     private HealthCheckAdapter adapter;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -85,6 +93,7 @@ public class HealthCheckFragment extends Fragment {
             progressScanning = view.findViewById(R.id.progress_scanning);
             tvScanningStatus = view.findViewById(R.id.tv_scanning_status);
             recyclerResults = view.findViewById(R.id.recycler_results);
+            layoutEmptyState = view.findViewById(R.id.layout_empty_state);
 
             // 保护性检查：若关键视图缺失，跳过后续初始化
             if (tvActionCheck == null) {
@@ -92,9 +101,9 @@ public class HealthCheckFragment extends Fragment {
                 return;
             }
 
-            tvActionCheck.setOnClickListener(v -> startCheck());
+            tvActionCheck.setOnClickListener(new DebouncedClickListener(v -> startCheck()));
             if (tvActionReport != null) {
-                tvActionReport.setOnClickListener(v -> exportReport());
+                tvActionReport.setOnClickListener(new DebouncedClickListener(v -> exportReport()));
             }
 
             if (recyclerResults != null) {
@@ -142,7 +151,7 @@ public class HealthCheckFragment extends Fragment {
             if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
             if (tvScanningStatus != null) {
                 tvScanningStatus.setVisibility(View.VISIBLE);
-                tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
+                tvScanningStatus.setText(getString(R.string.health_check_scan_status, 0, ""));
             }
             // 综合评分先重置
             if (tvOverallScore != null) tvOverallScore.setText("--");
@@ -167,13 +176,21 @@ public class HealthCheckFragment extends Fragment {
         }
         pendingCallback = new HealthCheckEngine.Callback() {
             @Override
-            public void onProgress(final int percent) {
+            public void onProgress(final int percent, final String currentItemName) {
                 mainHandler.post(() -> {
                     if (!isAdded()) return;
                     if (tvScanningStatus != null) {
-                        tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", percent));
+                        String item = currentItemName != null && !currentItemName.isEmpty()
+                                ? currentItemName : "";
+                        tvScanningStatus.setText(
+                                getString(R.string.health_check_scan_status, percent, item));
                     }
                 });
+            }
+
+            @Override
+            public void onProgress(final int percent) {
+                onProgress(percent, "");
             }
 
             @Override
@@ -203,9 +220,20 @@ public class HealthCheckFragment extends Fragment {
         lastResults = results != null ? results : new ArrayList<>();
         if (adapter != null) adapter.setData(lastResults);
 
+        boolean isEmpty = lastResults.isEmpty();
+        if (recyclerResults != null) {
+            recyclerResults.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        }
+        if (layoutEmptyState != null) {
+            layoutEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        }
+
         int score = engine != null ? engine.getOverallScore(lastResults) : 0;
+        int colorRes = scoreToColorRes(score);
+        int color = ContextCompat.getColor(requireContext(), colorRes);
         if (tvOverallScore != null) {
             tvOverallScore.setText(String.format(Locale.getDefault(), "%d", score));
+            tvOverallScore.setTextColor(color);
         }
         if (tvOverallLabel != null) {
             String label;
@@ -215,12 +243,21 @@ public class HealthCheckFragment extends Fragment {
             else if (score >= 30) label = getString(R.string.health_check_score_warning);
             else label = getString(R.string.health_check_score_critical);
             tvOverallLabel.setText(label);
+            tvOverallLabel.setTextColor(color);
         }
         if (progressOverall != null) {
             progressOverall.setProgress(Math.max(0, Math.min(100, score)));
+            progressOverall.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
         }
 
         finishCheckingUI();
+    }
+
+    private static int scoreToColorRes(int score) {
+        if (score >= 85) return R.color.ios_green;
+        if (score >= 70) return R.color.ios_blue;
+        if (score >= 50) return R.color.ios_orange;
+        return R.color.ios_red;
     }
 
     private void finishCheckingUI() {
@@ -250,9 +287,21 @@ public class HealthCheckFragment extends Fragment {
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText("health-check-report", csv));
             }
-            Toast.makeText(ctx, getString(R.string.health_check_export_success), Toast.LENGTH_SHORT).show();
+            View anchor = getView();
+            if (anchor != null) {
+                Snackbar.make(anchor, R.string.health_check_export_success, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.health_check_export_share, v -> shareText(csv))
+                        .show();
+            } else {
+                Toast.makeText(ctx, R.string.health_check_export_success, Toast.LENGTH_SHORT).show();
+            }
         } catch (Exception e) {
-            Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            View anchor = getView();
+            if (anchor != null) {
+                Snackbar.make(anchor, R.string.health_check_export_failed, Snackbar.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), R.string.health_check_export_failed, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -299,14 +348,8 @@ public class HealthCheckFragment extends Fragment {
                 h.tvValue.setVisibility(View.GONE);
             }
 
-            int color;
-            switch (r.getSeverity()) {
-                case HealthCheckResult.SEVERITY_CRITICAL: color = ContextCompat.getColor(h.itemView.getContext(), R.color.ios_red); break;
-                case HealthCheckResult.SEVERITY_WARNING:  color = ContextCompat.getColor(h.itemView.getContext(), R.color.ios_orange); break;
-                case HealthCheckResult.SEVERITY_INFO:     color = ContextCompat.getColor(h.itemView.getContext(), R.color.ios_blue); break;
-                default:                                   color = ContextCompat.getColor(h.itemView.getContext(), R.color.ios_green);
-            }
-            h.vSeverity.setBackgroundColor(color);
+            int color = ContextCompat.getColor(h.itemView.getContext(), severityToColorRes(r.getSeverity()));
+            animateSeverityColor(h.vSeverity, color);
             if (r.isRepairable()) {
                 h.tvAction.setVisibility(View.VISIBLE);
                 h.tvAction.setText(R.string.health_check_action_fix);
@@ -315,13 +358,20 @@ public class HealthCheckFragment extends Fragment {
                 h.tvAction.setVisibility(View.GONE);
             }
 
-            h.itemView.setOnClickListener(v -> showDetailDialog(r));
-            h.tvAction.setOnClickListener(v -> {
+            h.itemView.setOnClickListener(new DebouncedClickListener(v -> showDetailDialog(r)));
+            h.tvAction.setOnClickListener(new DebouncedClickListener(v -> {
                 if (engine != null) {
                     boolean ok = engine.applyFix(getContext(), r);
-                    if (!ok) Toast.makeText(getContext(), R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                    if (!ok) {
+                        View anchor = getView();
+                        if (anchor != null) {
+                            Snackbar.make(anchor, R.string.health_check_fix_failed, Snackbar.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), R.string.health_check_fix_failed, Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
-            });
+            }));
         }
 
         @Override
@@ -347,32 +397,113 @@ public class HealthCheckFragment extends Fragment {
         }
     }
 
+    /**
+     * 防抖点击监听器：避免用户快速连点导致重复触发检测或导出。
+     */
+    private static class DebouncedClickListener implements View.OnClickListener {
+        private final View.OnClickListener delegate;
+        private static final long DEBOUNCE_MS = 800;
+        private long lastClickTime;
+
+        DebouncedClickListener(View.OnClickListener delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onClick(View v) {
+            long now = System.currentTimeMillis();
+            if (now - lastClickTime < DEBOUNCE_MS) return;
+            lastClickTime = now;
+            delegate.onClick(v);
+        }
+    }
+
+    private void shareText(String text) {
+        if (text == null) return;
+        Context ctx = getContext();
+        if (ctx == null) return;
+        try {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, text);
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.health_check_share_subject));
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.health_check_share_title)));
+        } catch (Exception e) {
+            Toast.makeText(ctx, R.string.health_check_share_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void showDetailDialog(HealthCheckResult r) {
         if (r == null) return;
         Context ctx = getContext();
         if (ctx == null) return;
 
-        StringBuilder sb = new StringBuilder();
-        if (r.getDescription() != null && !r.getDescription().isEmpty()) {
-            sb.append(r.getDescription()).append("\n\n");
-        }
-        if (r.getAdvice() != null && !r.getAdvice().isEmpty()) {
-            sb.append("建议: ").append(r.getAdvice());
-        }
+        View dialogView = LayoutInflater.from(ctx).inflate(R.layout.dialog_health_check_detail, null);
+        TextView tvDialogTitle = dialogView.findViewById(R.id.tv_dialog_title);
+        TextView tvDialogStatus = dialogView.findViewById(R.id.tv_dialog_status);
+        TextView tvDialogScore = dialogView.findViewById(R.id.tv_dialog_score);
+        TextView tvDialogDesc = dialogView.findViewById(R.id.tv_dialog_desc);
+        TextView tvDialogAdvice = dialogView.findViewById(R.id.tv_dialog_advice);
+        View vDialogSeverity = dialogView.findViewById(R.id.view_dialog_severity);
 
-        String title = r.getTitle() != null ? r.getTitle() : getString(R.string.health_check_no_data);
+        if (tvDialogTitle != null) {
+            tvDialogTitle.setText(r.getTitle() != null ? r.getTitle() : getString(R.string.health_check_no_data));
+        }
+        if (tvDialogStatus != null) {
+            tvDialogStatus.setText(r.getStatus() != null ? r.getStatus() : "");
+            tvDialogStatus.setTextColor(ContextCompat.getColor(ctx, severityToColorRes(r.getSeverity())));
+        }
+        if (tvDialogScore != null) {
+            tvDialogScore.setText(getString(R.string.health_check_score_format, r.getItemScore()));
+        }
+        if (tvDialogDesc != null) {
+            tvDialogDesc.setText(r.getDescription() != null ? r.getDescription() : "");
+            tvDialogDesc.setVisibility(r.getDescription() != null && !r.getDescription().isEmpty()
+                    ? View.VISIBLE : View.GONE);
+        }
+        if (tvDialogAdvice != null) {
+            tvDialogAdvice.setText(r.getAdvice() != null ? r.getAdvice() : "");
+            tvDialogAdvice.setVisibility(r.getAdvice() != null && !r.getAdvice().isEmpty()
+                    ? View.VISIBLE : View.GONE);
+        }
+        if (vDialogSeverity != null) {
+            vDialogSeverity.setBackgroundColor(ContextCompat.getColor(ctx, severityToColorRes(r.getSeverity())));
+        }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx)
-                .setTitle(title)
-                .setMessage(sb.toString())
-                .setPositiveButton(android.R.string.cancel, null);
+                .setView(dialogView)
+                .setNegativeButton(android.R.string.ok, null);
         if (r.isRepairable()) {
-            builder.setNeutralButton(R.string.health_check_action_fix, (dialog, which) -> {
+            builder.setPositiveButton(R.string.health_check_action_fix, (dialog, which) -> {
                 if (engine != null) engine.applyFix(getContext(), r);
             });
         }
         try {
             builder.show();
         } catch (Exception ignored) {}
+    }
+
+    private static int severityToColorRes(int severity) {
+        switch (severity) {
+            case HealthCheckResult.SEVERITY_CRITICAL: return R.color.ios_red;
+            case HealthCheckResult.SEVERITY_WARNING:  return R.color.ios_orange;
+            case HealthCheckResult.SEVERITY_INFO:     return R.color.ios_blue;
+            default:                                   return R.color.ios_green;
+        }
+    }
+
+    private static void animateSeverityColor(View v, int toColor) {
+        if (v == null) return;
+        Drawable bg = v.getBackground();
+        int fromColor = (bg instanceof ColorDrawable) ? ((ColorDrawable) bg).getColor() : Color.TRANSPARENT;
+        ObjectAnimator animator = ObjectAnimator.ofObject(
+                v,
+                "backgroundColor",
+                new ArgbEvaluator(),
+                fromColor,
+                toColor
+        );
+        animator.setDuration(250);
+        animator.start();
     }
 }

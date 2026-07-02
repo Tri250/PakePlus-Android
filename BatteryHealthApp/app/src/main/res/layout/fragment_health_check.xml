@@ -147,5 +147,38 @@
             android:paddingTop="8dp"
             android:paddingBottom="24dp"
             android:nestedScrollingEnabled="false" />
+
+        <!-- 空状态提示 -->
+        <LinearLayout
+            android:id="@+id/layout_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="48dp"
+            android:paddingBottom="48dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/health_check_empty_title"
+                android:textColor="@color/ios_label"
+                android:textAppearance="@style/iOSBody"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:paddingStart="32dp"
+                android:paddingEnd="32dp"
+                android:gravity="center"
+                android:text="@string/health_check_empty_desc"
+                android:textColor="@color/ios_secondary_label"
+                android:textAppearance="@style/iOSBody.Secondary"
+                android:textSize="14sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
