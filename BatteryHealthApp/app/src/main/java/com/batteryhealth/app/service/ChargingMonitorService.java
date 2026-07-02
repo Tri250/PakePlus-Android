@@ -200,7 +200,17 @@ public class ChargingMonitorService extends Service {
                 return START_STICKY;
             }
 
-            // 仅在充电时提升为前台服务，避免未充电时显示常驻通知
+            // Android 8+ 通过 startForegroundService 启动时，必须先调用 startForeground；
+            // 否则系统在 5 秒内未收到 foreground 通知会抛出 ANR/IllegalStateException。
+            // 先以一个基础通知进入前台，再由 updateForegroundState() 根据实际充电状态决定保留或移除通知。
+            if (!foregroundStarted) {
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                                | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
+                foregroundStarted = true;
+            }
+
+            // 根据充电状态与通知开关调整前台服务表现
             updateForegroundState();
         } catch (Exception e) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -224,22 +234,26 @@ public class ChargingMonitorService extends Service {
     }
 
     /**
-     * 根据充电状态更新前台服务状态
+     * 根据充电状态更新前台服务状态。
+     * 充电且通知开启时保持前台并刷新通知；否则退出前台。
      */
     private void updateForegroundState() {
         boolean showNotification = isNotificationEnabled();
-        if (isCharging && !foregroundStarted && showNotification) {
-            // Android 14+ 要求 startForeground 显式指定 foregroundServiceType
-            ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                            | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
-            foregroundStarted = true;
-        } else if (!isCharging && foregroundStarted) {
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
-            foregroundStarted = false;
-        } else if (isCharging && foregroundStarted && !showNotification) {
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
-            foregroundStarted = false;
+        if (isCharging && showNotification) {
+            if (!foregroundStarted) {
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                                | ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
+                foregroundStarted = true;
+            } else {
+                // 已经在前台：刷新为带真实功率数据的充电通知
+                updateNotification();
+            }
+        } else {
+            if (foregroundStarted) {
+                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+                foregroundStarted = false;
+            }
         }
     }
 

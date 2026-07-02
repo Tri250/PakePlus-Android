@@ -407,7 +407,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 安全启动服务：若应用在前台直接启动；若在后台（Android 14+）使用 AlarmManager 延迟启动
+     * 安全启动服务：若应用在前台直接启动；若在后台（Android 14+）使用 AlarmManager 延迟启动。
+     * Android 12+ 使用精确闹钟前必须声明 SCHEDULE_EXACT_ALARM 并检查 canScheduleExactAlarms()，
+     * 否则 setExactAndAllowWhileIdle 会抛出 SecurityException。
      */
     private void startServiceSafely(Class<?> serviceClass) {
         Intent intent = new Intent(this, serviceClass);
@@ -428,16 +430,29 @@ public class MainActivity extends AppCompatActivity {
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
                     long triggerAt = System.currentTimeMillis() + 5000;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                    } else {
-                        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                    }
+                    scheduleAlarmCompat(alarmManager, triggerAt, pendingIntent);
                     Log.d(TAG, "Scheduled delayed start for " + serviceClass.getSimpleName());
                 }
             }
         } else {
             startService(intent);
+        }
+    }
+
+    /**
+     * 兼容性调度闹钟：优先精确闹钟，无权限时回退到非精确闹钟，避免 SecurityException 导致服务无法重启。
+     */
+    private void scheduleAlarmCompat(AlarmManager alarmManager, long triggerAt, PendingIntent pendingIntent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
         }
     }
 

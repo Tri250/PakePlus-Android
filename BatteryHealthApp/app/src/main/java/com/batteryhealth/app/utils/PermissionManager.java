@@ -79,36 +79,40 @@ public class PermissionManager {
     }
 
     /**
-     * 处理权限请求结果，对拒绝的权限显示引导对话框。
+     * 处理权限请求结果，对所有被拒绝的权限统一显示引导对话框。
+     * 早期版本在第一个被拒绝权限处 break，导致多个权限被拒时只有一项被处理。
      */
     public static void handlePermissionResult(Activity activity, String[] permissions,
                                                int[] grantResults) {
+        List<String> rationalePermissions = new ArrayList<>();
+        List<String> permanentlyDeniedPermissions = new ArrayList<>();
+
         for (int i = 0; i < permissions.length; i++) {
             if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                 String permission = permissions[i];
                 if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
-                    showRationaleDialog(activity, permission);
+                    rationalePermissions.add(permission);
                 } else {
-                    // 用户选择了"不再询问"或系统不建议再次请求，引导去设置页
-                    showGoToSettingsDialog(activity);
+                    permanentlyDeniedPermissions.add(permission);
                 }
-                break;
             }
+        }
+
+        if (!rationalePermissions.isEmpty()) {
+            showRationaleDialog(activity, rationalePermissions);
+        } else if (!permanentlyDeniedPermissions.isEmpty()) {
+            showGoToSettingsDialog(activity);
         }
     }
 
-    private static void showRationaleDialog(Activity activity, String permission) {
-        String message = activity.getString(com.batteryhealth.app.R.string.dialog_permission_message);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && android.Manifest.permission.POST_NOTIFICATIONS.equals(permission)) {
-            message = activity.getString(com.batteryhealth.app.R.string.dialog_permission_notification_message);
-        }
+    private static void showRationaleDialog(Activity activity, List<String> permissions) {
+        String message = buildPermissionRationaleMessage(activity, permissions);
         new AlertDialog.Builder(activity)
                 .setTitle(activity.getString(com.batteryhealth.app.R.string.dialog_permission_title))
                 .setMessage(message)
                 .setPositiveButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_retry), (dialog, which) -> {
                     ActivityCompat.requestPermissions(activity,
-                            new String[]{permission}, PERMISSION_REQUEST_CODE);
+                            permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE);
                 })
                 .setNegativeButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_cancel), null)
                 .show();
@@ -125,6 +129,22 @@ public class PermissionManager {
                 })
                 .setNegativeButton(activity.getString(com.batteryhealth.app.R.string.dialog_permission_cancel), null)
                 .show();
+    }
+
+    private static String buildPermissionRationaleMessage(Activity activity, List<String> permissions) {
+        StringBuilder sb = new StringBuilder();
+        for (String permission : permissions) {
+            if (android.Manifest.permission.POST_NOTIFICATIONS.equals(permission)) {
+                sb.append("• 通知权限：用于接收充电完成、低电量提醒、电池健康预警等重要通知。\n");
+            } else if (android.Manifest.permission.READ_PHONE_STATE.equals(permission)) {
+                sb.append("• 电话状态权限：用于读取电池序列号等硬件信息以识别电池型号（非通话功能）。\n");
+            } else if ("android.permission.PACKAGE_USAGE_STATS".equals(permission)) {
+                sb.append("• 使用情况访问权限：用于查看各应用耗电排行和前台运行时长，数据仅本地展示。\n");
+            } else {
+                sb.append("• ").append(activity.getString(com.batteryhealth.app.R.string.dialog_permission_message)).append("\n");
+            }
+        }
+        return sb.toString().trim();
     }
 
     /**

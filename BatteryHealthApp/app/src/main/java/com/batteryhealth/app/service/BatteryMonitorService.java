@@ -269,11 +269,7 @@ public class BatteryMonitorService extends Service {
                     );
                 }
                 long triggerAt = System.currentTimeMillis() + 5000;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                } else {
-                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
-                }
+                scheduleAlarmCompat(alarmManager, triggerAt, pendingIntent);
                 Log.d(TAG, "Task removed, scheduled service restart in 5s");
             }
         } catch (Exception e) {
@@ -624,6 +620,23 @@ public class BatteryMonitorService extends Service {
                     Log.e(TAG, "Error saving battery data: " + e.getMessage());
                 }
             });
+        }
+    }
+
+    /**
+     * 兼容性调度闹钟：优先精确闹钟并在无权限时回退到非精确闹钟，避免 SecurityException。
+     */
+    private static void scheduleAlarmCompat(android.app.AlarmManager alarmManager, long triggerAt, PendingIntent pendingIntent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            } else {
+                alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+        } else {
+            alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
         }
     }
 
