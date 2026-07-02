@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 
+import androidx.core.content.ContextCompat;
+
 import com.batteryhealth.app.data.model.HealthCheckResult;
 
 /**
@@ -30,8 +32,10 @@ public class BatteryTemperatureChecker implements IHealthChecker {
     @Override
     public HealthCheckResult check(Context context) {
         try {
-            Intent battery = context.getApplicationContext()
-                    .registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            Intent battery = ContextCompat.registerReceiver(
+                    context.getApplicationContext(), null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             int tempRaw = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) : -1;
             float tempC = tempRaw > 0 ? tempRaw / 10.0f : Float.NaN;
 

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 
+import androidx.core.content.ContextCompat;
+
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryDataManager;
 
@@ -38,7 +40,9 @@ public class ChargingProtectionChecker implements IHealthChecker {
     public HealthCheckResult check(Context context) {
         try {
             Context appCtx = context.getApplicationContext();
-            Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            Intent battery = ContextCompat.registerReceiver(
+                    appCtx, null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             if (battery == null) {
                 return buildNoDataResult();
             }
@@ -49,7 +53,9 @@ public class ChargingProtectionChecker implements IHealthChecker {
             int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             int batteryPct = (level >= 0 && scale > 0) ? (int) ((level / (float) scale) * 100) : -1;
-            float tempC = battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) / 10.0f;
+            int tempRaw = battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+            // 温度值为 -1（无效）时，使用 Float.NaN 避免误判
+            float tempC = tempRaw > 0 ? tempRaw / 10.0f : Float.NaN;
 
             BatteryDataManager manager = new BatteryDataManager(appCtx);
             com.batteryhealth.app.data.model.BatteryInfo info = manager.getBatteryInfo();

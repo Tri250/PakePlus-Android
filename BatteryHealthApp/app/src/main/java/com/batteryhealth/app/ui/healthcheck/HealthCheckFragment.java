@@ -21,6 +21,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.AsyncListDiffer;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -85,18 +87,31 @@ public class HealthCheckFragment extends Fragment {
             tvScanningStatus = view.findViewById(R.id.tv_scanning_status);
             recyclerResults = view.findViewById(R.id.recycler_results);
 
-            adapter = new HealthCheckAdapter();
-            recyclerResults.setLayoutManager(new LinearLayoutManager(getContext()));
-            recyclerResults.setAdapter(adapter);
-            recyclerResults.setNestedScrollingEnabled(true);
+            // 保护性检查：若关键视图缺失，跳过后续初始化
+            if (tvActionCheck == null) {
+                Log.w(TAG, "tv_action_check is null, skipping health check setup");
+                return;
+            }
 
             tvActionCheck.setOnClickListener(v -> startCheck());
-            tvActionReport.setOnClickListener(v -> exportReport());
+            if (tvActionReport != null) {
+                tvActionReport.setOnClickListener(v -> exportReport());
+            }
+
+            if (recyclerResults != null) {
+                adapter = new HealthCheckAdapter();
+                recyclerResults.setLayoutManager(new LinearLayoutManager(getContext()));
+                recyclerResults.setAdapter(adapter);
+                // 移除与 XML 冲突的 nestedScrolling 设置，使用 XML 中定义的 false
+                // 让 NestedScrollView 统一管理滚动，避免双滚动冲突
+            }
 
             engine = HealthCheckEngine.getInstance();
 
             // 首次进入自动触发一次检测
-            startCheck();
+            if (isAdded()) {
+                startCheck();
+            }
         } catch (Exception e) {
             Log.e(TAG, "onViewCreated failed: " + e.getMessage(), e);
         }
@@ -115,24 +130,34 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void startCheck() {
-        if (engine == null) return;
+        if (engine == null || !isAdded()) return;
 
         // 仅在新触发一轮检测时重置 UI；若 engine 已在运行，本次调用会订阅当前轮次，
         // 保持已有进度显示不重置，避免用户看到进度突然跳回 0%。
         boolean isNewRun = !engine.isRunning();
         if (isNewRun) {
-            tvActionCheck.setEnabled(false);
-            tvActionCheck.setText(R.string.health_check_action_checking);
+            if (tvActionCheck != null) {
+                tvActionCheck.setEnabled(false);
+                tvActionCheck.setText(R.string.health_check_action_checking);
+            }
             if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
             if (tvScanningStatus != null) {
                 tvScanningStatus.setVisibility(View.VISIBLE);
                 tvScanningStatus.setText(String.format(Locale.getDefault(), "%d%%", 0));
             }
             // 综合评分先重置
-            tvOverallScore.setText("--");
-            tvOverallLabel.setText(R.string.health_check_label_running);
+            if (tvOverallScore != null) tvOverallScore.setText("--");
+            if (tvOverallLabel != null) tvOverallLabel.setText(R.string.health_check_label_running);
             if (progressOverall != null) {
                 progressOverall.setProgress(0);
+            }
+        } else {
+            // 引擎已在运行：显示进度指示，让用户知道检测正在进行中
+            if (progressScanning != null) progressScanning.setVisibility(View.VISIBLE);
+            if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.VISIBLE);
+            if (tvActionCheck != null) {
+                tvActionCheck.setEnabled(false);
+                tvActionCheck.setText(R.string.health_check_action_checking);
             }
         }
 
@@ -200,8 +225,10 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private void finishCheckingUI() {
-        tvActionCheck.setEnabled(true);
-        tvActionCheck.setText(R.string.health_check_action_recheck);
+        if (tvActionCheck != null) {
+            tvActionCheck.setEnabled(true);
+            tvActionCheck.setText(R.string.health_check_action_recheck);
+        }
         if (progressScanning != null) progressScanning.setVisibility(View.GONE);
         if (tvScanningStatus != null) tvScanningStatus.setVisibility(View.GONE);
     }
@@ -220,7 +247,12 @@ public class HealthCheckFragment extends Fragment {
         try {
             Context ctx = getContext();
             if (ctx == null) return;
-            ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipboardManager cm;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                cm = (ClipboardManager) ctx.getSystemService(ClipboardManager.class);
+            } else {
+                cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+            }
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText("health-check-report", csv));
             }
@@ -231,12 +263,25 @@ public class HealthCheckFragment extends Fragment {
     }
 
     private class HealthCheckAdapter extends RecyclerView.Adapter<ResultViewHolder> {
-        private final List<HealthCheckResult> data = new ArrayList<>();
+        private final AsyncListDiffer<HealthCheckResult> differ = new AsyncListDiffer<>(
+                this, new DiffUtil.ItemCallback<HealthCheckResult>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull HealthCheckResult oldItem, @NonNull HealthCheckResult newItem) {
+                String oldId = oldItem.getId();
+                String newId = newItem.getId();
+                return oldId != null && oldId.equals(newId);
+            }
+
+            @Override
+            public boolean areContentsTheSame(@NonNull HealthCheckResult oldItem, @NonNull HealthCheckResult newItem) {
+                return oldItem.getItemScore() == newItem.getItemScore()
+                        && oldItem.getSeverity() == newItem.getSeverity()
+                        && oldItem.getStatus() != null && oldItem.getStatus().equals(newItem.getStatus());
+            }
+        });
 
         void setData(List<HealthCheckResult> list) {
-            data.clear();
-            if (list != null) data.addAll(list);
-            notifyDataSetChanged();
+            differ.submitList(list != null ? new ArrayList<>(list) : new ArrayList<>());
         }
 
         @NonNull
@@ -249,7 +294,7 @@ public class HealthCheckFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(@NonNull ResultViewHolder h, int position) {
-            HealthCheckResult r = data.get(position);
+            HealthCheckResult r = differ.getCurrentList().get(position);
             h.tvTitle.setText(r.getTitle());
             h.tvStatus.setText(r.getStatus());
             if (r.getValue() != null && !r.getValue().isEmpty()) {
@@ -287,7 +332,7 @@ public class HealthCheckFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return data.size();
+            return differ.getCurrentList().size();
         }
     }
 
@@ -318,11 +363,13 @@ public class HealthCheckFragment extends Fragment {
             sb.append(r.getDescription()).append("\n\n");
         }
         if (r.getAdvice() != null && !r.getAdvice().isEmpty()) {
-            sb.append("📌 ").append(r.getAdvice());
+            sb.append("建议: ").append(r.getAdvice());
         }
 
+        String title = r.getTitle() != null ? r.getTitle() : getString(R.string.health_check_no_data);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx)
-                .setTitle(r.getTitle())
+                .setTitle(title)
                 .setMessage(sb.toString())
                 .setPositiveButton(android.R.string.cancel, null);
         if (r.isRepairable()) {

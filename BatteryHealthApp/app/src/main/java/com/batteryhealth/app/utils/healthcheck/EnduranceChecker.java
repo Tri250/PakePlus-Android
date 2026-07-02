@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 
+import androidx.core.content.ContextCompat;
+
 import com.batteryhealth.app.data.model.HealthCheckResult;
 import com.batteryhealth.app.utils.BatteryConsumptionAnalyzer;
 
@@ -27,7 +29,9 @@ public class EnduranceChecker implements IHealthChecker {
     public HealthCheckResult check(Context context) {
         try {
             Context appCtx = context.getApplicationContext();
-            Intent battery = appCtx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            Intent battery = ContextCompat.registerReceiver(
+                    appCtx, null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             int level = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
             int scale = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
             int status = battery != null ? battery.getIntExtra(BatteryManager.EXTRA_STATUS, 0) : 0;

@@ -320,6 +320,10 @@ public class HealthCheckEngine {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     Intent nIntent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
                     nIntent.putExtra(Settings.EXTRA_APP_PACKAGE, pkg);
+                    // Android 13+ 需要附加 channel 信息才能精确跳转到通知设置中的特定应用
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        nIntent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, pkg);
+                    }
                     return nIntent;
                 }
                 return buildAppDetailsIntent(pkg);
