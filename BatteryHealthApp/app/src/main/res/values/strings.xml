@@ -187,6 +187,11 @@
 点击\"同意并继续\"即表示您已阅读并同意上述内容及完整隐私政策。</string>
     <string name="user_agreement_title">用户协议</string>
     <string name="privacy_policy_title">隐私政策</string>
+    <string name="privacy_dialog_title">隐私保护提醒</string>
+    <string name="privacy_dialog_agree">同意并继续</string>
+    <string name="privacy_dialog_view_policy">查看隐私政策</string>
+    <string name="privacy_dialog_disagree">不同意</string>
+    <string name="privacy_dialog_disagree_hint">部分功能可能无法正常使用</string>
     <string name="health_check_action_checking">检测中…</string>
     <string name="error_crash_title">应用崩溃</string>
     <string name="error_crash_message">应用发生异常，请重启</string>

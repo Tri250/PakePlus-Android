@@ -519,15 +519,15 @@ public class MainActivity extends AppCompatActivity {
             // 展示隐私政策与用户协议摘要弹窗，引导用户查看完整内容
             String summary = getString(R.string.privacy_policy_summary);
             new AlertDialog.Builder(this)
-                    .setTitle("隐私保护提醒")
+                    .setTitle(getString(R.string.privacy_dialog_title))
                     .setMessage(summary)
-                    .setPositiveButton("同意并继续", (dialog, which) -> {
+                    .setPositiveButton(getString(R.string.privacy_dialog_agree), (dialog, which) -> {
                         prefs.edit()
                                 .putBoolean(PREF_POLICY_ACCEPTED, true)
                                 .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
                                 .apply();
                     })
-                    .setNeutralButton("查看隐私政策", (dialog, which) -> {
+                    .setNeutralButton(getString(R.string.privacy_dialog_view_policy), (dialog, which) -> {
                         prefs.edit()
                                 .putBoolean(PREF_POLICY_ACCEPTED, true)
                                 .putString(PREF_ACCEPTED_VERSION, CURRENT_VERSION)
@@ -539,10 +539,10 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(intent);
                         } catch (Exception ignored) {}
                     })
-                    .setNegativeButton("不同意", (dialog, which) -> {
+                    .setNegativeButton(getString(R.string.privacy_dialog_disagree), (dialog, which) -> {
                         // 用户不同意仍可使用基础功能，但部分功能受限
                         Snackbar.make(findViewById(android.R.id.content),
-                                "部分功能可能无法正常使用", Snackbar.LENGTH_LONG).show();
+                                getString(R.string.privacy_dialog_disagree_hint), Snackbar.LENGTH_LONG).show();
                     })
                     .setCancelable(false)
                     .show();
@@ -585,5 +585,18 @@ public class MainActivity extends AppCompatActivity {
      */
     public DeviceInfoManager getDeviceInfoManager() {
         return deviceInfoManager;
+    }
+
+    /**
+     * 处理返回键：ViewPager2 非首页时回到首页，首页时执行默认返回。
+     * 适配 Android 14+ 预测性返回手势（enableOnBackInvokedCallback=true）。
+     */
+    @Override
+    public void onBackPressed() {
+        if (viewPager != null && viewPager.getCurrentItem() != 0) {
+            viewPager.setCurrentItem(0, true);
+            return;
+        }
+        super.onBackPressed();
     }
 }
