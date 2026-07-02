@@ -119,7 +119,8 @@ $GRADLE_CMD assembleRelease
 
 # 检查构建结果并复制为带版本号的发布包
 APK_PATH="app/build/outputs/apk/release/app-release.apk"
-RELEASE_APK="app-release-5.0.0.apk"
+VERSION_NAME=$(grep -E "versionName\s+\"" app/build.gradle | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+RELEASE_APK="app-release-${VERSION_NAME}.apk"
 if [ -f "$APK_PATH" ]; then
     APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
     cp "$APK_PATH" "$RELEASE_APK"

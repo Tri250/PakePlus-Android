@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -207,8 +209,20 @@ NEW_DEVICES = [
 
 
 def main():
+    parser = argparse.ArgumentParser(description="更新设备数据库")
+    parser.add_argument("--dry-run", action="store_true", help="模拟运行，不实际写入文件")
+    args = parser.parse_args()
+
+    if not DB_PATH.exists():
+        print(f"错误: 数据库文件不存在: {DB_PATH}")
+        sys.exit(1)
+
     with DB_PATH.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
+    if "devices" not in data:
+        print("错误: 数据库文件格式无效 (缺少 'devices' 字段)")
+        sys.exit(1)
 
     original_count = len(data["devices"])
     existing_models = {(d["brand"], d["model"]) for d in data["devices"]}
@@ -220,20 +234,26 @@ def main():
         if key in existing_models:
             skipped.append(dev["model"])
             continue
-        data["devices"].append(dev)
-        existing_models.add(key)
+        if not args.dry_run:
+            data["devices"].append(dev)
+            existing_models.add(key)
         added += 1
 
     data["description"] = "2024-2026年6月18日国内品牌手机官网在售机型电池与配置数据库"
     # version 保持 "2026.06.18"
 
-    with DB_PATH.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    if not args.dry_run:
+        with DB_PATH.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print("[写入模式] 数据库已更新")
+    else:
+        print("[模拟模式] 未实际写入文件")
 
-    total_count = len(data["devices"])
-    brand_counts = Counter(d["brand"] for d in data["devices"])
-    latest_release = max(d["release_date"] for d in data["devices"])
+    total_count = len(data["devices"]) if not args.dry_run else original_count + added
+    brand_counts = Counter(d["brand"] for d in (data["devices"] if not args.dry_run else data["devices"] + NEW_DEVICES))
+    all_devices = data["devices"] if not args.dry_run else data["devices"] + NEW_DEVICES
+    latest_release = max(d["release_date"] for d in all_devices)
 
     print(f"原始条目数: {original_count}")
     print(f"新增条目数: {added}")
